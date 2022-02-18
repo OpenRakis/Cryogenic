@@ -18,7 +18,11 @@ public class Program {
         Log.Logger = _logger;
     }
 
-    public static void Main(String[] args) {
-        Spice86.Program.RunWithOverrides(args, new DuneCdOverrideSupplier(), SUPPORTED_EXE_CHECKSUM);
+    public static void Main(string[] args) {
+        try {
+            Spice86.Program.RunWithOverrides(args, new DuneCdOverrideSupplier(), SUPPORTED_EXE_CHECKSUM);
+        } finally {
+            ((IDisposable)_logger)?.Dispose();
+        }
     }
 }
