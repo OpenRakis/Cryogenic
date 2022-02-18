@@ -20,9 +20,7 @@ The goal is to have more and more logic written in human readable C#.
 To run it, just run the project with dune CD exe in parameter:
 
 ```
-git clone https://github.com/OpenRakis/crygenic
-cd cryogenic
-dotnet run --Exe C:/path/to/dunecd/DNCDPRG.EXE
+Crogenic --Exe C:/path/to/dunecd/DNCDPRG.EXE
 ```
 
 # Building it
