@@ -1,26 +1,20 @@
 namespace Cryogenic;
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Spice86.Emulator.VM;
-using Serilog;
-using Spice86.Emulator.ReverseEngineer;
-using Spice86.Emulator.Memory;
 using Spice86.Emulator.Function;
+using Spice86.Emulator.Memory;
+using Spice86.Emulator.ReverseEngineer;
+using Spice86.Emulator.VM;
 
+using System.Collections.Generic;
 
-public class StaticDefinitions : CSharpOverrideHelper
-{
-    public StaticDefinitions(Dictionary<SegmentedAddress, FunctionInformation> functionInformations, ushort segment, Machine machine): base(functionInformations, "ida", machine)
-    {
+public class StaticDefinitions : CSharpOverrideHelper {
+
+    public StaticDefinitions(Dictionary<SegmentedAddress, FunctionInformation> functionInformations, ushort segment, Machine machine) : base(functionInformations, "ida", machine) {
         DefineFunctions(segment);
         DefineGlobals(segment);
     }
 
-    private void DefineFunctions(ushort segment)
-    {
+    private void DefineFunctions(ushort segment) {
         DefineFunction(segment, 0xB0, "initialize_2_ida");
         DefineFunction(segment, 0xD1, "intialize_resources_ida");
         DefineFunction(segment, 0x0169, "map2_resource_func_ida");
@@ -155,8 +149,7 @@ public class StaticDefinitions : CSharpOverrideHelper
         DefineFunction(segment, 0xF403, "hsq_decomp_skip_header_dssi_to_esdi_ida");
     }
 
-    private void DefineGlobals(ushort segment)
-    {
+    private void DefineGlobals(ushort segment) {
         ushort vgaSegment = (ushort)(segment + 0x234B);
         DefineStaticAddress(vgaSegment, 0x01A3, "VgaOffset");
         DefineStaticAddress(vgaSegment, 0x018A, "MouseCursorAddressInVram");

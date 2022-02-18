@@ -1,10 +1,5 @@
 namespace Cryogenic;
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
 using Cryogenic.Mainexe;
 using Cryogenic.Mainexe.Datastructures;
 using Cryogenic.Mainexe.Dialogues;
@@ -25,11 +20,18 @@ using Spice86.Emulator.Memory;
 using Spice86.Emulator.ReverseEngineer;
 using Spice86.Emulator.VM;
 
+using System.Collections.Generic;
+
 public class DuneCdOverrideSupplier : IOverrideSupplier {
+
     public Dictionary<SegmentedAddress, FunctionInformation> GenerateFunctionInformations(int programStartSegment, Machine machine) {
         Dictionary<SegmentedAddress, FunctionInformation> res = new();
         CreateOverrides((ushort)programStartSegment, machine, res);
         return res;
+    }
+
+    public override string ToString() {
+        return $"Overrides for Dune CD exe. class is {this.GetType().FullName}";
     }
 
     private void CreateOverrides(ushort programStartSegment, Machine machine, Dictionary<SegmentedAddress, FunctionInformation> res) {
@@ -50,9 +52,5 @@ public class DuneCdOverrideSupplier : IOverrideSupplier {
         new SoundCode(res, programStartSegment, machine, soundDriver);
         new TimerCode(res, programStartSegment, machine);
         new StaticDefinitions(res, programStartSegment, machine);
-    }
-
-    public override string ToString() {
-        return $"Overrides for Dune CD exe. class is {this.GetType().FullName}";
     }
 }
