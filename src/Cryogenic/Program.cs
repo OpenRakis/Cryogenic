@@ -20,7 +20,7 @@ public class Program {
 
     public static void Main(string[] args) {
         try {
-            Spice86.Program.RunWithOverrides(args, new DuneCdOverrideSupplier(), SUPPORTED_EXE_CHECKSUM);
+            Spice86.Program.RunWithOverrides<DuneCdOverrideSupplier>(args, SUPPORTED_EXE_CHECKSUM);
         } finally {
             ((IDisposable)_logger)?.Dispose();
         }

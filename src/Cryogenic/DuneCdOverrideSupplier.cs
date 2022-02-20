@@ -22,16 +22,15 @@ using Spice86.Emulator.VM;
 
 using System.Collections.Generic;
 
+/// <summary>
+/// Example command line debug arguments: "commandLineArgs": "--Exe C:\\Jeux\\ABWFR\\DUNE_CD\\C\\DNCDPRG.EXE --CDrive=C:\\Jeux\\ABWFR\\DUNE_CD\\C --UseCodeOverride"
+/// </summary>
 public class DuneCdOverrideSupplier : IOverrideSupplier {
 
     public Dictionary<SegmentedAddress, FunctionInformation> GenerateFunctionInformations(int programStartSegment, Machine machine) {
         Dictionary<SegmentedAddress, FunctionInformation> res = new();
         CreateOverrides((ushort)programStartSegment, machine, res);
         return res;
-    }
-
-    public override string ToString() {
-        return $"Overrides for Dune CD exe. class is {this.GetType().FullName}";
     }
 
     private void CreateOverrides(ushort programStartSegment, Machine machine, Dictionary<SegmentedAddress, FunctionInformation> res) {
