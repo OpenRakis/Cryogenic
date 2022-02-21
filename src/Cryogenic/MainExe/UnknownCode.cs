@@ -32,7 +32,7 @@ public class UnknownCode : CSharpOverrideHelper {
         DefineFunction(segment, 0xAE28, "isUnknownDBC80x100", IsUnknownDBC80x100_1ED_AE28_CCF8);
         DefineFunction(segment, 0xB2BE, "setUnknown2788To0", SetUnknown2788To0_1ED_B2BE_D18E);
         DefineFunction(segment, 0xD917, "noOp", NoOp_1ED_D917_F7E7);
-        DefineFunction(segment, 0xDB44, "shlDXAndCXByAH", ShlDXAndCXByAH_1ED_DB44_FA14);
+        DefineFunction(segment, 0xDB44, "shlDXAndCXByAX", ShlDXAndCXByAX_1ED_DB44_FA14);
         DefineFunction(segment, 0xE26F, "noOp", NoOp_1ED_E26F_1013F);
         DefineFunction(segment, 0xE75B, "unknownStructCreation", UnknownStructCreation_1ED_E75B_1062B);
         DefineFunction(segment, 0xE851, "checkUnknown39B9", CheckUnknown39B9_1ED_E851_10721);
@@ -177,14 +177,9 @@ public class UnknownCode : CSharpOverrideHelper {
         return NearRet();
     }
 
-    public Action ShlDXAndCXByAH_1ED_DB44_FA14() {
-
-        // Called at the beginning of the intro, could not see any effect because shiftCount is always 0.
-        byte shiftCount = _state.GetAH();
-        if (shiftCount != 0) {
-            this.FailAsUntested("Called with a non zero value, could never see it called that way!");
-        }
-
+    public Action ShlDXAndCXByAX_1ED_DB44_FA14() {
+        // Called before setting mouse parameters
+        ushort shiftCount = _state.GetAX();
         _state.SetCX((ushort)(_state.GetCX() << shiftCount));
         _state.SetDX((ushort)(_state.GetDX() << shiftCount));
         return NearRet();

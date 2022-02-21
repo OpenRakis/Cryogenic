@@ -39,7 +39,7 @@ public class DisplayCode : CSharpOverrideHelper {
     }
 
     public Action ClearCurrentVideoBuffer_1ED_C0AD_DF7D() {
-        _state.SetES((byte)globals.Get1138_DBDA_Word16_framebufferActive());
+        _state.SetES(globals.Get1138_DBDA_Word16_framebufferActive());
         vgaDriver.FillWithZeroFor64000AtES_2538_118_25498();
         return NearRet();
     }
