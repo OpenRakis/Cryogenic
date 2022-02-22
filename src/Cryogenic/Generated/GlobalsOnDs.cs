@@ -2711,8 +2711,8 @@ public class GlobalsOnDs : MemoryBasedDataStructureWithDsBaseAddress {
 
     // Operation not registered by running code
     public void SetPtr1138_38B5_Dword32_gfxVtable00setMode(SegmentedAddress value) {
-        SetUint16(0x38B5 + 2, value.GetSegment());
-        SetUint16(0x38B5, value.GetOffset());
+        SetUint16(0x38B5 + 2, value.Segment);
+        SetUint16(0x38B5, value.Offset);
     }
 
     // Getters and Setters for address 0x1138:0x38B9/0x14C39.
@@ -2733,8 +2733,8 @@ public class GlobalsOnDs : MemoryBasedDataStructureWithDsBaseAddress {
 
     // Operation not registered by running code
     public void SetPtr1138_38B9_Dword32_gfxVtable01getInfoInAxCxBp(SegmentedAddress value) {
-        SetUint16(0x38B9 + 2, value.GetSegment());
-        SetUint16(0x38B9, value.GetOffset());
+        SetUint16(0x38B9 + 2, value.Segment);
+        SetUint16(0x38B9, value.Offset);
     }
 
     // Getters and Setters for address 0x1138:0x38BD/0x14C3D.
@@ -2755,8 +2755,8 @@ public class GlobalsOnDs : MemoryBasedDataStructureWithDsBaseAddress {
 
     // Operation not registered by running code
     public void SetPtr1138_38BD_Dword32_gfxVtable02(SegmentedAddress value) {
-        SetUint16(0x38BD + 2, value.GetSegment());
-        SetUint16(0x38BD, value.GetOffset());
+        SetUint16(0x38BD + 2, value.Segment);
+        SetUint16(0x38BD, value.Offset);
     }
 
     // Getters and Setters for address 0x1138:0x38C1/0x14C41.
@@ -2777,8 +2777,8 @@ public class GlobalsOnDs : MemoryBasedDataStructureWithDsBaseAddress {
 
     // Operation not registered by running code
     public void SetPtr1138_38C1_Dword32_gfxVtable03drawMouseCursor(SegmentedAddress value) {
-        SetUint16(0x38C1 + 2, value.GetSegment());
-        SetUint16(0x38C1, value.GetOffset());
+        SetUint16(0x38C1 + 2, value.Segment);
+        SetUint16(0x38C1, value.Offset);
     }
 
     // Getters and Setters for address 0x1138:0x38C5/0x14C45.
@@ -2799,8 +2799,8 @@ public class GlobalsOnDs : MemoryBasedDataStructureWithDsBaseAddress {
 
     // Operation not registered by running code
     public void SetPtr1138_38C5_Dword32_gfxVtable04restoreImageUnderMouseCursor(SegmentedAddress value) {
-        SetUint16(0x38C5 + 2, value.GetSegment());
-        SetUint16(0x38C5, value.GetOffset());
+        SetUint16(0x38C5 + 2, value.Segment);
+        SetUint16(0x38C5, value.Offset);
     }
 
     // Getters and Setters for address 0x1138:0x38C9/0x14C49.
@@ -2821,8 +2821,8 @@ public class GlobalsOnDs : MemoryBasedDataStructureWithDsBaseAddress {
 
     // Operation not registered by running code
     public void SetPtr1138_38C9_Dword32_gfxVtable05blit(SegmentedAddress value) {
-        SetUint16(0x38C9 + 2, value.GetSegment());
-        SetUint16(0x38C9, value.GetOffset());
+        SetUint16(0x38C9 + 2, value.Segment);
+        SetUint16(0x38C9, value.Offset);
     }
 
     // Getters and Setters for address 0x1138:0x38CD/0x14C4D.
@@ -2843,8 +2843,8 @@ public class GlobalsOnDs : MemoryBasedDataStructureWithDsBaseAddress {
 
     // Operation not registered by running code
     public void SetPtr1138_38CD_Dword32_gfxVtable06(SegmentedAddress value) {
-        SetUint16(0x38CD + 2, value.GetSegment());
-        SetUint16(0x38CD, value.GetOffset());
+        SetUint16(0x38CD + 2, value.Segment);
+        SetUint16(0x38CD, value.Offset);
     }
 
     // Getters and Setters for address 0x1138:0x38D1/0x14C51.
@@ -2865,8 +2865,8 @@ public class GlobalsOnDs : MemoryBasedDataStructureWithDsBaseAddress {
 
     // Operation not registered by running code
     public void SetPtr1138_38D1_Dword32_gfxVtable07(SegmentedAddress value) {
-        SetUint16(0x38D1 + 2, value.GetSegment());
-        SetUint16(0x38D1, value.GetOffset());
+        SetUint16(0x38D1 + 2, value.Segment);
+        SetUint16(0x38D1, value.Offset);
     }
 
     // Getters and Setters for address 0x1138:0x38D5/0x14C55.
@@ -2887,8 +2887,8 @@ public class GlobalsOnDs : MemoryBasedDataStructureWithDsBaseAddress {
 
     // Operation not registered by running code
     public void SetPtr1138_38D5_Dword32_gfxVtable08fillWithZeroFor64000AtES(SegmentedAddress value) {
-        SetUint16(0x38D5 + 2, value.GetSegment());
-        SetUint16(0x38D5, value.GetOffset());
+        SetUint16(0x38D5 + 2, value.Segment);
+        SetUint16(0x38D5, value.Offset);
     }
 
     // Getters and Setters for address 0x1138:0x38D9/0x14C59.
@@ -2909,8 +2909,8 @@ public class GlobalsOnDs : MemoryBasedDataStructureWithDsBaseAddress {
 
     // Operation not registered by running code
     public void SetPtr1138_38D9_Dword32_gfxVtable09(SegmentedAddress value) {
-        SetUint16(0x38D9 + 2, value.GetSegment());
-        SetUint16(0x38D9, value.GetOffset());
+        SetUint16(0x38D9 + 2, value.Segment);
+        SetUint16(0x38D9, value.Offset);
     }
 
     // Getters and Setters for address 0x1138:0x38DD/0x14C5D.
@@ -2931,8 +2931,8 @@ public class GlobalsOnDs : MemoryBasedDataStructureWithDsBaseAddress {
 
     // Operation not registered by running code
     public void SetPtr1138_38DD_Dword32_gfxVtable10(SegmentedAddress value) {
-        SetUint16(0x38DD + 2, value.GetSegment());
-        SetUint16(0x38DD, value.GetOffset());
+        SetUint16(0x38DD + 2, value.Segment);
+        SetUint16(0x38DD, value.Offset);
     }
 
     // Getters and Setters for address 0x1138:0x38ED/0x14C6D.
@@ -2953,8 +2953,8 @@ public class GlobalsOnDs : MemoryBasedDataStructureWithDsBaseAddress {
 
     // Operation not registered by running code
     public void SetPtr1138_38ED_Dword32_gfxVtable14copySquareOfPixelsSiIsSourceSegment(SegmentedAddress value) {
-        SetUint16(0x38ED + 2, value.GetSegment());
-        SetUint16(0x38ED, value.GetOffset());
+        SetUint16(0x38ED + 2, value.Segment);
+        SetUint16(0x38ED, value.Offset);
     }
 
     // Getters and Setters for address 0x1138:0x38FB/0x14C7B.
@@ -2986,8 +2986,8 @@ public class GlobalsOnDs : MemoryBasedDataStructureWithDsBaseAddress {
 
     // Operation not registered by running code
     public void SetPtr1138_38FD_Dword32_gfxVtable18(SegmentedAddress value) {
-        SetUint16(0x38FD + 2, value.GetSegment());
-        SetUint16(0x38FD, value.GetOffset());
+        SetUint16(0x38FD + 2, value.Segment);
+        SetUint16(0x38FD, value.Offset);
     }
 
     // Getters and Setters for address 0x1138:0x3901/0x14C81.
@@ -3008,8 +3008,8 @@ public class GlobalsOnDs : MemoryBasedDataStructureWithDsBaseAddress {
 
     // Operation not registered by running code
     public void SetPtr1138_3901_Dword32_gfxVtable19(SegmentedAddress value) {
-        SetUint16(0x3901 + 2, value.GetSegment());
-        SetUint16(0x3901, value.GetOffset());
+        SetUint16(0x3901 + 2, value.Segment);
+        SetUint16(0x3901, value.Offset);
     }
 
     // Getters and Setters for address 0x1138:0x3905/0x14C85.
@@ -3030,8 +3030,8 @@ public class GlobalsOnDs : MemoryBasedDataStructureWithDsBaseAddress {
 
     // Operation not registered by running code
     public void SetPtr1138_3905_Dword32_gfxVtable20noOp(SegmentedAddress value) {
-        SetUint16(0x3905 + 2, value.GetSegment());
-        SetUint16(0x3905, value.GetOffset());
+        SetUint16(0x3905 + 2, value.Segment);
+        SetUint16(0x3905, value.Offset);
     }
 
     // Getters and Setters for address 0x1138:0x390D/0x14C8D.
@@ -3052,8 +3052,8 @@ public class GlobalsOnDs : MemoryBasedDataStructureWithDsBaseAddress {
 
     // Operation not registered by running code
     public void SetPtr1138_390D_Dword32_gfxVtable22(SegmentedAddress value) {
-        SetUint16(0x390D + 2, value.GetSegment());
-        SetUint16(0x390D, value.GetOffset());
+        SetUint16(0x390D + 2, value.Segment);
+        SetUint16(0x390D, value.Offset);
     }
 
     // Getters and Setters for address 0x1138:0x3915/0x14C95.
@@ -3074,8 +3074,8 @@ public class GlobalsOnDs : MemoryBasedDataStructureWithDsBaseAddress {
 
     // Operation not registered by running code
     public void SetPtr1138_3915_Dword32_gfxVtable24(SegmentedAddress value) {
-        SetUint16(0x3915 + 2, value.GetSegment());
-        SetUint16(0x3915, value.GetOffset());
+        SetUint16(0x3915 + 2, value.Segment);
+        SetUint16(0x3915, value.Offset);
     }
 
     // Getters and Setters for address 0x1138:0x3919/0x14C99.
@@ -3096,8 +3096,8 @@ public class GlobalsOnDs : MemoryBasedDataStructureWithDsBaseAddress {
 
     // Operation not registered by running code
     public void SetPtr1138_3919_Dword32_gfxVtable25(SegmentedAddress value) {
-        SetUint16(0x3919 + 2, value.GetSegment());
-        SetUint16(0x3919, value.GetOffset());
+        SetUint16(0x3919 + 2, value.Segment);
+        SetUint16(0x3919, value.Offset);
     }
 
     // Getters and Setters for address 0x1138:0x391D/0x14C9D.
@@ -3118,8 +3118,8 @@ public class GlobalsOnDs : MemoryBasedDataStructureWithDsBaseAddress {
 
     // Operation not registered by running code
     public void SetPtr1138_391D_Dword32_gfxVtable26(SegmentedAddress value) {
-        SetUint16(0x391D + 2, value.GetSegment());
-        SetUint16(0x391D, value.GetOffset());
+        SetUint16(0x391D + 2, value.Segment);
+        SetUint16(0x391D, value.Offset);
     }
 
     // Getters and Setters for address 0x1138:0x3925/0x14CA5.
@@ -3140,8 +3140,8 @@ public class GlobalsOnDs : MemoryBasedDataStructureWithDsBaseAddress {
 
     // Operation not registered by running code
     public void SetPtr1138_3925_Dword32_gfxVtable28(SegmentedAddress value) {
-        SetUint16(0x3925 + 2, value.GetSegment());
-        SetUint16(0x3925, value.GetOffset());
+        SetUint16(0x3925 + 2, value.Segment);
+        SetUint16(0x3925, value.Offset);
     }
 
     // Getters and Setters for address 0x1138:0x3929/0x14CA9.
@@ -3162,8 +3162,8 @@ public class GlobalsOnDs : MemoryBasedDataStructureWithDsBaseAddress {
 
     // Operation not registered by running code
     public void SetPtr1138_3929_Dword32_gfxVtable29(SegmentedAddress value) {
-        SetUint16(0x3929 + 2, value.GetSegment());
-        SetUint16(0x3929, value.GetOffset());
+        SetUint16(0x3929 + 2, value.Segment);
+        SetUint16(0x3929, value.Offset);
     }
 
     // Getters and Setters for address 0x1138:0x392D/0x14CAD.
@@ -3184,8 +3184,8 @@ public class GlobalsOnDs : MemoryBasedDataStructureWithDsBaseAddress {
 
     // Operation not registered by running code
     public void SetPtr1138_392D_Dword32_gfxVtable30(SegmentedAddress value) {
-        SetUint16(0x392D + 2, value.GetSegment());
-        SetUint16(0x392D, value.GetOffset());
+        SetUint16(0x392D + 2, value.Segment);
+        SetUint16(0x392D, value.Offset);
     }
 
     // Getters and Setters for address 0x1138:0x3935/0x14CB5.
@@ -3206,8 +3206,8 @@ public class GlobalsOnDs : MemoryBasedDataStructureWithDsBaseAddress {
 
     // Operation not registered by running code
     public void SetPtr1138_3935_Dword32_gfxVtable32(SegmentedAddress value) {
-        SetUint16(0x3935 + 2, value.GetSegment());
-        SetUint16(0x3935, value.GetOffset());
+        SetUint16(0x3935 + 2, value.Segment);
+        SetUint16(0x3935, value.Offset);
     }
 
     // Getters and Setters for address 0x1138:0x3939/0x14CB9.
@@ -3228,8 +3228,8 @@ public class GlobalsOnDs : MemoryBasedDataStructureWithDsBaseAddress {
 
     // Operation not registered by running code
     public void SetPtr1138_3939_Dword32_gfxVtable33updateVgaOffset01A3FromLineNumberAsAx(SegmentedAddress value) {
-        SetUint16(0x3939 + 2, value.GetSegment());
-        SetUint16(0x3939, value.GetOffset());
+        SetUint16(0x3939 + 2, value.Segment);
+        SetUint16(0x3939, value.Offset);
     }
 
     // Getters and Setters for address 0x1138:0x3945/0x14CC5.
@@ -3250,8 +3250,8 @@ public class GlobalsOnDs : MemoryBasedDataStructureWithDsBaseAddress {
 
     // Operation not registered by running code
     public void SetPtr1138_3945_Dword32_gfxVtable36(SegmentedAddress value) {
-        SetUint16(0x3945 + 2, value.GetSegment());
-        SetUint16(0x3945, value.GetOffset());
+        SetUint16(0x3945 + 2, value.Segment);
+        SetUint16(0x3945, value.Offset);
     }
 
     // Getters and Setters for address 0x1138:0x394D/0x14CCD.
@@ -3272,8 +3272,8 @@ public class GlobalsOnDs : MemoryBasedDataStructureWithDsBaseAddress {
 
     // Operation not registered by running code
     public void SetPtr1138_394D_Dword32_gfxVtable38(SegmentedAddress value) {
-        SetUint16(0x394D + 2, value.GetSegment());
-        SetUint16(0x394D, value.GetOffset());
+        SetUint16(0x394D + 2, value.Segment);
+        SetUint16(0x394D, value.Offset);
     }
 
     // Getters and Setters for address 0x1138:0x3951/0x14CD1.
@@ -3294,8 +3294,8 @@ public class GlobalsOnDs : MemoryBasedDataStructureWithDsBaseAddress {
 
     // Operation not registered by running code
     public void SetPtr1138_3951_Dword32_gfxVtable39(SegmentedAddress value) {
-        SetUint16(0x3951 + 2, value.GetSegment());
-        SetUint16(0x3951, value.GetOffset());
+        SetUint16(0x3951 + 2, value.Segment);
+        SetUint16(0x3951, value.Offset);
     }
 
     // Getters and Setters for address 0x1138:0x3959/0x14CD9.
@@ -3316,8 +3316,8 @@ public class GlobalsOnDs : MemoryBasedDataStructureWithDsBaseAddress {
 
     // Operation not registered by running code
     public void SetPtr1138_3959_Dword32_gfxVtable41copyPalette2toPalette1(SegmentedAddress value) {
-        SetUint16(0x3959 + 2, value.GetSegment());
-        SetUint16(0x3959, value.GetOffset());
+        SetUint16(0x3959 + 2, value.Segment);
+        SetUint16(0x3959, value.Offset);
     }
 
     // Getters and Setters for address 0x1138:0x395D/0x14CDD.
@@ -3338,8 +3338,8 @@ public class GlobalsOnDs : MemoryBasedDataStructureWithDsBaseAddress {
 
     // Operation not registered by running code
     public void SetPtr1138_395D_Dword32_gfxVtable42(SegmentedAddress value) {
-        SetUint16(0x395D + 2, value.GetSegment());
-        SetUint16(0x395D, value.GetOffset());
+        SetUint16(0x395D + 2, value.Segment);
+        SetUint16(0x395D, value.Offset);
     }
 
     // Getters and Setters for address 0x1138:0x396D/0x14CED.
@@ -3360,8 +3360,8 @@ public class GlobalsOnDs : MemoryBasedDataStructureWithDsBaseAddress {
 
     // Operation not registered by running code
     public void SetPtr1138_396D_Dword32(SegmentedAddress value) {
-        SetUint16(0x396D + 2, value.GetSegment());
-        SetUint16(0x396D, value.GetOffset());
+        SetUint16(0x396D + 2, value.Segment);
+        SetUint16(0x396D, value.Offset);
     }
 
     // Getters and Setters for address 0x1138:0x3975/0x14CF5.
@@ -3382,8 +3382,8 @@ public class GlobalsOnDs : MemoryBasedDataStructureWithDsBaseAddress {
 
     // Operation not registered by running code
     public void SetPtr1138_3975_Dword32(SegmentedAddress value) {
-        SetUint16(0x3975 + 2, value.GetSegment());
-        SetUint16(0x3975, value.GetOffset());
+        SetUint16(0x3975 + 2, value.Segment);
+        SetUint16(0x3975, value.Offset);
     }
 
     // Getters and Setters for address 0x1138:0x3977/0x14CF7.
@@ -3415,8 +3415,8 @@ public class GlobalsOnDs : MemoryBasedDataStructureWithDsBaseAddress {
 
     // Operation not registered by running code
     public void SetPtr1138_3985_Dword32(SegmentedAddress value) {
-        SetUint16(0x3985 + 2, value.GetSegment());
-        SetUint16(0x3985, value.GetOffset());
+        SetUint16(0x3985 + 2, value.Segment);
+        SetUint16(0x3985, value.Offset);
     }
 
     // Getters and Setters for address 0x1138:0x3989/0x14D09.
@@ -3437,8 +3437,8 @@ public class GlobalsOnDs : MemoryBasedDataStructureWithDsBaseAddress {
 
     // Operation not registered by running code
     public void SetPtr1138_3989_Dword32_pcmVtable1(SegmentedAddress value) {
-        SetUint16(0x3989 + 2, value.GetSegment());
-        SetUint16(0x3989, value.GetOffset());
+        SetUint16(0x3989 + 2, value.Segment);
+        SetUint16(0x3989, value.Offset);
     }
 
     // Getters and Setters for address 0x1138:0x398D/0x14D0D.
@@ -3459,8 +3459,8 @@ public class GlobalsOnDs : MemoryBasedDataStructureWithDsBaseAddress {
 
     // Operation not registered by running code
     public void SetPtr1138_398D_Dword32_pcmVtable2(SegmentedAddress value) {
-        SetUint16(0x398D + 2, value.GetSegment());
-        SetUint16(0x398D, value.GetOffset());
+        SetUint16(0x398D + 2, value.Segment);
+        SetUint16(0x398D, value.Offset);
     }
 
     // Getters and Setters for address 0x1138:0x3995/0x14D15.
@@ -3481,8 +3481,8 @@ public class GlobalsOnDs : MemoryBasedDataStructureWithDsBaseAddress {
 
     // Operation not registered by running code
     public void SetPtr1138_3995_Dword32(SegmentedAddress value) {
-        SetUint16(0x3995 + 2, value.GetSegment());
-        SetUint16(0x3995, value.GetOffset());
+        SetUint16(0x3995 + 2, value.Segment);
+        SetUint16(0x3995, value.Offset);
     }
 
     // Getters and Setters for address 0x1138:0x3999/0x14D19.
@@ -3503,8 +3503,8 @@ public class GlobalsOnDs : MemoryBasedDataStructureWithDsBaseAddress {
 
     // Operation not registered by running code
     public void SetPtr1138_3999_Dword32(SegmentedAddress value) {
-        SetUint16(0x3999 + 2, value.GetSegment());
-        SetUint16(0x3999, value.GetOffset());
+        SetUint16(0x3999 + 2, value.Segment);
+        SetUint16(0x3999, value.Offset);
     }
 
     // Getters and Setters for address 0x1138:0x39A5/0x14D25.
@@ -3525,8 +3525,8 @@ public class GlobalsOnDs : MemoryBasedDataStructureWithDsBaseAddress {
 
     // Operation not registered by running code
     public void SetPtr1138_39A5_Dword32(SegmentedAddress value) {
-        SetUint16(0x39A5 + 2, value.GetSegment());
-        SetUint16(0x39A5, value.GetOffset());
+        SetUint16(0x39A5 + 2, value.Segment);
+        SetUint16(0x39A5, value.Offset);
     }
 
     // Getters and Setters for address 0x1138:0x39A9/0x14D29.
@@ -3580,8 +3580,8 @@ public class GlobalsOnDs : MemoryBasedDataStructureWithDsBaseAddress {
 
     // Operation not registered by running code
     public void SetPtr1138_39B7_Dword32_allocatorNextFreeOffset(SegmentedAddress value) {
-        SetUint16(0x39B7 + 2, value.GetSegment());
-        SetUint16(0x39B7, value.GetOffset());
+        SetUint16(0x39B7 + 2, value.Segment);
+        SetUint16(0x39B7, value.Offset);
     }
 
     // Getters and Setters for address 0x1138:0x39B9/0x14D39.
@@ -4239,8 +4239,8 @@ public class GlobalsOnDs : MemoryBasedDataStructureWithDsBaseAddress {
 
     // Operation not registered by running code
     public void SetPtr1138_473F_Dword32(SegmentedAddress value) {
-        SetUint16(0x473F + 2, value.GetSegment());
-        SetUint16(0x473F, value.GetOffset());
+        SetUint16(0x473F + 2, value.Segment);
+        SetUint16(0x473F, value.Offset);
     }
 
     // Getters and Setters for address 0x1138:0x4741/0x15AC1.
@@ -4799,8 +4799,8 @@ public class GlobalsOnDs : MemoryBasedDataStructureWithDsBaseAddress {
 
     // Operation not registered by running code
     public void SetPtr1138_47AC_Dword32(SegmentedAddress value) {
-        SetUint16(0x47AC + 2, value.GetSegment());
-        SetUint16(0x47AC, value.GetOffset());
+        SetUint16(0x47AC + 2, value.Segment);
+        SetUint16(0x47AC, value.Offset);
     }
 
     // Getters and Setters for address 0x1138:0x47AE/0x15B2E.
@@ -4842,8 +4842,8 @@ public class GlobalsOnDs : MemoryBasedDataStructureWithDsBaseAddress {
 
     // Operation not registered by running code
     public void SetPtr1138_47B0_Dword32(SegmentedAddress value) {
-        SetUint16(0x47B0 + 2, value.GetSegment());
-        SetUint16(0x47B0, value.GetOffset());
+        SetUint16(0x47B0 + 2, value.Segment);
+        SetUint16(0x47B0, value.Offset);
     }
 
     // Getters and Setters for address 0x1138:0x47B2/0x15B32.
@@ -4896,8 +4896,8 @@ public class GlobalsOnDs : MemoryBasedDataStructureWithDsBaseAddress {
 
     // Operation not registered by running code
     public void SetPtr1138_47B6_Dword32(SegmentedAddress value) {
-        SetUint16(0x47B6 + 2, value.GetSegment());
-        SetUint16(0x47B6, value.GetOffset());
+        SetUint16(0x47B6 + 2, value.Segment);
+        SetUint16(0x47B6, value.Offset);
     }
 
     // Getters and Setters for address 0x1138:0x47B8/0x15B38.
@@ -5353,8 +5353,8 @@ public class GlobalsOnDs : MemoryBasedDataStructureWithDsBaseAddress {
 
     // Operation not registered by running code
     public void SetPtr1138_AA72_Dword32_resConditOffset(SegmentedAddress value) {
-        SetUint16(0xAA72 + 2, value.GetSegment());
-        SetUint16(0xAA72, value.GetOffset());
+        SetUint16(0xAA72 + 2, value.Segment);
+        SetUint16(0xAA72, value.Offset);
     }
 
     // Getters and Setters for address 0x1138:0xAA74/0x1BDF4.
@@ -5825,8 +5825,8 @@ public class GlobalsOnDs : MemoryBasedDataStructureWithDsBaseAddress {
 
     // Operation not registered by running code
     public void SetPtr1138_DBB0_Dword32_spriteSheetResourcePointer(SegmentedAddress value) {
-        SetUint16(0xDBB0 + 2, value.GetSegment());
-        SetUint16(0xDBB0, value.GetOffset());
+        SetUint16(0xDBB0 + 2, value.Segment);
+        SetUint16(0xDBB0, value.Offset);
     }
 
     // Getters and Setters for address 0x1138:0xDBB2/0x1EF32.
@@ -5901,8 +5901,8 @@ public class GlobalsOnDs : MemoryBasedDataStructureWithDsBaseAddress {
 
     // Operation not registered by running code
     public void SetPtr1138_DBBC_Dword32_dnmajFunc2(SegmentedAddress value) {
-        SetUint16(0xDBBC + 2, value.GetSegment());
-        SetUint16(0xDBBC, value.GetOffset());
+        SetUint16(0xDBBC + 2, value.Segment);
+        SetUint16(0xDBBC, value.Offset);
     }
 
     // Getters and Setters for address 0x1138:0xDBBE/0x1EF3E.
@@ -6294,8 +6294,8 @@ public class GlobalsOnDs : MemoryBasedDataStructureWithDsBaseAddress {
 
     // Operation not registered by running code
     public void SetPtr1138_DC0C_Dword32_hnmFileReadBufferSegment(SegmentedAddress value) {
-        SetUint16(0xDC0C + 2, value.GetSegment());
-        SetUint16(0xDC0C, value.GetOffset());
+        SetUint16(0xDC0C + 2, value.Segment);
+        SetUint16(0xDC0C, value.Offset);
     }
 
     // Getters and Setters for address 0x1138:0xDC0E/0x1EF8E.
@@ -6337,8 +6337,8 @@ public class GlobalsOnDs : MemoryBasedDataStructureWithDsBaseAddress {
 
     // Operation not registered by running code
     public void SetPtr1138_DC10_Dword32_hnmFileReadBufferOffset(SegmentedAddress value) {
-        SetUint16(0xDC10 + 2, value.GetSegment());
-        SetUint16(0xDC10, value.GetOffset());
+        SetUint16(0xDC10 + 2, value.Segment);
+        SetUint16(0xDC10, value.Offset);
     }
 
     // Getters and Setters for address 0x1138:0xDC12/0x1EF92.
@@ -6940,8 +6940,8 @@ public class GlobalsOnDs : MemoryBasedDataStructureWithDsBaseAddress {
 
     // Operation not registered by running code
     public void SetPtr1138_DCFE_Dword32(SegmentedAddress value) {
-        SetUint16(0xDCFE + 2, value.GetSegment());
-        SetUint16(0xDCFE, value.GetOffset());
+        SetUint16(0xDCFE + 2, value.Segment);
+        SetUint16(0xDCFE, value.Offset);
     }
 
     // Getters and Setters for address 0x1138:0xDD00/0x1F080.
@@ -7050,8 +7050,8 @@ public class GlobalsOnDs : MemoryBasedDataStructureWithDsBaseAddress {
 
     // Operation not registered by running code
     public void SetPtr28F2_DC0C_Dword32(SegmentedAddress value) {
-        SetUint16(0xDC0C + 2, value.GetSegment());
-        SetUint16(0xDC0C, value.GetOffset());
+        SetUint16(0xDC0C + 2, value.Segment);
+        SetUint16(0xDC0C, value.Offset);
     }
 
     // Getters and Setters for address 0x3892:0xDBD6/0x464F6.
@@ -7094,8 +7094,8 @@ public class GlobalsOnDs : MemoryBasedDataStructureWithDsBaseAddress {
 
     // Operation not registered by running code
     public void SetPtr4844_DCFE_Dword32(SegmentedAddress value) {
-        SetUint16(0xDCFE + 2, value.GetSegment());
-        SetUint16(0xDCFE, value.GetOffset());
+        SetUint16(0xDCFE + 2, value.Segment);
+        SetUint16(0xDCFE, value.Offset);
     }
 
     // Getters and Setters for address 0x4844:0xDD00/0x56140.
@@ -7138,8 +7138,8 @@ public class GlobalsOnDs : MemoryBasedDataStructureWithDsBaseAddress {
 
     // Operation not registered by running code
     public void SetPtr8AB6_DCFE_Dword32(SegmentedAddress value) {
-        SetUint16(0xDCFE + 2, value.GetSegment());
-        SetUint16(0xDCFE, value.GetOffset());
+        SetUint16(0xDCFE + 2, value.Segment);
+        SetUint16(0xDCFE, value.Offset);
     }
 
     // Getters and Setters for address 0xA000:0xDBD8/0xADBD8.

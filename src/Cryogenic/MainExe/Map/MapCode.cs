@@ -39,9 +39,9 @@ public class MapCode : CSharpOverrideHelper {
     }
 
     public Action SetMapClickHandlerAddressFromAx_1ED_D95E_F82E() {
-        globals.Set1138_2570_Word16_MapClickHandlerAddress(_state.GetAX());
+        globals.Set1138_2570_Word16_MapClickHandlerAddress(_state.AX);
         if (_logger.IsEnabled(Serilog.Events.LogEventLevel.Debug)) {
-            _logger.Debug("setMapClickHandlerAddressFromAx: DS:{@Ds}, AX:{@Ax}", ConvertUtils.ToHex16(_state.GetDS()), ConvertUtils.ToHex16(_state.GetAX()));
+            _logger.Debug("setMapClickHandlerAddressFromAx: DS:{@Ds}, AX:{@Ax}", ConvertUtils.ToHex16(_state.DS), ConvertUtils.ToHex16(_state.AX));
         }
 
         return NearRet();
@@ -51,13 +51,13 @@ public class MapCode : CSharpOverrideHelper {
         // called when starting to fly the orni, exiting maps and when switching from intro to game
         // at load time
         // See setMapClickHandlerAddressFromAx_1ED_D95E_F82E
-        _state.SetAX(CLICK_HANDLER_INGAME);
+        _state.AX = (CLICK_HANDLER_INGAME);
         return SetMapClickHandlerAddressFromAx_1ED_D95E_F82E();
     }
 
     public Action SetSiToMapCursorTypeDC58_1ED_DAAA_F97A() {
         // when taking an orni: 0x149C, when loading globe or results: 0x2448
-        ushort value = _state.GetSI();
+        ushort value = _state.SI;
         if (_logger.IsEnabled(Serilog.Events.LogEventLevel.Debug)) {
             _logger.Debug("setSiToMapCursorTypeDC58: value:{@Value}", ConvertUtils.ToHex16(value));
         }
@@ -68,8 +68,8 @@ public class MapCode : CSharpOverrideHelper {
 
     public Action UnknownMemcopy_1ED_5B96_7A66() {
         // Called on map display / move, data to be copied never seems to change.
-        uint sourceAddress = MemoryUtils.ToPhysicalAddress(_state.GetDS(), 0x46e3);
-        uint destinationAddress = MemoryUtils.ToPhysicalAddress(_state.GetDS(), _state.GetDI());
+        uint sourceAddress = MemoryUtils.ToPhysicalAddress(_state.DS, 0x46e3);
+        uint destinationAddress = MemoryUtils.ToPhysicalAddress(_state.DS, _state.DI);
         _memory.MemCopy(sourceAddress, destinationAddress, 4 * 2);
         return NearRet();
     }

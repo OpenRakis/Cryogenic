@@ -34,14 +34,14 @@ public class TimeCode : CSharpOverrideHelper {
         ushort elapsed = globals.Get1138_0002_Word16_GameElapsedTime();
         ushort in3Hours = (ushort)(elapsed + 3);
         ushort day = (ushort)(in3Hours >> 4);
-        _state.SetAX(day);
+        _state.AX = (day);
         return NearRet();
     }
 
     public Action SetHourOfTheDayToAX_1ED_1AE0_39B0() {
-        _state.SetAX(GetHourOfTheDay());
+        _state.AX = (GetHourOfTheDay());
         if (_logger.IsEnabled(Serilog.Events.LogEventLevel.Debug)) {
-            _logger.Debug("setHourOfTheDayToAX:gameTime:{@GameTime}, gameHour:{@GameHour}", globals.Get1138_0002_Word16_GameElapsedTime(), _state.GetAX());
+            _logger.Debug("setHourOfTheDayToAX:gameTime:{@GameTime}, gameHour:{@GameHour}", globals.Get1138_0002_Word16_GameElapsedTime(), _state.AX);
         }
 
         return NearRet();

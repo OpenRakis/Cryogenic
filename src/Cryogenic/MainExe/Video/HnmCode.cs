@@ -24,19 +24,19 @@ public class HnmCode : CSharpOverrideHelper {
     }
 
     public Action HnmReadFromFileHandle_1ED_CDBF_EC8F() {
-        DosFileManager dosFileManager = _machine.GetDosInt21Handler().DosFileManager;
+        DosFileManager dosFileManager = _machine.DosInt21Handler.DosFileManager;
         ushort fileHandle = globals.Get1138_35A6_Word16_IsAnimateMenuUnneeded();
         if (fileHandle == 0) {
             return NearRet();
         }
 
-        ushort readLength = _state.GetCX();
+        ushort readLength = _state.CX;
         uint offset = globals.Get1138_DC04_DWord32_hnmFileOffset();
         uint targetMemory = globals.GetPtr1138_DC0C_Dword32_hnmFileReadBufferSegment().ToPhysical();
         _logger.Debug("Read {@ReadLength} bytes from hnm file handle {@FileHandle} at offset {@Offset}", readLength, fileHandle, offset);
         dosFileManager.MoveFilePointerUsingHandle(0, fileHandle, offset);
         DosFileOperationResult result = dosFileManager.ReadFile(fileHandle, readLength, targetMemory);
-        uint? actualReadLength = result.GetValue();
+        uint? actualReadLength = result.Value;
         if (actualReadLength != readLength) {
             this.FailAsUntested("The original code loops here when read bytes from hnm are not as expected.");
         }

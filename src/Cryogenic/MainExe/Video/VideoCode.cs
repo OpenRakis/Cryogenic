@@ -27,7 +27,7 @@ public class VideoCode : CSharpOverrideHelper {
     public Action IsLastFrame_1ED_CC85_EB55() {
         int value = globals.Get1138_DBE7_Byte8_hnmFinishedFlag();
         _logger.Debug("DBE7={@DBE7}", value);
-        _state.SetZeroFlag(value == 0 || value == 1);
+        _state.ZeroFlag = value is 0 or 1;
         return NearRet();
     }
 
@@ -36,11 +36,11 @@ public class VideoCode : CSharpOverrideHelper {
     /// </summary>
     public Action Read33A3WithAxOffset_1ED_C921_E7F1() {
         // Only executed when a video starts
-        int offset = _state.GetAX() * 2 + 0x33A3;
-        uint address = MemoryUtils.ToPhysicalAddress(_state.GetDS(), (ushort)offset);
+        int offset = _state.AX * 2 + 0x33A3;
+        uint address = MemoryUtils.ToPhysicalAddress(_state.DS, (ushort)offset);
         ushort value = _memory.GetUint16(address);
-        _logger.Debug("read33A3WithAxOffset {@Ax} {@Address} {@Value}", _state.GetAX(), address, value);
-        _state.SetBX(value);
+        _logger.Debug("read33A3WithAxOffset {@Ax} {@Address} {@Value}", _state.AX, address, value);
+        _state.BX = (value);
         return NearRet();
     }
 

@@ -45,7 +45,7 @@ public class UnknownCode : CSharpOverrideHelper {
 
         // Called upon action? in intro / dialogues / ...
         ushort value = globals.Get1138_DBC8_Word16();
-        _cpu.GetAlu().And16(value, 1);
+        _cpu.Alu.And16(value, 1);
         return NearRet();
     }
 
@@ -68,7 +68,7 @@ public class UnknownCode : CSharpOverrideHelper {
 
         // Called when leaving or entering a scene. Does not seem to have any effect on game whatever the value is in this
         // area.
-        uint address = MemoryUtils.ToPhysicalAddress(_state.GetDS(), 0x47F8);
+        uint address = MemoryUtils.ToPhysicalAddress(_state.DS, 0x47F8);
         _memory.Memset(address, 0xFF, 2 * 0x2E);
         return NearRet();
     }
@@ -97,30 +97,30 @@ public class UnknownCode : CSharpOverrideHelper {
     public Action MemCopy8BytesDsSIToDsDi_1ED_5B99_7A69() {
 
         // Called on scene change (example dialogue, room change)
-        _state.SetES(_state.GetDS());
-        uint sourceAddress = MemoryUtils.ToPhysicalAddress(_state.GetDS(), _state.GetSI());
-        uint destinationAddress = MemoryUtils.ToPhysicalAddress(_state.GetES(), _state.GetDI());
+        _state.ES = (_state.DS);
+        uint sourceAddress = MemoryUtils.ToPhysicalAddress(_state.DS, _state.SI);
+        uint destinationAddress = MemoryUtils.ToPhysicalAddress(_state.ES, _state.DI);
 
         // Moves 4 words from source to dest, so 8 bytes
         _memory.MemCopy(sourceAddress, destinationAddress, 8);
-        _state.SetSI((ushort)(_state.GetSI() + 8));
-        _state.SetDI((ushort)(_state.GetDI() + 8));
+        _state.SI = ((ushort)(_state.SI + 8));
+        _state.DI = ((ushort)(_state.DI + 8));
         return NearRet();
     }
 
     public Action MemCopy8BytesFrom1470ToD83C_1ED_5BA0_7A70() {
 
         // Called on room change
-        _state.SetSI(0x1470);
-        _state.SetDI(0xD83C);
+        _state.SI = (0x1470);
+        _state.DI = (0xD83C);
         return MemCopy8BytesDsSIToDsDi_1ED_5B99_7A69();
     }
 
     public Action MemCopy8Bytes_1ED_5BA8_7A78() {
 
         // Called on dialogue, screen change, intro demo and globe
-        _state.SetSI(0x1470);
-        _state.SetDI(0xD834);
+        _state.SI = (0x1470);
+        _state.DI = (0xD834);
         return MemCopy8BytesDsSIToDsDi_1ED_5B99_7A69();
     }
 
@@ -131,13 +131,13 @@ public class UnknownCode : CSharpOverrideHelper {
         bool res = true;
         if ((value & 0x10) == 0) {
             IsUnknownDBC80x100_1ED_AE28_CCF8();
-            if (!_state.GetZeroFlag()) {
+            if (!_state.ZeroFlag) {
                 res = false;
             }
         }
 
         _logger.Debug("2943={@Value},res={@Res}", value, res);
-        _state.SetCarryFlag(res);
+        _state.CarryFlag = (res);
         if (res) {
             FailAsUntested($"isUnknownDBC80x100And2943BitmaskNonZero was called with a true result. value: {value}");
         }
@@ -146,7 +146,7 @@ public class UnknownCode : CSharpOverrideHelper {
     }
 
     public Action IsUnknownDC2BZero_1ED_ABCC_CA9C() {
-        _state.SetZeroFlag(globals.Get1138_DC2B_Byte8() == 0);
+        _state.ZeroFlag = (globals.Get1138_DC2B_Byte8() == 0);
         return NearRet();
     }
 
@@ -156,7 +156,7 @@ public class UnknownCode : CSharpOverrideHelper {
         ushort value = globals.Get1138_DBC8_Word16();
 
         // Seems that this function is called with only JZ / JNZ, but not sure so call the real thing
-        _cpu.GetAlu().Sub16(value, 0x100);
+        _cpu.Alu.Sub16(value, 0x100);
         if (value != 0) {
             FailAsUntested("isUnknownDBC80x100 was called with a non zero value: " + value);
         }
@@ -179,9 +179,9 @@ public class UnknownCode : CSharpOverrideHelper {
 
     public Action ShlDXAndCXByAX_1ED_DB44_FA14() {
         // Called before setting mouse parameters
-        ushort shiftCount = _state.GetAX();
-        _state.SetCX((ushort)(_state.GetCX() << shiftCount));
-        _state.SetDX((ushort)(_state.GetDX() << shiftCount));
+        ushort shiftCount = _state.AX;
+        _state.CX = ((ushort)(_state.CX << shiftCount));
+        _state.DX = ((ushort)(_state.DX << shiftCount));
         return NearRet();
     }
 
@@ -192,15 +192,15 @@ public class UnknownCode : CSharpOverrideHelper {
     }
 
     public Action UnknownStructCreation_1ED_E75B_1062B() {
-        uint destinationAddress = MemoryUtils.ToPhysicalAddress(_state.GetES(), _state.GetDI());
-        _memory.SetUint16(destinationAddress, _state.GetAX());
-        _memory.SetUint8(destinationAddress + 2, _state.GetDL());
-        uint sourceAddress = MemoryUtils.ToPhysicalAddress(_state.GetDS(), _state.GetSI()) + 0x10;
+        uint destinationAddress = MemoryUtils.ToPhysicalAddress(_state.ES, _state.DI);
+        _memory.SetUint16(destinationAddress, _state.AX);
+        _memory.SetUint8(destinationAddress + 2, _state.DL);
+        uint sourceAddress = MemoryUtils.ToPhysicalAddress(_state.DS, _state.SI) + 0x10;
         _memory.MemCopy(sourceAddress, destinationAddress + 3, 3);
         _memory.MemCopy(sourceAddress + 4, destinationAddress + 6, 4);
 
         // 10 bytes copied in total
-        _state.SetDI((ushort)(_state.GetDI() + 10));
+        _state.DI = ((ushort)(_state.DI + 10));
         return NearRet();
     }
 
@@ -209,7 +209,7 @@ public class UnknownCode : CSharpOverrideHelper {
         // Game stops if carry flag is unset
         ushort value = globals.Get1138_39B9_Word16_allocatorNextFreeSegment();
         value += 0x2F13;
-        _cpu.GetAlu().Sub16(value, globals.Get1138_CE68_Word16_allocatorLastFreeSegment());
+        _cpu.Alu.Sub16(value, globals.Get1138_CE68_Word16_allocatorLastFreeSegment());
         return NearRet();
     }
 }

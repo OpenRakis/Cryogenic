@@ -37,14 +37,14 @@ public class DialoguesCode : CSharpOverrideHelper {
     public Action Unknown_1ED_A8B1_C781() {
         // Called when a dialogue text changes (beginning and during dialogue), and when entering an orni
         // Value does not seem to have any effect
-        byte value = _state.GetAL();
+        byte value = _state.AL;
         value &= 0xF;
         value += 0x30;
         if (value > 0x39) {
             value += 0x7;
         }
 
-        _state.SetAL(value);
+        _state.AL = (value);
         return NearRet();
     }
 }
