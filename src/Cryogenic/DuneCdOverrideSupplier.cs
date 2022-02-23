@@ -41,8 +41,10 @@ public class DuneCdOverrideSupplier : IOverrideSupplier {
         new MenuCode(res, programStartSegment, machine);
         new ScriptedSceneCode(res, programStartSegment, machine);
         new MapCode(res, programStartSegment, machine);
+        //TODO: Fix dialogues zoom on crack
         new DialoguesCode(res, programStartSegment, machine);
-        new DisplayCode(res, programStartSegment, machine, vgaDriver);
+        //TODO: Fix crash
+        //new DisplayCode(res, programStartSegment, machine, vgaDriver);
         new HnmCode(res, programStartSegment, machine);
         new VideoCode(res, programStartSegment, machine);
         new InitCode(res, programStartSegment, machine);
