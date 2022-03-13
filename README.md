@@ -1,3 +1,7 @@
+![Linux](https://img.shields.io/badge/-Linux-grey?logo=linux)
+![OSX](https://img.shields.io/badge/-OSX-black?logo=apple)
+![Windows](https://img.shields.io/badge/-Windows-red?logo=windows)
+
 # Cryo dune reverse engineering
 
 Fiddling with [Cryo dune](https://en.wikipedia.org/wiki/Dune_(video_game)) (CD Version) for fun:
