@@ -21,12 +21,12 @@ public class DatastructuresCode : CSharpOverrideHelper {
     }
 
     public Action ConvertIndexTableToPointerTable_1ED_98_1F68() {
-        uint initialAddress = MemoryUtils.ToPhysicalAddress(_state.ES, _state.DI);
+        uint initialAddress = MemoryUtils.ToPhysicalAddress(State.ES, State.DI);
 
         // wtf
-        int increment = _state.DI;
-        int count = _memory.GetUint16(initialAddress) / 2;
-        Uint16Array array = new Uint16Array(_memory, initialAddress, count);
+        int increment = State.DI;
+        int count = UInt16[initialAddress] / 2;
+        Uint16Array array = new Uint16Array(Memory, initialAddress, count);
         for (int i = 0; i < array.Length; i++) {
             var v = array.GetValueAt(i);
             array.SetValueAt(i, (ushort)(v + increment));
@@ -36,11 +36,11 @@ public class DatastructuresCode : CSharpOverrideHelper {
 
     public Action GetEsSiPointerToUnknown_1ED_C1F4_E0C4() {
         // TODO: create a proper data structure with more organized accessors when what this is is known better.
-        int index = _state.AX;
+        int index = State.AX;
         SegmentedAddress baseAddress = globals.GetPtr1138_DBB0_Dword32_spriteSheetResourcePointer();
-        int resOffset = baseAddress.Offset + _memory.GetUint16((uint)(baseAddress.ToPhysical() + index * 2));
-        _state.ES = (baseAddress.Segment);
-        _state.SI = (ushort)resOffset;
+        int resOffset = baseAddress.Offset + UInt16[(uint)(baseAddress.ToPhysical() + index * 2)];
+        State.ES = (baseAddress.Segment);
+        State.SI = (ushort)resOffset;
         return NearRet();
     }
 }

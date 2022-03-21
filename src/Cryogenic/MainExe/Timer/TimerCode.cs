@@ -21,9 +21,9 @@ public class TimerCode : CSharpOverrideHelper {
 
     public Action SetPitTimerToAX_ida_1ED_E8A8_10778() {
         // Seems only called on quit
-        ushort valueToSet = _state.AX;
+        ushort valueToSet = State.AX;
         _logger.Debug("Setting timer 0 value to {@ValueToSet}", valueToSet);
-        Timer timer = _machine.Timer;
+        Timer timer = Machine.Timer;
         Counter counter = timer.GetCounter(0);
         counter.ReadWritePolicy = 0;
         counter.Mode = 3;

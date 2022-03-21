@@ -11,7 +11,7 @@ public class Program {
     private static readonly ILogger _logger = new LoggerConfiguration()
         .WriteTo.Console(outputTemplate: LogFormat)
         .WriteTo.Debug(outputTemplate: LogFormat)
-        .MinimumLevel.Debug()
+        .MinimumLevel.Information()
         .CreateLogger();
 
     static Program() {

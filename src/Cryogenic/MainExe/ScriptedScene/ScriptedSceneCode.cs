@@ -25,21 +25,20 @@ public class ScriptedSceneCode : CSharpOverrideHelper {
 
     public Action LoadSceneSequenceDataIntoAXAndAdvanceSI_1ED_93F_280F() {
         ushort offset = globals.Get1138_4854_Word16_SceneSequenceOffset();
-        uint address = MemoryUtils.ToPhysicalAddress(_state.CS, offset);
-        ushort value = _memory.GetUint16(address);
-        _state.AX = (value);
+        ushort value = UInt16[State.CS, offset];
+        State.AX = (value);
         _logger.Debug("loadSceneSequenceDataIntoAXAndAdvanceSI: offset:{@Offset},value:{@Value}", offset, value);
 
         // point to next value
-        _state.SI = ((ushort)(offset + 2));
+        State.SI = ((ushort)(offset + 2));
 
         // in asm this is done by continuing to setUnknownOffset4854ToSi_1ED_945_2815
-        globals.Set1138_4854_Word16_SceneSequenceOffset(_state.SI);
+        globals.Set1138_4854_Word16_SceneSequenceOffset(State.SI);
         return NearRet();
     }
 
     public Action SetSceneSequenceOffsetToSi_1ED_945_2815() {
-        ushort offset = _state.SI;
+        ushort offset = State.SI;
         _logger.Debug("setUnknownOffset4854ToSi: offset:{@Offset}", offset);
         globals.Set1138_4854_Word16_SceneSequenceOffset(offset);
         return NearRet();
