@@ -4415,7 +4415,7 @@ public class GlobalsOnDs : MemoryBasedDataStructureWithDsBaseAddress {
     }
 
     // Was accessed via the following registers: DS
-    public void Set1138_476E_Word16(byte value) {
+    public void Set1138_476E_Word16(ushort value) {
         SetUint16(0x476E, value);
     }
 

@@ -29,7 +29,7 @@ public class DialoguesCode : CSharpOverrideHelper {
 
     public Action InitDialogue_1ED_C85B_E72B() {
         ushort value = this.globals.Get1138_CE7A_Word16_VideoPlayRelatedIndex();
-        this.globals.Set1138_476E_Word16((byte)value);
+        this.globals.Set1138_476E_Word16(value);
         this.globals.Set1138_4772_Word16_TimeBetweenFaceZooms(0x1770);
         return NearRet();
     }
