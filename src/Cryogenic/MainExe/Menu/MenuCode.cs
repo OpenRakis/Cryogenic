@@ -57,12 +57,12 @@ public class MenuCode : CSharpOverrideHelper {
 
     public Action SetBpToCurrentMenuTypeForScreenAction_1ED_D41B_F2EB() {
         // If BP does not point to a correct menu type, menu is still OK but no action is clickable on the screen
-        if (_state.SS != _state.DS) {
+        if (State.SS != State.DS) {
             FailAsUntested("Was implemented considering base address is DS since I couldnt see a case where DS!=SS for this method, but you found one :)");
         }
 
         ushort value = globals.GetMenuType();
-        _state.BP = (value);
+        State.BP = (value);
         return NearRet();
     }
 }

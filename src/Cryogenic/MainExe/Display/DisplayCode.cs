@@ -39,7 +39,7 @@ public class DisplayCode : CSharpOverrideHelper {
     }
 
     public Action ClearCurrentVideoBuffer_1ED_C0AD_DF7D() {
-        _state.ES = ((byte)globals.Get1138_DBDA_Word16_framebufferActive());
+        State.ES = ((byte)globals.Get1138_DBDA_Word16_framebufferActive());
         vgaDriver.FillWithZeroFor64000AtES_2538_118_25498();
         return NearRet();
     }
@@ -57,7 +57,7 @@ public class DisplayCode : CSharpOverrideHelper {
         globals.Set1138_1BEA_Word16(0);
 
         // If not done, book videos will show a character on screen instead
-        _state.AX = (0);
+        State.AX = (0);
         return NearRet();
     }
 
@@ -65,7 +65,7 @@ public class DisplayCode : CSharpOverrideHelper {
     public Action ClearVgaOffset01A3F_1ED_579_2449() {
         _logger.Debug("Clearing VGA offset");
         CheckVtableContainsExpected(SegmentRegisters.DsIndex, 0x3939, vgaDriver.GetBaseSegment(), 0x163);
-        _state.AX = (0);
+        State.AX = (0);
         vgaDriver.UpdateVgaOffset01A3FromLineNumberAsAx_2538_163_254E3();
         return NearRet();
     }
@@ -73,9 +73,9 @@ public class DisplayCode : CSharpOverrideHelper {
     public Action GetCharacterCoordsXY_1ED_D05F_EF2F() {
         ushort x = globals.Get1138_D82C_Word16_CharacterXCoord();
         ushort y = globals.Get1138_D82E_Word16_CharacterYCoord();
-        _state.DX = (x);
-        _state.BX = (y);
-        _logger.Debug("getCharacterCoordsXY x:{@X} y:{@Y}", _state.DX, _state.BX);
+        State.DX = (x);
+        State.BX = (y);
+        _logger.Debug("getCharacterCoordsXY x:{@X} y:{@Y}", State.DX, State.BX);
         return NearRet();
     }
 
@@ -85,39 +85,39 @@ public class DisplayCode : CSharpOverrideHelper {
         // Called in most changes related to display like scene change, displaying map, clicking on map, clicking on
         // characters ...
         // XCHG AX <-> Stack[0x0C] (or 0x0E if done before the pop)
-        ushort ax = _stack.Pop();
-        ushort stackPeek = _stack.Peek(0x0C);
-        _stack.Poke(0x0C, ax);
-        _state.AX = (stackPeek);
+        ushort ax = Stack.Pop();
+        ushort stackPeek = Stack.Peek(0x0C);
+        Stack.Poke(0x0C, ax);
+        State.AX = (stackPeek);
 
         // Regular pops
-        _state.BP = (_stack.Pop());
-        _state.DI = (_stack.Pop());
-        _state.SI = (_stack.Pop());
-        _state.DX = (_stack.Pop());
-        _state.CX = (_stack.Pop());
-        _state.BX = (_stack.Pop());
+        State.BP = (Stack.Pop());
+        State.DI = (Stack.Pop());
+        State.SI = (Stack.Pop());
+        State.DX = (Stack.Pop());
+        State.CX = (Stack.Pop());
+        State.BX = (Stack.Pop());
         return NearRet();
     }
 
     public Action PushAll_1ED_E270_10140() {
         _logger.Debug("pushAll");
-        _stack.Push(_state.BX);
-        _stack.Push(_state.CX);
-        _stack.Push(_state.DX);
-        _stack.Push(_state.SI);
-        _stack.Push(_state.DI);
-        _stack.Push(_state.BP);
-        ushort stackTop = _stack.Peek(0);
+        Stack.Push(State.BX);
+        Stack.Push(State.CX);
+        Stack.Push(State.DX);
+        Stack.Push(State.SI);
+        Stack.Push(State.DI);
+        Stack.Push(State.BP);
+        ushort stackTop = Stack.Peek(0);
 
         // XCHG AX <-> Stack[0x0C]
-        ushort stackPeek = _stack.Peek(0x0C);
-        _stack.Poke(0x0C, _state.AX);
+        ushort stackPeek = Stack.Peek(0x0C);
+        Stack.Poke(0x0C, State.AX);
 
         // In the original assembly code, AX seems modified but it's not the case as it's restored to its original value
         // later.
-        _stack.Push(stackPeek);
-        _state.BP = (stackTop);
+        Stack.Push(stackPeek);
+        State.BP = (stackTop);
         return NearRet();
     }
 

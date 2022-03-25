@@ -89,20 +89,20 @@ public class SoundDriverCode : CSharpOverrideHelper {
 
     public Action PcSpeakerActivationWithBXAndALCleanup_4822_100_48320() {
         PcSpeakerActivationWithALCleanup_4822_182_483A2();
-        _state.BX = (0);
+        State.BX = (0);
         return FarRet();
     }
 
     public Action PcSpeakerActivationWithBXAndALCleanup_482B_100_483B0() {
         _logger.Debug("PC Speaker activation with BX and AL cleanup");
         PcSpeakerActivationWithALCleanup_482B_182_48432();
-        _state.BX = (0);
+        State.BX = (0);
         return this.FarRet();
     }
 
     private Action SoundUnsupportedFarRet() {
         // 483A5
-        _state.AL = (0);
+        State.AL = (0);
         return FarRet();
     }
 }

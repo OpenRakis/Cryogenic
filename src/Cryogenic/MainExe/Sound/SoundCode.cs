@@ -29,7 +29,7 @@ public class SoundCode : CSharpOverrideHelper {
         CheckVtableContainsExpected(SegmentRegisters.DsIndex, 0x3975, soundDriver.GetBaseSegment2(), 0x106);
         globals.Set1138_DBCB_Byte8(0);
         soundDriver.ClearAL_482B_106_483B6();
-        globals.Set1138_DBCD_Byte8_IsSoundPresent(_state.AL);
+        globals.Set1138_DBCD_Byte8_IsSoundPresent(State.AL);
         return NearRet();
     }
 
