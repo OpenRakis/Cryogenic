@@ -4410,12 +4410,12 @@ public class GlobalsOnDs : MemoryBasedDataStructureWithDsBaseAddress {
 
     // Getters and Setters for address 0x1138:0x476E/0x15AEE.
     // Was accessed via the following registers: DS
-    public int Get1138_476E_Word16() {
+    public ushort Get1138_476E_Word16() {
         return GetUint16(0x476E);
     }
 
     // Was accessed via the following registers: DS
-    public void Set1138_476E_Word16(byte value) {
+    public void Set1138_476E_Word16(ushort value) {
         SetUint16(0x476E, value);
     }
 
