@@ -18,7 +18,6 @@ using System.Collections.Generic;
 // Method names contain _ to separate addresses.
 public class VgaDriverCode : CSharpOverrideHelper {
     private const ushort IMAGE_UNDER_MOUSE_CURSOR_START = 0xFA00;
-    private const string MEMCPY_DS_TO_ES_FOR64000 = "memcpyDSToESFor64000";
     private static readonly ILogger _logger = Log.Logger.ForContext<VgaDriverCode>();
     private ushort baseSegment;
     private ExtraGlobalsOnCsSegment0x2538 globals;
@@ -26,44 +25,44 @@ public class VgaDriverCode : CSharpOverrideHelper {
     public VgaDriverCode(Dictionary<SegmentedAddress, FunctionInformation> functionInformations, int programStartSegment, Machine machine) : base(functionInformations, "vgaDriver", machine) {
         baseSegment = (ushort)(programStartSegment + 0x234B);
         globals = new ExtraGlobalsOnCsSegment0x2538(machine);
-        DefineFunction(baseSegment, 0x100, "setMode");
-        DefineFunction(baseSegment, 0x103, "getInfoInAxCxBp", GetInfoInAxCxBp_2538_103_25483);
-        DefineFunction(baseSegment, 0x109, "drawMouseCursor");
-        DefineFunction(baseSegment, 0x10C, "restoreImageUnderMouseCursor", RestoreImageUnderMouseCursor_2538_10C_2548C);
-        DefineFunction(baseSegment, 0x10F, "blit");
-        DefineFunction(baseSegment, 0x118, "fillWithZeroFor64000AtES", FillWithZeroFor64000AtES_2538_118_25498);
-        DefineFunction(baseSegment, 0x121, MEMCPY_DS_TO_ES_FOR64000, MemcpyDSToESFor64000_2538_121_254A1);
-        DefineFunction(baseSegment, 0x124, "copyRectangle");
-        DefineFunction(baseSegment, 0x12A, "copySquareOfPixelsSiIsSourceSegment", CopySquareOfPixelsSiIsSourceSegment_2538_12A_254AA);
-        DefineFunction(baseSegment, 0x12D, MEMCPY_DS_TO_ES_FOR64000, MemcpyDSToESFor64000_2538_12D_254AD);
-        DefineFunction(baseSegment, 0x130, "copySquareOfPixels", CopySquareOfPixels_2538_130_254B0);
-        DefineFunction(baseSegment, 0x133, "copyframebufferExplodeAndCenter");
-        DefineFunction(baseSegment, 0x13C, "noOp", NoOp_2538_13C_254BC);
-        DefineFunction(baseSegment, 0x13F, "setPixel");
-        DefineFunction(baseSegment, 0x163, "updateVgaOffset01A3FromLineNumberAsAx", UpdateVgaOffset01A3FromLineNumberAsAx_2538_163_254E3);
-        DefineFunction(baseSegment, 0x16C, "generateTextureOutBP", GenerateTextureOutBP_2538_16C_254EC);
-        DefineFunction(baseSegment, 0x17B, "copyPalette2toPalette1");
-        DefineFunction(baseSegment, 0x9B8, "waitForRetrace", WaitForRetrace_2538_9B8_25D38);
-        DefineFunction(baseSegment, 0xA21, "setBxCxPaletteRelated", SetBxCxPaletteRelated_2538_A21_25DA1);
-        DefineFunction(baseSegment, 0xA58, "copyCsRamB5FToB2F", CopyCsRamB5FToB2F_2538_A58_25DD8);
-        DefineFunction(baseSegment, 0xB68, "loadPalette", LoadPaletteInVgaDac_2538_B68_25EE8);
-        DefineFunction(baseSegment, 0xC10, "setDiFromXYCordsDxBx", SetDiFromXYCordsDxBx_2538_C10_25F90);
-        DefineFunction(baseSegment, 0x1B7C, MEMCPY_DS_TO_ES_FOR64000, MemcpyDSToESFor64000_2538_1B7C_26EFC);
-        DefineFunction(baseSegment, 0x1B8E, "moveSquareOfPixels", MoveSquareOfPixels_2538_1B8E_26F0E);
+        DefineFunction(baseSegment, 0x100, "VgaFunc00SetMode");
+        DefineFunction(baseSegment, 0x103, "VgaFunc01GetInfoInAxCxBp", VgaFunc01GetInfoInAxCxBp_2538_103_25483);
+        DefineFunction(baseSegment, 0x109, "VgaFunc03DrawMouseCursor");
+        DefineFunction(baseSegment, 0x10C, "VgaFunc04RestoreImageUnderMouseCursor", VgaFunc04RestoreImageUnderMouseCursor_2538_10C_2548C);
+        DefineFunction(baseSegment, 0x10F, "VgaFunc05Blit");
+        DefineFunction(baseSegment, 0x118, "VgaFunc08FillWithZeroFor64000AtES", VgaFunc08FillWithZeroFor64000AtES_2538_118_25498);
+        DefineFunction(baseSegment, 0x121, "VgaFunc11MemcpyDSToESFor64000", VgaFunc11MemcpyDSToESFor64000_2538_121_254A1);
+        DefineFunction(baseSegment, 0x124, "VgaFunc12CopyRectangle");
+        DefineFunction(baseSegment, 0x12A, "VgaFunc14CopySquareOfPixelsSiIsSourceSegment", VgaFunc14CopySquareOfPixelsSiIsSourceSegment_2538_12A_254AA);
+        DefineFunction(baseSegment, 0x12D, "VgaFunc15MemcpyDSToESFor64000", VgaFunc15MemcpyDSToESFor64000_2538_12D_254AD);
+        DefineFunction(baseSegment, 0x130, "VgaFunc16CopySquareOfPixels", VgaFunc16CopySquareOfPixels_2538_130_254B0);
+        DefineFunction(baseSegment, 0x133, "VgaFunc17CopyframebufferExplodeAndCenter");
+        DefineFunction(baseSegment, 0x13C, "VgaFunc20NoOp", VgaFunc20NoOp_2538_13C_254BC);
+        DefineFunction(baseSegment, 0x13F, "VgaFunc21SetPixel");
+        DefineFunction(baseSegment, 0x163, "VgaFunc33UpdateVgaOffset01A3FromLineNumberAsAx", VgaFunc33UpdateVgaOffset01A3FromLineNumberAsAx_2538_163_254E3);
+        DefineFunction(baseSegment, 0x16C, "VgaFunc36GenerateTextureOutBP", VgaFunc36GenerateTextureOutBP_2538_16C_254EC);
+        DefineFunction(baseSegment, 0x17B, "VgaFunc41CopyPalette2toPalette1");
+        DefineFunction(baseSegment, 0x9B8, "WaitForRetrace", WaitForRetrace_2538_9B8_25D38);
+        DefineFunction(baseSegment, 0xA21, "SetBxCxPaletteRelated", SetBxCxPaletteRelated_2538_A21_25DA1);
+        DefineFunction(baseSegment, 0xA58, "CopyCsRamB5FToB2F", CopyCsRamB5FToB2F_2538_A58_25DD8);
+        DefineFunction(baseSegment, 0xB68, "LoadPaletteInVgaDac", LoadPaletteInVgaDac_2538_B68_25EE8);
+        DefineFunction(baseSegment, 0xC10, "SetDiFromXYCordsDxBx", SetDiFromXYCordsDxBx_2538_C10_25F90);
+        DefineFunction(baseSegment, 0x1B7C, "MemcpyDSToESFor64000", MemcpyDSToESFor64000_2538_1B7C_26EFC);
+        DefineFunction(baseSegment, 0x1B8E, "CopySquareOfPixels", CopySquareOfPixels_2538_1B8E_26F0E);
 
         // called in globe, without it globe rotation works but stutters when clicking
-        DefineFunction(baseSegment, 0x1D07, "unknownGlobeRelated");
-        DefineFunction(baseSegment, 0x1D5A, "unknownGlobeInitRelated", UnknownGlobeInitRelated_2538_1D5A_270DA);
-        DefineFunction(baseSegment, 0x2025, "unknownMapRelated");
-        DefineFunction(baseSegment, 0x2343, "copyMapBlock", CopyMapBlock_2538_2343_276C3);
-        DefineFunction(baseSegment, 0x253D, "retraceRelatedCalledOnEnterGlobe", RetraceRelatedCalledOnEnterGlobe_2538_253D_278BD);
-        DefineFunction(baseSegment, 0x2572, "waitForRetraceInTransitions", WaitForRetraceInTransitions_2538_2572_278F2);
-        DefineFunction(baseSegment, 0x261D, "waitForRetraceDuringIntroVideo", WaitForRetraceDuringIntroVideo_2538_261D_2799D);
-        DefineFunction(baseSegment, 0x32C1, "generateMenuTransitionFrame");
+        DefineFunction(baseSegment, 0x1D07, "UnknownGlobeRelated");
+        DefineFunction(baseSegment, 0x1D5A, "UnknownGlobeInitRelated", UnknownGlobeInitRelated_2538_1D5A_270DA);
+        DefineFunction(baseSegment, 0x2025, "UnknownMapRelated");
+        DefineFunction(baseSegment, 0x2343, "CopyMapBlock", CopyMapBlock_2538_2343_276C3);
+        DefineFunction(baseSegment, 0x253D, "RetraceRelatedCalledOnEnterGlobe", RetraceRelatedCalledOnEnterGlobe_2538_253D_278BD);
+        DefineFunction(baseSegment, 0x2572, "WaitForRetraceInTransitions", WaitForRetraceInTransitions_2538_2572_278F2);
+        DefineFunction(baseSegment, 0x261D, "WaitForRetraceDuringIntroVideo", WaitForRetraceDuringIntroVideo_2538_261D_2799D);
+        DefineFunction(baseSegment, 0x32C1, "GenerateMenuTransitionFrame");
     }
 
     public Action CopyCsRamB5FToB2F_2538_A58_25DD8() {
-        _logger.Debug("copyCsRamB5FToB2F");
+        _logger.Debug("CopyCsRamB5FToB2F");
 
         // No jump
         uint sourceAddress = MemoryUtils.ToPhysicalAddress(State.CS, 0x5BF);
@@ -94,18 +93,18 @@ public class VgaDriverCode : CSharpOverrideHelper {
         return NearRet();
     }
 
-    public Action CopySquareOfPixels_2538_130_254B0() {
+    public Action VgaFunc16CopySquareOfPixels_2538_130_254B0() {
         // 26F0E
-        return MoveSquareOfPixels_2538_1B8E_26F0E();
+        return CopySquareOfPixels_2538_1B8E_26F0E();
     }
 
-    public Action CopySquareOfPixelsSiIsSourceSegment_2538_12A_254AA() {
+    public Action VgaFunc14CopySquareOfPixelsSiIsSourceSegment_2538_12A_254AA() {
         // 26F0C
         State.DS = (State.SI);
-        return MoveSquareOfPixels_2538_1B8E_26F0E();
+        return CopySquareOfPixels_2538_1B8E_26F0E();
     }
 
-    public Action FillWithZeroFor64000AtES_2538_118_25498() {
+    public Action VgaFunc08FillWithZeroFor64000AtES_2538_118_25498() {
         // 26D77
         uint address = MemoryUtils.ToPhysicalAddress(State.ES, 0);
         _logger.Debug("fillWithZeroFor64000AtES address:{@Address}", address);
@@ -114,7 +113,7 @@ public class VgaDriverCode : CSharpOverrideHelper {
     }
 
     // when disabled floors disappear in some rooms.
-    public Action GenerateTextureOutBP_2538_16C_254EC() {
+    public Action VgaFunc36GenerateTextureOutBP_2538_16C_254EC() {
         // 28D69, 30 lines in ghidra
         uint destinationBaseAddress = MemoryUtils.ToPhysicalAddress(State.ES, 0);
         ushort initialColor = State.AX;
@@ -151,7 +150,7 @@ public class VgaDriverCode : CSharpOverrideHelper {
         return baseSegment;
     }
 
-    public Action GetInfoInAxCxBp_2538_103_25483() {
+    public Action VgaFunc01GetInfoInAxCxBp_2538_103_25483() {
         // 25D59
         _logger.Debug("getInfoInAxCxBp");
         State.AX = (MemoryMap.GraphicVideoMemorySegment);
@@ -177,7 +176,7 @@ public class VgaDriverCode : CSharpOverrideHelper {
                 }
             } else {
                 // Untested ... 25f29 in ghidra, 2538:BA9 in dosbox, probably wrong
-                FailAsUntested("This palette code path was converted to java but never executed...");
+                throw FailAsUntested("This palette code path was converted to java but never executed...");
                 for (ushort i = 0; i < numberOfColors * 3; i += 3) {
                     byte r = (byte)(UInt8[baseAddress + i] & 0x3F);
                     byte g = (byte)(UInt8[baseAddress + i + 1] & 0x3F);
@@ -195,11 +194,11 @@ public class VgaDriverCode : CSharpOverrideHelper {
         }
     }
 
-    public Action MemcpyDSToESFor64000_2538_121_254A1() {
+    public Action VgaFunc11MemcpyDSToESFor64000_2538_121_254A1() {
         return MemcpyDSToESFor64000_2538_1B7C_26EFC();
     }
 
-    public Action MemcpyDSToESFor64000_2538_12D_254AD() {
+    public Action VgaFunc15MemcpyDSToESFor64000_2538_12D_254AD() {
         // 26EFC, seems used when moving rooms
         return MemcpyDSToESFor64000_2538_1B7C_26EFC();
     }
@@ -213,7 +212,7 @@ public class VgaDriverCode : CSharpOverrideHelper {
         return FarRet();
     }
 
-    public Action MoveSquareOfPixels_2538_1B8E_26F0E() {
+    public Action CopySquareOfPixels_2538_1B8E_26F0E() {
         // No jump, 30 instructions 67 lines in ghidra
         // warning: we dont set registers at the end but no idea if their values are used or not.
         SetDiFromXYCordsDxBx_2538_C10_25F90();
@@ -233,14 +232,14 @@ public class VgaDriverCode : CSharpOverrideHelper {
         return FarRet();
     }
 
-    public Action NoOp_2538_13C_254BC() {
+    public Action VgaFunc20NoOp_2538_13C_254BC() {
         return FarRet();
     }
 
     /// <summary>
     /// Restores image under mouse cursor. No input apart from globals and no output.
     /// </summary>
-    public Action RestoreImageUnderMouseCursor_2538_10C_2548C() {
+    public Action VgaFunc04RestoreImageUnderMouseCursor_2538_10C_2548C() {
         // 26CC0
         ushort mouseCursorAddressInVram = this.globals.Get2538_018A_Word16_MouseCursorAddressInVram();
         ushort columns = this.globals.Get2538_018C_Word16_ColumnsOfMouseCursorCount();
@@ -339,7 +338,7 @@ public class VgaDriverCode : CSharpOverrideHelper {
     }
 
     // line number in AX, offset address in 01A3
-    public Action UpdateVgaOffset01A3FromLineNumberAsAx_2538_163_254E3() {
+    public Action VgaFunc33UpdateVgaOffset01A3FromLineNumberAsAx_2538_163_254E3() {
         // 25F86
         ushort lineNumber = State.AX;
         this.globals.Set2538_01A3_Word16_VgaOffset((ushort)(lineNumber * 320));

@@ -19,12 +19,12 @@ public class VideoCode : CSharpOverrideHelper {
 
     public VideoCode(Dictionary<SegmentedAddress, FunctionInformation> functionInformations, ushort segment, Machine machine) : base(functionInformations, "video", machine) {
         this.globals = new ExtraGlobalsOnDs(machine);
-        DefineFunction(segment, 0xC921, "read33A3WithAxOffset/get_hnm_resource_flag_name_ptr_by_index_ax_to_bx_ida", Read33A3WithAxOffset_1ED_C921_E7F1);
-        DefineFunction(segment, 0xCA59, "videoPlayRelated", VideoPlayRelated_1ED_CA59_E929);
-        DefineFunction(segment, 0xCC85, "isLastFrame/check_if_hnm_complete_ida", IsLastFrame_1ED_CC85_EB55);
+        DefineFunction(segment, 0xC921, "GetHnmResourceFlagNamePtrByIndexAXToBx", GetHnmResourceFlagNamePtrByIndexAXToBx_1ED_C921_E7F1);
+        DefineFunction(segment, 0xCA59, "VideoPlayRelated", VideoPlayRelated_1ED_CA59_E929);
+        DefineFunction(segment, 0xCC85, "CheckIfHnmComplete", CheckIfHnmComplete_1ED_CC85_EB55);
     }
 
-    public Action IsLastFrame_1ED_CC85_EB55() {
+    public Action CheckIfHnmComplete_1ED_CC85_EB55() {
         int value = globals.Get1138_DBE7_Byte8_hnmFinishedFlag();
         _logger.Debug("DBE7={@DBE7}", value);
         State.ZeroFlag = value is 0 or 1;
@@ -34,12 +34,12 @@ public class VideoCode : CSharpOverrideHelper {
     /// <summary>
     /// Reads value at DS:(AX*2)+0x33A3 and returns it in BX
     /// </summary>
-    public Action Read33A3WithAxOffset_1ED_C921_E7F1() {
+    public Action GetHnmResourceFlagNamePtrByIndexAXToBx_1ED_C921_E7F1() {
         // Only executed when a video starts
         ushort offset = (ushort)(State.AX * 2 + 0x33A3);
         ushort value = UInt16[State.DS, offset];
         _logger.Debug("read33A3WithAxOffset {@Ax} {@Value}", State.AX, value);
-        State.BX = (value);
+        State.BX = value;
         return NearRet();
     }
 

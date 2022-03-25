@@ -23,24 +23,24 @@ public class DisplayCode : CSharpOverrideHelper {
     public DisplayCode(Dictionary<SegmentedAddress, FunctionInformation> functionInformations, ushort segment, Machine machine, VgaDriverCode vgaDriver) : base(functionInformations, "display", machine) {
         this.vgaDriver = vgaDriver;
         globals = new ExtraGlobalsOnDs(machine);
-        DefineFunction(segment, 0x0579, "clearVgaOffset01A3F/clear_global_y_offset_ida", ClearVgaOffset01A3F_1ED_579_2449);
-        DefineFunction(segment, 0x98F5, "clearUnknownValuesAndAX", ClearUnknownValuesAndAX_1ED_98F5_B7C5);
-        DefineFunction(segment, 0x9901, "set479ETo0", Set479ETo0_1ED_9901_B7D1);
-        DefineFunction(segment, 0xC07C, "setVideoBufferSegmentDBD6/set_frontbuffer_as_active_framebuffer_ida", SetVideoBufferSegmentDBD6_1ED_C07C_DF4C);
-        DefineFunction(segment, 0xC085, "setDialogueVideoBufferSegmentDC32/set_backbuffer_as_frame_buffer_ida", SetDialogueVideoBufferSegmentDC32_1ED_C085_DF55);
-        DefineFunction(segment, 0xC08E, "setTextVideoBufferSegmentDBD8/set_screen_as_active_framebuffer_ida", SetTextVideoBufferSegmentDBD8_1ED_C08E_DF5E);
-        DefineFunction(segment, 0xC0AD, "clearCurrentVideoBuffer/gfx_clear_frame_buffer_ida", ClearCurrentVideoBuffer_1ED_C0AD_DF7D);
-        DefineFunction(segment, 0xD05F, "getCharacterCoordsXY", GetCharacterCoordsXY_1ED_D05F_EF2F);
-        DefineFunction(segment, 0xD068, "setFontToIntro", SetFontToIntro_1ED_D068_EF38);
-        DefineFunction(segment, 0xD075, "setFontToMenu", SetFontToMenu_1ED_D075_EF45);
-        DefineFunction(segment, 0xD082, "setFontToBook", SetFontToBook_1ED_D082_EF52);
-        DefineFunction(segment, 0xE270, "pushAll", PushAll_1ED_E270_10140);
-        DefineFunction(segment, 0xE283, "popAll", PopAll_1ED_E283_10153);
+        DefineFunction(segment, 0x0579, "ClearGlobalVgaOffset", ClearGlobalVgaOffset_1ED_579_2449);
+        DefineFunction(segment, 0x98F5, "ClearUnknownValuesAndAX", ClearUnknownValuesAndAX_1ED_98F5_B7C5);
+        DefineFunction(segment, 0x9901, "Set479ETo0", Set479ETo0_1ED_9901_B7D1);
+        DefineFunction(segment, 0xC07C, "SetFrontBufferAsActiveFrameBuffer", SetFrontBufferAsActiveFrameBuffer_1ED_C07C_DF4C);
+        DefineFunction(segment, 0xC085, "SetBackBufferAsActiveFrameBuffer", SetBackBufferAsActiveFrameBuffer_1ED_C085_DF55);
+        DefineFunction(segment, 0xC08E, "SetTextBufferAsActiveFrameBuffer", SetTextBufferAsActiveFrameBuffer_1ED_C08E_DF5E);
+        DefineFunction(segment, 0xC0AD, "ClearCurrentVideoBuffer", ClearCurrentVideoBuffer_1ED_C0AD_DF7D);
+        DefineFunction(segment, 0xD05F, "GetCharacterCoordsXY", GetCharacterCoordsXY_1ED_D05F_EF2F);
+        DefineFunction(segment, 0xD068, "SetFontToIntro", SetFontToIntro_1ED_D068_EF38);
+        DefineFunction(segment, 0xD075, "SetFontToMenu", SetFontToMenu_1ED_D075_EF45);
+        DefineFunction(segment, 0xD082, "SetFontToBook", SetFontToBook_1ED_D082_EF52);
+        DefineFunction(segment, 0xE270, "PushAll", PushAll_1ED_E270_10140);
+        DefineFunction(segment, 0xE283, "PopAll", PopAll_1ED_E283_10153);
     }
 
     public Action ClearCurrentVideoBuffer_1ED_C0AD_DF7D() {
         State.ES = ((byte)globals.Get1138_DBDA_Word16_framebufferActive());
-        vgaDriver.FillWithZeroFor64000AtES_2538_118_25498();
+        vgaDriver.VgaFunc08FillWithZeroFor64000AtES_2538_118_25498();
         return NearRet();
     }
 
@@ -62,11 +62,11 @@ public class DisplayCode : CSharpOverrideHelper {
     }
 
     // sets the gfx offset to 0
-    public Action ClearVgaOffset01A3F_1ED_579_2449() {
+    public Action ClearGlobalVgaOffset_1ED_579_2449() {
         _logger.Debug("Clearing VGA offset");
         CheckVtableContainsExpected(SegmentRegisters.DsIndex, 0x3939, vgaDriver.GetBaseSegment(), 0x163);
         State.AX = (0);
-        vgaDriver.UpdateVgaOffset01A3FromLineNumberAsAx_2538_163_254E3();
+        vgaDriver.VgaFunc33UpdateVgaOffset01A3FromLineNumberAsAx_2538_163_254E3();
         return NearRet();
     }
 
@@ -128,7 +128,7 @@ public class DisplayCode : CSharpOverrideHelper {
         return NearRet();
     }
 
-    public Action SetDialogueVideoBufferSegmentDC32_1ED_C085_DF55() {
+    public Action SetBackBufferAsActiveFrameBuffer_1ED_C085_DF55() {
         ushort value = globals.Get1138_DC32_Word16_framebufferBack();
         return SetVideoBuffer(value, "setDialogueVideoBufferSegmentDC32");
     }
@@ -154,12 +154,12 @@ public class DisplayCode : CSharpOverrideHelper {
         return NearRet();
     }
 
-    public Action SetTextVideoBufferSegmentDBD8_1ED_C08E_DF5E() {
+    public Action SetTextBufferAsActiveFrameBuffer_1ED_C08E_DF5E() {
         ushort value = globals.Get1138_DBD8_Word16_screenBuffer();
         return SetVideoBuffer(value, "setTextVideoBufferSegmentDBD8");
     }
 
-    public Action SetVideoBufferSegmentDBD6_1ED_C07C_DF4C() {
+    public Action SetFrontBufferAsActiveFrameBuffer_1ED_C07C_DF4C() {
         ushort value = globals.Get1138_DBD6_Word16_framebufferFront();
         return SetVideoBuffer(value, "setVideoBufferSegmentDBD6");
     }

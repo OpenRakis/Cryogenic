@@ -13,25 +13,24 @@ using System.Collections.Generic;
 // Method names contain _ to separate addresses.
 public class SoundDriverCode : CSharpOverrideHelper {
     private static readonly ILogger _logger = Log.Logger.ForContext<SoundDriverCode>();
-    private static readonly string CLEAR_AL = "clearAL";
     private ushort baseSegment1;
     private ushort baseSegment2;
 
     public SoundDriverCode(Dictionary<SegmentedAddress, FunctionInformation> functionInformations, ushort programStartSegment, Machine machine) : base(functionInformations, "soundDriverPcSpeaker", machine) {
         baseSegment1 = (ushort)(0x4635 + programStartSegment);
-        DefineFunction(baseSegment1, 0x100, "pcSpeakerActivationWithBXAndALCleanup", PcSpeakerActivationWithBXAndALCleanup_4822_100_48320);
-        DefineFunction(baseSegment1, 0x103, CLEAR_AL, ClearAL_4822_103_48323);
-        DefineFunction(baseSegment1, 0x109, CLEAR_AL, ClearAL_4822_109_48329);
-        DefineFunction(baseSegment1, 0x10C, CLEAR_AL, ClearAL_4822_10C_4832C);
-        DefineFunction(baseSegment1, 0x115, CLEAR_AL, ClearAL_4822_115_48335);
-        DefineFunction(baseSegment1, 0x182, "pcSpeakerActivationWithALCleanup", PcSpeakerActivationWithALCleanup_4822_182_483A2);
-        DefineFunction(baseSegment1, 0x188, "pcSpeakerActivation", PcSpeakerActivation_4822_188_483A8);
+        DefineFunction(baseSegment1, 0x100, "PcSpeakerActivationWithBXAndALCleanup", PcSpeakerActivationWithBXAndALCleanup_4822_100_48320);
+        DefineFunction(baseSegment1, 0x103, "ClearAL", ClearAL_4822_103_48323);
+        DefineFunction(baseSegment1, 0x109, "ClearAL", ClearAL_4822_109_48329);
+        DefineFunction(baseSegment1, 0x10C, "ClearAL", ClearAL_4822_10C_4832C);
+        DefineFunction(baseSegment1, 0x115, "ClearAL", ClearAL_4822_115_48335);
+        DefineFunction(baseSegment1, 0x182, "PcSpeakerActivationWithALCleanup", PcSpeakerActivationWithALCleanup_4822_182_483A2);
+        DefineFunction(baseSegment1, 0x188, "PcSpeakerActivation", PcSpeakerActivation_4822_188_483A8);
         baseSegment2 = (ushort)(0x463E + programStartSegment);
-        DefineFunction(baseSegment2, 0x100, "pcSpeakerActivationWithBXAndALCleanup", PcSpeakerActivationWithBXAndALCleanup_482B_100_483B0);
-        DefineFunction(baseSegment2, 0x106, CLEAR_AL, ClearAL_482B_106_483B6);
-        DefineFunction(baseSegment2, 0x112, CLEAR_AL, ClearAL_482B_112_483C2);
-        DefineFunction(baseSegment2, 0x182, "pcSpeakerActivationWithALCleanup", PcSpeakerActivationWithALCleanup_482B_182_48432);
-        DefineFunction(baseSegment2, 0x188, "pcSpeakerActivation", PcSpeakerActivation_482B_188_48438);
+        DefineFunction(baseSegment2, 0x100, "PcSpeakerActivationWithBXAndALCleanup", PcSpeakerActivationWithBXAndALCleanup_482B_100_483B0);
+        DefineFunction(baseSegment2, 0x106, "ClearAL", ClearAL_482B_106_483B6);
+        DefineFunction(baseSegment2, 0x112, "ClearAL", ClearAL_482B_112_483C2);
+        DefineFunction(baseSegment2, 0x182, "PcSpeakerActivationWithALCleanup", PcSpeakerActivationWithALCleanup_482B_182_48432);
+        DefineFunction(baseSegment2, 0x188, "PcSpeakerActivation", PcSpeakerActivation_482B_188_48438);
     }
 
     public Action ClearAL_4822_103_48323() {
