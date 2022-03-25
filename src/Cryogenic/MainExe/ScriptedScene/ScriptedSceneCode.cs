@@ -19,8 +19,8 @@ public class ScriptedSceneCode : CSharpOverrideHelper {
 
     public ScriptedSceneCode(Dictionary<SegmentedAddress, FunctionInformation> functionInformations, ushort segment, Machine machine) : base(functionInformations, "scriptedScene", machine) {
         globals = new ExtraGlobalsOnDs(machine);
-        DefineFunction(segment, 0x93F, "LoadSceneSequenceDataIntoAXAndAdvanceSI", LoadSceneSequenceDataIntoAXAndAdvanceSI_1ED_93F_280F);
-        DefineFunction(segment, 0x945, "SetSceneSequenceOffsetToSi", SetSceneSequenceOffsetToSi_1ED_945_2815);
+        DefineFunction(segment, 0x93F, LoadSceneSequenceDataIntoAXAndAdvanceSI_1ED_93F_280F);
+        DefineFunction(segment, 0x945, SetSceneSequenceOffsetToSi_1ED_945_2815);
     }
 
     public Action LoadSceneSequenceDataIntoAXAndAdvanceSI_1ED_93F_280F() {

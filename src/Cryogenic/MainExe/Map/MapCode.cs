@@ -25,11 +25,11 @@ public class MapCode : CSharpOverrideHelper {
 
     public MapCode(Dictionary<SegmentedAddress, FunctionInformation> functionInformations, ushort segment, Machine machine) : base(functionInformations, "map", machine) {
         this.globals = new ExtraGlobalsOnDs(machine);
-        DefineFunction(segment, 0xD95B, "setMapClickHandlerAddressToInGame", SetMapClickHandlerAddressToInGame_1ED_D95B_F82B);
-        DefineFunction(segment, 0xD95E, "setMapClickHandlerAddressFromAx", SetMapClickHandlerAddressFromAx_1ED_D95E_F82E);
-        DefineFunction(segment, 0xDAA3, "initMapCursorTypeDC58To0", InitMapCursorTypeDC58To0_1ED_DAA3_F973);
-        DefineFunction(segment, 0xDAAA, "setSiToMapCursorTypeDC58", SetSiToMapCursorTypeDC58_1ED_DAAA_F97A);
-        DefineFunction(segment, 0x5B96, "unknownMemcopy", UnknownMemcopy_1ED_5B96_7A66);
+        DefineFunction(segment, 0xD95B, SetMapClickHandlerAddressToInGame_1ED_D95B_F82B);
+        DefineFunction(segment, 0xD95E, SetMapClickHandlerAddressFromAx_1ED_D95E_F82E);
+        DefineFunction(segment, 0xDAA3, InitMapCursorTypeDC58To0_1ED_DAA3_F973);
+        DefineFunction(segment, 0xDAAA, SetSiToMapCursorTypeDC58_1ED_DAAA_F97A);
+        DefineFunction(segment, 0x5B96, UnknownMemcopy_1ED_5B96_7A66);
     }
 
     public Action InitMapCursorTypeDC58To0_1ED_DAA3_F973() {

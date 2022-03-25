@@ -19,9 +19,9 @@ public class VideoCode : CSharpOverrideHelper {
 
     public VideoCode(Dictionary<SegmentedAddress, FunctionInformation> functionInformations, ushort segment, Machine machine) : base(functionInformations, "video", machine) {
         this.globals = new ExtraGlobalsOnDs(machine);
-        DefineFunction(segment, 0xC921, "GetHnmResourceFlagNamePtrByIndexAXToBx", GetHnmResourceFlagNamePtrByIndexAXToBx_1ED_C921_E7F1);
-        DefineFunction(segment, 0xCA59, "VideoPlayRelated", VideoPlayRelated_1ED_CA59_E929);
-        DefineFunction(segment, 0xCC85, "CheckIfHnmComplete", CheckIfHnmComplete_1ED_CC85_EB55);
+        DefineFunction(segment, 0xC921, GetHnmResourceFlagNamePtrByIndexAXToBx_1ED_C921_E7F1);
+        DefineFunction(segment, 0xCA59, VideoPlayRelated_1ED_CA59_E929);
+        DefineFunction(segment, 0xCC85, CheckIfHnmComplete_1ED_CC85_EB55);
     }
 
     public Action CheckIfHnmComplete_1ED_CC85_EB55() {

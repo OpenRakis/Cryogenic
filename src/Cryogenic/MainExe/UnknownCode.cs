@@ -18,27 +18,27 @@ public class UnknownCode : CSharpOverrideHelper {
     private ExtraGlobalsOnDs globals;
     public UnknownCode(Dictionary<SegmentedAddress, FunctionInformation> functionInformations, ushort segment, Machine machine) : base(functionInformations, "mainCode", machine) {
         globals = new ExtraGlobalsOnDs(machine);
-        DefineFunction(segment, 0x0F66, "NoOp", NoOp_1ED_F66_2E36);
-        DefineFunction(segment, 0x5B99, "MemCopy8BytesDsSIToDsDi", MemCopy8BytesDsSIToDsDi_1ED_5B99_7A69);
-        DefineFunction(segment, 0x5BA0, "MemCopy8BytesFrom1470ToD83C", MemCopy8BytesFrom1470ToD83C_1ED_5BA0_7A70);
-        DefineFunction(segment, 0x5BA8, "MemCopy8Bytes", MemCopy8Bytes_1ED_5BA8_7A78);
-        DefineFunction(segment, 0xAE2F, "CheckPcmEnabled", CheckPcmEnabled_1ED_AE2F_CCFF);
-        DefineFunction(segment, 0xAEC6, "IsUnknownDBC80x100And2943BitmaskNonZero", IsUnknownDBC80x100And2943BitmaskNonZero_1ED_AEC6_CD96);
+        DefineFunction(segment, 0x0F66, NoOp_1ED_F66_2E36);
+        DefineFunction(segment, 0x5B99, MemCopy8BytesDsSIToDsDi_1ED_5B99_7A69);
+        DefineFunction(segment, 0x5BA0, MemCopy8BytesFrom1470ToD83C_1ED_5BA0_7A70);
+        DefineFunction(segment, 0x5BA8, MemCopy8Bytes_1ED_5BA8_7A78);
+        DefineFunction(segment, 0xAE2F, CheckPcmEnabled_1ED_AE2F_CCFF);
+        DefineFunction(segment, 0xAEC6, IsUnknownDBC80x100And2943BitmaskNonZero_1ED_AEC6_CD96);
         DefineFunction(segment, 0xD443, "DispatcherJumpsToBX");
         DefineFunction(segment, 0xD454, "DispatcherHelperDeterminesWhereToJump");
-        DefineFunction(segment, 0x4AC4, "SetUnknown11CATo0", SetUnknown11CATo0_1ED_4AC4_6994);
-        DefineFunction(segment, 0x4ACA, "SetUnknown11CATo1", SetUnknown11CATo1_1ED_4ACA_699A);
-        DefineFunction(segment, 0xABCC, "IsUnknownDC2BZero", IsUnknownDC2BZero_1ED_ABCC_CA9C);
-        DefineFunction(segment, 0xAE28, "IsUnknownDBC80x100", IsUnknownDBC80x100_1ED_AE28_CCF8);
-        DefineFunction(segment, 0xB2BE, "SetUnknown2788To0", SetUnknown2788To0_1ED_B2BE_D18E);
-        DefineFunction(segment, 0xD917, "NoOp", NoOp_1ED_D917_F7E7);
-        DefineFunction(segment, 0xDB44, "ShlDXAndCXByAX", ShlDXAndCXByAX_1ED_DB44_FA14);
-        DefineFunction(segment, 0xE26F, "NoOp", NoOp_1ED_E26F_1013F);
-        DefineFunction(segment, 0xE75B, "UnknownStructCreation", UnknownStructCreation_1ED_E75B_1062B);
-        DefineFunction(segment, 0xE851, "CheckUnknown39B9", CheckUnknown39B9_1ED_E851_10721);
-        DefineFunction(segment, 0x3AE9, "Fill47F8WithFF", Fill47F8WithFF_1ED_3AE9_59B9);
-        DefineFunction(segment, 0xB2B9, "Inc2788", Inc2788_1ED_B2B9_D189);
-        DefineFunction(segment, 0xDE4E, "SetCEE8To0", SetCEE8To0_1ED_DE4E_FD1E);
+        DefineFunction(segment, 0x4AC4, SetUnknown11CATo0_1ED_4AC4_6994);
+        DefineFunction(segment, 0x4ACA, SetUnknown11CATo1_1ED_4ACA_699A);
+        DefineFunction(segment, 0xABCC, IsUnknownDC2BZero_1ED_ABCC_CA9C);
+        DefineFunction(segment, 0xAE28, IsUnknownDBC80x100_1ED_AE28_CCF8);
+        DefineFunction(segment, 0xB2BE, SetUnknown2788To0_1ED_B2BE_D18E);
+        DefineFunction(segment, 0xD917, NoOp_1ED_D917_F7E7);
+        DefineFunction(segment, 0xDB44, ShlDXAndCXByAX_1ED_DB44_FA14);
+        DefineFunction(segment, 0xE26F, NoOp_1ED_E26F_1013F);
+        DefineFunction(segment, 0xE75B, UnknownStructCreation_1ED_E75B_1062B);
+        DefineFunction(segment, 0xE851, CheckUnknown39B9_1ED_E851_10721);
+        DefineFunction(segment, 0x3AE9, Fill47F8WithFF_1ED_3AE9_59B9);
+        DefineFunction(segment, 0xB2B9, Inc2788_1ED_B2B9_D189);
+        DefineFunction(segment, 0xDE4E, SetCEE8To0_1ED_DE4E_FD1E);
     }
 
     public Action CheckPcmEnabled_1ED_AE2F_CCFF() {

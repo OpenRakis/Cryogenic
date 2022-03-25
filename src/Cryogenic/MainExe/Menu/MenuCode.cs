@@ -38,8 +38,8 @@ public class MenuCode : CSharpOverrideHelper {
 
     public MenuCode(Dictionary<SegmentedAddress, FunctionInformation> functionInformations, ushort segment, Machine machine) : base(functionInformations, "mainCode", machine) {
         globals = new ExtraGlobalsOnDs(machine);
-        DefineFunction(segment, 0xD316, "menuAnimationRelated", MenuAnimationRelated_1ED_D316_F1E6);
-        DefineFunction(segment, 0xD41B, "setBpToCurrentMenuTypeForScreenAction", SetBpToCurrentMenuTypeForScreenAction_1ED_D41B_F2EB);
+        DefineFunction(segment, 0xD316, MenuAnimationRelated_1ED_D316_F1E6);
+        DefineFunction(segment, 0xD41B, SetBpToCurrentMenuTypeForScreenAction_1ED_D41B_F2EB);
     }
 
     public Action MenuAnimationRelated_1ED_D316_F1E6() {

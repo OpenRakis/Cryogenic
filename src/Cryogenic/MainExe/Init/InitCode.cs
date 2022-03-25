@@ -18,7 +18,7 @@ public class InitCode : CSharpOverrideHelper
     public InitCode(Dictionary<SegmentedAddress, FunctionInformation> functionInformations, ushort segment, Machine machine): base(functionInformations, "initRelated", machine)
     {
         globals = new ExtraGlobalsOnDs(machine);
-        DefineFunction(segment, 0xDA53, "vgaInitRelated", VgaInitRelated_1ED_DA53_F923);
+        DefineFunction(segment, 0xDA53, VgaInitRelated_1ED_DA53_F923);
     }
 
     public  Action VgaInitRelated_1ED_DA53_F923()

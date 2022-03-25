@@ -23,19 +23,19 @@ public class DisplayCode : CSharpOverrideHelper {
     public DisplayCode(Dictionary<SegmentedAddress, FunctionInformation> functionInformations, ushort segment, Machine machine, VgaDriverCode vgaDriver) : base(functionInformations, "display", machine) {
         this.vgaDriver = vgaDriver;
         globals = new ExtraGlobalsOnDs(machine);
-        DefineFunction(segment, 0x0579, "ClearGlobalVgaOffset", ClearGlobalVgaOffset_1ED_579_2449);
-        DefineFunction(segment, 0x98F5, "ClearUnknownValuesAndAX", ClearUnknownValuesAndAX_1ED_98F5_B7C5);
-        DefineFunction(segment, 0x9901, "Set479ETo0", Set479ETo0_1ED_9901_B7D1);
-        DefineFunction(segment, 0xC07C, "SetFrontBufferAsActiveFrameBuffer", SetFrontBufferAsActiveFrameBuffer_1ED_C07C_DF4C);
-        DefineFunction(segment, 0xC085, "SetBackBufferAsActiveFrameBuffer", SetBackBufferAsActiveFrameBuffer_1ED_C085_DF55);
-        DefineFunction(segment, 0xC08E, "SetTextBufferAsActiveFrameBuffer", SetTextBufferAsActiveFrameBuffer_1ED_C08E_DF5E);
-        DefineFunction(segment, 0xC0AD, "ClearCurrentVideoBuffer", ClearCurrentVideoBuffer_1ED_C0AD_DF7D);
-        DefineFunction(segment, 0xD05F, "GetCharacterCoordsXY", GetCharacterCoordsXY_1ED_D05F_EF2F);
-        DefineFunction(segment, 0xD068, "SetFontToIntro", SetFontToIntro_1ED_D068_EF38);
-        DefineFunction(segment, 0xD075, "SetFontToMenu", SetFontToMenu_1ED_D075_EF45);
-        DefineFunction(segment, 0xD082, "SetFontToBook", SetFontToBook_1ED_D082_EF52);
-        DefineFunction(segment, 0xE270, "PushAll", PushAll_1ED_E270_10140);
-        DefineFunction(segment, 0xE283, "PopAll", PopAll_1ED_E283_10153);
+        DefineFunction(segment, 0x0579, ClearGlobalVgaOffset_1ED_579_2449);
+        DefineFunction(segment, 0x98F5, ClearUnknownValuesAndAX_1ED_98F5_B7C5);
+        DefineFunction(segment, 0x9901, Set479ETo0_1ED_9901_B7D1);
+        DefineFunction(segment, 0xC07C, SetFrontBufferAsActiveFrameBuffer_1ED_C07C_DF4C);
+        DefineFunction(segment, 0xC085, SetBackBufferAsActiveFrameBuffer_1ED_C085_DF55);
+        DefineFunction(segment, 0xC08E, SetTextBufferAsActiveFrameBuffer_1ED_C08E_DF5E);
+        DefineFunction(segment, 0xC0AD, ClearCurrentVideoBuffer_1ED_C0AD_DF7D);
+        DefineFunction(segment, 0xD05F, GetCharacterCoordsXY_1ED_D05F_EF2F);
+        DefineFunction(segment, 0xD068, SetFontToIntro_1ED_D068_EF38);
+        DefineFunction(segment, 0xD075, SetFontToMenu_1ED_D075_EF45);
+        DefineFunction(segment, 0xD082, SetFontToBook_1ED_D082_EF52);
+        DefineFunction(segment, 0xE270, PushAll_1ED_E270_10140);
+        DefineFunction(segment, 0xE283, PopAll_1ED_E283_10153);
     }
 
     public Action ClearCurrentVideoBuffer_1ED_C0AD_DF7D() {

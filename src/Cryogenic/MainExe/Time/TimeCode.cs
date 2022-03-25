@@ -19,8 +19,8 @@ public class TimeCode : CSharpOverrideHelper {
 
     public TimeCode(Dictionary<SegmentedAddress, FunctionInformation> functionInformations, ushort segment, Machine machine) : base(functionInformations, "time", machine) {
         globals = new ExtraGlobalsOnDs(machine);
-        DefineFunction(segment, 0x1AD1, "getSunlightDay", GetSunlightDay_1ED_1AD1_39A1);
-        DefineFunction(segment, 0x1AE0, "setHourOfTheDayToAX", SetHourOfTheDayToAX_1ED_1AE0_39B0);
+        DefineFunction(segment, 0x1AD1, GetSunlightDay_1ED_1AD1_39A1);
+        DefineFunction(segment, 0x1AE0, SetHourOfTheDayToAX_1ED_1AE0_39B0);
     }
 
     public ushort GetHourOfTheDay() {

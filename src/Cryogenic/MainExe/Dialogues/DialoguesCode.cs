@@ -16,9 +16,9 @@ public class DialoguesCode : CSharpOverrideHelper {
 
     public DialoguesCode(Dictionary<SegmentedAddress, FunctionInformation> functionInformations, ushort segment, Machine machine) : base(functionInformations, "dialogues", machine) {
         globals = new ExtraGlobalsOnDs(machine);
-        DefineFunction(segment, 0xA1E8, "incUnknown47A8", IncUnknown47A8_1ED_A1E8_C0B8);
-        DefineFunction(segment, 0xA8B1, "unknown", Unknown_1ED_A8B1_C781);
-        DefineFunction(segment, 0xC85B, "initDialogue", InitDialogue_1ED_C85B_E72B);
+        DefineFunction(segment, 0xA1E8, IncUnknown47A8_1ED_A1E8_C0B8);
+        DefineFunction(segment, 0xA8B1, Unknown_1ED_A8B1_C781);
+        DefineFunction(segment, 0xC85B, InitDialogue_1ED_C85B_E72B);
     }
 
     public Action IncUnknown47A8_1ED_A1E8_C0B8() {

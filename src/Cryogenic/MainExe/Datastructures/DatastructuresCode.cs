@@ -16,8 +16,8 @@ public class DatastructuresCode : CSharpOverrideHelper {
 
     public DatastructuresCode(Dictionary<SegmentedAddress, FunctionInformation> functionInformations, ushort segment, Machine machine) : base(functionInformations, "datastructures", machine) {
         globals = new ExtraGlobalsOnDs(machine);
-        DefineFunction(segment, 0x98, "ConvertIndexTableToPointerTable", ConvertIndexTableToPointerTable_1ED_98_1F68);
-        DefineFunction(segment, 0xC1F4, "GetEsSiPointerToUnknown", GetEsSiPointerToUnknown_1ED_C1F4_E0C4);
+        DefineFunction(segment, 0x98, ConvertIndexTableToPointerTable_1ED_98_1F68);
+        DefineFunction(segment, 0xC1F4, GetEsSiPointerToUnknown_1ED_C1F4_E0C4);
     }
 
     public Action ConvertIndexTableToPointerTable_1ED_98_1F68() {

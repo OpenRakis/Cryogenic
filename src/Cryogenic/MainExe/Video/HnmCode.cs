@@ -20,7 +20,7 @@ public class HnmCode : CSharpOverrideHelper {
 
     public HnmCode(Dictionary<SegmentedAddress, FunctionInformation> functionInformations, ushort segment, Machine machine) : base(functionInformations, "hnm", machine) {
         this.globals = new ExtraGlobalsOnDs(machine);
-        DefineFunction(segment, 0xCDBF, "hnmReadFromFileHandle", HnmReadFromFileHandle_1ED_CDBF_EC8F);
+        DefineFunction(segment, 0xCDBF, HnmReadFromFileHandle_1ED_CDBF_EC8F);
     }
 
     public Action HnmReadFromFileHandle_1ED_CDBF_EC8F() {

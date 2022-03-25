@@ -20,8 +20,8 @@ public class SoundCode : CSharpOverrideHelper {
     public SoundCode(Dictionary<SegmentedAddress, FunctionInformation> functionInformations, ushort segment, Machine machine, SoundDriverCode soundDriver) : base(functionInformations, "sound", machine) {
         this.soundDriver = soundDriver;
         this.globals = new ExtraGlobalsOnDs(machine);
-        DefineFunction(segment, 0xAC30, "CallPcmFunc05", CallPcmFunc05_1ED_AC30_CB00);
-        DefineFunction(segment, 0xAEB7, "CallMidiFunc02", CallMidiFunc02_1ED_AEB7_CD87);
+        DefineFunction(segment, 0xAC30, CallPcmFunc05_1ED_AC30_CB00);
+        DefineFunction(segment, 0xAEB7, CallMidiFunc02_1ED_AEB7_CD87);
     }
 
     public Action CallMidiFunc02_1ED_AEB7_CD87() {
