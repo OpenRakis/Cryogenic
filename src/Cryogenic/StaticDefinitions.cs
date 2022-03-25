@@ -95,7 +95,7 @@ public class StaticDefinitions : CSharpOverrideHelper {
         DefineFunction(segment, 0xDBEC, "draw_mouse_ida");
         DefineFunction(segment, 0xDC20, "redraw_mouse_ida");
         DefineFunction(segment, 0xDCE0, "read_game_port_ida");
-        DefineFunction(segment, 0xDD5A, "get_key_hit?_ida");
+        DefineFunction(segment, 0xDD5A, "get_key_hit_ida");
         DefineFunction(segment, 0xDD63, "stc_on_user_input_ida");
         DefineFunction(segment, 0xDE0C, "check_midi_ida");
         DefineFunction(segment, 0xDF1E, "get_mouse_pos_etc_ida");

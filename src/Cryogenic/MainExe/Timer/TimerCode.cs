@@ -16,10 +16,10 @@ public class TimerCode : CSharpOverrideHelper {
     private static readonly ILogger _logger = Log.Logger.ForContext<TimerCode>();
 
     public TimerCode(Dictionary<SegmentedAddress, FunctionInformation> functionInformations, ushort segment, Machine machine) : base(functionInformations, "timer", machine) {
-        DefineFunction(segment, 0xE8A8, "setPitTimerToAX", SetPitTimerToAX_ida_1ED_E8A8_10778);
+        DefineFunction(segment, 0xE8A8, "SetPitTimerToAX", SetPitTimerToAX_1ED_E8A8_10778);
     }
 
-    public Action SetPitTimerToAX_ida_1ED_E8A8_10778() {
+    public Action SetPitTimerToAX_1ED_E8A8_10778() {
         // Seems only called on quit
         ushort valueToSet = State.AX;
         _logger.Debug("Setting timer 0 value to {@ValueToSet}", valueToSet);

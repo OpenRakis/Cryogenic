@@ -38,7 +38,7 @@ public class HnmCode : CSharpOverrideHelper {
         DosFileOperationResult result = dosFileManager.ReadFile(fileHandle, readLength, targetMemory);
         uint? actualReadLength = result.Value;
         if (actualReadLength != readLength) {
-            this.FailAsUntested("The original code loops here when read bytes from hnm are not as expected.");
+            throw this.FailAsUntested("The original code loops here when read bytes from hnm are not as expected.");
         }
         if (actualReadLength is not null) {
             globals.Set1138_DC08_DWord32_hnmFileRemain(globals.Get1138_DC08_DWord32_hnmFileRemain() - actualReadLength.Value);
