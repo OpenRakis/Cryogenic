@@ -23,7 +23,7 @@ public class HnmCode : CSharpOverrideHelper {
         DefineFunction(segment, 0xCDBF, HnmReadFromFileHandle_1ED_CDBF_EC8F);
     }
 
-    public Action HnmReadFromFileHandle_1ED_CDBF_EC8F() {
+    public Action HnmReadFromFileHandle_1ED_CDBF_EC8F(int gotoAddress) {
         DosFileManager dosFileManager = Machine.DosInt21Handler.DosFileManager;
         ushort fileHandle = globals.Get1138_35A6_Word16_IsAnimateMenuUnneeded();
         if (fileHandle == 0) {

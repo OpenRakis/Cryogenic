@@ -42,7 +42,7 @@ public class MenuCode : CSharpOverrideHelper {
         DefineFunction(segment, 0xD41B, SetBpToCurrentMenuTypeForScreenAction_1ED_D41B_F2EB);
     }
 
-    public Action MenuAnimationRelated_1ED_D316_F1E6() {
+    public Action MenuAnimationRelated_1ED_D316_F1E6(int gotoAddress) {
         // called when a menu has a submenu
         int isAnimateMenuUneeded = globals.Get1138_35A6_Word16_IsAnimateMenuUnneeded();
         byte value2 = globals.Get1138_DCE6_Byte8_TransitionBitmask();
@@ -55,7 +55,7 @@ public class MenuCode : CSharpOverrideHelper {
         return NearRet();
     }
 
-    public Action SetBpToCurrentMenuTypeForScreenAction_1ED_D41B_F2EB() {
+    public Action SetBpToCurrentMenuTypeForScreenAction_1ED_D41B_F2EB(int gotoAddress) {
         // If BP does not point to a correct menu type, menu is still OK but no action is clickable on the screen
         if (State.SS != State.DS) {
             throw FailAsUntested("Was implemented considering base address is DS since I couldnt see a case where DS!=SS for this method, but you found one :)");

@@ -24,19 +24,19 @@ public class SoundCode : CSharpOverrideHelper {
         DefineFunction(segment, 0xAEB7, CallMidiFunc02_1ED_AEB7_CD87);
     }
 
-    public Action CallMidiFunc02_1ED_AEB7_CD87() {
+    public Action CallMidiFunc02_1ED_AEB7_CD87(int gotoAddress) {
         // Called before videos
         CheckVtableContainsExpected(SegmentRegisters.DsIndex, 0x3975, soundDriver.GetBaseSegment2(), 0x106);
         globals.Set1138_DBCB_Byte8(0);
-        soundDriver.ClearAL_482B_106_483B6();
+        soundDriver.ClearAL_482B_106_483B6(0);
         globals.Set1138_DBCD_Byte8_IsSoundPresent(State.AL);
         return NearRet();
     }
 
-    public Action CallPcmFunc05_1ED_AC30_CB00() {
+    public Action CallPcmFunc05_1ED_AC30_CB00(int gotoAddress) {
         // Called at scene change
         CheckVtableContainsExpected(SegmentRegisters.DsIndex, 0x3999, soundDriver.GetBaseSegment1(), 0x10C);
-        soundDriver.ClearAL_4822_10C_4832C();
+        soundDriver.ClearAL_4822_10C_4832C(0);
         return NearRet();
     }
 }

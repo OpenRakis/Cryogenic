@@ -20,7 +20,7 @@ public class DatastructuresCode : CSharpOverrideHelper {
         DefineFunction(segment, 0xC1F4, GetEsSiPointerToUnknown_1ED_C1F4_E0C4);
     }
 
-    public Action ConvertIndexTableToPointerTable_1ED_98_1F68() {
+    public Action ConvertIndexTableToPointerTable_1ED_98_1F68(int gotoAddress) {
         uint initialAddress = MemoryUtils.ToPhysicalAddress(State.ES, State.DI);
 
         // wtf
@@ -34,7 +34,7 @@ public class DatastructuresCode : CSharpOverrideHelper {
         return NearRet();
     }
 
-    public Action GetEsSiPointerToUnknown_1ED_C1F4_E0C4() {
+    public Action GetEsSiPointerToUnknown_1ED_C1F4_E0C4(int gotoAddress) {
         // TODO: create a proper data structure with more organized accessors when what this is is known better.
         int index = State.AX;
         SegmentedAddress baseAddress = globals.GetPtr1138_DBB0_Dword32_spriteSheetResourcePointer();

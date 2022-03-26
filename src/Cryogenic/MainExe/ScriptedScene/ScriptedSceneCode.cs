@@ -23,7 +23,7 @@ public class ScriptedSceneCode : CSharpOverrideHelper {
         DefineFunction(segment, 0x945, SetSceneSequenceOffsetToSi_1ED_945_2815);
     }
 
-    public Action LoadSceneSequenceDataIntoAXAndAdvanceSI_1ED_93F_280F() {
+    public Action LoadSceneSequenceDataIntoAXAndAdvanceSI_1ED_93F_280F(int gotoAddress) {
         ushort offset = globals.Get1138_4854_Word16_SceneSequenceOffset();
         ushort value = UInt16[State.CS, offset];
         State.AX = (value);
@@ -37,7 +37,7 @@ public class ScriptedSceneCode : CSharpOverrideHelper {
         return NearRet();
     }
 
-    public Action SetSceneSequenceOffsetToSi_1ED_945_2815() {
+    public Action SetSceneSequenceOffsetToSi_1ED_945_2815(int gotoAddress) {
         ushort offset = State.SI;
         _logger.Debug("setUnknownOffset4854ToSi: offset:{@Offset}", offset);
         globals.Set1138_4854_Word16_SceneSequenceOffset(offset);

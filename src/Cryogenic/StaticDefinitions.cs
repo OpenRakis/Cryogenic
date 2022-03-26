@@ -88,7 +88,7 @@ public class StaticDefinitions : CSharpOverrideHelper {
         DefineFunction(segment, 0xCF4B, "IRULx_draw_or_clear_subtitle_ida");
         DefineFunction(segment, 0xCFA0, "check_amr_or_eng_language_ida");
         DefineFunction(segment, 0xD00F, "load_PHRASExx_HSQ_ida");
-        DefineFunction(segment, 0xDAE3, "set_mouse_pos_ida");
+        //DefineFunction(segment, 0xDAE3, "set_mouse_pos_ida");
         DefineFunction(segment, 0xDB14, "define_mouse_range_ida");
         DefineFunction(segment, 0xDB4C, "mouse_stuff_ida");
         DefineFunction(segment, 0xDBB2, "call_restore_cursor_ida");

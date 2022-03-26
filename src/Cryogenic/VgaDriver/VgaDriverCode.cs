@@ -61,7 +61,7 @@ public class VgaDriverCode : CSharpOverrideHelper {
         DefineFunction(baseSegment, 0x32C1, "GenerateMenuTransitionFrame");
     }
 
-    public Action CopyCsRamB5FToB2F_2538_A58_25DD8() {
+    public Action CopyCsRamB5FToB2F_2538_A58_25DD8(int gotoAddress) {
         _logger.Debug("CopyCsRamB5FToB2F");
 
         // No jump
@@ -73,7 +73,7 @@ public class VgaDriverCode : CSharpOverrideHelper {
         return NearRet();
     }
 
-    public Action CopyMapBlock_2538_2343_276C3() {
+    public Action CopyMapBlock_2538_2343_276C3(int gotoAddress) {
         // 37 lines in ghidra
         ushort blockSize = State.CX;
         uint baseSourceAddress = MemoryUtils.ToPhysicalAddress(State.DS, State.SI);
@@ -93,18 +93,18 @@ public class VgaDriverCode : CSharpOverrideHelper {
         return NearRet();
     }
 
-    public Action VgaFunc16CopySquareOfPixels_2538_130_254B0() {
+    public Action VgaFunc16CopySquareOfPixels_2538_130_254B0(int gotoAddress) {
         // 26F0E
-        return CopySquareOfPixels_2538_1B8E_26F0E();
+        return CopySquareOfPixels_2538_1B8E_26F0E(0);
     }
 
-    public Action VgaFunc14CopySquareOfPixelsSiIsSourceSegment_2538_12A_254AA() {
+    public Action VgaFunc14CopySquareOfPixelsSiIsSourceSegment_2538_12A_254AA(int gotoAddress) {
         // 26F0C
         State.DS = (State.SI);
-        return CopySquareOfPixels_2538_1B8E_26F0E();
+        return CopySquareOfPixels_2538_1B8E_26F0E(0);
     }
 
-    public Action VgaFunc08FillWithZeroFor64000AtES_2538_118_25498() {
+    public Action VgaFunc08FillWithZeroFor64000AtES_2538_118_25498(int gotoAddress) {
         // 26D77
         uint address = MemoryUtils.ToPhysicalAddress(State.ES, 0);
         _logger.Debug("fillWithZeroFor64000AtES address:{@Address}", address);
@@ -113,7 +113,7 @@ public class VgaDriverCode : CSharpOverrideHelper {
     }
 
     // when disabled floors disappear in some rooms.
-    public Action VgaFunc36GenerateTextureOutBP_2538_16C_254EC() {
+    public Action VgaFunc36GenerateTextureOutBP_2538_16C_254EC(int gotoAddress) {
         // 28D69, 30 lines in ghidra
         uint destinationBaseAddress = MemoryUtils.ToPhysicalAddress(State.ES, 0);
         ushort initialColor = State.AX;
@@ -121,7 +121,7 @@ public class VgaDriverCode : CSharpOverrideHelper {
         ushort xorNoise = State.BP;
         ushort xorNoisePattern = State.SI;
         ushort length = State.CX;
-        SetDiFromXYCordsDxBx_2538_C10_25F90();
+        SetDiFromXYCordsDxBx_2538_C10_25F90(0);
         ushort destinationOffsetAddress = State.DI;
         int direction = State.DirectionFlag ? -1 : 1;
         if (_logger.IsEnabled(Serilog.Events.LogEventLevel.Debug)) {
@@ -151,7 +151,7 @@ public class VgaDriverCode : CSharpOverrideHelper {
         return baseSegment;
     }
 
-    public Action VgaFunc01GetInfoInAxCxBp_2538_103_25483() {
+    public Action VgaFunc01GetInfoInAxCxBp_2538_103_25483(int gotoAddress) {
         // 25D59
         _logger.Debug("getInfoInAxCxBp");
         State.AX = (MemoryMap.GraphicVideoMemorySegment);
@@ -160,7 +160,7 @@ public class VgaDriverCode : CSharpOverrideHelper {
         return FarRet();
     }
 
-    public Action LoadPaletteInVgaDac_2538_B68_25EE8() {
+    public Action LoadPaletteInVgaDac_2538_B68_25EE8(int gotoAddress) {
         // No jump, 49 lines in ghidra
         try {
             VgaCard vgaCard = Machine.VgaCard;
@@ -195,16 +195,16 @@ public class VgaDriverCode : CSharpOverrideHelper {
         }
     }
 
-    public Action VgaFunc11MemcpyDSToESFor64000_2538_121_254A1() {
-        return MemcpyDSToESFor64000_2538_1B7C_26EFC();
+    public Action VgaFunc11MemcpyDSToESFor64000_2538_121_254A1(int gotoAddress) {
+        return MemcpyDSToESFor64000_2538_1B7C_26EFC(0);
     }
 
-    public Action VgaFunc15MemcpyDSToESFor64000_2538_12D_254AD() {
+    public Action VgaFunc15MemcpyDSToESFor64000_2538_12D_254AD(int gotoAddress) {
         // 26EFC, seems used when moving rooms
-        return MemcpyDSToESFor64000_2538_1B7C_26EFC();
+        return MemcpyDSToESFor64000_2538_1B7C_26EFC(0);
     }
 
-    public Action MemcpyDSToESFor64000_2538_1B7C_26EFC() {
+    public Action MemcpyDSToESFor64000_2538_1B7C_26EFC(int gotoAddress) {
         // No jump, 22 lines in ghidra
         uint sourceAddress = MemoryUtils.ToPhysicalAddress(State.DS, 0);
         uint destinationAddress = MemoryUtils.ToPhysicalAddress(State.ES, 0);
@@ -213,10 +213,10 @@ public class VgaDriverCode : CSharpOverrideHelper {
         return FarRet();
     }
 
-    public Action CopySquareOfPixels_2538_1B8E_26F0E() {
+    public Action CopySquareOfPixels_2538_1B8E_26F0E(int gotoAddress) {
         // No jump, 30 instructions 67 lines in ghidra
         // warning: we dont set registers at the end but no idea if their values are used or not.
-        SetDiFromXYCordsDxBx_2538_C10_25F90();
+        SetDiFromXYCordsDxBx_2538_C10_25F90(0);
         ushort baseOffsetDi = State.DI;
         uint sourceAddress = MemoryUtils.ToPhysicalAddress(State.DS, baseOffsetDi);
         uint destinationAddress = MemoryUtils.ToPhysicalAddress(State.ES, baseOffsetDi);
@@ -233,14 +233,14 @@ public class VgaDriverCode : CSharpOverrideHelper {
         return FarRet();
     }
 
-    public Action VgaFunc20NoOp_2538_13C_254BC() {
+    public Action VgaFunc20NoOp_2538_13C_254BC(int gotoAddress) {
         return FarRet();
     }
 
     /// <summary>
     /// Restores image under mouse cursor. No input apart from globals and no output.
     /// </summary>
-    public Action VgaFunc04RestoreImageUnderMouseCursor_2538_10C_2548C() {
+    public Action VgaFunc04RestoreImageUnderMouseCursor_2538_10C_2548C(int gotoAddress) {
         // 26CC0
         ushort mouseCursorAddressInVram = this.globals.Get2538_018A_Word16_MouseCursorAddressInVram();
         ushort columns = this.globals.Get2538_018C_Word16_ColumnsOfMouseCursorCount();
@@ -255,11 +255,11 @@ public class VgaDriverCode : CSharpOverrideHelper {
         return FarRet();
     }
 
-    public Action RetraceRelatedCalledOnEnterGlobe_2538_253D_278BD() {
+    public Action RetraceRelatedCalledOnEnterGlobe_2538_253D_278BD(int gotoAddress) {
         return NearRet();
     }
 
-    public Action SetBxCxPaletteRelated_2538_A21_25DA1() {
+    public Action SetBxCxPaletteRelated_2538_A21_25DA1(int gotoAddress) {
         // No jump
         State.BX = ((ushort)(State.BX / 3));
         ushort unknownValue = State.CX;
@@ -273,59 +273,7 @@ public class VgaDriverCode : CSharpOverrideHelper {
         return NearRet();
     }
 
-    public Action Unknown_2538_109_25489_notyet() {
-        // 26C08, 80 lines in ghidra
-        return FarRet();
-    }
-
-    public Action Unknown_2538_10F_2548F() {
-        // 262DB, 600 lines in ghidra
-        return FarRet();
-    }
-
-    public Action Unknown_2538_112_25492() {
-        // 267D2, 1200 lines in ghidra
-        return FarRet();
-    }
-
-    public Action Unknown_2538_115_25495() {
-        // 26F75, 88 lines in ghidra
-        return FarRet();
-    }
-
-    public Action Unknown_2538_11B_2549B() {
-        // 26CF9, 70 lines in ghidra, calls unknown_2538_11E_2549E with AX=0
-        return FarRet();
-    }
-
-    public Action Unknown_2538_11E_2549E() {
-        // 26CFB, 70 lines in ghidra
-        return FarRet();
-    }
-
-    public Action Unknown_2538_148_254C8() {
-        // 27087, 117 lines in ghidra
-        return FarRet();
-    }
-
-    public Action Unknown_2538_14B_254CB() {
-        // 54 lines in ghidra, calls out
-        return FarRet();
-    }
-
-    public Action Unknown_2538_169_254E9() {
-        // 26105, 70 lines in ghidra
-        return FarRet();
-    }
-
-    public Action Unknown_2538_1ADC_26E5C() {
-        _logger.Debug("unknown");
-
-        // No jump, 125 lines in ghidra
-        return NearRet();
-    }
-
-    public Action UnknownGlobeInitRelated_2538_1D5A_270DA() {
+    public Action UnknownGlobeInitRelated_2538_1D5A_270DA(int gotoAddress) {
         // no jump
         globals.Set2538_1CA6_Word16_UnknownGlobeRelated(State.DI);
         globals.Set2538_1EA6_Word16_UnknownGlobeRelated(0xFEDD);
@@ -339,7 +287,7 @@ public class VgaDriverCode : CSharpOverrideHelper {
     }
 
     // line number in AX, offset address in 01A3
-    public Action VgaFunc33UpdateVgaOffset01A3FromLineNumberAsAx_2538_163_254E3() {
+    public Action VgaFunc33UpdateVgaOffset01A3FromLineNumberAsAx_2538_163_254E3(int gotoAddress) {
         // 25F86
         ushort lineNumber = State.AX;
         this.globals.Set2538_01A3_Word16_VgaOffset((ushort)(lineNumber * 320));
@@ -347,7 +295,7 @@ public class VgaDriverCode : CSharpOverrideHelper {
         return FarRet();
     }
 
-    public Action WaitForRetrace_2538_9B8_25D38() {
+    public Action WaitForRetrace_2538_9B8_25D38(int gotoAddress) {
         // no jump, 28 lines in ghidra, part of the function is not executed in the logs and DX is always 3DA.
         // Wait for retrace.
         VgaCard vgaCard = Machine.VgaCard;
@@ -357,17 +305,17 @@ public class VgaDriverCode : CSharpOverrideHelper {
         return NearRet();
     }
 
-    public Action WaitForRetraceDuringIntroVideo_2538_261D_2799D() {
+    public Action WaitForRetraceDuringIntroVideo_2538_261D_2799D(int gotoAddress) {
         // Calls 0x2538_2572_278F2 when 01A1 is not 0 which we dont need
         return NearRet();
     }
 
-    public Action WaitForRetraceInTransitions_2538_2572_278F2() {
+    public Action WaitForRetraceInTransitions_2538_2572_278F2(int gotoAddress) {
         // Calls part of 0x2538_253D_278BD which we dont need
         return NearRet();
     }
 
-    private Action SetDiFromXYCordsDxBx_2538_C10_25F90() {
+    private Action SetDiFromXYCordsDxBx_2538_C10_25F90(int gotoAddress) {
         ushort x = State.DX;
         ushort y = State.BX;
         int offset = globals.Get2538_01A3_Word16_VgaOffset();

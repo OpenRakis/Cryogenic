@@ -33,27 +33,27 @@ public class SoundDriverCode : CSharpOverrideHelper {
         DefineFunction(baseSegment2, 0x188, PcSpeakerActivation_482B_188_48438);
     }
 
-    public Action ClearAL_4822_103_48323() {
+    public Action ClearAL_4822_103_48323(int gotoAddress) {
         return SoundUnsupportedFarRet();
     }
 
-    public Action ClearAL_4822_109_48329() {
+    public Action ClearAL_4822_109_48329(int gotoAddress) {
         return SoundUnsupportedFarRet();
     }
 
-    public Action ClearAL_4822_10C_4832C() {
+    public Action ClearAL_4822_10C_4832C(int gotoAddress) {
         return SoundUnsupportedFarRet();
     }
 
-    public Action ClearAL_4822_115_48335() {
+    public Action ClearAL_4822_115_48335(int gotoAddress) {
         return SoundUnsupportedFarRet();
     }
 
-    public Action ClearAL_482B_106_483B6() {
+    public Action ClearAL_482B_106_483B6(int gotoAddress) {
         return SoundUnsupportedFarRet();
     }
 
-    public Action ClearAL_482B_112_483C2() {
+    public Action ClearAL_482B_112_483C2(int gotoAddress) {
         return SoundUnsupportedFarRet();
     }
 
@@ -65,36 +65,36 @@ public class SoundDriverCode : CSharpOverrideHelper {
         return baseSegment2;
     }
 
-    public Action PcSpeakerActivation_4822_188_483A8() {
+    public Action PcSpeakerActivation_4822_188_483A8(int gotoAddress) {
         _logger.Debug("Other PC Speaker activation");
         return this.NearRet();
     }
 
-    public Action PcSpeakerActivation_482B_188_48438() {
+    public Action PcSpeakerActivation_482B_188_48438(int gotoAddress) {
         _logger.Debug("PC Speaker activation");
         return this.NearRet();
     }
 
-    public Action PcSpeakerActivationWithALCleanup_4822_182_483A2() {
-        PcSpeakerActivation_4822_188_483A8();
+    public Action PcSpeakerActivationWithALCleanup_4822_182_483A2(int gotoAddress) {
+        PcSpeakerActivation_4822_188_483A8(0);
         return SoundUnsupportedFarRet();
     }
 
-    public Action PcSpeakerActivationWithALCleanup_482B_182_48432() {
+    public Action PcSpeakerActivationWithALCleanup_482B_182_48432(int gotoAddress) {
         _logger.Debug("PC Speaker activation with AL cleanup");
-        PcSpeakerActivation_482B_188_48438();
+        PcSpeakerActivation_482B_188_48438(0);
         return SoundUnsupportedFarRet();
     }
 
-    public Action PcSpeakerActivationWithBXAndALCleanup_4822_100_48320() {
-        PcSpeakerActivationWithALCleanup_4822_182_483A2();
+    public Action PcSpeakerActivationWithBXAndALCleanup_4822_100_48320(int gotoAddress) {
+        PcSpeakerActivationWithALCleanup_4822_182_483A2(0);
         State.BX = (0);
         return FarRet();
     }
 
-    public Action PcSpeakerActivationWithBXAndALCleanup_482B_100_483B0() {
+    public Action PcSpeakerActivationWithBXAndALCleanup_482B_100_483B0(int gotoAddress) {
         _logger.Debug("PC Speaker activation with BX and AL cleanup");
-        PcSpeakerActivationWithALCleanup_482B_182_48432();
+        PcSpeakerActivationWithALCleanup_482B_182_48432(0);
         State.BX = (0);
         return this.FarRet();
     }

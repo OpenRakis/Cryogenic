@@ -19,7 +19,7 @@ public class TimerCode : CSharpOverrideHelper {
         DefineFunction(segment, 0xE8A8, SetPitTimerToAX_1ED_E8A8_10778);
     }
 
-    public Action SetPitTimerToAX_1ED_E8A8_10778() {
+    public Action SetPitTimerToAX_1ED_E8A8_10778(int gotoAddress) {
         // Seems only called on quit
         ushort valueToSet = State.AX;
         _logger.Debug("Setting timer 0 value to {@ValueToSet}", valueToSet);

@@ -21,20 +21,20 @@ public class DialoguesCode : CSharpOverrideHelper {
         DefineFunction(segment, 0xC85B, InitDialogue_1ED_C85B_E72B);
     }
 
-    public Action IncUnknown47A8_1ED_A1E8_C0B8() {
+    public Action IncUnknown47A8_1ED_A1E8_C0B8(int gotoAddress) {
         // Called in dialogues, sometimes before first text display, sometimes before last text
         globals.Set1138_47A8_Byte8((byte)(globals.Get1138_47A8_Byte8() + 1));
         return NearRet();
     }
 
-    public Action InitDialogue_1ED_C85B_E72B() {
+    public Action InitDialogue_1ED_C85B_E72B(int gotoAddress) {
         ushort value = this.globals.Get1138_CE7A_Word16_VideoPlayRelatedIndex();
         this.globals.Set1138_476E_Word16(value);
         this.globals.Set1138_4772_Word16_TimeBetweenFaceZooms(0x1770);
         return NearRet();
     }
 
-    public Action Unknown_1ED_A8B1_C781() {
+    public Action Unknown_1ED_A8B1_C781(int gotoAddress) {
         // Called when a dialogue text changes (beginning and during dialogue), and when entering an orni
         // Value does not seem to have any effect
         byte value = State.AL;
