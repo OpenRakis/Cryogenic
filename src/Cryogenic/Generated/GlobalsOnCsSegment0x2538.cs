@@ -6,7 +6,7 @@ using Spice86.Emulator.VM;
 
 public class GlobalsOnCsSegment0x2538 : MemoryBasedDataStructureWithBaseAddress {
 
-    public GlobalsOnCsSegment0x2538(Machine machine) : base(machine.Memory, 0x2538 * 0x10) {
+    public GlobalsOnCsSegment0x2538(Machine machine, uint segment) : base(machine.Memory, segment * 0x10) {
     }
 
     // Getters and Setters for address 0x2538:0x18A/0x2550A.

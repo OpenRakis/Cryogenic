@@ -24,7 +24,7 @@ public class VgaDriverCode : CSharpOverrideHelper {
 
     public VgaDriverCode(Dictionary<SegmentedAddress, FunctionInformation> functionInformations, int programStartSegment, Machine machine) : base(functionInformations, "vgaDriver", machine) {
         baseSegment = (ushort)(programStartSegment + 0x234B);
-        globals = new ExtraGlobalsOnCsSegment0x2538(machine);
+        globals = new ExtraGlobalsOnCsSegment0x2538(machine, baseSegment);
         DefineFunction(baseSegment, 0x100, "VgaFunc00SetMode");
         DefineFunction(baseSegment, 0x103, VgaFunc01GetInfoInAxCxBp_2538_103_25483);
         DefineFunction(baseSegment, 0x109, "VgaFunc03DrawMouseCursor");
