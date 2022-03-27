@@ -88,8 +88,8 @@ public class VgaDriverCode : CSharpOverrideHelper {
         }
 
         // point to next block
-        State.SI = ((ushort)(State.SI + 4 * 400));
-        State.DI = ((ushort)(State.DI + 4 * 320));
+        State.SI = (ushort)(State.SI + 4 * 400);
+        State.DI = (ushort)(State.DI + 4 * 320);
         return NearRet();
     }
 
@@ -100,7 +100,7 @@ public class VgaDriverCode : CSharpOverrideHelper {
 
     public Action VgaFunc14CopySquareOfPixelsSiIsSourceSegment_2538_12A_254AA(int gotoAddress) {
         // 26F0C
-        State.DS = (State.SI);
+        State.DS = State.SI;
         return CopySquareOfPixels_2538_1B8E_26F0E(0);
     }
 
@@ -143,7 +143,7 @@ public class VgaDriverCode : CSharpOverrideHelper {
         }
 
         // Needed for next calls
-        State.BP = (xorNoise);
+        State.BP = xorNoise;
         return FarRet();
     }
 
@@ -154,9 +154,9 @@ public class VgaDriverCode : CSharpOverrideHelper {
     public Action VgaFunc01GetInfoInAxCxBp_2538_103_25483(int gotoAddress) {
         // 25D59
         _logger.Debug("getInfoInAxCxBp");
-        State.AX = (MemoryMap.GraphicVideoMemorySegment);
-        State.CX = (IMAGE_UNDER_MOUSE_CURSOR_START);
-        State.BP = (0);
+        State.AX = MemoryMap.GraphicVideoMemorySegment;
+        State.CX = IMAGE_UNDER_MOUSE_CURSOR_START;
+        State.BP = 0;
         return FarRet();
     }
 
@@ -261,15 +261,15 @@ public class VgaDriverCode : CSharpOverrideHelper {
 
     public Action SetBxCxPaletteRelated_2538_A21_25DA1(int gotoAddress) {
         // No jump
-        State.BX = ((ushort)(State.BX / 3));
+        State.BX = (ushort)(State.BX / 3);
         ushort unknownValue = State.CX;
         if (unknownValue < 0x300) {
-            State.CX = ((ushort)(unknownValue / 3));
+            State.CX = (ushort)(unknownValue / 3);
             return NearRet();
         }
 
         // crashes when executed, but never reached...
-        State.CX = (0x100);
+        State.CX = 0x100;
         return NearRet();
     }
 
@@ -281,7 +281,7 @@ public class VgaDriverCode : CSharpOverrideHelper {
         globals.Set2538_1CAE_Word16_UnknownGlobeRelated(0x6360 - 1);
         globals.Set2538_1CB0_Word16_UnknownGlobeRelated(0x6360);
         globals.Set2538_1CB2_Word16_UnknownGlobeRelated(0x6360);
-        State.DS = (State.SS);
+        State.DS = State.SS;
         State.CarryFlag = true;
         return FarRet();
     }
@@ -324,7 +324,7 @@ public class VgaDriverCode : CSharpOverrideHelper {
         }
 
         ushort res = (ushort)(320 * y + x + offset);
-        State.DI = (res);
+        State.DI = res;
         _logger.Debug("setDiFromXYCordsDxBx x:{@X},y:{@Y},offset:{@Offset},res:{@Res}", x, y, offset, res);
         return NearRet();
     }

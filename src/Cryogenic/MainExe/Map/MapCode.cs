@@ -51,7 +51,7 @@ public class MapCode : CSharpOverrideHelper {
         // called when starting to fly the orni, exiting maps and when switching from intro to game
         // at load time
         // See setMapClickHandlerAddressFromAx_1ED_D95E_F82E
-        State.AX = (CLICK_HANDLER_INGAME);
+        State.AX = CLICK_HANDLER_INGAME;
         return SetMapClickHandlerAddressFromAx_1ED_D95E_F82E(0);
     }
 

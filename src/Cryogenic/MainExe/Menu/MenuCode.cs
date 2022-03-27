@@ -62,7 +62,7 @@ public class MenuCode : CSharpOverrideHelper {
         }
 
         ushort value = globals.GetMenuType();
-        State.BP = (value);
+        State.BP = value;
         return NearRet();
     }
 }

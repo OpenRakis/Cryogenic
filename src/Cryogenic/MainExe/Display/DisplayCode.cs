@@ -39,7 +39,7 @@ public class DisplayCode : CSharpOverrideHelper {
     }
 
     public Action ClearCurrentVideoBuffer_1ED_C0AD_DF7D(int gotoAddress) {
-        State.ES = ((byte)globals.Get1138_DBDA_Word16_framebufferActive());
+        State.ES = globals.Get1138_DBDA_Word16_framebufferActive();
         vgaDriver.VgaFunc08FillWithZeroFor64000AtES_2538_118_25498(0);
         return NearRet();
     }
@@ -57,7 +57,7 @@ public class DisplayCode : CSharpOverrideHelper {
         globals.Set1138_1BEA_Word16(0);
 
         // If not done, book videos will show a character on screen instead
-        State.AX = (0);
+        State.AX = 0;
         return NearRet();
     }
 
@@ -65,7 +65,7 @@ public class DisplayCode : CSharpOverrideHelper {
     public Action ClearGlobalVgaOffset_1ED_579_2449(int gotoAddress) {
         _logger.Debug("Clearing VGA offset");
         CheckVtableContainsExpected(SegmentRegisters.DsIndex, 0x3939, vgaDriver.GetBaseSegment(), 0x163);
-        State.AX = (0);
+        State.AX = 0;
         vgaDriver.VgaFunc33UpdateVgaOffset01A3FromLineNumberAsAx_2538_163_254E3(0);
         return NearRet();
     }
@@ -73,8 +73,8 @@ public class DisplayCode : CSharpOverrideHelper {
     public Action GetCharacterCoordsXY_1ED_D05F_EF2F(int gotoAddress) {
         ushort x = globals.Get1138_D82C_Word16_CharacterXCoord();
         ushort y = globals.Get1138_D82E_Word16_CharacterYCoord();
-        State.DX = (x);
-        State.BX = (y);
+        State.DX = x;
+        State.BX = y;
         _logger.Debug("getCharacterCoordsXY x:{@X} y:{@Y}", State.DX, State.BX);
         return NearRet();
     }
@@ -88,15 +88,15 @@ public class DisplayCode : CSharpOverrideHelper {
         ushort ax = Stack.Pop();
         ushort stackPeek = Stack.Peek(0x0C);
         Stack.Poke(0x0C, ax);
-        State.AX = (stackPeek);
+        State.AX = stackPeek;
 
         // Regular pops
-        State.BP = (Stack.Pop());
-        State.DI = (Stack.Pop());
-        State.SI = (Stack.Pop());
-        State.DX = (Stack.Pop());
-        State.CX = (Stack.Pop());
-        State.BX = (Stack.Pop());
+        State.BP = Stack.Pop();
+        State.DI = Stack.Pop();
+        State.SI = Stack.Pop();
+        State.DX = Stack.Pop();
+        State.CX = Stack.Pop();
+        State.BX = Stack.Pop();
         return NearRet();
     }
 
@@ -117,7 +117,7 @@ public class DisplayCode : CSharpOverrideHelper {
         // In the original assembly code, AX seems modified but it's not the case as it's restored to its original value
         // later.
         Stack.Push(stackPeek);
-        State.BP = (stackTop);
+        State.BP = stackTop;
         return NearRet();
     }
 

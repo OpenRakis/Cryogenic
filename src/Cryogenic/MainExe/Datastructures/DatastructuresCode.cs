@@ -39,7 +39,7 @@ public class DatastructuresCode : CSharpOverrideHelper {
         int index = State.AX;
         SegmentedAddress baseAddress = globals.GetPtr1138_DBB0_Dword32_spriteSheetResourcePointer();
         int resOffset = baseAddress.Offset + UInt16[(uint)(baseAddress.ToPhysical() + index * 2)];
-        State.ES = (baseAddress.Segment);
+        State.ES = baseAddress.Segment;
         State.SI = (ushort)resOffset;
         return NearRet();
     }

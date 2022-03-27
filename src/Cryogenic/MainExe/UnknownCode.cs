@@ -88,28 +88,28 @@ public class UnknownCode : CSharpOverrideHelper {
 
     public Action MemCopy8BytesDsSIToDsDi_1ED_5B99_7A69(int gotoAddress) {
         // Called on scene change (example dialogue, room change)
-        State.ES = (State.DS);
+        State.ES = State.DS;
         uint sourceAddress = MemoryUtils.ToPhysicalAddress(State.DS, State.SI);
         uint destinationAddress = MemoryUtils.ToPhysicalAddress(State.ES, State.DI);
 
         // Moves 4 words from source to dest, so 8 bytes
         Memory.MemCopy(sourceAddress, destinationAddress, 8);
-        State.SI = ((ushort)(State.SI + 8));
-        State.DI = ((ushort)(State.DI + 8));
+        State.SI = (ushort)(State.SI + 8);
+        State.DI = (ushort)(State.DI + 8);
         return NearRet();
     }
 
     public Action MemCopy8BytesFrom1470ToD83C_1ED_5BA0_7A70(int gotoAddress) {
         // Called on room change
-        State.SI = (0x1470);
-        State.DI = (0xD83C);
+        State.SI = 0x1470;
+        State.DI = 0xD83C;
         return MemCopy8BytesDsSIToDsDi_1ED_5B99_7A69(0);
     }
 
     public Action MemCopy8Bytes_1ED_5BA8_7A78(int gotoAddress) {
         // Called on dialogue, screen change, intro demo and globe
-        State.SI = (0x1470);
-        State.DI = (0xD834);
+        State.SI = 0x1470;
+        State.DI = 0xD834;
         return MemCopy8BytesDsSIToDsDi_1ED_5B99_7A69(0);
     }
 
@@ -125,7 +125,7 @@ public class UnknownCode : CSharpOverrideHelper {
         }
 
         _logger.Debug("2943={@Value},res={@Res}", value, res);
-        State.CarryFlag = (res);
+        State.CarryFlag = res;
         if (res) {
             throw FailAsUntested($"isUnknownDBC80x100And2943BitmaskNonZero was called with a true result. value: {value}");
         }
@@ -134,7 +134,7 @@ public class UnknownCode : CSharpOverrideHelper {
     }
 
     public Action IsUnknownDC2BZero_1ED_ABCC_CA9C(int gotoAddress) {
-        State.ZeroFlag = (globals.Get1138_DC2B_Byte8() == 0);
+        State.ZeroFlag = globals.Get1138_DC2B_Byte8() == 0;
         return NearRet();
     }
 
@@ -165,8 +165,8 @@ public class UnknownCode : CSharpOverrideHelper {
     public Action ShlDXAndCXByAX_1ED_DB44_FA14(int gotoAddress) {
         // Called before setting mouse parameters
         ushort shiftCount = State.AX;
-        State.CX = ((ushort)(State.CX << shiftCount));
-        State.DX = ((ushort)(State.DX << shiftCount));
+        State.CX = (ushort)(State.CX << shiftCount);
+        State.DX = (ushort)(State.DX << shiftCount);
         return NearRet();
     }
 
@@ -184,7 +184,7 @@ public class UnknownCode : CSharpOverrideHelper {
         Memory.MemCopy(sourceAddress + 4, destinationAddress + 6, 4);
 
         // 10 bytes copied in total
-        State.DI = ((ushort)(State.DI + 10));
+        State.DI = (ushort)(State.DI + 10);
         return NearRet();
     }
 
