@@ -44,7 +44,7 @@ public class DialoguesCode : CSharpOverrideHelper {
             value += 0x7;
         }
 
-        State.AL = (value);
+        State.AL = value;
         return NearRet();
     }
 }
