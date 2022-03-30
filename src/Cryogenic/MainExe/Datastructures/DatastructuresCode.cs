@@ -28,8 +28,7 @@ public class DatastructuresCode : CSharpOverrideHelper {
         int count = UInt16[initialAddress] / 2;
         Uint16Array array = new Uint16Array(Memory, initialAddress, count);
         for (int i = 0; i < array.Length; i++) {
-            var v = array.GetValueAt(i);
-            array.SetValueAt(i, (ushort)(v + increment));
+            array[i] = (ushort)(array[i] + increment);
         }
         return NearRet();
     }

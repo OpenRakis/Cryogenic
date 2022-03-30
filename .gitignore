@@ -355,3 +355,6 @@ MigrationBackup/
 
 #Intellij
 *.iml
+
+#GDB
+.gitignore
