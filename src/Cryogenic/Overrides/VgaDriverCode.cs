@@ -1,64 +1,54 @@
-namespace Cryogenic.Vgadriver;
+namespace Cryogenic.Overrides;
 
-using Cryogenic.Globals;
-
-using Serilog;
 
 using Spice86.Emulator.Devices.Video;
 using Spice86.Emulator.Errors;
-using Spice86.Emulator.Function;
 using Spice86.Emulator.Memory;
 using Spice86.Emulator.ReverseEngineer;
-using Spice86.Emulator.VM;
 using Spice86.Utils;
 
 using System;
 using System.Collections.Generic;
 
 // Method names contain _ to separate addresses.
-public class VgaDriverCode : CSharpOverrideHelper {
+public partial class Overrides : CSharpOverrideHelper {
     private const ushort IMAGE_UNDER_MOUSE_CURSOR_START = 0xFA00;
-    private static readonly ILogger _logger = Log.Logger.ForContext<VgaDriverCode>();
-    private ushort baseSegment;
-    private ExtraGlobalsOnCsSegment0x2538 globals;
-
-    public VgaDriverCode(Dictionary<SegmentedAddress, FunctionInformation> functionInformations, int programStartSegment, Machine machine) : base(functionInformations, "vgaDriver", machine) {
-        baseSegment = (ushort)(programStartSegment + 0x234B);
-        globals = new ExtraGlobalsOnCsSegment0x2538(machine, baseSegment);
-        DefineFunction(baseSegment, 0x100, "VgaFunc00SetMode");
-        DefineFunction(baseSegment, 0x103, VgaFunc01GetInfoInAxCxBp_2538_103_25483);
-        DefineFunction(baseSegment, 0x109, "VgaFunc03DrawMouseCursor");
-        DefineFunction(baseSegment, 0x10C, VgaFunc04RestoreImageUnderMouseCursor_2538_10C_2548C);
-        DefineFunction(baseSegment, 0x10F, "VgaFunc05Blit");
-        DefineFunction(baseSegment, 0x118, VgaFunc08FillWithZeroFor64000AtES_2538_118_25498);
-        DefineFunction(baseSegment, 0x121, VgaFunc11MemcpyDSToESFor64000_2538_121_254A1);
-        DefineFunction(baseSegment, 0x124, "VgaFunc12CopyRectangle");
-        DefineFunction(baseSegment, 0x12A, VgaFunc14CopySquareOfPixelsSiIsSourceSegment_2538_12A_254AA);
-        DefineFunction(baseSegment, 0x12D, VgaFunc15MemcpyDSToESFor64000_2538_12D_254AD);
-        DefineFunction(baseSegment, 0x130, VgaFunc16CopySquareOfPixels_2538_130_254B0);
-        DefineFunction(baseSegment, 0x133, "VgaFunc17CopyframebufferExplodeAndCenter");
-        DefineFunction(baseSegment, 0x13C, VgaFunc20NoOp_2538_13C_254BC);
-        DefineFunction(baseSegment, 0x13F, "VgaFunc21SetPixel");
-        DefineFunction(baseSegment, 0x163, VgaFunc33UpdateVgaOffset01A3FromLineNumberAsAx_2538_163_254E3);
-        DefineFunction(baseSegment, 0x16C, VgaFunc36GenerateTextureOutBP_2538_16C_254EC);
-        DefineFunction(baseSegment, 0x17B, "VgaFunc41CopyPalette2toPalette1");
-        DefineFunction(baseSegment, 0x9B8, WaitForRetrace_2538_9B8_25D38);
-        DefineFunction(baseSegment, 0xA21, SetBxCxPaletteRelated_2538_A21_25DA1);
-        DefineFunction(baseSegment, 0xA58, CopyCsRamB5FToB2F_2538_A58_25DD8);
-        DefineFunction(baseSegment, 0xB68, LoadPaletteInVgaDac_2538_B68_25EE8);
-        DefineFunction(baseSegment, 0xC10, SetDiFromXYCordsDxBx_2538_C10_25F90);
-        DefineFunction(baseSegment, 0x1B7C, MemcpyDSToESFor64000_2538_1B7C_26EFC);
-        DefineFunction(baseSegment, 0x1B8E, CopySquareOfPixels_2538_1B8E_26F0E);
+    
+    public void DefineVgaDriverCodeOverrides() {
+        DefineFunction(cs2, 0x100, "VgaFunc00SetMode");
+        DefineFunction(cs2, 0x103, VgaFunc01GetInfoInAxCxBp_2538_103_25483);
+        DefineFunction(cs2, 0x109, "VgaFunc03DrawMouseCursor");
+        DefineFunction(cs2, 0x10C, VgaFunc04RestoreImageUnderMouseCursor_2538_10C_2548C);
+        DefineFunction(cs2, 0x10F, "VgaFunc05Blit");
+        DefineFunction(cs2, 0x118, VgaFunc08FillWithZeroFor64000AtES_2538_118_25498);
+        DefineFunction(cs2, 0x121, VgaFunc11MemcpyDSToESFor64000_2538_121_254A1);
+        DefineFunction(cs2, 0x124, "VgaFunc12CopyRectangle");
+        DefineFunction(cs2, 0x12A, VgaFunc14CopySquareOfPixelsSiIsSourceSegment_2538_12A_254AA);
+        DefineFunction(cs2, 0x12D, VgaFunc15MemcpyDSToESFor64000_2538_12D_254AD);
+        DefineFunction(cs2, 0x130, VgaFunc16CopySquareOfPixels_2538_130_254B0);
+        DefineFunction(cs2, 0x133, "VgaFunc17CopyframebufferExplodeAndCenter");
+        DefineFunction(cs2, 0x13C, VgaFunc20NoOp_2538_13C_254BC);
+        DefineFunction(cs2, 0x13F, "VgaFunc21SetPixel");
+        DefineFunction(cs2, 0x163, VgaFunc33UpdateVgaOffset01A3FromLineNumberAsAx_2538_163_254E3);
+        DefineFunction(cs2, 0x16C, VgaFunc36GenerateTextureOutBP_2538_16C_254EC);
+        DefineFunction(cs2, 0x17B, "VgaFunc41CopyPalette2toPalette1");
+        DefineFunction(cs2, 0x9B8, WaitForRetrace_2538_9B8_25D38);
+        DefineFunction(cs2, 0xA21, SetBxCxPaletteRelated_2538_A21_25DA1);
+        DefineFunction(cs2, 0xA58, CopyCsRamB5FToB2F_2538_A58_25DD8);
+        DefineFunction(cs2, 0xB68, LoadPaletteInVgaDac_2538_B68_25EE8);
+        DefineFunction(cs2, 0xC10, SetDiFromXYCordsDxBx_2538_C10_25F90);
+        DefineFunction(cs2, 0x1B7C, MemcpyDSToESFor64000_2538_1B7C_26EFC);
+        DefineFunction(cs2, 0x1B8E, CopySquareOfPixels_2538_1B8E_26F0E);
 
         // called in globe, without it globe rotation works but stutters when clicking
-        DefineFunction(baseSegment, 0x1D07, "UnknownGlobeRelated");
-        DefineFunction(baseSegment, 0x1D5A, UnknownGlobeInitRelated_2538_1D5A_270DA);
-        DefineFunction(baseSegment, 0x2025, "UnknownMapRelated");
-        DefineFunction(baseSegment, 0x2343, CopyMapBlock_2538_2343_276C3);
-        DefineFunction(baseSegment, 0x253D, RetraceRelatedCalledOnEnterGlobe_2538_253D_278BD);
-        DefineFunction(baseSegment, 0x2572, WaitForRetraceInTransitions_2538_2572_278F2);
-        DefineFunction(baseSegment, 0x261D, WaitForRetraceDuringIntroVideo_2538_261D_2799D);
-        DefineFunction(baseSegment, 0x32C1, "GenerateMenuTransitionFrame");
+        DefineFunction(cs2, 0x1D07, "UnknownGlobeRelated");
+        DefineFunction(cs2, 0x1D5A, UnknownGlobeInitRelated_2538_1D5A_270DA);
+        DefineFunction(cs2, 0x2025, "UnknownMapRelated");
+        DefineFunction(cs2, 0x2343, CopyMapBlock_2538_2343_276C3);
+        DefineFunction(cs2, 0x253D, RetraceRelatedCalledOnEnterGlobe_2538_253D_278BD);
+        DefineFunction(cs2, 0x2572, WaitForRetraceInTransitions_2538_2572_278F2);
+        DefineFunction(cs2, 0x261D, WaitForRetraceDuringIntroVideo_2538_261D_2799D);
+        DefineFunction(cs2, 0x32C1, "GenerateMenuTransitionFrame");
     }
 
     public Action CopyCsRamB5FToB2F_2538_A58_25DD8(int gotoAddress) {
@@ -148,7 +138,7 @@ public class VgaDriverCode : CSharpOverrideHelper {
     }
 
     public ushort GetBaseSegment() {
-        return baseSegment;
+        return cs2;
     }
 
     public Action VgaFunc01GetInfoInAxCxBp_2538_103_25483(int gotoAddress) {
@@ -167,7 +157,7 @@ public class VgaDriverCode : CSharpOverrideHelper {
             uint baseAddress = MemoryUtils.ToPhysicalAddress(State.ES, State.DX);
             byte writeIndex = State.BL;
             ushort numberOfColors = State.CX;
-            byte loadMode = globals.Get2538_01BD_Byte8_PaletteLoadMode();
+            byte loadMode = globalsOnCsSegment0X2538.Get2538_01BD_Byte8_PaletteLoadMode();
             _logger.Debug("loadPaletteInVgaDac, baseAddress:{@BaseAddress}, writeIndex:{@Writeindex}, loadMode:{@LoadMode}, numberOfColors:{@NumberOfColors}", baseAddress, writeIndex, loadMode, numberOfColors);
             vgaCard.SetVgaWriteIndex(writeIndex);
             if (loadMode == 0) {
@@ -242,9 +232,9 @@ public class VgaDriverCode : CSharpOverrideHelper {
     /// </summary>
     public Action VgaFunc04RestoreImageUnderMouseCursor_2538_10C_2548C(int gotoAddress) {
         // 26CC0
-        ushort mouseCursorAddressInVram = this.globals.Get2538_018A_Word16_MouseCursorAddressInVram();
-        ushort columns = this.globals.Get2538_018C_Word16_ColumnsOfMouseCursorCount();
-        ushort lines = this.globals.Get2538_018E_Word16_LinesOfMouseCursorCount();
+        ushort mouseCursorAddressInVram = this.globalsOnCsSegment0X2538.Get2538_018A_Word16_MouseCursorAddressInVram();
+        ushort columns = this.globalsOnCsSegment0X2538.Get2538_018C_Word16_ColumnsOfMouseCursorCount();
+        ushort lines = this.globalsOnCsSegment0X2538.Get2538_018E_Word16_LinesOfMouseCursorCount();
         _logger.Debug("restoreImageUnderMouseCursor mouseCursorAddressInVram:{@MouseCursorAddressInVram},columns:{@Columns},lines:{@Lines}", mouseCursorAddressInVram, columns, lines);
         uint sourceAddress = MemoryUtils.ToPhysicalAddress(MemoryMap.GraphicVideoMemorySegment, IMAGE_UNDER_MOUSE_CURSOR_START);
         uint destinationAddress = MemoryUtils.ToPhysicalAddress(MemoryMap.GraphicVideoMemorySegment, mouseCursorAddressInVram);
@@ -275,12 +265,12 @@ public class VgaDriverCode : CSharpOverrideHelper {
 
     public Action UnknownGlobeInitRelated_2538_1D5A_270DA(int gotoAddress) {
         // no jump
-        globals.Set2538_1CA6_Word16_UnknownGlobeRelated(State.DI);
-        globals.Set2538_1EA6_Word16_UnknownGlobeRelated(0xFEDD);
-        globals.Set2538_1F29_Word16_UnknownGlobeRelated(0xFE5A);
-        globals.Set2538_1CAE_Word16_UnknownGlobeRelated(0x6360 - 1);
-        globals.Set2538_1CB0_Word16_UnknownGlobeRelated(0x6360);
-        globals.Set2538_1CB2_Word16_UnknownGlobeRelated(0x6360);
+        globalsOnCsSegment0X2538.Set2538_1CA6_Word16_UnknownGlobeRelated(State.DI);
+        globalsOnCsSegment0X2538.Set2538_1EA6_Word16_UnknownGlobeRelated(0xFEDD);
+        globalsOnCsSegment0X2538.Set2538_1F29_Word16_UnknownGlobeRelated(0xFE5A);
+        globalsOnCsSegment0X2538.Set2538_1CAE_Word16_UnknownGlobeRelated(0x6360 - 1);
+        globalsOnCsSegment0X2538.Set2538_1CB0_Word16_UnknownGlobeRelated(0x6360);
+        globalsOnCsSegment0X2538.Set2538_1CB2_Word16_UnknownGlobeRelated(0x6360);
         State.DS = State.SS;
         State.CarryFlag = true;
         return FarRet();
@@ -290,8 +280,8 @@ public class VgaDriverCode : CSharpOverrideHelper {
     public Action VgaFunc33UpdateVgaOffset01A3FromLineNumberAsAx_2538_163_254E3(int gotoAddress) {
         // 25F86
         ushort lineNumber = State.AX;
-        this.globals.Set2538_01A3_Word16_VgaOffset((ushort)(lineNumber * 320));
-        _logger.Debug("updateVgaOffset01A3FromLineNumberAsAx lineNumber:{@LineNumber},vgaOffset01A3:{@VgaOffset01A3}", lineNumber, globals.Get2538_01A3_Word16_VgaOffset());
+        this.globalsOnCsSegment0X2538.Set2538_01A3_Word16_VgaOffset((ushort)(lineNumber * 320));
+        _logger.Debug("updateVgaOffset01A3FromLineNumberAsAx lineNumber:{@LineNumber},vgaOffset01A3:{@VgaOffset01A3}", lineNumber, globalsOnCsSegment0X2538.Get2538_01A3_Word16_VgaOffset());
         return FarRet();
     }
 
@@ -318,7 +308,7 @@ public class VgaDriverCode : CSharpOverrideHelper {
     private Action SetDiFromXYCordsDxBx_2538_C10_25F90(int gotoAddress) {
         ushort x = State.DX;
         ushort y = State.BX;
-        int offset = globals.Get2538_01A3_Word16_VgaOffset();
+        int offset = globalsOnCsSegment0X2538.Get2538_01A3_Word16_VgaOffset();
         if (y >= 200) {
             y = 199;
         }

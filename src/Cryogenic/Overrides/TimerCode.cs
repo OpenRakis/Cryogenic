@@ -1,22 +1,14 @@
-namespace Cryogenic.Mainexe.Timer;
-
-using Serilog;
+namespace Cryogenic.Overrides;
 
 using Spice86.Emulator.Devices.Timer;
-using Spice86.Emulator.Function;
-using Spice86.Emulator.Memory;
 using Spice86.Emulator.ReverseEngineer;
-using Spice86.Emulator.VM;
 
 using System;
-using System.Collections.Generic;
 
 // Method names contain _ to separate addresses.
-public class TimerCode : CSharpOverrideHelper {
-    private static readonly ILogger _logger = Log.Logger.ForContext<TimerCode>();
-
-    public TimerCode(Dictionary<SegmentedAddress, FunctionInformation> functionInformations, ushort segment, Machine machine) : base(functionInformations, "timer", machine) {
-        DefineFunction(segment, 0xE8A8, SetPitTimerToAX_1ED_E8A8_10778);
+public partial class Overrides : CSharpOverrideHelper {
+    public void DefineTimerCodeOverrides() {
+        DefineFunction(cs1, 0xE8A8, SetPitTimerToAX_1ED_E8A8_10778);
     }
 
     public Action SetPitTimerToAX_1ED_E8A8_10778(int gotoAddress) {

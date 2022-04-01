@@ -1,4 +1,4 @@
-namespace Cryogenic.Mainexe.Video;
+namespace Cryogenic.Overrides;
 
 using Cryogenic.Globals;
 
@@ -13,19 +13,15 @@ using System;
 using System.Collections.Generic;
 
 // Method names contain _ to separate addresses.
-public class VideoCode : CSharpOverrideHelper {
-    private static readonly ILogger _logger = Log.Logger.ForContext<VideoCode>();
-    private ExtraGlobalsOnDs globals;
-
-    public VideoCode(Dictionary<SegmentedAddress, FunctionInformation> functionInformations, ushort segment, Machine machine) : base(functionInformations, "video", machine) {
-        this.globals = new ExtraGlobalsOnDs(machine);
-        DefineFunction(segment, 0xC921, GetHnmResourceFlagNamePtrByIndexAXToBx_1ED_C921_E7F1);
-        DefineFunction(segment, 0xCA59, VideoPlayRelated_1ED_CA59_E929);
-        DefineFunction(segment, 0xCC85, CheckIfHnmComplete_1ED_CC85_EB55);
+public partial class Overrides : CSharpOverrideHelper {
+    public void DefineVideoCodeOverrides() {
+        DefineFunction(cs1, 0xC921, GetHnmResourceFlagNamePtrByIndexAXToBx_1ED_C921_E7F1);
+        DefineFunction(cs1, 0xCA59, VideoPlayRelated_1ED_CA59_E929);
+        DefineFunction(cs1, 0xCC85, CheckIfHnmComplete_1ED_CC85_EB55);
     }
 
     public Action CheckIfHnmComplete_1ED_CC85_EB55(int gotoAddress) {
-        int value = globals.Get1138_DBE7_Byte8_hnmFinishedFlag();
+        int value = globalsOnDs.Get1138_DBE7_Byte8_hnmFinishedFlag();
         _logger.Debug("DBE7={@DBE7}", value);
         State.ZeroFlag = value is 0 or 1;
         return NearRet();
@@ -45,8 +41,8 @@ public class VideoCode : CSharpOverrideHelper {
 
     public Action VideoPlayRelated_1ED_CA59_E929(int gotoAddress) {
         // seems to have no impact what so ever is done here. Only executed during videos
-        ushort value = globals.Get1138_CE7A_Word16_VideoPlayRelatedIndex();
-        globals.Set1138_DC22_Word16_VideoPlayRelatedIndex(value);
+        ushort value = globalsOnDs.Get1138_CE7A_Word16_VideoPlayRelatedIndex();
+        globalsOnDs.Set1138_DC22_Word16_VideoPlayRelatedIndex(value);
         _logger.Debug("videoPlayRelated value:{@Value}", value);
         return NearRet();
     }

@@ -357,4 +357,4 @@ MigrationBackup/
 *.iml
 
 #GDB
-.gitignore
+.gdb_history

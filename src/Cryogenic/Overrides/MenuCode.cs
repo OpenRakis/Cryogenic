@@ -1,19 +1,11 @@
-namespace Cryogenic.Mainexe.Menu;
+namespace Cryogenic.Overrides;
 
-using Cryogenic.Globals;
-
-using Serilog;
-
-using Spice86.Emulator.Function;
-using Spice86.Emulator.Memory;
 using Spice86.Emulator.ReverseEngineer;
-using Spice86.Emulator.VM;
 
 using System;
-using System.Collections.Generic;
 
 // Method names contain _ to separate addresses.
-public class MenuCode : CSharpOverrideHelper {
+public partial class Overrides : CSharpOverrideHelper {
     public static readonly int MENU_TYPE_BOOK = 0x2032;
     public static readonly int MENU_TYPE_CHANGE_TROOP_OCCUPATION = 0x216E;
     public static readonly int MENU_TYPE_DIALOGUE = 0x1F7E;
@@ -33,23 +25,19 @@ public class MenuCode : CSharpOverrideHelper {
     // values I could find for MenuGlobalsOnDs.getMenuType, not sure they are not an address to something else.
     public static readonly int MENU_TYPE_WALK_AROUND = 0x1F0E;
 
-    private static readonly ILogger _logger = Log.Logger.ForContext<MenuCode>();
-    private ExtraGlobalsOnDs globals;
-
-    public MenuCode(Dictionary<SegmentedAddress, FunctionInformation> functionInformations, ushort segment, Machine machine) : base(functionInformations, "mainCode", machine) {
-        globals = new ExtraGlobalsOnDs(machine);
-        DefineFunction(segment, 0xD316, MenuAnimationRelated_1ED_D316_F1E6);
-        DefineFunction(segment, 0xD41B, SetBpToCurrentMenuTypeForScreenAction_1ED_D41B_F2EB);
+    public void DefineMenuCodeOverrides() {
+        DefineFunction(cs1, 0xD316, MenuAnimationRelated_1ED_D316_F1E6);
+        DefineFunction(cs1, 0xD41B, SetBpToCurrentMenuTypeForScreenAction_1ED_D41B_F2EB);
     }
 
     public Action MenuAnimationRelated_1ED_D316_F1E6(int gotoAddress) {
         // called when a menu has a submenu
-        int isAnimateMenuUneeded = globals.Get1138_35A6_Word16_IsAnimateMenuUnneeded();
-        byte value2 = globals.Get1138_DCE6_Byte8_TransitionBitmask();
+        int isAnimateMenuUneeded = globalsOnDs.Get1138_35A6_Word16_IsAnimateMenuUnneeded();
+        byte value2 = globalsOnDs.Get1138_DCE6_Byte8_TransitionBitmask();
         _logger.Debug("isAnimateMenuUneeded={@IsAnimateMenuUneeded},DCE6={@DCE6}", isAnimateMenuUneeded, value2);
         if (isAnimateMenuUneeded == 0) {
             value2 |= 1;
-            globals.Set1138_DCE6_Byte8_TransitionBitmask(value2);
+            globalsOnDs.Set1138_DCE6_Byte8_TransitionBitmask(value2);
         }
 
         return NearRet();
@@ -58,10 +46,11 @@ public class MenuCode : CSharpOverrideHelper {
     public Action SetBpToCurrentMenuTypeForScreenAction_1ED_D41B_F2EB(int gotoAddress) {
         // If BP does not point to a correct menu type, menu is still OK but no action is clickable on the screen
         if (State.SS != State.DS) {
-            throw FailAsUntested("Was implemented considering base address is DS since I couldnt see a case where DS!=SS for this method, but you found one :)");
+            throw FailAsUntested(
+                "Was implemented considering base address is DS since I couldnt see a case where DS!=SS for this method, but you found one :)");
         }
 
-        ushort value = globals.GetMenuType();
+        ushort value = globalsOnDs.GetMenuType();
         State.BP = value;
         return NearRet();
     }
