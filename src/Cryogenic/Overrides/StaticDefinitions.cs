@@ -10,6 +10,7 @@ using System.Collections.Generic;
 public partial class Overrides : CSharpOverrideHelper {
 
     public void DefineStaticDefinitionsFunctions() {
+        DefineFunction(cs1, 0x3A, "exit");
         DefineFunction(cs1, 0xB0, "initialize_2_ida");
         DefineFunction(cs1, 0xD1, "intialize_resources_ida");
         DefineFunction(cs1, 0x0169, "map2_resource_func_ida");

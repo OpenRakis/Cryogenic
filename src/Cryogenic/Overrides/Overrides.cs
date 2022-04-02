@@ -56,5 +56,7 @@ public partial class Overrides {
             DetectCodeRewrites();
             return NearJump(0xd);
         });
+        // Generated code, crashes for various reasons
+        //DefineGeneratedCodeOverrides();
     }
 }
