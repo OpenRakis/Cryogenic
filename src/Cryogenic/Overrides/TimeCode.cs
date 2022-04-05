@@ -1,16 +1,8 @@
 namespace Cryogenic.Overrides;
 
-using Cryogenic.Globals;
+using Serilog.Events;
 
-using Serilog;
-
-using Spice86.Emulator.Function;
-using Spice86.Emulator.Memory;
 using Spice86.Emulator.ReverseEngineer;
-using Spice86.Emulator.VM;
-
-using System;
-using System.Collections.Generic;
 
 // Method names contain _ to separate addresses.
 public partial class Overrides : CSharpOverrideHelper {
@@ -37,7 +29,7 @@ public partial class Overrides : CSharpOverrideHelper {
 
     public Action SetHourOfTheDayToAX_1ED_1AE0_39B0(int gotoAddress) {
         State.AX = GetHourOfTheDay();
-        if (_logger.IsEnabled(Serilog.Events.LogEventLevel.Debug)) {
+        if (_logger.IsEnabled(LogEventLevel.Debug)) {
             _logger.Debug("setHourOfTheDayToAX:gameTime:{@GameTime}, gameHour:{@GameHour}", globalsOnDs.Get1138_0002_Word16_GameElapsedTime(), State.AX);
         }
 
