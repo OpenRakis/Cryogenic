@@ -4,6 +4,7 @@ using Spice86.Emulator.Function;
 using Spice86.Emulator.Memory;
 using Spice86.Emulator.ReverseEngineer;
 using Spice86.Emulator.VM;
+using Spice86.Utils;
 
 using System;
 using System.Collections.Generic;
@@ -14,18 +15,18 @@ public partial class Overrides : CSharpOverrideHelper {
   private ushort cs3; // 0x5635
   private ushort cs4; // 0x563E
   
-*/
-  /* Commented out as will likely want to use our own constructor to call your non generated overrides
-  public GeneratedCode(Dictionary<SegmentedAddress, FunctionInformation> functionInformations, ushort entrySegment, Machine machine) : base(functionInformations, "generatedCode", machine) {
+  public Overrides(Dictionary<SegmentedAddress, FunctionInformation> functionInformations, Machine machine, ushort entrySegment = 0x1000) : base(functionInformations, machine) {
+    // Observed cs1 address at generation time is 0x1000. Do not set entrySegment to something else if the program is not relocatable.
     this.cs1 = (ushort)(entrySegment + 0x0);
     this.cs2 = (ushort)(entrySegment + 0x234B);
     this.cs3 = (ushort)(entrySegment + 0x4635);
     this.cs4 = (ushort)(entrySegment + 0x463E);
     
-    DefineGeneratedCodeOverrides(functionInformations);
+    DefineGeneratedCodeOverrides();
     DetectCodeRewrites();
-  }*/
+  }
   
+  */
   public void DefineGeneratedCodeOverrides() {
     // 0x1000
     DefineFunction(cs1, 0x0, entry_1000_0000_10000, false);
@@ -1464,6 +1465,7 @@ public partial class Overrides : CSharpOverrideHelper {
     DefineFunction(cs4, 0x422, unknown_563E_0422_56802, false);
     DefineFunction(cs4, 0x428, unknown_563E_0428_56808, false);
     DefineFunction(cs4, 0x432, unknown_563E_0432_56812, false);
+    DefineFunction(cs4, 0x43E, not_observed_563E_043E_05681E, false);
     DefineFunction(cs4, 0x450, not_observed_563E_0450_056830, false);
     DefineFunction(cs4, 0x453, unknown_563E_0453_56833, false);
     DefineFunction(cs4, 0x45D, unknown_563E_045D_5683D, false);
@@ -1477,7 +1479,9 @@ public partial class Overrides : CSharpOverrideHelper {
     DefineFunction(cs4, 0x5A6, unknown_563E_05A6_56986, false);
     DefineFunction(cs4, 0x5BF, unknown_563E_05BF_5699F, false);
     DefineFunction(cs4, 0x5C4, not_observed_563E_05C4_0569A4, false);
+    DefineFunction(cs4, 0x5C8, not_observed_563E_05C8_0569A8, false);
   }
+  
   
   public void DetectCodeRewrites() {
     DefineExecutableArea(0x10000, 0x100A7);
@@ -1700,14 +1704,13 @@ public partial class Overrides : CSharpOverrideHelper {
     DefineExecutableArea(0x5674F, 0x56770);
     DefineExecutableArea(0x56792, 0x567A5);
     DefineExecutableArea(0x567A7, 0x567CA);
-    DefineExecutableArea(0x567FC, 0x5681D);
-    DefineExecutableArea(0x56830, 0x56855);
+    DefineExecutableArea(0x567FC, 0x56855);
     DefineExecutableArea(0x5687B, 0x5689D);
     DefineExecutableArea(0x568AF, 0x568D8);
     DefineExecutableArea(0x568DB, 0x568FC);
     DefineExecutableArea(0x5690F, 0x56931);
     DefineExecutableArea(0x56944, 0x56965);
-    DefineExecutableArea(0x56986, 0x569A7);
+    DefineExecutableArea(0x56986, 0x569BA);
   }
   
   
@@ -1792,7 +1795,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_004E = (uint)(UInt16[DS, 0x3977] * 0x10 + UInt16[DS, 0x3975] - cs1 * 0x10);
     switch(targetAddress_1000_004E) {
       case 0x464E6 : FarCall(cs1, 0x52, ClearAL_563E_0106_564E6); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_004E);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_004E));
         break;
     }
     // CALLF [0x398d] (1000_0052 / 0x10052)
@@ -1800,7 +1803,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_0052 = (uint)(UInt16[DS, 0x398F] * 0x10 + UInt16[DS, 0x398D] - cs1 * 0x10);
     switch(targetAddress_1000_0052) {
       case 0x46453 : FarCall(cs1, 0x56, ClearAL_5635_0103_56453); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_0052);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_0052));
         break;
     }
     label_1000_0056_10056:
@@ -1820,7 +1823,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_0063_10063:
     // LODSB SI (1000_0063 / 0x10063)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // OR AL,AL (1000_0064 / 0x10064)
     // AL |= AL;
     AL = Alu.Or8(AL, AL);
@@ -1902,12 +1905,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(ConvertIndexTableToPointerTable_1000_0098_10098, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action ConvertIndexTableToPointerTable_1000_0098_10098(int loadOffset) {
@@ -1932,7 +1929,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AX = Alu.Add16(AX, BX);
     // STOSW ES:DI (1000_00A4 / 0x100A4)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // LOOP 0x1000:009f (1000_00A5 / 0x100A5)
     if(--CX != 0) {
       goto label_1000_009F_1009F;
@@ -1949,40 +1946,28 @@ public partial class Overrides : CSharpOverrideHelper {
     
     label_1000_00B0_100B0:
     // CALL 0x1000:00d1 (1000_00B0 / 0x100B0)
-    // Instruction bytes at index 0, 1, 2 modified by those instruction(s): 1000_B4A6_1B4A6
     NearCall(cs1, 0xB3, intialize_resources_ida_1000_00D1_100D1);
     // CALL 0x1000:0169 (1000_00B3 / 0x100B3)
-    // Instruction bytes at index 0, 1, 2 modified by those instruction(s): 1000_B4A6_1B4A6
     NearCall(cs1, 0xB6, map2_resource_func_ida_1000_0169_10169);
     // CALL 0x1000:da53 (1000_00B6 / 0x100B6)
-    // Instruction bytes at index 0, 1, 2 modified by those instruction(s): 1000_B4A6_1B4A6
     NearCall(cs1, 0xB9, VgaInitRelated_1000_DA53_1DA53);
     // CALL 0x1000:b17a (1000_00B9 / 0x100B9)
-    // Instruction bytes at index 0, 1, 2 modified by those instruction(s): 1000_B4A6_1B4A6
     NearCall(cs1, 0xBC, unknown_1000_B17A_1B17A);
     // CALL 0x1000:b17a (1000_00BC / 0x100BC)
-    // Instruction bytes at index 0, 1, 2 modified by those instruction(s): 1000_B4A6_1B4A6
     NearCall(cs1, 0xBF, unknown_1000_B17A_1B17A);
     // XOR AX,AX (1000_00BF / 0x100BF)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_B4A6_1B4A6
     AX = 0;
     // MOV ES,AX (1000_00C1 / 0x100C1)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_B4A6_1B4A6
     ES = AX;
     // MOV AX,ES:[0x46c] (1000_00C3 / 0x100C3)
-    // Instruction bytes at index 0, 1, 2, 3 modified by those instruction(s): 1000_B4A6_1B4A6
     AX = UInt16[ES, 0x46C];
     // MOV [0xd824],AX (1000_00C7 / 0x100C7)
-    // Instruction bytes at index 0, 1, 2 modified by those instruction(s): 1000_B4A6_1B4A6
     UInt16[DS, 0xD824] = AX;
     // MOV [0xd826],AX (1000_00CA / 0x100CA)
-    // Instruction bytes at index 0, 1, 2 modified by those instruction(s): 1000_B4A6_1B4A6
     UInt16[DS, 0xD826] = AX;
     // MOV [0xd828],AX (1000_00CD / 0x100CD)
-    // Instruction bytes at index 0, 1, 2 modified by those instruction(s): 1000_B4A6_1B4A6
     UInt16[DS, 0xD828] = AX;
     // RET  (1000_00D0 / 0x100D0)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_B4A6_1B4A6
     return NearRet();
   }
   
@@ -1994,162 +1979,115 @@ public partial class Overrides : CSharpOverrideHelper {
     
     label_1000_00D1_100D1:
     // PUSH DS (1000_00D1 / 0x100D1)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_B4A6_1B4A6
     Stack.Push(DS);
     // POP ES (1000_00D2 / 0x100D2)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_B4A6_1B4A6
     ES = Stack.Pop();
     // MOV DI,0x4948 (1000_00D3 / 0x100D3)
-    // Instruction bytes at index 0, 1, 2 modified by those instruction(s): 1000_B4A6_1B4A6
     DI = 0x4948;
     // MOV SI,0xba (1000_00D6 / 0x100D6)
-    // Instruction bytes at index 0, 1, 2 modified by those instruction(s): 1000_B4A6_1B4A6
     SI = 0xBA;
     // CALL 0x1000:f0b9 (1000_00D9 / 0x100D9)
-    // Instruction bytes at index 0, 1, 2 modified by those instruction(s): 1000_B4A6_1B4A6
     NearCall(cs1, 0xDC, open_resource_by_index_si_ida_1000_F0B9_1F0B9);
     // MOV CX,0x18c (1000_00DC / 0x100DC)
-    // Instruction bytes at index 0, 1, 2 modified by those instruction(s): 1000_B4A6_1B4A6
     CX = 0x18C;
     // MOV SI,DI (1000_00DF / 0x100DF)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_B4A6_1B4A6
     SI = DI;
     label_1000_00E1_100E1:
     // LODSW SI (1000_00E1 / 0x100E1)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_B4A6_1B4A6
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // XCHG AL,AH (1000_00E2 / 0x100E2)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_B4A6_1B4A6
     byte tmp_1000_00E2 = AL;
     AL = AH;
     AH = tmp_1000_00E2;
     // STOSW ES:DI (1000_00E4 / 0x100E4)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_B4A6_1B4A6
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // LOOP 0x1000:00e1 (1000_00E5 / 0x100E5)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_B4A6_1B4A6
     if(--CX != 0) {
       goto label_1000_00E1_100E1;
     }
     // MOV DI,0x4880 (1000_00E7 / 0x100E7)
-    // Instruction bytes at index 0, 1, 2 modified by those instruction(s): 1000_B4A6_1B4A6
     DI = 0x4880;
     // MOV CX,0x63 (1000_00EA / 0x100EA)
-    // Instruction bytes at index 0, 1, 2 modified by those instruction(s): 1000_B4A6_1B4A6
     CX = 0x63;
     // MOV SI,0x494a (1000_00ED / 0x100ED)
-    // Instruction bytes at index 0, 1, 2 modified by those instruction(s): 1000_B4A6_1B4A6
     SI = 0x494A;
     label_1000_00F0_100F0:
     // XOR AX,AX (1000_00F0 / 0x100F0)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_B4A6_1B4A6
     AX = 0;
     // MOV DX,0x1 (1000_00F2 / 0x100F2)
-    // Instruction bytes at index 0, 1, 2 modified by those instruction(s): 1000_B4A6_1B4A6
     DX = 0x1;
     // MOV BX,word ptr [SI] (1000_00F5 / 0x100F5)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_B4A6_1B4A6
     BX = UInt16[DS, SI];
     // SHL BX,1 (1000_00F7 / 0x100F7)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_B4A6_1B4A6
     // BX <<= 1;
     BX = Alu.Shl16(BX, 1);
     // DIV BX (1000_00F9 / 0x100F9)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_B4A6_1B4A6
     Cpu.Div16(BX);
     // CMP word ptr [SI],DX (1000_00FB / 0x100FB)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_B4A6_1B4A6
     Alu.Sub16(UInt16[DS, SI], DX);
     // ADC AX,0x0 (1000_00FD / 0x100FD)
-    // Instruction bytes at index 0, 1, 2 modified by those instruction(s): 1000_B4A6_1B4A6
     AX = Alu.Adc16(AX, 0x0);
     // STOSW ES:DI (1000_0100 / 0x10100)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_B4A6_1B4A6
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // ADD SI,0x8 (1000_0101 / 0x10101)
-    // Instruction bytes at index 0, 1, 2 modified by those instruction(s): 1000_B4A6_1B4A6
     // SI += 0x8;
     SI = Alu.Add16(SI, 0x8);
     // LOOP 0x1000:00f0 (1000_0104 / 0x10104)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_B4A6_1B4A6
     if(--CX != 0) {
       goto label_1000_00F0_100F0;
     }
     // MOV SI,0xbf (1000_0106 / 0x10106)
-    // Instruction bytes at index 0, 1, 2 modified by those instruction(s): 1000_B4A6_1B4A6
     SI = 0xBF;
     // CALL 0x1000:f0b9 (1000_0109 / 0x10109)
-    // Instruction bytes at index 0, 1, 2 modified by those instruction(s): 1000_B4A6_1B4A6
     NearCall(cs1, 0x10C, open_resource_by_index_si_ida_1000_F0B9_1F0B9);
     // MOV AX,DI (1000_010C / 0x1010C)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_B4A6_1B4A6
     AX = DI;
     // ADD AX,0x62fc (1000_010E / 0x1010E)
-    // Instruction bytes at index 0, 1, 2 modified by those instruction(s): 1000_B4A6_1B4A6
     // AX += 0x62FC;
     AX = Alu.Add16(AX, 0x62FC);
     // MOV [0xdcfe],AX (1000_0111 / 0x10111)
-    // Instruction bytes at index 0, 1, 2 modified by those instruction(s): 1000_B4A6_1B4A6
     UInt16[DS, 0xDCFE] = AX;
     // MOV word ptr [0xdd00],ES (1000_0114 / 0x10114)
-    // Instruction bytes at index 0, 1, 2, 3 modified by those instruction(s): 1000_B4A6_1B4A6
     UInt16[DS, 0xDD00] = ES;
     // PUSH DS (1000_0118 / 0x10118)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_B4A6_1B4A6
     Stack.Push(DS);
     // POP ES (1000_0119 / 0x10119)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_B4A6_1B4A6
     ES = Stack.Pop();
     // MOV DI,0xaa76 (1000_011A / 0x1011A)
-    // Instruction bytes at index 0, 1, 2 modified by those instruction(s): 1000_B4A6_1B4A6
     DI = 0xAA76;
     // MOV SI,0xbd (1000_011D / 0x1011D)
-    // Instruction bytes at index 0, 1, 2 modified by those instruction(s): 1000_B4A6_1B4A6
     SI = 0xBD;
     // CALL 0x1000:f0a0 (1000_0120 / 0x10120)
-    // Instruction bytes at index 0, 1, 2 modified by those instruction(s): 1000_B4A6_1B4A6
     NearCall(cs1, 0x123, open_resource_force_hsq_ida_1000_F0A0_1F0A0);
     // CALL 0x1000:0098 (1000_0123 / 0x10123)
-    // Instruction bytes at index 0, 1, 2 modified by those instruction(s): 1000_B4A6_1B4A6
     NearCall(cs1, 0x126, ConvertIndexTableToPointerTable_1000_0098_10098);
     // MOV SI,0xbc (1000_0126 / 0x10126)
-    // Instruction bytes at index 0, 1, 2 modified by those instruction(s): 1000_B4A6_1B4A6
     SI = 0xBC;
     // CALL 0x1000:f0b9 (1000_0129 / 0x10129)
-    // Instruction bytes at index 0, 1, 2 modified by those instruction(s): 1000_B4A6_1B4A6
     NearCall(cs1, 0x12C, open_resource_by_index_si_ida_1000_F0B9_1F0B9);
     // MOV word ptr [0xaa72],DI (1000_012C / 0x1012C)
-    // Instruction bytes at index 0, 1, 2, 3 modified by those instruction(s): 1000_B4A6_1B4A6
     UInt16[DS, 0xAA72] = DI;
     // MOV word ptr [0xaa74],ES (1000_0130 / 0x10130)
-    // Instruction bytes at index 0, 1, 2, 3 modified by those instruction(s): 1000_B4A6_1B4A6
     UInt16[DS, 0xAA74] = ES;
     // CALL 0x1000:0098 (1000_0134 / 0x10134)
-    // Instruction bytes at index 0, 1, 2 modified by those instruction(s): 1000_B4A6_1B4A6
     NearCall(cs1, 0x137, ConvertIndexTableToPointerTable_1000_0098_10098);
     // LES AX,[0x39b7] (1000_0137 / 0x10137)
-    // Instruction bytes at index 0, 1, 2, 3 modified by those instruction(s): 1000_B4A6_1B4A6
-    AX = UInt16[DS, 0x39B7];
     ES = UInt16[DS, 0x39B9];
+    AX = UInt16[DS, 0x39B7];
     // MOV [0x47ac],AX (1000_013B / 0x1013B)
-    // Instruction bytes at index 0, 1, 2 modified by those instruction(s): 1000_B4A6_1B4A6
     UInt16[DS, 0x47AC] = AX;
     // MOV word ptr [0x47ae],ES (1000_013E / 0x1013E)
-    // Instruction bytes at index 0, 1, 2, 3 modified by those instruction(s): 1000_B4A6_1B4A6
     UInt16[DS, 0x47AE] = ES;
     // MOV CX,0x1d4c (1000_0142 / 0x10142)
-    // Instruction bytes at index 0, 1, 2 modified by those instruction(s): 1000_B4A6_1B4A6
     CX = 0x1D4C;
     // CALL 0x1000:f0ff (1000_0145 / 0x10145)
-    // Instruction bytes at index 0, 1, 2 modified by those instruction(s): 1000_B4A6_1B4A6
     NearCall(cs1, 0x148, bump_allocate_bump_cx_bytes_ida_1000_F0FF_1F0FF);
     // LES AX,[0x39b7] (1000_0148 / 0x10148)
-    // Instruction bytes at index 0, 1, 2, 3 modified by those instruction(s): 1000_B4A6_1B4A6
-    AX = UInt16[DS, 0x39B7];
     ES = UInt16[DS, 0x39B9];
+    AX = UInt16[DS, 0x39B7];
     // MOV [0x47b0],AX (1000_014C / 0x1014C)
     UInt16[DS, 0x47B0] = AX;
     // MOV word ptr [0x47b2],ES (1000_014F / 0x1014F)
@@ -2163,12 +2101,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:c137 (1000_015C / 0x1015C)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(load_icons_sprites_ida_1000_C137_1C137, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(map2_resource_func_ida_1000_0169_10169, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -2198,22 +2130,24 @@ public partial class Overrides : CSharpOverrideHelper {
     AX = 0x7;
     // MOV CX,0x100 (1000_0178 / 0x10178)
     CX = 0x100;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // STOSW ES:DI (1000_017B / 0x1017B)
       UInt16[ES, DI] = AX;
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      DI = (ushort)(DI + Direction16);
     }
     // POP DI (1000_017D / 0x1017D)
     DI = Stack.Pop();
     // LES SI,[0xdbb0] (1000_017E / 0x1017E)
-    SI = UInt16[DS, 0xDBB0];
     ES = UInt16[DS, 0xDBB2];
+    SI = UInt16[DS, 0xDBB0];
     // MOV CX,0xc5f9 (1000_0182 / 0x10182)
     CX = 0xC5F9;
     label_1000_0185_10185:
     // LODSB ES:SI (1000_0185 / 0x10185)
     AL = UInt8[ES, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // MOV BX,AX (1000_0187 / 0x10187)
     BX = AX;
     // SHL BX,1 (1000_0189 / 0x10189)
@@ -2467,7 +2401,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_0296 = (uint)(UInt16[DS, 0x38D7] * 0x10 + UInt16[DS, 0x38D5] - cs1 * 0x10);
     switch(targetAddress_1000_0296) {
       case 0x235C8 : FarCall(cs1, 0x29A, VgaFunc08FillWithZeroFor64000AtES_334B_0118_335C8); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_0296);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_0296));
         break;
     }
     // CALL 0x1000:ac14 (1000_029A / 0x1029A)
@@ -2491,12 +2425,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:08f0 (1000_02BE / 0x102BE)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(not_observed_1000_08F0_0108F0, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_02C1_102C1, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -2529,7 +2457,7 @@ public partial class Overrides : CSharpOverrideHelper {
       case 0x2F8 : NearCall(cs1, 0x2CE, unknown_1000_02F8_102F8); break;
       case 0x2FB : NearCall(cs1, 0x2CE, unknown_1000_02FB_102FB); break;
       case 0x2FE : NearCall(cs1, 0x2CE, unknown_1000_02FE_102FE); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_02CC);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_02CC));
         break;
     }
     // POP AX (1000_02CE / 0x102CE)
@@ -2546,12 +2474,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:9901 (1000_02DB / 0x102DB)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(Set479ETo0_1000_9901_19901, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_02DE_102DE, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -2589,12 +2511,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_02E3_102E3, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_02E3_102E3(int loadOffset) {
@@ -2623,12 +2539,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_02F8_102F8, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_02F8_102F8(int loadOffset) {
@@ -2641,12 +2551,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:07ee (1000_02F8 / 0x102F8)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(spice86_label_1000_07EE_107EE, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_02FB_102FB, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -2667,12 +2571,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_02FE_102FE, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_02FE_102FE(int loadOffset) {
@@ -2685,12 +2583,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:076a (1000_02FE / 0x102FE)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(spice86_label_1000_076A_1076A, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_0301_10301, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -2711,12 +2603,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:c2f2 (1000_0306 / 0x10306)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_C2F2_1C2F2, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(play_CREDITS_HNM_ida_1000_0309_10309, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -2747,7 +2633,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_0317 = (uint)(UInt16[DS, 0x393B] * 0x10 + UInt16[DS, 0x3939] - cs1 * 0x10);
     switch(targetAddress_1000_0317) {
       case 0x23613 : FarCall(cs1, 0x31B, VgaFunc33UpdateVgaOffset01A3FromLineNumberAsAx_334B_0163_33613); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_0317);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_0317));
         break;
     }
     // MOV BP,0x9ef (1000_031B / 0x1031B)
@@ -2795,7 +2681,7 @@ public partial class Overrides : CSharpOverrideHelper {
     // Indirect call to [0x3939], generating possible targets from emulator records
     uint targetAddress_1000_057B = (uint)(UInt16[DS, 0x393B] * 0x10 + UInt16[DS, 0x3939] - cs1 * 0x10);
     switch(targetAddress_1000_057B) {
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_057B);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_057B));
         break;
     }
     // RET  (1000_057F / 0x1057F)
@@ -2820,7 +2706,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_0585 = (uint)(UInt16[DS, 0x395B] * 0x10 + UInt16[DS, 0x3959] - cs1 * 0x10);
     switch(targetAddress_1000_0585) {
       case 0x2362B : FarCall(cs1, 0x589, VgaFunc41CopyPalette2toPalette1_334B_017B_3362B); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_0585);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_0585));
         break;
     }
     // CALL 0x1000:aeb7 (1000_0589 / 0x10589)
@@ -2837,7 +2723,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_0595 = (uint)(UInt16[DS, 0x393B] * 0x10 + UInt16[DS, 0x3939] - cs1 * 0x10);
     switch(targetAddress_1000_0595) {
       case 0x23613 : FarCall(cs1, 0x599, VgaFunc33UpdateVgaOffset01A3FromLineNumberAsAx_334B_0163_33613); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_0595);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_0595));
         break;
     }
     // CALL 0x1000:093f (1000_0599 / 0x10599)
@@ -2866,7 +2752,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_05AB = (uint)(UInt16[DS, 0x395B] * 0x10 + UInt16[DS, 0x3959] - cs1 * 0x10);
     switch(targetAddress_1000_05AB) {
       case 0x2362B : FarCall(cs1, 0x5AF, VgaFunc41CopyPalette2toPalette1_334B_017B_3362B); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_05AB);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_05AB));
         break;
     }
     // CALL 0x1000:093f (1000_05AF / 0x105AF)
@@ -2932,7 +2818,7 @@ public partial class Overrides : CSharpOverrideHelper {
       case 0x661 : NearCall(cs1, 0x5EF, play_CRYO_OR_CRYO2_HNM_ida_1000_0661_10661); break;
       case 0x684 : NearCall(cs1, 0x5EF, play_PRESENT_HNM_ida_1000_0684_10684); break;
       case 0xCF1B : NearCall(cs1, 0x5EF, play_IRULx_HSQ_ida_1000_CF1B_1CF1B); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_05ED);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_05ED));
         break;
     }
     // JC 0x1000:05fd (1000_05EF / 0x105EF)
@@ -2966,7 +2852,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_0605 = (uint)(UInt16[DS, 0x38D7] * 0x10 + UInt16[DS, 0x38D5] - cs1 * 0x10);
     switch(targetAddress_1000_0605) {
       case 0x235C8 : FarCall(cs1, 0x609, VgaFunc08FillWithZeroFor64000AtES_334B_0118_335C8); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_0605);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_0605));
         break;
     }
     // POPF  (1000_0609 / 0x10609)
@@ -3001,12 +2887,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:ca1b (1000_0622 / 0x10622)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(hnm_load_ida_1000_CA1B_1CA1B, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(play_VIRGIN_HNM_ida_1000_0625_10625, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -3087,12 +2967,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(load_CRYO2_HNM_ida_1000_0658_10658, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action load_CRYO2_HNM_ida_1000_0658_10658(int loadOffset) {
@@ -3109,12 +2983,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:ca1b (1000_065E / 0x1065E)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(hnm_load_ida_1000_CA1B_1CA1B, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(play_CRYO_OR_CRYO2_HNM_ida_1000_0661_10661, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -3179,12 +3047,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(play_PRESENT_HNM_ida_1000_0684_10684, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action play_PRESENT_HNM_ida_1000_0684_10684(int loadOffset) {
@@ -3197,12 +3059,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:06bd (1000_0684 / 0x10684)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(play_hnm_skippable_ida_1000_06BD_106BD, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(load_INTRO_HNM_ida_1000_069E_1069E, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -3225,12 +3081,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:ca1b (1000_06A7 / 0x106A7)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(hnm_load_ida_1000_CA1B_1CA1B, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(play_hnm_86_frames_ida_1000_06AA_106AA, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -3320,12 +3170,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(spice86_label_1000_076A_1076A, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action spice86_label_1000_076A_1076A(int loadOffset) {
@@ -3344,12 +3188,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:c2f2 (1000_0739 / 0x10739)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_C2F2_1C2F2, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(spice86_label_1000_07EE_107EE, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -3374,12 +3212,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:0960 (1000_07FA / 0x107FA)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(not_observed_1000_0960_010960, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_08F0_0108F0, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -3417,12 +3249,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:2d74 (1000_090E / 0x1090E)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(open_SAL_resource_ida_1000_2D74_12D74, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_0911_10911, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -3469,12 +3295,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(LoadSceneSequenceDataIntoAXAndAdvanceSI_1000_093F_1093F, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action LoadSceneSequenceDataIntoAXAndAdvanceSI_1000_093F_1093F(int loadOffset) {
@@ -3488,7 +3308,7 @@ public partial class Overrides : CSharpOverrideHelper {
     SI = UInt16[DS, 0x4854];
     // LODSW CS:SI (1000_0943 / 0x10943)
     AX = UInt16[cs1, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // Function call generated as ASM continues to next function entry point without return
     if(JumpDispatcher.Jump(SetSceneSequenceOffsetToSi_1000_0945_10945, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
@@ -3536,12 +3356,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_0960_010960, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action not_observed_1000_0960_010960(int loadOffset) {
@@ -3565,12 +3379,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:978e (1000_096F / 0x1096F)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_978E_1978E, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(spice86_label_1000_09AD_109AD, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -3603,12 +3411,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:978e (1000_09C4 / 0x109C4)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_978E_1978E, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_09C7_109C7, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -3677,12 +3479,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:ca1b (1000_09F2 / 0x109F2)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(hnm_load_ida_1000_CA1B_1CA1B, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_09F5_0109F5, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -3793,12 +3589,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_0A3E_10A3E, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_0A3E_10A3E(int loadOffset) {
@@ -3813,12 +3603,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:da5f (1000_0A41 / 0x10A41)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_DA5F_1DA5F, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_0A44_10A44, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -3979,12 +3763,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_0ACD_010ACD, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action not_observed_1000_0ACD_010ACD(int loadOffset) {
@@ -4032,10 +3810,12 @@ public partial class Overrides : CSharpOverrideHelper {
     ES = Stack.Pop();
     // MOV CX,0x8 (1000_0B05 / 0x10B05)
     CX = 0x8;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // STOSB ES:DI (1000_0B08 / 0x10B08)
       UInt8[ES, DI] = AL;
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+      DI = (ushort)(DI + Direction8);
     }
     // MOV SI,0xb45 (1000_0B0A / 0x10B0A)
     SI = 0xB45;
@@ -4054,12 +3834,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:ab15 (1000_0B1E / 0x10B1E)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(audio_start_voc_ida_1000_AB15_1AB15, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_0B21_10B21, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -4277,11 +4051,11 @@ public partial class Overrides : CSharpOverrideHelper {
     // CALL 0x1000:91a0 (1000_0DFA / 0x10DFA)
     NearCall(cs1, 0xDFD, unknown_1000_91A0_191A0);
     // LES SI,[0xdbb0] (1000_0DFD / 0x10DFD)
-    SI = UInt16[DS, 0xDBB0];
     ES = UInt16[DS, 0xDBB2];
+    SI = UInt16[DS, 0xDBB0];
     // LODSW ES:SI (1000_0E01 / 0x10E01)
     AX = UInt16[ES, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // SHR AX,1 (1000_0E03 / 0x10E03)
     // AX >>= 1;
     AX = Alu.Shr16(AX, 1);
@@ -4311,7 +4085,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_0E1B = (uint)(UInt16[DS, 0x3937] * 0x10 + UInt16[DS, 0x3935] - cs1 * 0x10);
     switch(targetAddress_1000_0E1B) {
       case 0x23610 : FarCall(cs1, 0xE1F, unknown_334B_0160_33610); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_0E1B);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_0E1B));
         break;
     }
     // CALL 0x1000:9efd (1000_0E1F / 0x10E1F)
@@ -4338,12 +4112,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_0E3E_010E3E, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action not_observed_1000_0E3E_010E3E(int loadOffset) {
@@ -4360,12 +4128,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:d323 (1000_0E44 / 0x10E44)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_D323_1D323, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_0E49_010E49, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -4401,12 +4163,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:b3b0 (1000_0E63 / 0x10E63)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(not_observed_1000_B3B0_01B3B0, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_0E66_10E66, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -4450,12 +4206,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:c8fb (1000_0E74 / 0x10E74)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(spice86_label_1000_C8FB_1C8FB, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_0E77_10E77, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -4516,12 +4266,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_0EA6_010EA6, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action not_observed_1000_0EA6_010EA6(int loadOffset) {
@@ -4546,12 +4290,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:c108 (1000_0EB6 / 0x10EB6)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(transition_ida_1000_C108_1C108, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_0EB9_010EB9, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -4582,12 +4320,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:2db1 (1000_0ECD / 0x10ECD)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_2DB1_12DB1, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_0ED0_10ED0, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -4640,12 +4372,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:d338 (1000_0F05 / 0x10F05)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_D338_1D338, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_0F08_10F08, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -4705,12 +4431,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(NoOp_1000_0F66_10F66, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action NoOp_1000_0F66_10F66(int loadOffset) {
@@ -4740,12 +4460,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:d763 (1000_0FAF / 0x10FAF)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_D763_1D763, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_0FD9_10FD9, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -4868,12 +4582,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_102F_1102F, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_102F_1102F(int loadOffset) {
@@ -4900,12 +4608,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_1045_11045, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_1045_11045(int loadOffset) {
@@ -4924,12 +4626,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:26da (1000_1050 / 0x11050)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(not_observed_1000_26DA_0126DA, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_1053_11053, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -4964,7 +4660,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_105B_1105B:
     // LODSW CS:SI (1000_105B / 0x1105B)
     AX = UInt16[cs1, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // OR AX,AX (1000_105D / 0x1105D)
     // AX |= AX;
     AX = Alu.Or16(AX, AX);
@@ -5016,12 +4712,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:29ee (1000_10A1 / 0x110A1)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_29EE_129EE, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_11CB_0111CB, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -5098,7 +4788,7 @@ public partial class Overrides : CSharpOverrideHelper {
       case 0x102F : NearCall(cs1, 0x1242, unknown_1000_102F_1102F); break;
       case 0x1045 : NearCall(cs1, 0x1242, unknown_1000_1045_11045); break;
       case 0x1053 : NearCall(cs1, 0x1242, unknown_1000_1053_11053); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_123D);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_123D));
         break;
     }
     label_1000_1242_11242:
@@ -5240,12 +4930,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_13AA_0113AA, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action not_observed_1000_13AA_0113AA(int loadOffset) {
@@ -5282,12 +4966,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_13C8_0113C8, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action not_observed_1000_13C8_0113C8(int loadOffset) {
@@ -5299,14 +4977,14 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_13C8_113C8:
     // LODSB CS:SI (1000_13C8 / 0x113C8)
     AL = UInt8[cs1, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // MOV [0x4],AL (1000_13CA / 0x113CA)
     UInt8[DS, 0x4] = AL;
     // MOV word ptr [0x4778],SI (1000_13CD / 0x113CD)
     UInt16[DS, 0x4778] = SI;
     // LODSB CS:SI (1000_13D1 / 0x113D1)
     AL = UInt8[cs1, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // XOR AH,AH (1000_13D3 / 0x113D3)
     AH = 0;
     // ADD SI,AX (1000_13D5 / 0x113D5)
@@ -5340,12 +5018,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_13E4_0113E4, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action not_observed_1000_13E4_0113E4(int loadOffset) {
@@ -5365,7 +5037,7 @@ public partial class Overrides : CSharpOverrideHelper {
     SI = Stack.Pop();
     // LODSB CS:SI (1000_13EC / 0x113EC)
     AL = UInt8[cs1, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // INC word ptr [0x477a] (1000_13EE / 0x113EE)
     UInt16[DS, 0x477A] = Alu.Inc16(UInt16[DS, 0x477A]);
     // XOR AH,AH (1000_13F2 / 0x113F2)
@@ -5412,12 +5084,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_140B_01140B, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action not_observed_1000_140B_01140B(int loadOffset) {
@@ -5431,7 +5097,7 @@ public partial class Overrides : CSharpOverrideHelper {
     NearCall(cs1, 0x140E, unknown_1000_1392_11392);
     // LODSB CS:SI (1000_140E / 0x1140E)
     AL = UInt8[cs1, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // INC word ptr [0x477a] (1000_1410 / 0x11410)
     UInt16[DS, 0x477A] = Alu.Inc16(UInt16[DS, 0x477A]);
     // XOR AH,AH (1000_1414 / 0x11414)
@@ -5445,12 +5111,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:1707 (1000_141F / 0x1141F)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_1707_11707, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_1474_011474, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -5524,7 +5184,7 @@ public partial class Overrides : CSharpOverrideHelper {
     SI = UInt16[DS, 0x477A];
     // LODSB CS:SI (1000_1723 / 0x11723)
     AL = UInt8[cs1, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // CMP AL,0xff (1000_1725 / 0x11725)
     Alu.Sub8(AL, 0xFF);
     // JZ 0x1000:1736 (1000_1727 / 0x11727)
@@ -5594,7 +5254,7 @@ public partial class Overrides : CSharpOverrideHelper {
         }
         return JumpDispatcher.JumpAsmReturn!;
       }
-      default: throw FailAsUntested("Error: Jump not registered at address " + targetAddress_1000_1731);
+      default: throw FailAsUntested("Error: Jump not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_1731));
         break;
     }
     label_1000_1736_11736:
@@ -5644,12 +5304,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:780a (1000_1768 / 0x11768)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_780A_1780A, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_176B_1176B, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -5704,12 +5358,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_1797_11797, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_1797_11797(int loadOffset) {
@@ -5751,12 +5399,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_17BE_117BE, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_17BE_117BE(int loadOffset) {
@@ -5794,7 +5436,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_17DB = (uint)(UInt16[DS, 0x391F] * 0x10 + UInt16[DS, 0x391D] - cs1 * 0x10);
     switch(targetAddress_1000_17DB) {
       case 0x235FE : FarCall(cs1, 0x17DF, unknown_334B_014E_335FE); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_17DB);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_17DB));
         break;
     }
     label_1000_17DF_117DF:
@@ -5805,12 +5447,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:c4f0 (1000_17E3 / 0x117E3)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(rect_at_si_to_regs_ida_1000_C4F0_1C4F0, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_17E6_117E6, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -5945,7 +5581,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_183E = (uint)(UInt16[DS, 0x391B] * 0x10 + UInt16[DS, 0x3919] - cs1 * 0x10);
     switch(targetAddress_1000_183E) {
       case 0x235FB : FarCall(cs1, 0x1842, unknown_334B_014B_335FB); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_183E);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_183E));
         break;
     }
     // RET  (1000_1842 / 0x11842)
@@ -5980,12 +5616,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:17be (1000_185D / 0x1185D)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_17BE_117BE, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_1860_11860, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -6089,7 +5719,7 @@ public partial class Overrides : CSharpOverrideHelper {
     // Indirect jump to BP, generating possible targets from emulator records
     uint targetAddress_1000_18A4 = (uint)(BP);
     switch(targetAddress_1000_18A4) {
-      default: throw FailAsUntested("Error: Jump not registered at address " + targetAddress_1000_18A4);
+      default: throw FailAsUntested("Error: Jump not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_18A4));
         break;
     }
     label_1000_18A6_118A6:
@@ -6108,12 +5738,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:17e6 (1000_18B7 / 0x118B7)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_17E6_117E6, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_18BA_118BA, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -6222,7 +5846,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_191B = (uint)(UInt16[DS, 0x38DF] * 0x10 + UInt16[DS, 0x38DD] - cs1 * 0x10);
     switch(targetAddress_1000_191B) {
       case 0x235CE : FarCall(cs1, 0x191F, unknown_334B_011E_335CE); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_191B);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_191B));
         break;
     }
     // MOV SI,0x1444 (1000_191F / 0x1191F)
@@ -6283,10 +5907,12 @@ public partial class Overrides : CSharpOverrideHelper {
     CX = 0x24;
     // XOR AX,AX (1000_1952 / 0x11952)
     AX = 0;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // STOSB ES:DI (1000_1954 / 0x11954)
       UInt8[ES, DI] = AL;
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+      DI = (ushort)(DI + Direction8);
     }
     // MOV SI,0xfd8 (1000_1956 / 0x11956)
     SI = 0xFD8;
@@ -6366,7 +5992,7 @@ public partial class Overrides : CSharpOverrideHelper {
     BX = UInt16[DS, 0x120F];
     // LODSB SI (1000_19A4 / 0x119A4)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // XOR AH,AH (1000_19A5 / 0x119A5)
     AH = 0;
     // ADD DX,AX (1000_19A7 / 0x119A7)
@@ -6374,7 +6000,7 @@ public partial class Overrides : CSharpOverrideHelper {
     DX = Alu.Add16(DX, AX);
     // LODSB SI (1000_19A9 / 0x119A9)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // ADD BX,AX (1000_19AA / 0x119AA)
     // BX += AX;
     BX = Alu.Add16(BX, AX);
@@ -6513,12 +6139,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:d95b (1000_1A0C / 0x11A0C)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(SetMapClickHandlerAddressToInGame_1000_D95B_1D95B, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_1A0F_11A0F, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -6667,7 +6287,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_1A92 = (uint)(UInt16[DS, 0x2518]);
     switch(targetAddress_1000_1A92) {
       case 0xD12F : NearCall(cs1, 0x1A96, unknown_1000_D12F_1D12F); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_1A92);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_1A92));
         break;
     }
     // POP word ptr [0xdbda] (1000_1A96 / 0x11A96)
@@ -6687,12 +6307,12 @@ public partial class Overrides : CSharpOverrideHelper {
     Stack.Push(AX);
     // LODSW SI (1000_1A9C / 0x11A9C)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV DX,AX (1000_1A9D / 0x11A9D)
     DX = AX;
     // LODSW SI (1000_1A9F / 0x11A9F)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV BX,AX (1000_1AA0 / 0x11AA0)
     BX = AX;
     // POP AX (1000_1AA2 / 0x11AA2)
@@ -6720,12 +6340,12 @@ public partial class Overrides : CSharpOverrideHelper {
     DS = Stack.Pop();
     // LODSW SI (1000_1AB2 / 0x11AB2)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV DI,AX (1000_1AB3 / 0x11AB3)
     DI = AX;
     // LODSW SI (1000_1AB5 / 0x11AB5)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV CX,AX (1000_1AB6 / 0x11AB6)
     CX = AX;
     // XOR CH,CH (1000_1AB8 / 0x11AB8)
@@ -6737,7 +6357,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_1ABD = (uint)(UInt16[SS, 0x38CF] * 0x10 + UInt16[SS, 0x38CD] - cs1 * 0x10);
     switch(targetAddress_1000_1ABD) {
       case 0x235C2 : FarCall(cs1, 0x1AC2, unknown_334B_0112_335C2); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_1ABD);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_1ABD));
         break;
     }
     // POP DS (1000_1AC2 / 0x11AC2)
@@ -7017,7 +6637,7 @@ public partial class Overrides : CSharpOverrideHelper {
       case 0x1DD3 : NearCall(cs1, 0x1B82, unknown_1000_1DD3_11DD3); break;
       case 0x1DDA : NearCall(cs1, 0x1B82, unknown_1000_1DDA_11DDA); break;
       case 0x1DFE : NearCall(cs1, 0x1B82, unknown_1000_1DFE_11DFE); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_1B7D);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_1B7D));
         break;
     }
     // CALL 0x1000:1c18 (1000_1B82 / 0x11B82)
@@ -7187,12 +6807,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:5d6d (1000_1BE9 / 0x11BE9)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_5D6D_15D6D, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_1BEC_11BEC, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -7727,12 +7341,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_1DD7_11DD7, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_1DD7_11DD7(int loadOffset) {
@@ -7745,12 +7353,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:1f64 (1000_1DD7 / 0x11DD7)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(spice86_label_1000_1F64_11F64, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_1DDA_11DDA, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -7815,12 +7417,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:1d10 (1000_1DFE / 0x11DFE)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(spice86_label_1000_1D10_11D10, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_1E01_11E01, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -8053,12 +7649,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:71b2 (1000_1E9E / 0x11E9E)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(spice86_label_1000_71B2_171B2, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_1EA8_011EA8, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -8410,12 +8000,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_2017_012017, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action not_observed_1000_2017_012017(int loadOffset) {
@@ -8556,12 +8140,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:20d2 (1000_2096 / 0x12096)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(not_observed_1000_20D2_0120D2, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_2098_012098, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -8771,12 +8349,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_2131_012131, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action not_observed_1000_2131_012131(int loadOffset) {
@@ -8853,12 +8425,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:26da (1000_215C / 0x1215C)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(not_observed_1000_26DA_0126DA, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_215F_01215F, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -9650,12 +9216,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_2426_012426, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action not_observed_1000_2426_012426(int loadOffset) {
@@ -9673,12 +9233,6 @@ public partial class Overrides : CSharpOverrideHelper {
     AL = 0x1;
     // JMP 0x1000:2496 (1000_242F / 0x1242F)
     // Jump converted to entry function call
-    if(JumpDispatcher.Jump(not_observed_1000_2496_012496, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
     if(JumpDispatcher.Jump(not_observed_1000_2496_012496, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
@@ -9702,12 +9256,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:9472 (1000_24A0 / 0x124A0)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(not_observed_1000_9472_019472, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_24A3_0124A3, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -9766,12 +9314,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:26da (1000_24CF / 0x124CF)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(not_observed_1000_26DA_0126DA, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_24D2_124D2, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -9976,12 +9518,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_2566_12566, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_2566_12566(int loadOffset) {
@@ -10177,7 +9713,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_2629 = (uint)(UInt16[DS, 0x391B] * 0x10 + UInt16[DS, 0x3919] - cs1 * 0x10);
     switch(targetAddress_1000_2629) {
       case 0x235FB : FarCall(cs1, 0x262D, unknown_334B_014B_335FB); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_2629);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_2629));
         break;
     }
     // MOV AX,0xc8 (1000_262D / 0x1262D)
@@ -10290,12 +9826,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_26A6_126A6, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_26A6_126A6(int loadOffset) {
@@ -10310,12 +9840,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:1797 (1000_26A9 / 0x126A9)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_1797_11797, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_26AC_126AC, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -10342,14 +9866,14 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_26B7 = (uint)(UInt16[DS, 0x391F] * 0x10 + UInt16[DS, 0x391D] - cs1 * 0x10);
     switch(targetAddress_1000_26B7) {
       case 0x235FE : FarCall(cs1, 0x26BB, unknown_334B_014E_335FE); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_26B7);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_26B7));
         break;
     }
     // POP SI (1000_26BB / 0x126BB)
     SI = Stack.Pop();
     // LODSW SI (1000_26BC / 0x126BC)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // OR AX,AX (1000_26BD / 0x126BD)
     // AX |= AX;
     AX = Alu.Or16(AX, AX);
@@ -10361,12 +9885,12 @@ public partial class Overrides : CSharpOverrideHelper {
     BX = AX;
     // LODSW SI (1000_26C3 / 0x126C3)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV DX,AX (1000_26C4 / 0x126C4)
     DX = AX;
     // LODSW SI (1000_26C6 / 0x126C6)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // XCHG AX,BX (1000_26C7 / 0x126C7)
     ushort tmp_1000_26C7 = AX;
     AX = BX;
@@ -10385,12 +9909,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:c526 (1000_26D7 / 0x126D7)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(not_observed_1000_C526_01C526, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_26DA_0126DA, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -10521,17 +10039,19 @@ public partial class Overrides : CSharpOverrideHelper {
     ES = Stack.Pop();
     // MOV CX,0x9 (1000_2745 / 0x12745)
     CX = 0x9;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSW ES:DI,SI (1000_2748 / 0x12748)
       UInt16[ES, DI] = UInt16[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      SI = (ushort)(SI + Direction16);
+      DI = (ushort)(DI + Direction16);
     }
     // XOR AX,AX (1000_274A / 0x1274A)
     AX = 0;
     // STOSW ES:DI (1000_274C / 0x1274C)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     label_1000_274D_1274D:
     // RET  (1000_274D / 0x1274D)
     return NearRet();
@@ -10592,12 +10112,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_2773_12773, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_2773_12773(int loadOffset) {
@@ -10633,12 +10147,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:274e (1000_2793 / 0x12793)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_274E_1274E, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_2795_12795, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -10786,12 +10294,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_2806_12806, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_2806_12806(int loadOffset) {
@@ -10818,12 +10320,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:275f (1000_2819 / 0x12819)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_275F_1275F, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_281C_1281C, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -10880,12 +10376,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_283E_01283E, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action not_observed_1000_283E_01283E(int loadOffset) {
@@ -10930,7 +10420,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AL = 0;
     // STOSB ES:DI (1000_2863 / 0x12863)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // MOV SI,0x1179 (1000_2864 / 0x12864)
     SI = 0x1179;
     // XOR CX,CX (1000_2867 / 0x12867)
@@ -10968,12 +10458,12 @@ public partial class Overrides : CSharpOverrideHelper {
     AX = Alu.Add16(AX, 0x78);
     // STOSW ES:DI (1000_2886 / 0x12886)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // MOV AX,0x290b (1000_2887 / 0x12887)
     AX = 0x290B;
     // STOSW ES:DI (1000_288A / 0x1288A)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     label_1000_288B_1288B:
     // LOOP 0x1000:2875 (1000_288B / 0x1288B)
     if(--CX != 0) {
@@ -10983,17 +10473,17 @@ public partial class Overrides : CSharpOverrideHelper {
     AX = 0xA3;
     // STOSW ES:DI (1000_2890 / 0x12890)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // MOV AX,0x29d4 (1000_2891 / 0x12891)
     AX = 0x29D4;
     // STOSW ES:DI (1000_2894 / 0x12894)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // XOR AX,AX (1000_2895 / 0x12895)
     AX = 0;
     // STOSW ES:DI (1000_2897 / 0x12897)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // MOV BP,0x1fc2 (1000_2898 / 0x12898)
     BP = 0x1FC2;
     // MOV BX,0xf66 (1000_289B / 0x1289B)
@@ -11001,12 +10491,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:d323 (1000_289E / 0x1289E)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_D323_1D323, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_28A1_128A1, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -11035,12 +10519,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:c108 (1000_28B2 / 0x128B2)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(transition_ida_1000_C108_1C108, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_28B5_128B5, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -11092,12 +10570,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:c22f (1000_28DE / 0x128DE)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(draw_sprite_ida_1000_C22F_1C22F, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_28E1_128E1, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -11319,12 +10791,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_2997_12997, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_2997_12997(int loadOffset) {
@@ -11398,12 +10864,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:d280 (1000_29D1 / 0x129D1)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_D280_1D280, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_29EE_129EE, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -11558,20 +11018,22 @@ public partial class Overrides : CSharpOverrideHelper {
     ES = Stack.Pop();
     // MOV CX,0x12 (1000_2A47 / 0x12A47)
     CX = 0x12;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSW ES:DI,SI (1000_2A4A / 0x12A4A)
       UInt16[ES, DI] = UInt16[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      SI = (ushort)(SI + Direction16);
+      DI = (ushort)(DI + Direction16);
     }
     // XOR AX,AX (1000_2A4C / 0x12A4C)
     AX = 0;
     // STOSW ES:DI (1000_2A4E / 0x12A4E)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // STOSW ES:DI (1000_2A4F / 0x12A4F)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // RET  (1000_2A50 / 0x12A50)
     return NearRet();
   }
@@ -11595,7 +11057,7 @@ public partial class Overrides : CSharpOverrideHelper {
     BP = 0;
     // LODSB SI (1000_2A5C / 0x12A5C)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // MOV CL,AL (1000_2A5D / 0x12A5D)
     CL = AL;
     // JCXZ 0x1000:2aae (1000_2A5F / 0x12A5F)
@@ -11613,7 +11075,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_2A65_12A65:
     // LODSW SI (1000_2A65 / 0x12A65)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // CMP AH,DL (1000_2A66 / 0x12A66)
     Alu.Sub8(AH, DL);
     // JNZ 0x1000:2a78 (1000_2A68 / 0x12A68)
@@ -11641,11 +11103,11 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_2A78_12A78:
     // STOSW ES:DI (1000_2A78 / 0x12A78)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // MOVSW ES:DI,SI (1000_2A79 / 0x12A79)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // INC BP (1000_2A7A / 0x12A7A)
     BP = Alu.Inc16(BP);
     label_1000_2A7B_12A7B:
@@ -11656,12 +11118,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:2a9e (1000_2A7D / 0x12A7D)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(not_observed_1000_2A9E_012A9E, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_2A7F_12A7F, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -11683,7 +11139,7 @@ public partial class Overrides : CSharpOverrideHelper {
     BP = 0;
     // LODSB SI (1000_2A86 / 0x12A86)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // MOV CL,AL (1000_2A87 / 0x12A87)
     CL = AL;
     // JCXZ 0x1000:2aae (1000_2A89 / 0x12A89)
@@ -11701,7 +11157,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_2A8F_12A8F:
     // LODSW SI (1000_2A8F / 0x12A8F)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // CMP AL,0x1 (1000_2A90 / 0x12A90)
     Alu.Sub8(AL, 0x1);
     // JNZ 0x1000:2a99 (1000_2A92 / 0x12A92)
@@ -11716,11 +11172,11 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_2A99_12A99:
     // STOSW ES:DI (1000_2A99 / 0x12A99)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // MOVSW ES:DI,SI (1000_2A9A / 0x12A9A)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // INC BP (1000_2A9B / 0x12A9B)
     BP = Alu.Inc16(BP);
     label_1000_2A9C_12A9C:
@@ -11764,10 +11220,10 @@ public partial class Overrides : CSharpOverrideHelper {
     AX = 0;
     // STOSW ES:DI (1000_2AAC / 0x12AAC)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // STOSW ES:DI (1000_2AAD / 0x12AAD)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     label_1000_2AAE_12AAE:
     // RET  (1000_2AAE / 0x12AAE)
     return NearRet();
@@ -12334,12 +11790,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_2C92_12C92, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_2C92_12C92(int loadOffset) {
@@ -12356,12 +11806,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:c108 (1000_2C97 / 0x12C97)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(transition_ida_1000_C108_1C108, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_2C9A_12C9A, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -12410,12 +11854,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_2CC7_12CC7, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_2CC7_12CC7(int loadOffset) {
@@ -12432,12 +11870,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:c0d5 (1000_2CCC / 0x12CCC)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_C0D5_1C0D5, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_2D2C_012D2C, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -12469,7 +11901,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_2D41_12D41:
     // LODSW SI (1000_2D41 / 0x12D41)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // OR AX,AX (1000_2D42 / 0x12D42)
     // AX |= AX;
     AX = Alu.Or16(AX, AX);
@@ -12945,12 +12377,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_2EC9_012EC9, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action not_observed_1000_2EC9_012EC9(int loadOffset) {
@@ -13005,12 +12431,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_2EFB_12EFB, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_2EFB_12EFB(int loadOffset) {
@@ -13030,7 +12450,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AL = 0;
     // STOSB ES:DI (1000_2F02 / 0x12F02)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // MOV BX,word ptr [0x6] (1000_2F03 / 0x12F03)
     BX = UInt16[DS, 0x6];
     // MOV DX,word ptr [0x4] (1000_2F07 / 0x12F07)
@@ -13048,12 +12468,12 @@ public partial class Overrides : CSharpOverrideHelper {
     SI = 0x220C;
     // MOVSW ES:DI,SI (1000_2F16 / 0x12F16)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // MOVSW ES:DI,SI (1000_2F17 / 0x12F17)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // CMP DL,0x1 (1000_2F18 / 0x12F18)
     Alu.Sub8(DL, 0x1);
     // JNZ 0x1000:2f58 (1000_2F1B / 0x12F1B)
@@ -13070,25 +12490,25 @@ public partial class Overrides : CSharpOverrideHelper {
     SI = 0x2218;
     // MOVSW ES:DI,SI (1000_2F27 / 0x12F27)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // MOVSW ES:DI,SI (1000_2F28 / 0x12F28)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // MOVSW ES:DI,SI (1000_2F29 / 0x12F29)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // MOVSW ES:DI,SI (1000_2F2A / 0x12F2A)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // MOV SI,0x2214 (1000_2F2B / 0x12F2B)
     SI = 0x2214;
     // LODSW SI (1000_2F2E / 0x12F2E)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // CMP byte ptr [0x2a],0x4f (1000_2F2F / 0x12F2F)
     Alu.Sub8(UInt8[DS, 0x2A], 0x4F);
     // SBB AH,AH (1000_2F34 / 0x12F34)
@@ -13098,11 +12518,11 @@ public partial class Overrides : CSharpOverrideHelper {
     AH = Alu.And8(AH, 0x40);
     // STOSW ES:DI (1000_2F39 / 0x12F39)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // MOVSW ES:DI,SI (1000_2F3A / 0x12F3A)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // JMP 0x1000:2fa3 (1000_2F3B / 0x12F3B)
     goto label_1000_2FA3_12FA3;
     label_1000_2F3D_12F3D:
@@ -13118,7 +12538,7 @@ public partial class Overrides : CSharpOverrideHelper {
     SI = 0x21DC;
     // LODSW SI (1000_2F49 / 0x12F49)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // CMP byte ptr [0x46ff],0x1 (1000_2F4A / 0x12F4A)
     Alu.Sub8(UInt8[DS, 0x46FF], 0x1);
     // SBB AH,AH (1000_2F4F / 0x12F4F)
@@ -13128,11 +12548,11 @@ public partial class Overrides : CSharpOverrideHelper {
     AH = Alu.And8(AH, 0x40);
     // STOSW ES:DI (1000_2F54 / 0x12F54)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // MOVSW ES:DI,SI (1000_2F55 / 0x12F55)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // JMP 0x1000:2fa3 (1000_2F56 / 0x12F56)
     goto label_1000_2FA3_12FA3;
     label_1000_2F58_12F58:
@@ -13158,7 +12578,7 @@ public partial class Overrides : CSharpOverrideHelper {
     SI = 0x21E8;
     // LODSW SI (1000_2F6C / 0x12F6C)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV CL,byte ptr [0xc9] (1000_2F6D / 0x12F6D)
     CL = UInt8[DS, 0xC9];
     // MOV CH,0x27 (1000_2F71 / 0x12F71)
@@ -13186,14 +12606,14 @@ public partial class Overrides : CSharpOverrideHelper {
     AH = Alu.And8(AH, 0x40);
     // STOSW ES:DI (1000_2F8A / 0x12F8A)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // MOVSW ES:DI,SI (1000_2F8B / 0x12F8B)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // LODSW SI (1000_2F8C / 0x12F8C)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // CMP CL,byte ptr [0xc8] (1000_2F8D / 0x12F8D)
     Alu.Sub8(CL, UInt8[DS, 0xC8]);
     // CMC  (1000_2F91 / 0x12F91)
@@ -13205,11 +12625,11 @@ public partial class Overrides : CSharpOverrideHelper {
     AH = Alu.And8(AH, 0x40);
     // STOSW ES:DI (1000_2F97 / 0x12F97)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // MOVSW ES:DI,SI (1000_2F98 / 0x12F98)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     label_1000_2F99_12F99:
     // CMP DL,0x9 (1000_2F99 / 0x12F99)
     Alu.Sub8(DL, 0x9);
@@ -13221,23 +12641,23 @@ public partial class Overrides : CSharpOverrideHelper {
     SI = 0x21F0;
     // MOVSW ES:DI,SI (1000_2FA1 / 0x12FA1)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // MOVSW ES:DI,SI (1000_2FA2 / 0x12FA2)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     label_1000_2FA3_12FA3:
     // MOV SI,0x21f4 (1000_2FA3 / 0x12FA3)
     SI = 0x21F4;
     // MOVSW ES:DI,SI (1000_2FA6 / 0x12FA6)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // MOVSW ES:DI,SI (1000_2FA7 / 0x12FA7)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // JMP 0x1000:2ff7 (1000_2FA8 / 0x12FA8)
     goto label_1000_2FF7_12FF7;
     label_1000_2FAA_12FAA:
@@ -13251,17 +12671,17 @@ public partial class Overrides : CSharpOverrideHelper {
     SI = 0x220C;
     // MOVSW ES:DI,SI (1000_2FB4 / 0x12FB4)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // MOVSW ES:DI,SI (1000_2FB5 / 0x12FB5)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // MOV SI,0x2214 (1000_2FB6 / 0x12FB6)
     SI = 0x2214;
     // LODSW SI (1000_2FB9 / 0x12FB9)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // CMP byte ptr [0x2a],0x4f (1000_2FBA / 0x12FBA)
     Alu.Sub8(UInt8[DS, 0x2A], 0x4F);
     // SBB AH,AH (1000_2FBF / 0x12FBF)
@@ -13271,11 +12691,11 @@ public partial class Overrides : CSharpOverrideHelper {
     AH = Alu.And8(AH, 0x40);
     // STOSW ES:DI (1000_2FC4 / 0x12FC4)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // MOVSW ES:DI,SI (1000_2FC5 / 0x12FC5)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // CALL 0x1000:1ae0 (1000_2FC6 / 0x12FC6)
     NearCall(cs1, 0x2FC9, SetHourOfTheDayToAX_1000_1AE0_11AE0);
     // MOV SI,0x21e0 (1000_2FC9 / 0x12FC9)
@@ -13292,12 +12712,12 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_2FD3_12FD3:
     // MOVSW ES:DI,SI (1000_2FD3 / 0x12FD3)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // MOVSW ES:DI,SI (1000_2FD4 / 0x12FD4)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // JMP 0x1000:2fa3 (1000_2FD5 / 0x12FD5)
     goto label_1000_2FA3_12FA3;
     label_1000_2FD7_12FD7:
@@ -13319,39 +12739,39 @@ public partial class Overrides : CSharpOverrideHelper {
     }
     // MOVSW ES:DI,SI (1000_2FEB / 0x12FEB)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // MOVSW ES:DI,SI (1000_2FEC / 0x12FEC)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // MOV SI,0x2204 (1000_2FED / 0x12FED)
     SI = 0x2204;
     label_1000_2FF0_12FF0:
     // MOVSW ES:DI,SI (1000_2FF0 / 0x12FF0)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // MOVSW ES:DI,SI (1000_2FF1 / 0x12FF1)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // MOV SI,0x21f8 (1000_2FF2 / 0x12FF2)
     SI = 0x21F8;
     // MOVSW ES:DI,SI (1000_2FF5 / 0x12FF5)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // MOVSW ES:DI,SI (1000_2FF6 / 0x12FF6)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     label_1000_2FF7_12FF7:
     // XOR AX,AX (1000_2FF7 / 0x12FF7)
     AX = 0;
     // STOSW ES:DI (1000_2FF9 / 0x12FF9)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // RET  (1000_2FFA / 0x12FFA)
     return NearRet();
   }
@@ -13509,7 +12929,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_305C_1305C:
     // LODSB SI (1000_305C / 0x1305C)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // ADD DI,0xe (1000_305D / 0x1305D)
     // DI += 0xE;
     DI = Alu.Add16(DI, 0xE);
@@ -13574,12 +12994,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_3090_13090, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_3090_13090(int loadOffset) {
@@ -13638,7 +13052,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AX = 0;
     // STOSW ES:DI (1000_30B7 / 0x130B7)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // RET  (1000_30B8 / 0x130B8)
     return NearRet();
   }
@@ -13679,7 +13093,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AX = Alu.Add16(AX, 0x78);
     // STOSW ES:DI (1000_30D4 / 0x130D4)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // MOV AX,0x1 (1000_30D5 / 0x130D5)
     AX = 0x1;
     // SHL AX,CL (1000_30D8 / 0x130D8)
@@ -13692,7 +13106,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AX = UInt16[DS, (ushort)(SI + 0x4)];
     // STOSW ES:DI (1000_30E1 / 0x130E1)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // CMP CL,0xf (1000_30E2 / 0x130E2)
     Alu.Sub8(CL, 0xF);
     // JNZ 0x1000:311f (1000_30E5 / 0x130E5)
@@ -13722,14 +13136,14 @@ public partial class Overrides : CSharpOverrideHelper {
     AX = Alu.Inc16(AX);
     // STOSW ES:DI (1000_30F7 / 0x130F7)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // XCHG AX,SI (1000_30F8 / 0x130F8)
     ushort tmp_1000_30F8 = AX;
     AX = SI;
     SI = tmp_1000_30F8;
     // STOSW ES:DI (1000_30F9 / 0x130F9)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // XCHG AX,SI (1000_30FA / 0x130FA)
     ushort tmp_1000_30FA = AX;
     AX = SI;
@@ -14203,12 +13617,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_32C7_132C7, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_32C7_132C7(int loadOffset) {
@@ -14379,11 +13787,13 @@ public partial class Overrides : CSharpOverrideHelper {
     DI = 0x55;
     // MOV CX,0x7 (1000_3354 / 0x13354)
     CX = 0x7;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSB ES:DI,SI (1000_3357 / 0x13357)
       UInt8[ES, DI] = UInt8[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+      SI = (ushort)(SI + Direction8);
+      DI = (ushort)(DI + Direction8);
     }
     // POP DI (1000_3359 / 0x13359)
     DI = Stack.Pop();
@@ -14845,10 +14255,12 @@ public partial class Overrides : CSharpOverrideHelper {
     CX = 0x33;
     // XOR AL,AL (1000_34AF / 0x134AF)
     AL = 0;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // STOSB ES:DI (1000_34B1 / 0x134B1)
       UInt8[ES, DI] = AL;
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+      DI = (ushort)(DI + Direction8);
     }
     // POP DI (1000_34B3 / 0x134B3)
     DI = Stack.Pop();
@@ -15340,12 +14752,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_366F_1366F, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_366F_1366F(int loadOffset) {
@@ -15548,7 +14954,7 @@ public partial class Overrides : CSharpOverrideHelper {
       case 0x3520 : NearCall(cs1, 0x3710, unknown_1000_3520_13520); break;
       case 0x40C9 : NearCall(cs1, 0x3710, unknown_1000_40C9_140C9); break;
       case 0x40E6 : NearCall(cs1, 0x3710, unknown_1000_40E6_140E6); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_370E);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_370E));
         break;
     }
     // POP BP (1000_3710 / 0x13710)
@@ -15733,12 +15139,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_37AD_137AD, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_37AD_137AD(int loadOffset) {
@@ -15753,12 +15153,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:c2f2 (1000_37AF / 0x137AF)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_C2F2_1C2F2, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_37B2_137B2, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -15811,7 +15205,7 @@ public partial class Overrides : CSharpOverrideHelper {
     NearCall(cs1, 0x37D4, unknown_1000_3EFE_13EFE);
     // LODSB SI (1000_37D4 / 0x137D4)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     label_1000_37D5_137D5:
     // OR AX,AX (1000_37D5 / 0x137D5)
     // AX |= AX;
@@ -15870,12 +15264,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_37F4_137F4, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_37F4_137F4(int loadOffset) {
@@ -15900,18 +15288,12 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_3805 = (uint)(UInt16[DS, 0x395B] * 0x10 + UInt16[DS, 0x3959] - cs1 * 0x10);
     switch(targetAddress_1000_3805) {
       case 0x2362B : FarCall(cs1, 0x3809, VgaFunc41CopyPalette2toPalette1_334B_017B_3362B); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_3805);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_3805));
         break;
     }
     // JMP 0x1000:388d (1000_3809 / 0x13809)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_388D_1388D, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_380C_1380C, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -16069,12 +15451,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:c2f2 (1000_388A / 0x1388A)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_C2F2_1C2F2, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_388D_1388D, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -16260,12 +15636,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_3916_13916, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_3916_13916(int loadOffset) {
@@ -16325,7 +15695,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_3934 = (uint)(UInt16[DS, 0x3953] * 0x10 + UInt16[DS, 0x3951] - cs1 * 0x10);
     switch(targetAddress_1000_3934) {
       case 0x23625 : FarCall(cs1, 0x3938, unknown_334B_0175_33625); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_3934);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_3934));
         break;
     }
     // POP AX (1000_3938 / 0x13938)
@@ -16345,7 +15715,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_3946 = (uint)(UInt16[DS, 0x3953] * 0x10 + UInt16[DS, 0x3951] - cs1 * 0x10);
     switch(targetAddress_1000_3946) {
       case 0x23625 : FarCall(cs1, 0x394A, unknown_334B_0175_33625); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_3946);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_3946));
         break;
     }
     label_1000_394A_1394A:
@@ -16379,12 +15749,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:da5f (1000_3958 / 0x13958)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_DA5F_1DA5F, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_395B_01395B, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -16494,7 +15858,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_39A0 = (uint)(UInt16[DS, 0x38BF] * 0x10 + UInt16[DS, 0x38BD] - cs1 * 0x10);
     switch(targetAddress_1000_39A0) {
       case 0x235B6 : FarCall(cs1, 0x39A4, unknown_334B_0106_335B6); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_39A0);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_39A0));
         break;
     }
     // POP CX (1000_39A4 / 0x139A4)
@@ -16519,7 +15883,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_39B4 = (uint)(UInt16[DS, 0x38BF] * 0x10 + UInt16[DS, 0x38BD] - cs1 * 0x10);
     switch(targetAddress_1000_39B4) {
       case 0x235B6 : FarCall(cs1, 0x39B8, unknown_334B_0106_335B6); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_39B4);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_39B4));
         break;
     }
     label_1000_39B8_139B8:
@@ -16556,7 +15920,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_39CD = (uint)(UInt16[DS, 0x394F] * 0x10 + UInt16[DS, 0x394D] - cs1 * 0x10);
     switch(targetAddress_1000_39CD) {
       case 0x23622 : FarCall(cs1, 0x39D1, unknown_334B_0172_33622); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_39CD);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_39CD));
         break;
     }
     // POP CX (1000_39D1 / 0x139D1)
@@ -16581,7 +15945,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_39E1 = (uint)(UInt16[DS, 0x394F] * 0x10 + UInt16[DS, 0x394D] - cs1 * 0x10);
     switch(targetAddress_1000_39E1) {
       case 0x23622 : FarCall(cs1, 0x39E5, unknown_334B_0172_33622); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_39E1);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_39E1));
         break;
     }
     label_1000_39E5_139E5:
@@ -16601,12 +15965,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:da5f (1000_39E9 / 0x139E9)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_DA5F_1DA5F, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_39EC_0139EC, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -16964,12 +16322,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(Fill47F8WithFF_1000_3AE9_13AE9, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action Fill47F8WithFF_1000_3AE9_13AE9(int loadOffset) {
@@ -16991,10 +16343,12 @@ public partial class Overrides : CSharpOverrideHelper {
     AX = 0xFFFF;
     // MOV DI,0x47f8 (1000_3AF2 / 0x13AF2)
     DI = 0x47F8;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // STOSW ES:DI (1000_3AF5 / 0x13AF5)
       UInt16[ES, DI] = AX;
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      DI = (ushort)(DI + Direction16);
     }
     // POP AX (1000_3AF7 / 0x13AF7)
     AX = Stack.Pop();
@@ -17106,7 +16460,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_3B4F = (uint)(UInt16[SS, 0x394B] * 0x10 + UInt16[SS, 0x3949] - cs1 * 0x10);
     switch(targetAddress_1000_3B4F) {
       case 0x2361F : FarCall(cs1, 0x3B54, unknown_334B_016F_3361F); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_3B4F);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_3B4F));
         break;
     }
     // POP DS (1000_3B54 / 0x13B54)
@@ -17177,7 +16531,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_3B80_13B80:
     // LODSW SI (1000_3B80 / 0x13B80)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // CMP AX,0xffff (1000_3B81 / 0x13B81)
     Alu.Sub16(AX, 0xFFFF);
     // JZ 0x1000:3bb5 (1000_3B84 / 0x13B84)
@@ -17198,19 +16552,19 @@ public partial class Overrides : CSharpOverrideHelper {
     AH = Alu.And8(AH, 0x1);
     // LODSB SI (1000_3B8F / 0x13B8F)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // MOV DX,AX (1000_3B90 / 0x13B90)
     DX = AX;
     // LODSB SI (1000_3B92 / 0x13B92)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // XOR AH,AH (1000_3B93 / 0x13B93)
     AH = 0;
     // MOV BX,AX (1000_3B95 / 0x13B95)
     BX = AX;
     // LODSB SI (1000_3B97 / 0x13B97)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // PUSH SI (1000_3B98 / 0x13B98)
     Stack.Push(SI);
     // MOV CS:[0xc21a],AL (1000_3B99 / 0x13B99)
@@ -17271,22 +16625,22 @@ public partial class Overrides : CSharpOverrideHelper {
     ES = UInt16[DS, 0xDBDA];
     // LODSW SI (1000_3BCE / 0x13BCE)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV DX,AX (1000_3BCF / 0x13BCF)
     DX = AX;
     // LODSW SI (1000_3BD1 / 0x13BD1)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV BX,AX (1000_3BD2 / 0x13BD2)
     BX = AX;
     // LODSW SI (1000_3BD4 / 0x13BD4)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV DI,AX (1000_3BD5 / 0x13BD5)
     DI = AX;
     // LODSW SI (1000_3BD7 / 0x13BD7)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV CX,AX (1000_3BD8 / 0x13BD8)
     CX = AX;
     // POP AX (1000_3BDA / 0x13BDA)
@@ -17302,7 +16656,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_3BE2 = (uint)(UInt16[DS, 0x3903] * 0x10 + UInt16[DS, 0x3901] - cs1 * 0x10);
     switch(targetAddress_1000_3BE2) {
       case 0x235E9 : FarCall(cs1, 0x3BE6, unknown_334B_0139_335E9); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_3BE2);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_3BE2));
         break;
     }
     // POP SI (1000_3BE6 / 0x13BE6)
@@ -17334,7 +16688,7 @@ public partial class Overrides : CSharpOverrideHelper {
     UInt8[DS, 0x47EC] = AL;
     // LODSB SI (1000_3BFD / 0x13BFD)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // CBW  (1000_3BFE / 0x13BFE)
     AX = (ushort)((short)((sbyte)AL));
     // SHL AX,1 (1000_3BFF / 0x13BFF)
@@ -17353,7 +16707,7 @@ public partial class Overrides : CSharpOverrideHelper {
     UInt16[DS, 0x22DB] = AX;
     // LODSB SI (1000_3C0A / 0x13C0A)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // CBW  (1000_3C0B / 0x13C0B)
     AX = (ushort)((short)((sbyte)AL));
     // SHL AX,1 (1000_3C0C / 0x13C0C)
@@ -17372,12 +16726,12 @@ public partial class Overrides : CSharpOverrideHelper {
     UInt16[DS, 0x22DD] = AX;
     // LODSW SI (1000_3C17 / 0x13C17)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV DX,AX (1000_3C18 / 0x13C18)
     DX = AX;
     // LODSW SI (1000_3C1A / 0x13C1A)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV BX,AX (1000_3C1B / 0x13C1B)
     BX = AX;
     // MOV word ptr [0x47ee],DX (1000_3C1D / 0x13C1D)
@@ -17387,7 +16741,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_3C25_13C25:
     // LODSW SI (1000_3C25 / 0x13C25)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // PUSH AX (1000_3C26 / 0x13C26)
     Stack.Push(AX);
     // AND AX,0x3fff (1000_3C27 / 0x13C27)
@@ -17397,7 +16751,7 @@ public partial class Overrides : CSharpOverrideHelper {
     DI = AX;
     // LODSW SI (1000_3C2C / 0x13C2C)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV CX,AX (1000_3C2D / 0x13C2D)
     CX = AX;
     // CALL 0x1000:3e13 (1000_3C2F / 0x13C2F)
@@ -17433,7 +16787,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_3C57_13C57:
     // LODSW SI (1000_3C57 / 0x13C57)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // PUSH AX (1000_3C58 / 0x13C58)
     Stack.Push(AX);
     // AND AX,0x3fff (1000_3C59 / 0x13C59)
@@ -17443,7 +16797,7 @@ public partial class Overrides : CSharpOverrideHelper {
     DI = AX;
     // LODSW SI (1000_3C5E / 0x13C5E)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV CX,AX (1000_3C5F / 0x13C5F)
     CX = AX;
     // CALL 0x1000:3e13 (1000_3C61 / 0x13C61)
@@ -17522,12 +16876,12 @@ public partial class Overrides : CSharpOverrideHelper {
     Stack.Push(AX);
     // LODSW SI (1000_3CB4 / 0x13CB4)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV DX,AX (1000_3CB5 / 0x13CB5)
     DX = AX;
     // LODSW SI (1000_3CB7 / 0x13CB7)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV CX,AX (1000_3CB8 / 0x13CB8)
     CX = AX;
     // POP AX (1000_3CBA / 0x13CBA)
@@ -17565,7 +16919,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_3CD0 = (uint)(UInt16[DS, 0x3947] * 0x10 + UInt16[DS, 0x3945] - cs1 * 0x10);
     switch(targetAddress_1000_3CD0) {
       case 0x2361C : FarCall(cs1, 0x3CD4, VgaFunc36GenerateTextureOutBP_334B_016C_3361C); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_3CD0);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_3CD0));
         break;
     }
     // POP BX (1000_3CD4 / 0x13CD4)
@@ -17595,12 +16949,12 @@ public partial class Overrides : CSharpOverrideHelper {
     Stack.Push(AX);
     // LODSW SI (1000_3CE2 / 0x13CE2)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV DX,AX (1000_3CE3 / 0x13CE3)
     DX = AX;
     // LODSW SI (1000_3CE5 / 0x13CE5)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV CX,AX (1000_3CE6 / 0x13CE6)
     CX = AX;
     // POP AX (1000_3CE8 / 0x13CE8)
@@ -17642,7 +16996,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_3D01 = (uint)(UInt16[DS, 0x3947] * 0x10 + UInt16[DS, 0x3945] - cs1 * 0x10);
     switch(targetAddress_1000_3D01) {
       case 0x2361C : FarCall(cs1, 0x3D05, VgaFunc36GenerateTextureOutBP_334B_016C_3361C); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_3D01);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_3D01));
         break;
     }
     // POP BX (1000_3D05 / 0x13D05)
@@ -17702,12 +17056,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:3b80 (1000_3D2C / 0x13D2C)
     // Jump converted to non entry function call
     if(JumpDispatcher.Jump(draw_SAL_ida_1000_3B59_13B59, 0x13B80 - cs1 * 0x10)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_3D2F_13D2F, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -17814,12 +17162,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(do_weird_shit_with_stack_buffer_ida_1000_3D83_13D83, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action do_weird_shit_with_stack_buffer_ida_1000_3D83_13D83(int loadOffset) {
@@ -17839,10 +17181,12 @@ public partial class Overrides : CSharpOverrideHelper {
     CX = 0x17;
     // MOV DI,word ptr [0x47f6] (1000_3D8B / 0x13D8B)
     DI = UInt16[DS, 0x47F6];
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // STOSB ES:DI (1000_3D8F / 0x13D8F)
       UInt8[ES, DI] = AL;
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+      DI = (ushort)(DI + Direction8);
     }
     // MOV DI,word ptr [0x47f6] (1000_3D91 / 0x13D91)
     DI = UInt16[DS, 0x47F6];
@@ -17867,14 +17211,16 @@ public partial class Overrides : CSharpOverrideHelper {
     SI = AX;
     // LODSB CS:SI (1000_3DA6 / 0x13DA6)
     AL = UInt8[cs1, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // MOV CL,AL (1000_3DA8 / 0x13DA8)
     CL = AL;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSB ES:DI,CS:SI (1000_3DAA / 0x13DAA)
       UInt8[ES, DI] = UInt8[cs1, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+      SI = (ushort)(SI + Direction8);
+      DI = (ushort)(DI + Direction8);
     }
     // POP SI (1000_3DAD / 0x13DAD)
     SI = Stack.Pop();
@@ -17946,7 +17292,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_3DE5_13DE5:
     // LODSB SI (1000_3DE5 / 0x13DE5)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // XOR AH,AH (1000_3DE6 / 0x13DE6)
     AH = 0;
     // MOV DI,word ptr [0x47f6] (1000_3DE8 / 0x13DE8)
@@ -18091,7 +17437,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AX = DX;
     // STOSW ES:DI (1000_3E47 / 0x13E47)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // ADD DI,0x2 (1000_3E48 / 0x13E48)
     // DI += 0x2;
     DI = Alu.Add16(DI, 0x2);
@@ -18139,7 +17485,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_3E73_13E73:
     // STOSW ES:DI (1000_3E73 / 0x13E73)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // ADD DI,0x2 (1000_3E74 / 0x13E74)
     // DI += 0x2;
     DI = Alu.Add16(DI, 0x2);
@@ -18289,7 +17635,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AX = UInt16[DS, 0x47E8];
     // STOSW ES:DI (1000_3EE8 / 0x13EE8)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // ADD DI,0x2 (1000_3EE9 / 0x13EE9)
     // DI += 0x2;
     DI = Alu.Add16(DI, 0x2);
@@ -18368,12 +17714,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_3F1A_13F1A, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_3F1A_13F1A(int loadOffset) {
@@ -18392,12 +17732,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_3F1F_13F1F, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_3F1F_13F1F(int loadOffset) {
@@ -18412,12 +17746,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:3f27 (1000_3F22 / 0x13F22)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(not_observed_1000_3F27_013F27, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_3F24_13F24, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -18817,12 +18145,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_407E_1407E, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_407E_1407E(int loadOffset) {
@@ -18961,12 +18283,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_40C9_140C9, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_40C9_140C9(int loadOffset) {
@@ -19011,12 +18327,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:36ee (1000_40E3 / 0x140E3)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_36EE_136EE, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_40E6_140E6, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -19093,7 +18403,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_4117_14117:
     // LODSB SI (1000_4117 / 0x14117)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // TEST AL,0x40 (1000_4118 / 0x14118)
     Alu.And8(AL, 0x40);
     // JZ 0x1000:417c (1000_411A / 0x1411A)
@@ -19382,7 +18692,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_41FE_141FE:
     // LODSB SI (1000_41FE / 0x141FE)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // TEST AL,0x40 (1000_41FF / 0x141FF)
     Alu.And8(AL, 0x40);
     // JNZ 0x1000:420a (1000_4201 / 0x14201)
@@ -19650,12 +18960,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_439F_1439F, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_439F_1439F(int loadOffset) {
@@ -19685,7 +18989,7 @@ public partial class Overrides : CSharpOverrideHelper {
     // Indirect call to [0x3935], generating possible targets from emulator records
     uint targetAddress_1000_43B5 = (uint)(UInt16[DS, 0x3937] * 0x10 + UInt16[DS, 0x3935] - cs1 * 0x10);
     switch(targetAddress_1000_43B5) {
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_43B5);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_43B5));
         break;
     }
     // CALL 0x1000:5b69 (1000_43B9 / 0x143B9)
@@ -19700,7 +19004,7 @@ public partial class Overrides : CSharpOverrideHelper {
     // Indirect call to [0x38dd], generating possible targets from emulator records
     uint targetAddress_1000_43C5 = (uint)(UInt16[DS, 0x38DF] * 0x10 + UInt16[DS, 0x38DD] - cs1 * 0x10);
     switch(targetAddress_1000_43C5) {
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_43C5);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_43C5));
         break;
     }
     // JMP 0x1000:c4dd (1000_43C9 / 0x143C9)
@@ -19796,12 +19100,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_4415_14415, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_4415_14415(int loadOffset) {
@@ -19881,12 +19179,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_445D_1445D, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_445D_1445D(int loadOffset) {
@@ -19921,7 +19213,7 @@ public partial class Overrides : CSharpOverrideHelper {
     NearCall(cs1, 0x447B, GetEsSiPointerToUnknown_1000_C1F4_1C1F4);
     // LODSW ES:SI (1000_447B / 0x1447B)
     AX = UInt16[ES, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // AND AH,0xf (1000_447D / 0x1447D)
     // AH &= 0xF;
     AH = Alu.And8(AH, 0xF);
@@ -19929,7 +19221,7 @@ public partial class Overrides : CSharpOverrideHelper {
     BP = AX;
     // LODSW ES:SI (1000_4482 / 0x14482)
     AX = UInt16[ES, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // XOR AH,AH (1000_4484 / 0x14484)
     AH = 0;
     // SUB BX,AX (1000_4486 / 0x14486)
@@ -20066,12 +19358,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_450E_1450E, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_450E_1450E(int loadOffset) {
@@ -20190,12 +19476,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:4703 (1000_4569 / 0x14569)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(not_observed_1000_4703_014703, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_456C_1456C, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -20417,7 +19697,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_461C = (uint)(UInt16[DS, 0x2518]);
     switch(targetAddress_1000_461C) {
       case 0xD12F : NearCall(cs1, 0x4620, unknown_1000_D12F_1D12F); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_461C);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_461C));
         break;
     }
     // MOV AX,DI (1000_4620 / 0x14620)
@@ -20463,7 +19743,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_464B = (uint)(UInt16[DS, 0x2518]);
     switch(targetAddress_1000_464B) {
       case 0xD12F : NearCall(cs1, 0x464F, unknown_1000_D12F_1D12F); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_464B);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_464B));
         break;
     }
     // JMP 0x1000:4641 (1000_464F / 0x1464F)
@@ -20474,12 +19754,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:dbec (1000_4655 / 0x14655)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(draw_mouse_ida_1000_DBEC_1DBEC, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_4658_14658, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -20584,8 +19858,8 @@ public partial class Overrides : CSharpOverrideHelper {
     
     label_1000_46B5_146B5:
     // LES SI,[0x473f] (1000_46B5 / 0x146B5)
-    SI = UInt16[DS, 0x473F];
     ES = UInt16[DS, 0x4741];
+    SI = UInt16[DS, 0x473F];
     // MOV AL,byte ptr ES:[SI] (1000_46B9 / 0x146B9)
     AL = UInt8[ES, SI];
     // OR AL,AL (1000_46BC / 0x146BC)
@@ -20778,12 +20052,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:c0f4 (1000_4792 / 0x14792)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_C0F4_1C0F4, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_4795_14795, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -21228,12 +20496,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_4937_014937, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action not_observed_1000_4937_014937(int loadOffset) {
@@ -21264,12 +20526,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:cc85 (1000_4941 / 0x14941)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(CheckIfHnmComplete_1000_CC85_1CC85, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_4944_14944, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -21324,12 +20580,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:5119 (1000_4977 / 0x14977)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(not_observed_1000_5119_015119, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_4988_14988, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -21417,12 +20667,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_49D4_0149D4, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action not_observed_1000_49D4_0149D4(int loadOffset) {
@@ -21439,12 +20683,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:4a5a (1000_49E3 / 0x149E3)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_4A5A_14A5A, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_49D9_0149D9, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -21467,7 +20705,7 @@ public partial class Overrides : CSharpOverrideHelper {
       // Indirect jump to word ptr [0x46ed], generating possible targets from emulator records
       uint targetAddress_1000_49E6 = (uint)(UInt16[DS, 0x46ED]);
       switch(targetAddress_1000_49E6) {
-        default: throw FailAsUntested("Error: Jump not registered at address " + targetAddress_1000_49E6);
+        default: throw FailAsUntested("Error: Jump not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_49E6));
           break;
       }
     }
@@ -21477,12 +20715,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:4a5a (1000_49E3 / 0x149E3)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_4A5A_14A5A, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_49E6_0149E6, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -21500,7 +20732,7 @@ public partial class Overrides : CSharpOverrideHelper {
     // Indirect jump to word ptr [0x46ed], generating possible targets from emulator records
     uint targetAddress_1000_49E6 = (uint)(UInt16[DS, 0x46ED]);
     switch(targetAddress_1000_49E6) {
-      default: throw FailAsUntested("Error: Jump not registered at address " + targetAddress_1000_49E6);
+      default: throw FailAsUntested("Error: Jump not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_49E6));
         break;
     }
     // Function call generated as ASM continues to next function entry point without return
@@ -21531,10 +20763,10 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_49F7_149F7:
     // STOSW ES:DI (1000_49F7 / 0x149F7)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // STOSW ES:DI (1000_49F8 / 0x149F8)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // CMP DI,0xe85c (1000_49F9 / 0x149F9)
     Alu.Sub16(DI, 0xE85C);
     // JC 0x1000:49f7 (1000_49FD / 0x149FD)
@@ -21562,12 +20794,12 @@ public partial class Overrides : CSharpOverrideHelper {
     AX = DX;
     // STOSW ES:DI (1000_4A08 / 0x14A08)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // MOV AX,BX (1000_4A09 / 0x14A09)
     AX = BX;
     // STOSW ES:DI (1000_4A0B / 0x14A0B)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // CMP DI,0xe85c (1000_4A0C / 0x14A0C)
     Alu.Sub16(DI, 0xE85C);
     // JC 0x1000:4a15 (1000_4A10 / 0x14A10)
@@ -21618,12 +20850,12 @@ public partial class Overrides : CSharpOverrideHelper {
     SI = Alu.Sub16(SI, 0x4);
     // LODSW CS:SI (1000_4A37 / 0x14A37)
     AX = UInt16[cs1, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV DX,AX (1000_4A39 / 0x14A39)
     DX = AX;
     // LODSW CS:SI (1000_4A3B / 0x14A3B)
     AX = UInt16[cs1, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV BX,AX (1000_4A3D / 0x14A3D)
     BX = AX;
     // DEC AH (1000_4A3F / 0x14A3F)
@@ -21679,12 +20911,12 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_4A68_14A68:
     // LODSW CS:SI (1000_4A68 / 0x14A68)
     AX = UInt16[cs1, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV DX,AX (1000_4A6A / 0x14A6A)
     DX = AX;
     // LODSW CS:SI (1000_4A6C / 0x14A6C)
     AX = UInt16[cs1, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV BX,AX (1000_4A6E / 0x14A6E)
     BX = AX;
     // DEC AH (1000_4A70 / 0x14A70)
@@ -21863,12 +21095,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_4AFD_014AFD, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action not_observed_1000_4AFD_014AFD(int loadOffset) {
@@ -21895,7 +21121,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_4B0F = (uint)(UInt16[DS, 0x38FF] * 0x10 + UInt16[DS, 0x38FD] - cs1 * 0x10);
     switch(targetAddress_1000_4B0F) {
       case 0x235E6 : FarCall(cs1, 0x4B13, unknown_334B_0136_335E6); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_4B0F);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_4B0F));
         break;
     }
     // JMP 0x1000:dbe3 (1000_4B13 / 0x14B13)
@@ -21927,7 +21153,7 @@ public partial class Overrides : CSharpOverrideHelper {
     // Indirect call to [0x38fd], generating possible targets from emulator records
     uint targetAddress_1000_4B26 = (uint)(UInt16[DS, 0x38FF] * 0x10 + UInt16[DS, 0x38FD] - cs1 * 0x10);
     switch(targetAddress_1000_4B26) {
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_4B26);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_4B26));
         break;
     }
     label_1000_4B2A_14B2A:
@@ -21963,12 +21189,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:dbca (1000_4B38 / 0x14B38)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(not_observed_1000_DBCA_01DBCA, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_4B3B_14B3B, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -22176,7 +21396,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_4C29_14C29:
     // LODSB SI (1000_4C29 / 0x14C29)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // XOR AH,AH (1000_4C2A / 0x14C2A)
     AH = 0;
     // OR AL,AL (1000_4C2C / 0x14C2C)
@@ -22196,7 +21416,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AH = AL;
     // LODSB SI (1000_4C36 / 0x14C36)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     label_1000_4C37_14C37:
     // PUSH SI (1000_4C37 / 0x14C37)
     Stack.Push(SI);
@@ -22240,7 +21460,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_4C54_14C54:
     // LODSB SI (1000_4C54 / 0x14C54)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // OR AL,AL (1000_4C55 / 0x14C55)
     // AL |= AL;
     AL = Alu.Or8(AL, AL);
@@ -22256,12 +21476,12 @@ public partial class Overrides : CSharpOverrideHelper {
     BP = AX;
     // LODSB SI (1000_4C5D / 0x14C5D)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // MOV DX,AX (1000_4C5E / 0x14C5E)
     DX = AX;
     // LODSB SI (1000_4C60 / 0x14C60)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // MOV BX,AX (1000_4C61 / 0x14C61)
     BX = AX;
     // ADD DX,word ptr SS:[0x486e] (1000_4C63 / 0x14C63)
@@ -22286,12 +21506,12 @@ public partial class Overrides : CSharpOverrideHelper {
     SI = Alu.Add16(SI, UInt16[DS, (ushort)(BP + SI)]);
     // LODSW SI (1000_4C7E / 0x14C7E)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV DI,AX (1000_4C7F / 0x14C7F)
     DI = AX;
     // LODSW SI (1000_4C81 / 0x14C81)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // XOR AH,AH (1000_4C82 / 0x14C82)
     AH = 0;
     // MOV CX,AX (1000_4C84 / 0x14C84)
@@ -22302,7 +21522,7 @@ public partial class Overrides : CSharpOverrideHelper {
     // Indirect call to [0x38cd], generating possible targets from emulator records
     uint targetAddress_1000_4C89 = (uint)(UInt16[SS, 0x38CF] * 0x10 + UInt16[SS, 0x38CD] - cs1 * 0x10);
     switch(targetAddress_1000_4C89) {
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_4C89);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_4C89));
         break;
     }
     // POP SI (1000_4C8E / 0x14C8E)
@@ -22348,8 +21568,8 @@ public partial class Overrides : CSharpOverrideHelper {
     // POP ES (1000_4CB9 / 0x14CB9)
     ES = Stack.Pop();
     // LDS SI,[0xdbb0] (1000_4CBA / 0x14CBA)
-    SI = UInt16[DS, 0xDBB0];
     DS = UInt16[DS, 0xDBB2];
+    SI = UInt16[DS, 0xDBB0];
     // MOV BX,word ptr [SI] (1000_4CBE / 0x14CBE)
     BX = UInt16[DS, SI];
     // ADD SI,word ptr [BX + SI + -0x2] (1000_4CC0 / 0x14CC0)
@@ -22362,17 +21582,17 @@ public partial class Overrides : CSharpOverrideHelper {
     SI = Alu.Add16(SI, 0x4);
     // LODSW SI (1000_4CC9 / 0x14CC9)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV DX,AX (1000_4CCA / 0x14CCA)
     DX = AX;
     // LODSW SI (1000_4CCC / 0x14CCC)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV BX,AX (1000_4CCD / 0x14CCD)
     BX = AX;
     // LODSW SI (1000_4CCF / 0x14CCF)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // SUB AX,DX (1000_4CD0 / 0x14CD0)
     // AX -= DX;
     AX = Alu.Sub16(AX, DX);
@@ -22380,7 +21600,7 @@ public partial class Overrides : CSharpOverrideHelper {
     UInt16[SS, 0x487A] = AX;
     // LODSW SI (1000_4CD6 / 0x14CD6)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // SUB AX,BX (1000_4CD7 / 0x14CD7)
     // AX -= BX;
     AX = Alu.Sub16(AX, BX);
@@ -22432,12 +21652,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:da5f (1000_4D03 / 0x14D03)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_DA5F_1DA5F, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_4D06_014D06, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -22572,12 +21786,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_4D6C_014D6C, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action not_observed_1000_4D6C_014D6C(int loadOffset) {
@@ -22610,7 +21818,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_4D84_14D84:
     // LODSB SI (1000_4D84 / 0x14D84)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // XOR AH,AH (1000_4D85 / 0x14D85)
     AH = 0;
     // OR AL,AL (1000_4D87 / 0x14D87)
@@ -22630,7 +21838,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AH = AL;
     // LODSB SI (1000_4D91 / 0x14D91)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     label_1000_4D92_14D92:
     // PUSH SI (1000_4D92 / 0x14D92)
     Stack.Push(SI);
@@ -22674,7 +21882,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_4DAD_14DAD:
     // LODSB SI (1000_4DAD / 0x14DAD)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // OR AL,AL (1000_4DAE / 0x14DAE)
     // AL |= AL;
     AL = Alu.Or8(AL, AL);
@@ -22690,12 +21898,12 @@ public partial class Overrides : CSharpOverrideHelper {
     BP = AX;
     // LODSB SI (1000_4DB6 / 0x14DB6)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // MOV DX,AX (1000_4DB7 / 0x14DB7)
     DX = AX;
     // LODSB SI (1000_4DB9 / 0x14DB9)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // MOV BX,AX (1000_4DBA / 0x14DBA)
     BX = AX;
     // ADD DX,word ptr SS:[0xaa66] (1000_4DBC / 0x14DBC)
@@ -22713,8 +21921,8 @@ public partial class Overrides : CSharpOverrideHelper {
     // MOV ES,word ptr SS:[0xdbda] (1000_4DC9 / 0x14DC9)
     ES = UInt16[SS, 0xDBDA];
     // LDS SI,SS:[0xdbb0] (1000_4DCE / 0x14DCE)
-    SI = UInt16[SS, 0xDBB0];
     DS = UInt16[SS, 0xDBB2];
+    SI = UInt16[SS, 0xDBB0];
     // SHL BP,1 (1000_4DD3 / 0x14DD3)
     // BP <<= 1;
     BP = Alu.Shl16(BP, 1);
@@ -22723,12 +21931,12 @@ public partial class Overrides : CSharpOverrideHelper {
     SI = Alu.Add16(SI, UInt16[DS, (ushort)(BP + SI)]);
     // LODSW SI (1000_4DD8 / 0x14DD8)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV DI,AX (1000_4DD9 / 0x14DD9)
     DI = AX;
     // LODSW SI (1000_4DDB / 0x14DDB)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // XOR AH,AH (1000_4DDC / 0x14DDC)
     AH = 0;
     // MOV CX,AX (1000_4DDE / 0x14DDE)
@@ -22739,7 +21947,7 @@ public partial class Overrides : CSharpOverrideHelper {
     // Indirect call to [0x38cd], generating possible targets from emulator records
     uint targetAddress_1000_4DE3 = (uint)(UInt16[SS, 0x38CF] * 0x10 + UInt16[SS, 0x38CD] - cs1 * 0x10);
     switch(targetAddress_1000_4DE3) {
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_4DE3);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_4DE3));
         break;
     }
     // POP DS (1000_4DE8 / 0x14DE8)
@@ -23317,12 +22525,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_4FFB_014FFB, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action not_observed_1000_4FFB_014FFB(int loadOffset) {
@@ -23394,12 +22596,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:4fc3 (1000_503A / 0x1503A)
     // Jump converted to non entry function call
     if(JumpDispatcher.Jump(unknown_1000_4F0C_14F0C, 0x14FC3 - cs1 * 0x10)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_503C_1503C, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -23512,12 +22708,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_50BE_150BE, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_50BE_150BE(int loadOffset) {
@@ -23548,12 +22738,6 @@ public partial class Overrides : CSharpOverrideHelper {
     AL = 0x4;
     // JMP 0x1000:50ef (1000_50E8 / 0x150E8)
     // Jump converted to entry function call
-    if(JumpDispatcher.Jump(not_observed_1000_50EF_0150EF, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
     if(JumpDispatcher.Jump(not_observed_1000_50EF_0150EF, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
@@ -23608,12 +22792,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:4703 (1000_5116 / 0x15116)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(not_observed_1000_4703_014703, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_5119_015119, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -24823,12 +24001,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_557B_1557B, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_557B_1557B(int loadOffset) {
@@ -25005,18 +24177,20 @@ public partial class Overrides : CSharpOverrideHelper {
       goto label_1000_5603_15603;
     }
     // LES DI,[0xdbb0] (1000_55E2 / 0x155E2)
-    DI = UInt16[DS, 0xDBB0];
     ES = UInt16[DS, 0xDBB2];
+    DI = UInt16[DS, 0xDBB0];
     // MOV DS,word ptr [0xdd00] (1000_55E6 / 0x155E6)
     DS = UInt16[DS, 0xDD00];
     // MOV CX,0xc5f9 (1000_55EA / 0x155EA)
     CX = 0xC5F9;
     label_1000_55ED_155ED:
-    while (CX-- != 0) {
+    // REPNE
+    while (CX != 0) {
+      CX--;
       // SCASB ES:DI (1000_55ED / 0x155ED)
       Alu.Sub8(AL, UInt8[ES, DI]);
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-      if(ZeroFlag == false) {
+      DI = (ushort)(DI + Direction8);
+      if(ZeroFlag != false) {
         break;
       }
     }
@@ -25072,40 +24246,40 @@ public partial class Overrides : CSharpOverrideHelper {
     ES = Stack.Pop();
     // LODSW SI (1000_560F / 0x1560F)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // ADD AX,0x6 (1000_5610 / 0x15610)
     // AX += 0x6;
     AX = Alu.Add16(AX, 0x6);
     // STOSW ES:DI (1000_5613 / 0x15613)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // LODSW SI (1000_5614 / 0x15614)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // ADD AX,0x62 (1000_5615 / 0x15615)
     // AX += 0x62;
     AX = Alu.Add16(AX, 0x62);
     // STOSW ES:DI (1000_5618 / 0x15618)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // LODSW SI (1000_5619 / 0x15619)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // SUB AX,0x6 (1000_561A / 0x1561A)
     // AX -= 0x6;
     AX = Alu.Sub16(AX, 0x6);
     // STOSW ES:DI (1000_561D / 0x1561D)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // LODSW SI (1000_561E / 0x1561E)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // SUB AX,0x2 (1000_561F / 0x1561F)
     // AX -= 0x2;
     AX = Alu.Sub16(AX, 0x2);
     // STOSW ES:DI (1000_5622 / 0x15622)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // LEA SI,[DI + -0x8] (1000_5623 / 0x15623)
     SI = (ushort)(DI - 0x8);
     // MOV AL,0xf5 (1000_5626 / 0x15626)
@@ -25117,7 +24291,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_562C = (uint)(UInt16[DS, 0x38DF] * 0x10 + UInt16[DS, 0x38DD] - cs1 * 0x10);
     switch(targetAddress_1000_562C) {
       case 0x235CE : FarCall(cs1, 0x5630, unknown_334B_011E_335CE); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_562C);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_562C));
         break;
     }
     // MOV byte ptr [0x4724],0xff (1000_5630 / 0x15630)
@@ -25130,12 +24304,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:557b (1000_563B / 0x1563B)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_557B_1557B, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_563E_1563E, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -25185,7 +24353,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_5662 = (uint)(UInt16[DS, 0x2518]);
     switch(targetAddress_1000_5662) {
       case 0xD12F : NearCall(cs1, 0x5666, unknown_1000_D12F_1D12F); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_5662);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_5662));
         break;
     }
     // ADD word ptr [0xd82c],0x41 (1000_5666 / 0x15666)
@@ -25198,7 +24366,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_566D = (uint)(UInt16[DS, 0x2518]);
     switch(targetAddress_1000_566D) {
       case 0xD12F : NearCall(cs1, 0x5671, unknown_1000_D12F_1D12F); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_566D);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_566D));
         break;
     }
     // CALL 0x1000:c13b (1000_5671 / 0x15671)
@@ -25233,12 +24401,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:d194 (1000_568F / 0x1568F)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_D194_1D194, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_5692_15692, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -25400,7 +24562,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_5709 = (uint)(UInt16[DS, 0x2518]);
     switch(targetAddress_1000_5709) {
       case 0xD12F : NearCall(cs1, 0x570D, unknown_1000_D12F_1D12F); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_5709);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_5709));
         break;
     }
     // POP AX (1000_570D / 0x1570D)
@@ -25413,7 +24575,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_5710 = (uint)(UInt16[DS, 0x2518]);
     switch(targetAddress_1000_5710) {
       case 0xD12F : NearCall(cs1, 0x5714, unknown_1000_D12F_1D12F); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_5710);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_5710));
         break;
     }
     // POP DX (1000_5714 / 0x15714)
@@ -25455,12 +24617,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:d194 (1000_5725 / 0x15725)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_D194_1D194, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_5728_15728, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -25580,7 +24736,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_5766 = (uint)(UInt16[DS, 0x3967] * 0x10 + UInt16[DS, 0x3965] - cs1 * 0x10);
     switch(targetAddress_1000_5766) {
       case 0x23634 : FarCall(cs1, 0x576A, unknown_334B_0184_33634); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_5766);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_5766));
         break;
     }
     // SUB AL,0x50 (1000_576A / 0x1576A)
@@ -25670,7 +24826,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_57A7 = (uint)(UInt16[DS, 0x3963] * 0x10 + UInt16[DS, 0x3961] - cs1 * 0x10);
     switch(targetAddress_1000_57A7) {
       case 0x23631 : FarCall(cs1, 0x57AB, unknown_334B_0181_33631); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_57A7);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_57A7));
         break;
     }
     // POP AX (1000_57AB / 0x157AB)
@@ -25691,12 +24847,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:57b5 (1000_57B0 / 0x157B0)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(not_observed_1000_57B5_0157B5, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_57B2_157B2, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -25781,12 +24931,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_57E5_157E5, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_57E5_157E5(int loadOffset) {
@@ -25814,10 +24958,12 @@ public partial class Overrides : CSharpOverrideHelper {
     AL = 0x70;
     // MOV CX,0x100 (1000_57F5 / 0x157F5)
     CX = 0x100;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // STOSB ES:DI (1000_57F8 / 0x157F8)
       UInt8[ES, DI] = AL;
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+      DI = (ushort)(DI + Direction8);
     }
     // CMP byte ptr [0x4722],0x0 (1000_57FA / 0x157FA)
     Alu.Sub8(UInt8[DS, 0x4722], 0x0);
@@ -26017,15 +25163,10 @@ public partial class Overrides : CSharpOverrideHelper {
         }
         return JumpDispatcher.JumpAsmReturn!;
       }
-      default: throw FailAsUntested("Error: Jump not registered at address " + targetAddress_1000_5886);
+      default: throw FailAsUntested("Error: Jump not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_5886));
         break;
     }
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_589B_01589B, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
+    throw FailAsUntested("Function does not end with return and no instruction after the body ...");
   }
   
   public Action not_observed_1000_589B_01589B(int loadOffset) {
@@ -26075,7 +25216,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_58F1 = (uint)(UInt16[DS, 0x395F] * 0x10 + UInt16[DS, 0x395D] - cs1 * 0x10);
     switch(targetAddress_1000_58F1) {
       case 0x2362E : FarCall(cs1, 0x58F5, unknown_334B_017E_3362E); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_58F1);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_58F1));
         break;
     }
     // ADD SP,0x100 (1000_58F5 / 0x158F5)
@@ -26176,12 +25317,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:8850 (1000_5941 / 0x15941)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(spice86_label_1000_8850_18850, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_5944_15944, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -26316,7 +25451,7 @@ public partial class Overrides : CSharpOverrideHelper {
     // Indirect call to [0x3961], generating possible targets from emulator records
     uint targetAddress_1000_5997 = (uint)(UInt16[DS, 0x3963] * 0x10 + UInt16[DS, 0x3961] - cs1 * 0x10);
     switch(targetAddress_1000_5997) {
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_5997);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_5997));
         break;
     }
     // CALL 0x1000:e283 (1000_599B / 0x1599B)
@@ -26373,12 +25508,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:5b10 (1000_59BE / 0x159BE)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(not_observed_1000_5B10_015B10, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_59C1_159C1, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -26480,12 +25609,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_5A02_015A02, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action not_observed_1000_5A02_015A02(int loadOffset) {
@@ -26521,12 +25644,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:8685 (1000_5A17 / 0x15A17)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(not_observed_1000_8685_018685, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_5A1A_15A1A, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -26577,12 +25694,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_5A3D_015A3D, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action not_observed_1000_5A3D_015A3D(int loadOffset) {
@@ -26601,7 +25712,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_5A45 = (uint)(UInt16[DS, 0x3937] * 0x10 + UInt16[DS, 0x3935] - cs1 * 0x10);
     switch(targetAddress_1000_5A45) {
       case 0x23610 : FarCall(cs1, 0x5A49, unknown_334B_0160_33610); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_5A45);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_5A45));
         break;
     }
     // MOV BP,0x5a56 (1000_5A49 / 0x15A49)
@@ -26615,12 +25726,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:ae04 (1000_5A53 / 0x15A53)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_AE04_1AE04, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_5A56_15A56, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -26682,7 +25787,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_5A92 = (uint)(AX);
     switch(targetAddress_1000_5A92) {
       case 0x5A9A : NearCall(cs1, 0x5A94, unknown_1000_5A9A_15A9A); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_5A92);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_5A92));
         break;
     }
     // CALL 0x1000:d792 (1000_5A94 / 0x15A94)
@@ -26690,12 +25795,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:d712 (1000_5A97 / 0x15A97)
     // Jump converted to non entry function call
     if(JumpDispatcher.Jump(unknown_1000_D717_1D717, 0x1D712 - cs1 * 0x10)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_5A9A_15A9A, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -26802,12 +25901,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_5ADF_15ADF, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_5ADF_15ADF(int loadOffset) {
@@ -26842,12 +25935,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:da5f (1000_5B02 / 0x15B02)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_DA5F_1DA5F, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_5B10_015B10, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -26897,12 +25984,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:5b60 (1000_5B5B / 0x15B5B)
     // Jump converted to non entry function call
     if(JumpDispatcher.Jump(unknown_1000_5B5D_15B5D, 0x15B60 - cs1 * 0x10)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_5B5D_15B5D, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -27062,20 +26143,20 @@ public partial class Overrides : CSharpOverrideHelper {
     ES = Stack.Pop();
     // MOVSW ES:DI,SI (1000_5B9B / 0x15B9B)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // MOVSW ES:DI,SI (1000_5B9C / 0x15B9C)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // MOVSW ES:DI,SI (1000_5B9D / 0x15B9D)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // MOVSW ES:DI,SI (1000_5B9E / 0x15B9E)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // RET  (1000_5B9F / 0x15B9F)
     return NearRet();
   }
@@ -27098,12 +26179,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(MemCopy8Bytes_1000_5BA8_15BA8, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action MemCopy8Bytes_1000_5BA8_15BA8(int loadOffset) {
@@ -27120,12 +26195,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:5b99 (1000_5BAE / 0x15BAE)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(MemCopy8BytesDsSIToDsDi_1000_5B99_15B99, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_5BB0_15BB0, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -27180,12 +26249,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:c07c (1000_5BE8 / 0x15BE8)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(SetFrontBufferAsActiveFrameBuffer_1000_C07C_1C07C, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_5BEB_15BEB, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -27660,7 +26723,7 @@ public partial class Overrides : CSharpOverrideHelper {
     // Indirect jump to word ptr [0x46ed], generating possible targets from emulator records
     uint targetAddress_1000_5D7E = (uint)(UInt16[DS, 0x46ED]);
     switch(targetAddress_1000_5D7E) {
-      default: throw FailAsUntested("Error: Jump not registered at address " + targetAddress_1000_5D7E);
+      default: throw FailAsUntested("Error: Jump not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_5D7E));
         break;
     }
     label_1000_5D82_15D82:
@@ -28286,12 +27349,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_5F79_15F79, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_5F79_15F79(int loadOffset) {
@@ -28368,12 +27425,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:7b2b (1000_5FAD / 0x15FAD)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_7B2B_17B2B, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_5FB0_015FB0, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -28496,12 +27547,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_600E_1600E, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_600E_1600E(int loadOffset) {
@@ -28594,12 +27639,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_605C_01605C, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action not_observed_1000_605C_01605C(int loadOffset) {
@@ -28683,12 +27722,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:d194 (1000_60A9 / 0x160A9)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_D194_1D194, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_60AC_160AC, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -28777,12 +27810,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:c22f (1000_60F5 / 0x160F5)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(draw_sprite_ida_1000_C22F_1C22F, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_60F8_0160F8, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -29371,12 +28398,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_62A6_162A6, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_62A6_162A6(int loadOffset) {
@@ -29412,7 +28433,7 @@ public partial class Overrides : CSharpOverrideHelper {
     switch(targetAddress_1000_62BA) {
       case 0xD096 : NearCall(cs1, 0x62BE, unknown_1000_D096_1D096); break;
       case 0xD12F : NearCall(cs1, 0x62BE, unknown_1000_D12F_1D12F); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_62BA);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_62BA));
         break;
     }
     // MOV AL,byte ptr [DI + 0x1] (1000_62BE / 0x162BE)
@@ -29425,12 +28446,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:d19b (1000_62C6 / 0x162C6)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_D19B_1D19B, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_62C9_162C9, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -29566,12 +28581,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_6314_16314, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_6314_16314(int loadOffset) {
@@ -29635,12 +28644,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:c13e (1000_6338 / 0x16338)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(open_sprite_sheet_ida_1000_C13E_1C13E, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_633B_1633B, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -30046,7 +29049,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_6434_16434:
     // LODSW ES:SI (1000_6434 / 0x16434)
     AX = UInt16[ES, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // AND AX,0x3030 (1000_6436 / 0x16436)
     // AX &= 0x3030;
     AX = Alu.And16(AX, 0x3030);
@@ -30092,12 +29095,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_644E_1644E, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_644E_1644E(int loadOffset) {
@@ -30127,12 +29124,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:64b2 (1000_646D / 0x1646D)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(not_observed_1000_64B2_0164B2, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_646F_1646F, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -30217,7 +29208,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_64A5_164A5:
     // STOSB ES:DI (1000_64A5 / 0x164A5)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // INC DX (1000_64A6 / 0x164A6)
     DX = Alu.Inc16(DX);
     // CMP DX,BP (1000_64A7 / 0x164A7)
@@ -30387,7 +29378,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_6500 = (uint)(UInt16[cs1, 0x64ED]);
     switch(targetAddress_1000_6500) {
       case 0x646F : NearCall(cs1, 0x6505, unknown_1000_646F_1646F); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_6500);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_6500));
         break;
     }
     // POP DX (1000_6505 / 0x16505)
@@ -30401,7 +29392,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_6508 = (uint)(UInt16[cs1, 0x64ED]);
     switch(targetAddress_1000_6508) {
       case 0x646F : NearCall(cs1, 0x650D, unknown_1000_646F_1646F); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_6508);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_6508));
         break;
     }
     // POP BP (1000_650D / 0x1650D)
@@ -30473,7 +29464,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AL = Alu.Or8(AL, 0x20);
     // STOSB ES:DI (1000_65DF / 0x165DF)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // DEC DI (1000_65E0 / 0x165E0)
     DI = Alu.Dec16(DI);
     // INC BP (1000_65E1 / 0x165E1)
@@ -30554,7 +29545,7 @@ public partial class Overrides : CSharpOverrideHelper {
       case 0x34D0 : NearCall(cs1, 0x6613, unknown_1000_34D0_134D0); break;
       case 0x316E : NearCall(cs1, 0x6613, unknown_1000_316E_1316E); break;
       case 0x5728 : NearCall(cs1, 0x6613, unknown_1000_5728_15728); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_6611);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_6611));
         break;
     }
     // POP BP (1000_6613 / 0x16613)
@@ -30612,7 +29603,7 @@ public partial class Overrides : CSharpOverrideHelper {
       case 0x6E82 : NearCall(cs1, 0x662F, unknown_1000_6E82_16E82); break;
       case 0x6ECB : NearCall(cs1, 0x662F, unknown_1000_6ECB_16ECB); break;
       case 0x6EA8 : NearCall(cs1, 0x662F, unknown_1000_6EA8_16EA8); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_662D);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_662D));
         break;
     }
     // POP BP (1000_662F / 0x1662F)
@@ -30693,7 +29684,7 @@ public partial class Overrides : CSharpOverrideHelper {
     switch(targetAddress_1000_6660) {
       case 0x34D0 : NearCall(cs1, 0x6662, unknown_1000_34D0_134D0); break;
       case 0x5728 : NearCall(cs1, 0x6662, unknown_1000_5728_15728); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_6660);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_6660));
         break;
     }
     // POP BP (1000_6662 / 0x16662)
@@ -31516,12 +30507,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_6906_16906, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_6906_16906(int loadOffset) {
@@ -31655,7 +30640,7 @@ public partial class Overrides : CSharpOverrideHelper {
     SI = 0x3CBE;
     // LODSW SI (1000_6949 / 0x16949)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV CX,AX (1000_694A / 0x1694A)
     CX = AX;
     // JCXZ 0x1000:6972 (1000_694C / 0x1694C)
@@ -31932,12 +30917,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_6A33_16A33, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_6A33_16A33(int loadOffset) {
@@ -31966,12 +30945,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:6a89 (1000_6A42 / 0x16A42)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_6A89_16A89, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_6A71_016A71, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -32011,12 +30984,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_6A83_016A83, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action not_observed_1000_6A83_016A83(int loadOffset) {
@@ -32030,12 +30997,6 @@ public partial class Overrides : CSharpOverrideHelper {
     CL = 0x4;
     // JMP 0x1000:6a89 (1000_6A85 / 0x16A85)
     // Jump converted to entry function call
-    if(JumpDispatcher.Jump(unknown_1000_6A89_16A89, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
     if(JumpDispatcher.Jump(unknown_1000_6A89_16A89, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
@@ -32133,12 +31094,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:d2e2 (1000_6AB5 / 0x16AB5)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_D2E2_1D2E2, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_6AC5_016AC5, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -32338,7 +31293,7 @@ public partial class Overrides : CSharpOverrideHelper {
     SI = 0x3CBE;
     // LODSW SI (1000_6B4E / 0x16B4E)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV CX,AX (1000_6B4F / 0x16B4F)
     CX = AX;
     // JCXZ 0x1000:6b89 (1000_6B51 / 0x16B51)
@@ -32360,7 +31315,7 @@ public partial class Overrides : CSharpOverrideHelper {
     SI = UInt16[DS, (ushort)(DI + 0xD)];
     // LODSB SI (1000_6B5E / 0x16B5E)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // OR AL,AL (1000_6B5F / 0x16B5F)
     // AL |= AL;
     AL = Alu.Or8(AL, AL);
@@ -32372,7 +31327,7 @@ public partial class Overrides : CSharpOverrideHelper {
     SI = UInt16[DS, (ushort)(DI + 0xF)];
     // LODSB SI (1000_6B66 / 0x16B66)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // TEST byte ptr [DI + 0xc],0x2 (1000_6B67 / 0x16B67)
     Alu.And8(UInt8[DS, (ushort)(DI + 0xC)], 0x2);
     // JNZ 0x1000:6b84 (1000_6B6B / 0x16B6B)
@@ -32386,14 +31341,14 @@ public partial class Overrides : CSharpOverrideHelper {
     UInt16[DS, (ushort)(DI + 0x8)] = AX;
     // LODSB SI (1000_6B72 / 0x16B72)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // CBW  (1000_6B73 / 0x16B73)
     AX = (ushort)((short)((sbyte)AL));
     // MOV DX,AX (1000_6B74 / 0x16B74)
     DX = AX;
     // LODSB SI (1000_6B76 / 0x16B76)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // CBW  (1000_6B77 / 0x16B77)
     AX = (ushort)((short)((sbyte)AL));
     // MOV BX,AX (1000_6B78 / 0x16B78)
@@ -32442,12 +31397,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:6bb6 (1000_6B94 / 0x16B94)
     // Jump converted to non entry function call
     if(JumpDispatcher.Jump(unknown_1000_6B96_16B96, 0x16BB6 - cs1 * 0x10)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_6B96_16B96, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -32586,15 +31535,10 @@ public partial class Overrides : CSharpOverrideHelper {
         }
         return JumpDispatcher.JumpAsmReturn!;
       }
-      default: throw FailAsUntested("Error: Jump not registered at address " + targetAddress_1000_6C21);
+      default: throw FailAsUntested("Error: Jump not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_6C21));
         break;
     }
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_6C46_16C46, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
+    throw FailAsUntested("Function does not end with return and no instruction after the body ...");
   }
   
   public Action unknown_1000_6C46_16C46(int loadOffset) {
@@ -32750,7 +31694,7 @@ public partial class Overrides : CSharpOverrideHelper {
       case 0xF66 : NearCall(cs1, 0x6CBF, NoOp_1000_0F66_10F66); break;
       case 0x6FE5 : NearCall(cs1, 0x6CBF, unknown_1000_6FE5_16FE5); break;
       case 0x70CC : NearCall(cs1, 0x6CBF, unknown_1000_70CC_170CC); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_6CBA);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_6CBA));
         break;
     }
     // POP SI (1000_6CBF / 0x16CBF)
@@ -34210,12 +33154,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_7149_017149, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action not_observed_1000_7149_017149(int loadOffset) {
@@ -34228,12 +33166,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:84a6 (1000_7149 / 0x17149)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_84A6_184A6, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_714C_1714C, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -34368,12 +33300,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:7085 (1000_71A1 / 0x171A1)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_7085_17085, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_71A4_0171A4, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -34514,8 +33440,8 @@ public partial class Overrides : CSharpOverrideHelper {
     // CALL 0x1000:6e02 (1000_73B3 / 0x173B3)
     NearCall(cs1, 0x73B6, not_observed_1000_6E02_016E02);
     // LES DI,[0xdcfe] (1000_73B6 / 0x173B6)
-    DI = UInt16[DS, 0xDCFE];
     ES = UInt16[DS, 0xDD00];
+    DI = UInt16[DS, 0xDCFE];
     // XOR DI,DI (1000_73BA / 0x173BA)
     DI = 0;
     // MOV CX,0xc5f9 (1000_73BC / 0x173BC)
@@ -34540,7 +33466,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_73CE_173CE:
     // STOSB ES:DI (1000_73CE / 0x173CE)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // LOOP 0x1000:73bf (1000_73CF / 0x173CF)
     if(--CX != 0) {
       goto label_1000_73BF_173BF;
@@ -34783,12 +33709,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:5d50 (1000_74B3 / 0x174B3)
     // Jump converted to non entry function call
     if(JumpDispatcher.Jump(not_observed_1000_5D44_015D44, 0x15D50 - cs1 * 0x10)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_74B6_0174B6, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -35190,12 +34110,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_77D7_177D7, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_77D7_177D7(int loadOffset) {
@@ -35325,12 +34239,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:c13b (1000_7844 / 0x17844)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_C13B_1C13B, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_7847_17847, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -35692,12 +34600,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_79DE_179DE, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_79DE_179DE(int loadOffset) {
@@ -35732,12 +34634,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:5f9f (1000_79EB / 0x179EB)
     // Jump converted to non entry function call
     if(JumpDispatcher.Jump(unknown_1000_5F91_15F91, 0x15F9F - cs1 * 0x10)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_79EE_179EE, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -35925,12 +34821,12 @@ public partial class Overrides : CSharpOverrideHelper {
     SI = Alu.Add16(SI, AX);
     // LODSW SI (1000_7AC6 / 0x17AC6)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV [0x46d2],AX (1000_7AC7 / 0x17AC7)
     UInt16[DS, 0x46D2] = AX;
     // LODSW SI (1000_7ACA / 0x17ACA)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV [0x46d4],AX (1000_7ACB / 0x17ACB)
     UInt16[DS, 0x46D4] = AX;
     // PUSH DS (1000_7ACE / 0x17ACE)
@@ -35975,12 +34871,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:c13b (1000_7B0C / 0x17B0C)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_C13B_1C13B, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_7B0F_17B0F, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -36032,7 +34922,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_7B23 = (uint)(UInt16[DS, 0x38DF] * 0x10 + UInt16[DS, 0x38DD] - cs1 * 0x10);
     switch(targetAddress_1000_7B23) {
       case 0x235CE : FarCall(cs1, 0x7B27, unknown_334B_011E_335CE); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_7B23);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_7B23));
         break;
     }
     // POP SI (1000_7B27 / 0x17B27)
@@ -36040,12 +34930,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:c551 (1000_7B28 / 0x17B28)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_C551_1C551, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_7B2B_17B2B, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -36268,12 +35152,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_7BE0_17BE0, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_7BE0_17BE0(int loadOffset) {
@@ -36424,12 +35302,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_7C56_017C56, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action not_observed_1000_7C56_017C56(int loadOffset) {
@@ -36458,12 +35330,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:c07c (1000_7C60 / 0x17C60)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(SetFrontBufferAsActiveFrameBuffer_1000_C07C_1C07C, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_7C63_17C63, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -36705,11 +35571,13 @@ public partial class Overrides : CSharpOverrideHelper {
     DI = 0x4C7C;
     // MOV CX,0xe (1000_7D26 / 0x17D26)
     CX = 0xE;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSW ES:DI,SI (1000_7D29 / 0x17D29)
       UInt16[ES, DI] = UInt16[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      SI = (ushort)(SI + Direction16);
+      DI = (ushort)(DI + Direction16);
     }
     // MOV BX,word ptr [0x1942] (1000_7D2B / 0x17D2B)
     BX = UInt16[DS, 0x1942];
@@ -36751,12 +35619,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:c07c (1000_7D65 / 0x17D65)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(SetFrontBufferAsActiveFrameBuffer_1000_C07C_1C07C, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_7D68_17D68, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -36985,10 +35847,12 @@ public partial class Overrides : CSharpOverrideHelper {
     CX = 0xE;
     // XOR AX,AX (1000_7E49 / 0x17E49)
     AX = 0;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // STOSW ES:DI (1000_7E4B / 0x17E4B)
       UInt16[ES, DI] = AX;
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      DI = (ushort)(DI + Direction16);
     }
     // MOV DI,SI (1000_7E4D / 0x17E4D)
     DI = SI;
@@ -36996,11 +35860,13 @@ public partial class Overrides : CSharpOverrideHelper {
     CX = 0x7;
     // XOR AL,AL (1000_7E52 / 0x17E52)
     AL = 0;
-    while (CX-- != 0) {
+    // REPE
+    while (CX != 0) {
+      CX--;
       // SCASB ES:DI (1000_7E54 / 0x17E54)
       Alu.Sub8(AL, UInt8[ES, DI]);
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-      if(ZeroFlag == true) {
+      DI = (ushort)(DI + Direction8);
+      if(ZeroFlag != true) {
         break;
       }
     }
@@ -37188,7 +36054,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_7EE4_17EE4:
     // LODSW SI (1000_7EE4 / 0x17EE4)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // OR AX,AX (1000_7EE5 / 0x17EE5)
     // AX |= AX;
     AX = Alu.Or16(AX, AX);
@@ -37250,7 +36116,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AX = Alu.Rol16(AX, 1);
     // STOSB ES:DI (1000_7F08 / 0x17F08)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // CMP DI,0x470c (1000_7F09 / 0x17F09)
     Alu.Sub16(DI, 0x470C);
     // JC 0x1000:7f04 (1000_7F0D / 0x17F0D)
@@ -37281,7 +36147,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_7F18_17F18:
     // LODSB SI (1000_7F18 / 0x17F18)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // ROR AX,1 (1000_7F19 / 0x17F19)
     AX = Alu.Ror16(AX, 1);
     // CMP SI,0x4705 (1000_7F1B / 0x17F1B)
@@ -37338,11 +36204,13 @@ public partial class Overrides : CSharpOverrideHelper {
     DI = BX;
     // MOV CX,0x7 (1000_7F35 / 0x17F35)
     CX = 0x7;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSB ES:DI,SI (1000_7F38 / 0x17F38)
       UInt8[ES, DI] = UInt8[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+      SI = (ushort)(SI + Direction8);
+      DI = (ushort)(DI + Direction8);
     }
     label_1000_7F3A_17F3A:
     // OR AL,AL (1000_7F3A / 0x17F3A)
@@ -37784,16 +36652,16 @@ public partial class Overrides : CSharpOverrideHelper {
     SI = 0x11D3;
     // MOVSW ES:DI,SI (1000_808A / 0x1808A)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // MOVSW ES:DI,SI (1000_808B / 0x1808B)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // MOVSW ES:DI,SI (1000_808C / 0x1808C)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // SUB DI,0x6 (1000_808D / 0x1808D)
     // DI -= 0x6;
     DI = Alu.Sub16(DI, 0x6);
@@ -37801,11 +36669,13 @@ public partial class Overrides : CSharpOverrideHelper {
     AX = 0;
     // MOV CX,0x4 (1000_8092 / 0x18092)
     CX = 0x4;
-    while (CX-- != 0) {
+    // REPNE
+    while (CX != 0) {
+      CX--;
       // SCASW ES:DI (1000_8095 / 0x18095)
       Alu.Sub16(AX, UInt16[ES, DI]);
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-      if(ZeroFlag == false) {
+      DI = (ushort)(DI + Direction16);
+      if(ZeroFlag != false) {
         break;
       }
     }
@@ -37825,12 +36695,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:d32f (1000_80A9 / 0x180A9)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(not_observed_1000_D32F_01D32F, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_80AC_180AC, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -38005,7 +36869,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_8158_18158:
     // LODSW SI (1000_8158 / 0x18158)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // OR AX,AX (1000_8159 / 0x18159)
     // AX |= AX;
     AX = Alu.Or16(AX, AX);
@@ -38038,17 +36902,17 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_8178_18178:
     // LODSW SI (1000_8178 / 0x18178)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV DX,AX (1000_8179 / 0x18179)
     DX = AX;
     // LODSW SI (1000_817B / 0x1817B)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV BX,AX (1000_817C / 0x1817C)
     BX = AX;
     // LODSW SI (1000_817E / 0x1817E)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV DI,word ptr [SI] (1000_817F / 0x1817F)
     DI = UInt16[DS, SI];
     // CMP DI,0x8000 (1000_8181 / 0x18181)
@@ -38146,7 +37010,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_81CC = (uint)(UInt16[DS, 0x3903] * 0x10 + UInt16[DS, 0x3901] - cs1 * 0x10);
     switch(targetAddress_1000_81CC) {
       case 0x235E9 : FarCall(cs1, 0x81D0, unknown_334B_0139_335E9); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_81CC);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_81CC));
         break;
     }
     // POP SI (1000_81D0 / 0x181D0)
@@ -38274,16 +37138,16 @@ public partial class Overrides : CSharpOverrideHelper {
     ES = Stack.Pop();
     // MOVSW ES:DI,SI (1000_8229 / 0x18229)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // MOVSW ES:DI,SI (1000_822A / 0x1822A)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // MOVSW ES:DI,SI (1000_822B / 0x1822B)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // POP SI (1000_822C / 0x1822C)
     SI = Stack.Pop();
     // MOV DI,word ptr [0x11d3] (1000_822D / 0x1822D)
@@ -38321,12 +37185,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:c13b (1000_8249 / 0x18249)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_C13B_1C13B, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_824C_01824C, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -38373,12 +37231,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:c13b (1000_8253 / 0x18253)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_C13B_1C13B, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_8256_18256, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -38595,12 +37447,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_8308_18308, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_8308_18308(int loadOffset) {
@@ -38704,12 +37550,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_8347_18347, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_8347_18347(int loadOffset) {
@@ -38733,16 +37573,16 @@ public partial class Overrides : CSharpOverrideHelper {
     ES = Stack.Pop();
     // MOVSW ES:DI,SI (1000_8351 / 0x18351)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // MOVSW ES:DI,SI (1000_8352 / 0x18352)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // MOVSW ES:DI,SI (1000_8353 / 0x18353)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // POP DI (1000_8354 / 0x18354)
     DI = Stack.Pop();
     // POP SI (1000_8355 / 0x18355)
@@ -38991,12 +37831,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_841F_01841F, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action not_observed_1000_841F_01841F(int loadOffset) {
@@ -39060,12 +37894,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:83bc (1000_8451 / 0x18451)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(spice86_label_1000_83BC_183BC, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_8461_18461, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -39390,10 +38218,12 @@ public partial class Overrides : CSharpOverrideHelper {
     Stack.Push(AX);
     // XOR AL,AL (1000_854C / 0x1854C)
     AL = 0;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // STOSB ES:DI (1000_854E / 0x1854E)
       UInt8[ES, DI] = AL;
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+      DI = (ushort)(DI + Direction8);
     }
     // POP AX (1000_8550 / 0x18550)
     AX = Stack.Pop();
@@ -39440,11 +38270,13 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_857B_1857B:
     // XOR AL,AL (1000_857B / 0x1857B)
     AL = 0;
-    while (CX-- != 0) {
+    // REPNE
+    while (CX != 0) {
+      CX--;
       // SCASB ES:DI (1000_857D / 0x1857D)
       Alu.Sub8(AL, UInt8[ES, DI]);
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-      if(ZeroFlag == false) {
+      DI = (ushort)(DI + Direction8);
+      if(ZeroFlag != false) {
         break;
       }
     }
@@ -39940,12 +38772,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_8763_18763, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_8763_18763(int loadOffset) {
@@ -39971,12 +38797,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:186b (1000_876D / 0x1876D)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_186B_1186B, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_8770_18770, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -40148,12 +38968,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_881F_1881F, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_881F_1881F(int loadOffset) {
@@ -40168,12 +38982,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:8831 (1000_8822 / 0x18822)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(not_observed_1000_8831_018831, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_8824_18824, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -40196,12 +39004,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_8829_18829, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_8829_18829(int loadOffset) {
@@ -40216,12 +39018,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:8831 (1000_882C / 0x1882C)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(not_observed_1000_8831_018831, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_882E_1882E, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -40282,13 +39078,13 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_8846_18846:
     // LODSW SI (1000_8846 / 0x18846)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // ADD word ptr [0x197c],AX (1000_8847 / 0x18847)
     // UInt16[DS, 0x197C] += AX;
     UInt16[DS, 0x197C] = Alu.Add16(UInt16[DS, 0x197C], AX);
     // LODSW SI (1000_884B / 0x1884B)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // ADD word ptr [0x197e],AX (1000_884C / 0x1884C)
     // UInt16[DS, 0x197E] += AX;
     UInt16[DS, 0x197E] = Alu.Add16(UInt16[DS, 0x197E], AX);
@@ -40315,7 +39111,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_8853 = (uint)(UInt16[DS, 0x46ED]);
     switch(targetAddress_1000_8853) {
       case 0x5A9A : NearCall(cs1, 0x8857, unknown_1000_5A9A_15A9A); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_8853);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_8853));
         break;
     }
     label_1000_8857_18857:
@@ -40332,25 +39128,19 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_8858_18858:
     // LODSW SI (1000_8858 / 0x18858)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // ADD word ptr [0x1980],AX (1000_8859 / 0x18859)
     // UInt16[DS, 0x1980] += AX;
     UInt16[DS, 0x1980] = Alu.Add16(UInt16[DS, 0x1980], AX);
     // LODSW SI (1000_885D / 0x1885D)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // ADD word ptr [0x1982],AX (1000_885E / 0x1885E)
     // UInt16[DS, 0x1982] += AX;
     UInt16[DS, 0x1982] = Alu.Add16(UInt16[DS, 0x1982], AX);
     // JMP 0x1000:542f (1000_8862 / 0x18862)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_542F_1542F, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_8865_18865, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -40437,21 +39227,21 @@ public partial class Overrides : CSharpOverrideHelper {
     AX = 0;
     // STOSW ES:DI (1000_88A6 / 0x188A6)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // STOSW ES:DI (1000_88A7 / 0x188A7)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // STOSW ES:DI (1000_88A8 / 0x188A8)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // STOSW ES:DI (1000_88A9 / 0x188A9)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // MOV AL,0x80 (1000_88AA / 0x188AA)
     AL = 0x80;
     // STOSW ES:DI (1000_88AC / 0x188AC)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // RET  (1000_88AD / 0x188AD)
     return NearRet();
   }
@@ -40554,7 +39344,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_88E1_188E1:
     // LODSB SI (1000_88E1 / 0x188E1)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // OR AL,AL (1000_88E2 / 0x188E2)
     // AL |= AL;
     AL = Alu.Or8(AL, AL);
@@ -40603,7 +39393,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_88F8_188F8:
     // LODSB SI (1000_88F8 / 0x188F8)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // CMP AL,0xff (1000_88F9 / 0x188F9)
     Alu.Sub8(AL, 0xFF);
     // JZ 0x1000:893d (1000_88FB / 0x188FB)
@@ -40625,7 +39415,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_8905_18905:
     // STOSB ES:DI (1000_8905 / 0x18905)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // MOV AL,0xff (1000_8906 / 0x18906)
     AL = 0xFF;
     // CMP DI,0xa9cf (1000_8908 / 0x18908)
@@ -40644,7 +39434,7 @@ public partial class Overrides : CSharpOverrideHelper {
     CH = AL;
     // LODSW SI (1000_8914 / 0x18914)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV CL,AH (1000_8915 / 0x18915)
     CL = AH;
     // AND AX,0x3fff (1000_8917 / 0x18917)
@@ -40671,11 +39461,13 @@ public partial class Overrides : CSharpOverrideHelper {
     // ADD SI,AX (1000_892B / 0x1892B)
     // SI += AX;
     SI = Alu.Add16(SI, AX);
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSB ES:DI,SI (1000_892D / 0x1892D)
       UInt8[ES, DI] = UInt8[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+      SI = (ushort)(SI + Direction8);
+      DI = (ushort)(DI + Direction8);
     }
     // POP SI (1000_892F / 0x1892F)
     SI = Stack.Pop();
@@ -40694,11 +39486,11 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_893C_1893C:
     // LODSB SI (1000_893C / 0x1893C)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     label_1000_893D_1893D:
     // STOSB ES:DI (1000_893D / 0x1893D)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // MOV SI,0xa840 (1000_893E / 0x1893E)
     SI = 0xA840;
     // PUSH SS (1000_8941 / 0x18941)
@@ -40739,7 +39531,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_8953_18953:
     // LODSB SI (1000_8953 / 0x18953)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // OR AL,AL (1000_8954 / 0x18954)
     // AL |= AL;
     AL = Alu.Or8(AL, AL);
@@ -40749,7 +39541,7 @@ public partial class Overrides : CSharpOverrideHelper {
     }
     // STOSB ES:DI (1000_8958 / 0x18958)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // JMP 0x1000:8953 (1000_8959 / 0x18959)
     goto label_1000_8953_18953;
     label_1000_895B_1895B:
@@ -40790,7 +39582,7 @@ public partial class Overrides : CSharpOverrideHelper {
     }
     // LODSW SI (1000_8974 / 0x18974)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // XCHG AL,AH (1000_8975 / 0x18975)
     byte tmp_1000_8975 = AL;
     AL = AH;
@@ -40835,11 +39627,11 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_899B_1899B:
     // STOSB ES:DI (1000_899B / 0x1899B)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // MOVSB ES:DI,SI (1000_899C / 0x1899C)
     UInt8[ES, DI] = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
+    DI = (ushort)(DI + Direction8);
     // CMP AL,0xd2 (1000_899D / 0x1899D)
     Alu.Sub8(AL, 0xD2);
     // JC 0x1000:89a3 (1000_899F / 0x1899F)
@@ -40851,8 +39643,8 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_89A3_189A3:
     // MOVSB ES:DI,SI (1000_89A3 / 0x189A3)
     UInt8[ES, DI] = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
+    DI = (ushort)(DI + Direction8);
     // CMP AL,0xd0 (1000_89A4 / 0x189A4)
     Alu.Sub8(AL, 0xD0);
     // JNZ 0x1000:89aa (1000_89A6 / 0x189A6)
@@ -40864,14 +39656,14 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_89AA_189AA:
     // MOVSW ES:DI,SI (1000_89AA / 0x189AA)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // JMP 0x1000:8953 (1000_89AB / 0x189AB)
     goto label_1000_8953_18953;
     label_1000_89AD_189AD:
     // STOSB ES:DI (1000_89AD / 0x189AD)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // JMP 0x1000:8953 (1000_89AE / 0x189AE)
     goto label_1000_8953_18953;
     label_1000_89B0_189B0:
@@ -40895,7 +39687,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_89C1_189C1:
     // STOSB ES:DI (1000_89C1 / 0x189C1)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // CMP AL,0xff (1000_89C2 / 0x189C2)
     Alu.Sub8(AL, 0xFF);
     // JNZ 0x1000:89c8 (1000_89C4 / 0x189C4)
@@ -40936,7 +39728,7 @@ public partial class Overrides : CSharpOverrideHelper {
     BL = AL;
     // LODSB SI (1000_89E7 / 0x189E7)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // XOR AH,AH (1000_89E8 / 0x189E8)
     AH = 0;
     // MOV BP,AX (1000_89EA / 0x189EA)
@@ -40993,7 +39785,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AL = Alu.Add8(AL, 0x30);
     // STOSB ES:DI (1000_8A14 / 0x18A14)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // MOV AL,DH (1000_8A15 / 0x18A15)
     AL = DH;
     // MOV DH,DL (1000_8A17 / 0x18A17)
@@ -41345,12 +40137,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_8B10_018B10, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action not_observed_1000_8B10_018B10(int loadOffset) {
@@ -41603,7 +40389,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_8BE9_18BE9:
     // LODSB SI (1000_8BE9 / 0x18BE9)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // OR AL,AL (1000_8BEA / 0x18BEA)
     // AL |= AL;
     AL = Alu.Or8(AL, AL);
@@ -41685,12 +40471,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:8c47 (1000_8C0C / 0x18C0C)
     // Jump converted to non entry function call
     if(JumpDispatcher.Jump(not_observed_1000_8C0F_018C0F, 0x18C47 - cs1 * 0x10)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_8C0F_018C0F, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -41788,7 +40568,7 @@ public partial class Overrides : CSharpOverrideHelper {
       case 0xD096 : NearCall(cs1, 0x8C45, unknown_1000_D096_1D096); break;
       case 0xD0FF : NearCall(cs1, 0x8C45, unknown_1000_D0FF_1D0FF); break;
       case 0xD12F : NearCall(cs1, 0x8C45, unknown_1000_D12F_1D12F); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_8C41);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_8C41));
         break;
     }
     // JMP 0x1000:8be9 (1000_8C45 / 0x18C45)
@@ -41908,7 +40688,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_8CA9 = (uint)(UInt16[DS, 0x391F] * 0x10 + UInt16[DS, 0x391D] - cs1 * 0x10);
     switch(targetAddress_1000_8CA9) {
       case 0x235FE : FarCall(cs1, 0x8CAD, unknown_334B_014E_335FE); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_8CA9);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_8CA9));
         break;
     }
     // MOV SI,0x1be2 (1000_8CAD / 0x18CAD)
@@ -42215,13 +40995,13 @@ public partial class Overrides : CSharpOverrideHelper {
     SI = 0xA9D0;
     // LODSW SI (1000_8DFB / 0x18DFB)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV CX,AX (1000_8DFC / 0x18DFC)
     CX = AX;
     label_1000_8DFE_18DFE:
     // LODSW SI (1000_8DFE / 0x18DFE)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // OR AX,AX (1000_8DFF / 0x18DFF)
     // AX |= AX;
     AX = Alu.Or16(AX, AX);
@@ -42421,7 +41201,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AH = 0;
     // STOSW ES:DI (1000_8EA2 / 0x18EA2)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // ADD byte ptr [0x478c],AL (1000_8EA3 / 0x18EA3)
     // UInt8[DS, 0x478C] += AL;
     UInt8[DS, 0x478C] = Alu.Add8(UInt8[DS, 0x478C], AL);
@@ -42456,12 +41236,12 @@ public partial class Overrides : CSharpOverrideHelper {
     AX = Alu.Add16(AX, 0x6);
     // STOSW ES:DI (1000_8EBC / 0x18EBC)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // MOV AX,DX (1000_8EBD / 0x18EBD)
     AX = DX;
     // STOSW ES:DI (1000_8EBF / 0x18EBF)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // POP DX (1000_8EC0 / 0x18EC0)
     DX = Stack.Pop();
     // INC DH (1000_8EC1 / 0x18EC1)
@@ -42475,10 +41255,10 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_8ECA_18ECA:
     // STOSW ES:DI (1000_8ECA / 0x18ECA)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // STOSW ES:DI (1000_8ECB / 0x18ECB)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // INC DH (1000_8ECC / 0x18ECC)
     DH = Alu.Inc8(DH);
     // MOV BX,word ptr [0x478f] (1000_8ECE / 0x18ECE)
@@ -42503,7 +41283,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_8EDA_18EDA:
     // LODSB SI (1000_8EDA / 0x18EDA)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // CMP AL,0x20 (1000_8EDB / 0x18EDB)
     Alu.Sub8(AL, 0x20);
     // JZ 0x1000:8f25 (1000_8EDD / 0x18EDD)
@@ -42621,7 +41401,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AX = UInt16[SS, BP];
     // STOSW ES:DI (1000_8F34 / 0x18F34)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // MOV DX,AX (1000_8F35 / 0x18F35)
     DX = AX;
     // ADD AX,word ptr [0x4784] (1000_8F37 / 0x18F37)
@@ -42635,7 +41415,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AX = UInt16[SS, (ushort)(BP + 0x2)];
     // STOSW ES:DI (1000_8F44 / 0x18F44)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // MOV BX,AX (1000_8F45 / 0x18F45)
     BX = AX;
     // ADD AX,word ptr [0x4788] (1000_8F47 / 0x18F47)
@@ -42684,12 +41464,12 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_8F7B_18F7B:
     // STOSW ES:DI (1000_8F7B / 0x18F7B)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // MOV AX,BX (1000_8F7C / 0x18F7C)
     AX = BX;
     // STOSW ES:DI (1000_8F7E / 0x18F7E)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // CMP byte ptr [0x46eb],0x0 (1000_8F7F / 0x18F7F)
     Alu.Sub8(UInt8[DS, 0x46EB], 0x0);
     // JNZ 0x1000:8fd1 (1000_8F84 / 0x18F84)
@@ -42760,7 +41540,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_8FBB = (uint)(UInt16[DS, 0x391B] * 0x10 + UInt16[DS, 0x3919] - cs1 * 0x10);
     switch(targetAddress_1000_8FBB) {
       case 0x235FB : FarCall(cs1, 0x8FBF, unknown_334B_014B_335FB); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_8FBB);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_8FBB));
         break;
     }
     // CALL 0x1000:c137 (1000_8FBF / 0x18FBF)
@@ -42807,7 +41587,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_8FEA = (uint)(UInt16[DS, 0x38DF] * 0x10 + UInt16[DS, 0x38DD] - cs1 * 0x10);
     switch(targetAddress_1000_8FEA) {
       case 0x235CE : FarCall(cs1, 0x8FEE, unknown_334B_011E_335CE); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_8FEA);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_8FEA));
         break;
     }
     // ADD word ptr [0x1be4],0x2 (1000_8FEE / 0x18FEE)
@@ -42856,10 +41636,12 @@ public partial class Overrides : CSharpOverrideHelper {
     ES = Stack.Pop();
     // XOR AL,AL (1000_9013 / 0x19013)
     AL = 0;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // STOSB ES:DI (1000_9015 / 0x19015)
       UInt8[ES, DI] = AL;
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+      DI = (ushort)(DI + Direction8);
     }
     // MOV AX,0x4c6f (1000_9017 / 0x19017)
     AX = 0x4C6F;
@@ -42873,12 +41655,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:8895 (1000_9022 / 0x19022)
     // Jump converted to non entry function call
     if(JumpDispatcher.Jump(not_observed_1000_8888_018888, 0x18895 - cs1 * 0x10)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_9025_19025, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -42916,7 +41692,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_9041 = (uint)(UInt16[DS, 0x38CB] * 0x10 + UInt16[DS, 0x38C9] - cs1 * 0x10);
     switch(targetAddress_1000_9041) {
       case 0x235BF : FarCall(cs1, 0x9045, VgaFunc05Blit_334B_010F_335BF); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_9041);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_9041));
         break;
     }
     // RET  (1000_9045 / 0x19045)
@@ -42955,11 +41731,13 @@ public partial class Overrides : CSharpOverrideHelper {
     // MOV AH,0x8 (1000_9061 / 0x19061)
     AH = 0x8;
     label_1000_9063_19063:
-    while (CX-- != 0) {
+    // REPNE
+    while (CX != 0) {
+      CX--;
       // SCASB ES:DI (1000_9063 / 0x19063)
       Alu.Sub8(AL, UInt8[ES, DI]);
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-      if(ZeroFlag == false) {
+      DI = (ushort)(DI + Direction8);
+      if(ZeroFlag != false) {
         break;
       }
     }
@@ -43060,7 +41838,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_90B8 = (uint)(UInt16[DS, 0x38CF] * 0x10 + UInt16[DS, 0x38CD] - cs1 * 0x10);
     switch(targetAddress_1000_90B8) {
       case 0x235C2 : FarCall(cs1, 0x90BC, unknown_334B_0112_335C2); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_90B8);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_90B8));
         break;
     }
     label_1000_90BC_190BC:
@@ -43170,12 +41948,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:d338 (1000_9120 / 0x19120)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_D338_1D338, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_9123_19123, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -43417,8 +42189,8 @@ public partial class Overrides : CSharpOverrideHelper {
     // POP ES (1000_91DF / 0x191DF)
     ES = Stack.Pop();
     // LDS SI,[0xdbb0] (1000_91E0 / 0x191E0)
-    SI = UInt16[DS, 0xDBB0];
     DS = UInt16[DS, 0xDBB2];
+    SI = UInt16[DS, 0xDBB0];
     // MOV BX,word ptr [SI] (1000_91E4 / 0x191E4)
     BX = UInt16[DS, SI];
     // ADD SI,word ptr [BX + SI + -0x2] (1000_91E6 / 0x191E6)
@@ -43431,20 +42203,20 @@ public partial class Overrides : CSharpOverrideHelper {
     DI = 0x1BF0;
     // MOVSW ES:DI,SI (1000_91EF / 0x191EF)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // MOVSW ES:DI,SI (1000_91F0 / 0x191F0)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // MOVSW ES:DI,SI (1000_91F1 / 0x191F1)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // MOVSW ES:DI,SI (1000_91F2 / 0x191F2)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // MOV AX,SI (1000_91F3 / 0x191F3)
     AX = SI;
     // ADD AX,0x2 (1000_91F5 / 0x191F5)
@@ -43485,12 +42257,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:c13e (1000_9212 / 0x19212)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(open_sprite_sheet_ida_1000_C13E_1C13E, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_9215_19215, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -43608,7 +42374,7 @@ public partial class Overrides : CSharpOverrideHelper {
         }
         return JumpDispatcher.JumpAsmReturn!;
       }
-      default: throw FailAsUntested("Error: Jump not registered at address " + targetAddress_1000_923D);
+      default: throw FailAsUntested("Error: Jump not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_923D));
         break;
     }
     label_1000_9240_19240:
@@ -43714,12 +42480,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_9285_19285, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_9285_19285(int loadOffset) {
@@ -43747,12 +42507,12 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_9291_19291:
     // LODSW SI (1000_9291 / 0x19291)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV DI,AX (1000_9292 / 0x19292)
     DI = AX;
     // LODSW SI (1000_9294 / 0x19294)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV BP,AX (1000_9295 / 0x19295)
     BP = AX;
     // OR DI,DI (1000_9297 / 0x19297)
@@ -43882,12 +42642,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_92EB_0192EB, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action not_observed_1000_92EB_0192EB(int loadOffset) {
@@ -43924,12 +42678,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_92F7_0192F7, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action not_observed_1000_92F7_0192F7(int loadOffset) {
@@ -43944,12 +42692,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:93aa (1000_92F9 / 0x192F9)
     // Jump converted to non entry function call
     if(JumpDispatcher.Jump(not_observed_1000_9381_019381, 0x193AA - cs1 * 0x10)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_9301_019301, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -43972,12 +42714,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_9306_019306, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action not_observed_1000_9306_019306(int loadOffset) {
@@ -43992,12 +42728,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:93aa (1000_9308 / 0x19308)
     // Jump converted to non entry function call
     if(JumpDispatcher.Jump(not_observed_1000_9381_019381, 0x193AA - cs1 * 0x10)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_931A_01931A, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -44020,12 +42750,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_9373_019373, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action not_observed_1000_9373_019373(int loadOffset) {
@@ -44044,12 +42768,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:93aa (1000_937C / 0x1937C)
     // Jump converted to non entry function call
     if(JumpDispatcher.Jump(not_observed_1000_9381_019381, 0x193AA - cs1 * 0x10)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_9381_019381, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -44146,12 +42864,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:9472 (1000_93DC / 0x193DC)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(not_observed_1000_9472_019472, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_93DF_193DF, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -44311,12 +43023,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_945B_1945B, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_945B_1945B(int loadOffset) {
@@ -44342,12 +43048,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:93aa (1000_9465 / 0x19465)
     // Jump converted to non entry function call
     if(JumpDispatcher.Jump(not_observed_1000_9381_019381, 0x193AA - cs1 * 0x10)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_9468_19468, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -44499,8 +43199,8 @@ public partial class Overrides : CSharpOverrideHelper {
     return JumpDispatcher.JumpAsmReturn!;
     label_1000_94DD_194DD:
     // LDS SI,[0x47b6] (1000_94DD / 0x194DD)
-    SI = UInt16[DS, 0x47B6];
     DS = UInt16[DS, 0x47B8];
+    SI = UInt16[DS, 0x47B6];
     // CALL 0x1000:88d2 (1000_94E1 / 0x194E1)
     NearCall(cs1, 0x94E4, unknown_1000_88D2_188D2);
     // MOV SI,word ptr [0x47ba] (1000_94E4 / 0x194E4)
@@ -44867,11 +43567,13 @@ public partial class Overrides : CSharpOverrideHelper {
     ES = Stack.Pop();
     // MOV DI,0x4758 (1000_9640 / 0x19640)
     DI = 0x4758;
-    while (CX-- != 0) {
+    // REPNE
+    while (CX != 0) {
+      CX--;
       // SCASW ES:DI (1000_9643 / 0x19643)
       Alu.Sub16(AX, UInt16[ES, DI]);
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-      if(ZeroFlag == false) {
+      DI = (ushort)(DI + Direction16);
+      if(ZeroFlag != false) {
         break;
       }
     }
@@ -44889,12 +43591,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:d280 (1000_9652 / 0x19652)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_D280_1D280, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_9655_19655, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -44942,12 +43638,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:d763 (1000_9670 / 0x19670)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_D763_1D763, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_9673_19673, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -45035,12 +43725,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:d763 (1000_96B2 / 0x196B2)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_D763_1D763, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_96B5_196B5, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -45166,12 +43850,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_9719_19719, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_9719_19719(int loadOffset) {
@@ -45289,12 +43967,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:9f9e (1000_978B / 0x1978B)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_9F9E_19F9E, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_978E_1978E, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -45688,12 +44360,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(ClearUnknownValuesAndAX_1000_98F5_198F5, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action ClearUnknownValuesAndAX_1000_98F5_198F5(int loadOffset) {
@@ -45898,7 +44564,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_9978_19978:
     // LODSB SI (1000_9978 / 0x19978)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // OR AL,AL (1000_9979 / 0x19979)
     // AL |= AL;
     AL = Alu.Or8(AL, AL);
@@ -45988,7 +44654,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_99B2_199B2:
     // LODSW SI (1000_99B2 / 0x199B2)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // XCHG word ptr [DI],AX (1000_99B3 / 0x199B3)
     ushort tmp_1000_99B3 = UInt16[DS, DI];
     UInt16[DS, DI] = AX;
@@ -46140,12 +44806,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_9A1C_019A1C, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action not_observed_1000_9A1C_019A1C(int loadOffset) {
@@ -46237,12 +44897,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_9A60_19A60, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_9A60_19A60(int loadOffset) {
@@ -46268,11 +44922,13 @@ public partial class Overrides : CSharpOverrideHelper {
     // MOV DI,SI (1000_9A6B / 0x19A6B)
     DI = SI;
     label_1000_9A6D_19A6D:
-    while (CX-- != 0) {
+    // REPNE
+    while (CX != 0) {
+      CX--;
       // SCASB ES:DI (1000_9A6D / 0x19A6D)
       Alu.Sub8(AL, UInt8[ES, DI]);
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-      if(ZeroFlag == false) {
+      DI = (ushort)(DI + Direction8);
+      if(ZeroFlag != false) {
         break;
       }
     }
@@ -46354,12 +45010,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_9AB4_19AB4, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_9AB4_19AB4(int loadOffset) {
@@ -46432,22 +45082,22 @@ public partial class Overrides : CSharpOverrideHelper {
     }
     // LODSW SI (1000_9AF0 / 0x19AF0)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV CX,AX (1000_9AF1 / 0x19AF1)
     CX = AX;
     // LODSW SI (1000_9AF3 / 0x19AF3)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV DX,AX (1000_9AF4 / 0x19AF4)
     DX = AX;
     // LODSW SI (1000_9AF6 / 0x19AF6)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV BX,AX (1000_9AF7 / 0x19AF7)
     BX = AX;
     // LODSW SI (1000_9AF9 / 0x19AF9)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // XCHG AX,CX (1000_9AFA / 0x19AFA)
     ushort tmp_1000_9AFA = AX;
     AX = CX;
@@ -46500,8 +45150,8 @@ public partial class Overrides : CSharpOverrideHelper {
     // MOV CX,AX (1000_9B1F / 0x19B1F)
     CX = AX;
     // LES SI,[0xdbb0] (1000_9B21 / 0x19B21)
-    SI = UInt16[DS, 0xDBB0];
     ES = UInt16[DS, 0xDBB2];
+    SI = UInt16[DS, 0xDBB0];
     // MOV DI,SI (1000_9B25 / 0x19B25)
     DI = SI;
     // MOV BP,0x5 (1000_9B27 / 0x19B27)
@@ -46527,7 +45177,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AX = UInt16[ES, (ushort)(BX + SI)];
     // STOSW ES:DI (1000_9B39 / 0x19B39)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // MOV BL,DH (1000_9B3A / 0x19B3A)
     BL = DH;
     // MOV DH,DL (1000_9B3C / 0x19B3C)
@@ -46722,12 +45372,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_9BCC_019BCC, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action not_observed_1000_9BCC_019BCC(int loadOffset) {
@@ -46789,7 +45433,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_9BFA_19BFA:
     // LODSB SI (1000_9BFA / 0x19BFA)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // XOR AH,AH (1000_9BFB / 0x19BFB)
     AH = 0;
     // OR AL,AL (1000_9BFD / 0x19BFD)
@@ -46809,7 +45453,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AH = AL;
     // LODSB SI (1000_9C07 / 0x19C07)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     label_1000_9C08_19C08:
     // PUSH SI (1000_9C08 / 0x19C08)
     Stack.Push(SI);
@@ -46829,7 +45473,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_9C18_19C18:
     // LODSB SI (1000_9C18 / 0x19C18)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // OR AL,AL (1000_9C19 / 0x19C19)
     // AL |= AL;
     AL = Alu.Or8(AL, AL);
@@ -46839,11 +45483,11 @@ public partial class Overrides : CSharpOverrideHelper {
     }
     // STOSB ES:DI (1000_9C1D / 0x19C1D)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // MOVSW ES:DI,SI (1000_9C1E / 0x19C1E)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // INC CX (1000_9C1F / 0x19C1F)
     CX = Alu.Inc16(CX);
     // JMP 0x1000:9c18 (1000_9C20 / 0x19C20)
@@ -46912,7 +45556,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_9C54_19C54:
     // LODSW SI (1000_9C54 / 0x19C54)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV CX,AX (1000_9C55 / 0x19C55)
     CX = AX;
     label_1000_9C57_19C57:
@@ -46928,14 +45572,14 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_9C5E_19C5E:
     // CMPSW ES:DI,SI (1000_9C5E / 0x19C5E)
     Alu.Sub16(UInt16[DS, SI], UInt16[ES, DI]);
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // LAHF  (1000_9C5F / 0x19C5F)
     AH = (byte)FlagRegister;
     // CMPSB ES:DI,SI (1000_9C60 / 0x19C60)
     Alu.Sub8(UInt8[DS, SI], UInt8[ES, DI]);
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
+    DI = (ushort)(DI + Direction8);
     // MOV AL,AH (1000_9C61 / 0x19C61)
     AL = AH;
     // LAHF  (1000_9C63 / 0x19C63)
@@ -47070,14 +45714,14 @@ public partial class Overrides : CSharpOverrideHelper {
     AH = 0;
     // LODSB SI (1000_9CCA / 0x19CCA)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // MOV BP,AX (1000_9CCB / 0x19CCB)
     BP = AX;
     // DEC BP (1000_9CCD / 0x19CCD)
     BP = Alu.Dec16(BP);
     // LODSB SI (1000_9CCE / 0x19CCE)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // MOV DX,AX (1000_9CCF / 0x19CCF)
     DX = AX;
     // ADD DX,word ptr [0x1bf0] (1000_9CD1 / 0x19CD1)
@@ -47085,15 +45729,15 @@ public partial class Overrides : CSharpOverrideHelper {
     DX = Alu.Add16(DX, UInt16[DS, 0x1BF0]);
     // LODSB SI (1000_9CD5 / 0x19CD5)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // MOV BX,AX (1000_9CD6 / 0x19CD6)
     BX = AX;
     // ADD BX,word ptr [0x1bf2] (1000_9CD8 / 0x19CD8)
     // BX += UInt16[DS, 0x1BF2];
     BX = Alu.Add16(BX, UInt16[DS, 0x1BF2]);
     // LDS SI,[0xdbb0] (1000_9CDC / 0x19CDC)
-    SI = UInt16[DS, 0xDBB0];
     DS = UInt16[DS, 0xDBB2];
+    SI = UInt16[DS, 0xDBB0];
     // SHL BP,1 (1000_9CE0 / 0x19CE0)
     // BP <<= 1;
     BP = Alu.Shl16(BP, 1);
@@ -47122,7 +45766,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_9CF8_19CF8:
     // LODSW SI (1000_9CF8 / 0x19CF8)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // AND AX,0x1ff (1000_9CF9 / 0x19CF9)
     // AX &= 0x1FF;
     AX = Alu.And16(AX, 0x1FF);
@@ -47131,7 +45775,7 @@ public partial class Overrides : CSharpOverrideHelper {
     DX = Alu.Add16(DX, AX);
     // LODSW SI (1000_9CFE / 0x19CFE)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // XOR AH,AH (1000_9CFF / 0x19CFF)
     AH = 0;
     // ADD BX,AX (1000_9D01 / 0x19D01)
@@ -47193,11 +45837,13 @@ public partial class Overrides : CSharpOverrideHelper {
     // ADD CX,0x2 (1000_9D27 / 0x19D27)
     // CX += 0x2;
     CX = Alu.Add16(CX, 0x2);
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSB ES:DI,SI (1000_9D2A / 0x19D2A)
       UInt8[ES, DI] = UInt8[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+      SI = (ushort)(SI + Direction8);
+      DI = (ushort)(DI + Direction8);
     }
     // POP SI (1000_9D2C / 0x19D2C)
     SI = Stack.Pop();
@@ -47218,7 +45864,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_9D2D_19D2D:
     // LODSW SI (1000_9D2D / 0x19D2D)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV CX,AX (1000_9D2E / 0x19D2E)
     CX = AX;
     label_1000_9D30_19D30:
@@ -47226,19 +45872,19 @@ public partial class Overrides : CSharpOverrideHelper {
     Stack.Push(CX);
     // LODSB SI (1000_9D31 / 0x19D31)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // XOR AH,AH (1000_9D32 / 0x19D32)
     AH = 0;
     // MOV BP,AX (1000_9D34 / 0x19D34)
     BP = AX;
     // LODSB SI (1000_9D36 / 0x19D36)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // MOV DX,AX (1000_9D37 / 0x19D37)
     DX = AX;
     // LODSB SI (1000_9D39 / 0x19D39)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // MOV BX,AX (1000_9D3A / 0x19D3A)
     BX = AX;
     // ADD DX,word ptr [0x1bf0] (1000_9D3C / 0x19D3C)
@@ -47254,8 +45900,8 @@ public partial class Overrides : CSharpOverrideHelper {
     // MOV ES,word ptr [0xdbda] (1000_9D46 / 0x19D46)
     ES = UInt16[DS, 0xDBDA];
     // LDS SI,[0xdbb0] (1000_9D4A / 0x19D4A)
-    SI = UInt16[DS, 0xDBB0];
     DS = UInt16[DS, 0xDBB2];
+    SI = UInt16[DS, 0xDBB0];
     // SHL BP,1 (1000_9D4E / 0x19D4E)
     // BP <<= 1;
     BP = Alu.Shl16(BP, 1);
@@ -47264,12 +45910,12 @@ public partial class Overrides : CSharpOverrideHelper {
     SI = Alu.Add16(SI, UInt16[DS, (ushort)(BP + SI)]);
     // LODSW SI (1000_9D53 / 0x19D53)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV DI,AX (1000_9D54 / 0x19D54)
     DI = AX;
     // LODSW SI (1000_9D56 / 0x19D56)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // XOR AH,AH (1000_9D57 / 0x19D57)
     AH = 0;
     // MOV CX,AX (1000_9D59 / 0x19D59)
@@ -47281,7 +45927,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_9D5E = (uint)(UInt16[SS, 0x38CF] * 0x10 + UInt16[SS, 0x38CD] - cs1 * 0x10);
     switch(targetAddress_1000_9D5E) {
       case 0x235C2 : FarCall(cs1, 0x9D63, unknown_334B_0112_335C2); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_9D5E);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_9D5E));
         break;
     }
     // PUSH SS (1000_9D63 / 0x19D63)
@@ -47313,7 +45959,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_9D6F_19D6F:
     // LODSB SI (1000_9D6F / 0x19D6F)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // XOR AH,AH (1000_9D70 / 0x19D70)
     AH = 0;
     // OR AL,AL (1000_9D72 / 0x19D72)
@@ -47335,7 +45981,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AH = AL;
     // LODSB SI (1000_9D7C / 0x19D7C)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     label_1000_9D7D_19D7D:
     // PUSH SI (1000_9D7D / 0x19D7D)
     Stack.Push(SI);
@@ -47372,7 +46018,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_9D94_19D94:
     // LODSB SI (1000_9D94 / 0x19D94)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // AND AX,0xff (1000_9D95 / 0x19D95)
     // AX &= 0xFF;
     AX = Alu.And16(AX, 0xFF);
@@ -47388,12 +46034,12 @@ public partial class Overrides : CSharpOverrideHelper {
     BP = AX;
     // LODSB SI (1000_9D9E / 0x19D9E)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // MOV DX,AX (1000_9D9F / 0x19D9F)
     DX = AX;
     // LODSB SI (1000_9DA1 / 0x19DA1)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // MOV BX,AX (1000_9DA2 / 0x19DA2)
     BX = AX;
     // ADD DX,word ptr SS:[0x1bf0] (1000_9DA4 / 0x19DA4)
@@ -47421,8 +46067,8 @@ public partial class Overrides : CSharpOverrideHelper {
     // DEC BP (1000_9DC4 / 0x19DC4)
     BP = Alu.Dec16(BP);
     // LDS SI,SS:[0xdbb0] (1000_9DC5 / 0x19DC5)
-    SI = UInt16[SS, 0xDBB0];
     DS = UInt16[SS, 0xDBB2];
+    SI = UInt16[SS, 0xDBB0];
     // SHL BP,1 (1000_9DCA / 0x19DCA)
     // BP <<= 1;
     BP = Alu.Shl16(BP, 1);
@@ -47431,12 +46077,12 @@ public partial class Overrides : CSharpOverrideHelper {
     SI = Alu.Add16(SI, UInt16[DS, (ushort)(BP + SI)]);
     // LODSW SI (1000_9DCF / 0x19DCF)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV DI,AX (1000_9DD0 / 0x19DD0)
     DI = AX;
     // LODSW SI (1000_9DD2 / 0x19DD2)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // XOR AH,AH (1000_9DD3 / 0x19DD3)
     AH = 0;
     // MOV CX,AX (1000_9DD5 / 0x19DD5)
@@ -47448,7 +46094,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_9DDA = (uint)(UInt16[SS, 0x38CF] * 0x10 + UInt16[SS, 0x38CD] - cs1 * 0x10);
     switch(targetAddress_1000_9DDA) {
       case 0x235C2 : FarCall(cs1, 0x9DDF, unknown_334B_0112_335C2); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_9DDA);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_9DDA));
         break;
     }
     // POP DS (1000_9DDF / 0x19DDF)
@@ -47655,7 +46301,7 @@ public partial class Overrides : CSharpOverrideHelper {
     DS = UInt16[SS, 0xDBB2];
     // LODSB SI (1000_9EA0 / 0x19EA0)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // XOR AH,AH (1000_9EA1 / 0x19EA1)
     AH = 0;
     // SUB AL,0x2 (1000_9EA3 / 0x19EA3)
@@ -47704,12 +46350,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:db67 (1000_9ED2 / 0x19ED2)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_DB67_1DB67, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_9ED5_019ED5, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -47813,12 +46453,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:a75c (1000_9F19 / 0x19F19)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(not_observed_1000_A75C_01A75C, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_9F1C_019F1C, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -47959,12 +46593,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:d068 (1000_9F88 / 0x19F88)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(SetFontToIntro_1000_D068_1D068, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_9F8B_19F8B, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -48113,12 +46741,12 @@ public partial class Overrides : CSharpOverrideHelper {
     Stack.Push(SI);
     // LODSW SI (1000_9FF8 / 0x19FF8)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV [0x47de],AX (1000_9FF9 / 0x19FF9)
     UInt16[DS, 0x47DE] = AX;
     // LODSW SI (1000_9FFC / 0x19FFC)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // XCHG AL,AH (1000_9FFD / 0x19FFD)
     byte tmp_1000_9FFD = AL;
     AL = AH;
@@ -48169,12 +46797,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:a02c (1000_A023 / 0x1A023)
     // Jump converted to non entry function call
     if(JumpDispatcher.Jump(not_observed_1000_A026_01A026, 0x1A02C - cs1 * 0x10)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_A026_01A026, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -48274,7 +46896,7 @@ public partial class Overrides : CSharpOverrideHelper {
       case 0xA125 : NearCall(cs1, 0xA05D, unknown_1000_A125_1A125); break;
       case 0xA244 : NearCall(cs1, 0xA05D, unknown_1000_A244_1A244); break;
       case 0xA157 : NearCall(cs1, 0xA05D, unknown_1000_A157_1A157); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_A05A);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_A05A));
         break;
     }
     // POP SI (1000_A05D / 0x1A05D)
@@ -48406,7 +47028,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_A0DD = (uint)(AX);
     switch(targetAddress_1000_A0DD) {
       case 0xF66 : NearCall(cs1, 0xA0DF, NoOp_1000_0F66_10F66); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_A0DD);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_A0DD));
         break;
     }
     // CALL 0x1000:e283 (1000_A0DF / 0x1A0DF)
@@ -48466,12 +47088,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:8c8a (1000_A104 / 0x1A104)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_8C8A_18C8A, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_A125_1A125, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -48635,12 +47251,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:24a3 (1000_A183 / 0x1A183)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(not_observed_1000_24A3_0124A3, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_A186_01A186, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -48858,12 +47468,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_A219_1A219, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_A219_1A219(int loadOffset) {
@@ -48932,12 +47536,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_A244_1A244, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_A244_1A244(int loadOffset) {
@@ -48951,12 +47549,6 @@ public partial class Overrides : CSharpOverrideHelper {
     AL = 0;
     // JMP 0x1000:a24a (1000_A246 / 0x1A246)
     // Jump converted to entry function call
-    if(JumpDispatcher.Jump(not_observed_1000_A24A_01A24A, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
     if(JumpDispatcher.Jump(not_observed_1000_A24A_01A24A, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
@@ -49014,7 +47606,7 @@ public partial class Overrides : CSharpOverrideHelper {
     DI = Alu.Add16(DI, 0x8);
     // SCASW ES:DI (1000_A26A / 0x1A26A)
     Alu.Sub16(AX, UInt16[ES, DI]);
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // JA 0x1000:a267 (1000_A26B / 0x1A26B)
     if(!CarryFlag && !ZeroFlag) {
       goto label_1000_A267_1A267;
@@ -49072,7 +47664,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_A30B_1A30B:
     // LODSB ES:SI (1000_A30B / 0x1A30B)
     AL = UInt8[ES, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // CMP AL,0x80 (1000_A30D / 0x1A30D)
     Alu.Sub8(AL, 0x80);
     // JNC 0x1000:a32a (1000_A30F / 0x1A30F)
@@ -49115,7 +47707,7 @@ public partial class Overrides : CSharpOverrideHelper {
     }
     // LODSB ES:SI (1000_A32C / 0x1A32C)
     AL = UInt8[ES, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // XOR AH,AH (1000_A32E / 0x1A32E)
     AH = 0;
     // RET  (1000_A330 / 0x1A330)
@@ -49123,7 +47715,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_A331_1A331:
     // LODSW ES:SI (1000_A331 / 0x1A331)
     AX = UInt16[ES, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // RET  (1000_A333 / 0x1A333)
     return NearRet();
   }
@@ -49202,7 +47794,7 @@ public partial class Overrides : CSharpOverrideHelper {
         goto label_1000_A33C_1A33C;
         break;
       }
-      default: throw FailAsUntested("Error: Jump not registered at address " + targetAddress_1000_A337);
+      default: throw FailAsUntested("Error: Jump not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_A337));
         break;
     }
     label_1000_A33C_1A33C:
@@ -49380,8 +47972,8 @@ public partial class Overrides : CSharpOverrideHelper {
     // AX <<= 1;
     AX = Alu.Shl16(AX, 1);
     // LES SI,[0xaa72] (1000_A39D / 0x1A39D)
-    SI = UInt16[DS, 0xAA72];
     ES = UInt16[DS, 0xAA74];
+    SI = UInt16[DS, 0xAA72];
     // ADD SI,AX (1000_A3A1 / 0x1A3A1)
     // SI += AX;
     SI = Alu.Add16(SI, AX);
@@ -49395,7 +47987,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_A3AC_1A3AC:
     // LODSB ES:SI (1000_A3AC / 0x1A3AC)
     AL = UInt8[ES, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // CMP AL,0xff (1000_A3AE / 0x1A3AE)
     Alu.Sub8(AL, 0xFF);
     // JZ 0x1000:a3cb (1000_A3B0 / 0x1A3B0)
@@ -49439,18 +48031,18 @@ public partial class Overrides : CSharpOverrideHelper {
     UInt16[SS, BP] = DX;
     // LODSW SI (1000_A3D4 / 0x1A3D4)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV DX,AX (1000_A3D5 / 0x1A3D5)
     DX = AX;
     label_1000_A3D7_1A3D7:
     // LODSW SI (1000_A3D7 / 0x1A3D7)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV BX,AX (1000_A3D8 / 0x1A3D8)
     BX = AX;
     // LODSW SI (1000_A3DA / 0x1A3DA)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // CALL 0x1000:a334 (1000_A3DB / 0x1A3DB)
     NearCall(cs1, 0xA3DE, unknown_1000_A334_1A334);
     // CMP SI,BP (1000_A3DE / 0x1A3DE)
@@ -49535,12 +48127,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_A42C_1A42C, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_A42C_1A42C(int loadOffset) {
@@ -49595,12 +48181,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:a435 (1000_A451 / 0x1A451)
     // Jump converted to non entry function call
     if(JumpDispatcher.Jump(unknown_1000_A42C_1A42C, 0x1A435 - cs1 * 0x10)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_A453_1A453, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -49731,7 +48311,7 @@ public partial class Overrides : CSharpOverrideHelper {
     NearCall(cs1, 0xA4A9, open_sprite_sheet_ida_1000_C13E_1C13E);
     // LODSB SI (1000_A4A9 / 0x1A4A9)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // AAM 0xa (1000_A4AA / 0x1A4AA)
     Cpu.Aam(0xA);
     // MOV AL,AH (1000_A4AC / 0x1A4AC)
@@ -49849,7 +48429,7 @@ public partial class Overrides : CSharpOverrideHelper {
     SI = Stack.Pop();
     // LODSB SI (1000_A520 / 0x1A520)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // MOV byte ptr [SI],0x1 (1000_A521 / 0x1A521)
     UInt8[DS, SI] = 0x1;
     // NOT AX (1000_A524 / 0x1A524)
@@ -49921,12 +48501,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_A553_01A553, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action not_observed_1000_A553_01A553(int loadOffset) {
@@ -49962,18 +48536,12 @@ public partial class Overrides : CSharpOverrideHelper {
     // Indirect call to [0x3991], generating possible targets from emulator records
     uint targetAddress_1000_A56F = (uint)(UInt16[DS, 0x3993] * 0x10 + UInt16[DS, 0x3991] - cs1 * 0x10);
     switch(targetAddress_1000_A56F) {
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_A56F);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_A56F));
         break;
     }
     // JMP 0x1000:aba9 (1000_A573 / 0x1A573)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_ABA9_1ABA9, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_A576_1A576, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -50287,12 +48855,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_A637_1A637, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_A637_1A637(int loadOffset) {
@@ -50320,7 +48882,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_A64B = (uint)(UInt16[DS, 0x39A7] * 0x10 + UInt16[DS, 0x39A5] - cs1 * 0x10);
     switch(targetAddress_1000_A64B) {
       case 0x46465 : FarCall(cs1, 0xA64F, ClearAL_5635_0115_56465); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_A64B);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_A64B));
         break;
     }
     // RET  (1000_A64F / 0x1A64F)
@@ -50365,7 +48927,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_A66D = (uint)(UInt16[DS, 0x3987] * 0x10 + UInt16[DS, 0x3985] - cs1 * 0x10);
     switch(targetAddress_1000_A66D) {
       case 0x464F2 : FarCall(cs1, 0xA671, ClearAL_563E_0112_564F2); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_A66D);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_A66D));
         break;
     }
     // RET  (1000_A671 / 0x1A671)
@@ -50544,7 +49106,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto label_1000_A6E6_1A6E6;
     }
     // MOV AX,0xfff (1000_A6D1 / 0x1A6D1)
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_A6D4_1A6D4
     AX = 0xFFF;
     // XOR byte ptr CS:[0xa6d3],0x10 (1000_A6D4 / 0x1A6D4)
     // UInt8[cs1, 0xA6D3] ^= 0x10;
@@ -50709,7 +49270,7 @@ public partial class Overrides : CSharpOverrideHelper {
     // Indirect call to [0x3991], generating possible targets from emulator records
     uint targetAddress_1000_A770 = (uint)(UInt16[DS, 0x3993] * 0x10 + UInt16[DS, 0x3991] - cs1 * 0x10);
     switch(targetAddress_1000_A770) {
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_A770);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_A770));
         break;
     }
     // MOV AX,[0xce7a] (1000_A774 / 0x1A774)
@@ -50784,12 +49345,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_A7A5_1A7A5, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_A7A5_1A7A5(int loadOffset) {
@@ -50822,12 +49377,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:aded (1000_A7BF / 0x1A7BF)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_ADED_1ADED, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_A7C2_1A7C2, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -50954,12 +49503,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_A814_01A814, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action not_observed_1000_A814_01A814(int loadOffset) {
@@ -51064,8 +49607,8 @@ public partial class Overrides : CSharpOverrideHelper {
       return NearRet();
     }
     // LES DI,[0x3811] (1000_A853 / 0x1A853)
-    DI = UInt16[DS, 0x3811];
     ES = UInt16[DS, 0x3813];
+    DI = UInt16[DS, 0x3811];
     // ADD DI,0x1a (1000_A857 / 0x1A857)
     // DI += 0x1A;
     DI = Alu.Add16(DI, 0x1A);
@@ -51134,7 +49677,7 @@ public partial class Overrides : CSharpOverrideHelper {
     // Indirect call to [0x3991], generating possible targets from emulator records
     uint targetAddress_1000_A890 = (uint)(UInt16[DS, 0x3993] * 0x10 + UInt16[DS, 0x3991] - cs1 * 0x10);
     switch(targetAddress_1000_A890) {
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_A890);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_A890));
         break;
     }
     // PUSH word ptr [0xce7a] (1000_A894 / 0x1A894)
@@ -51219,14 +49762,14 @@ public partial class Overrides : CSharpOverrideHelper {
     AL = Alu.Add8(AL, 0x41);
     // STOSB ES:DI (1000_A8C6 / 0x1A8C6)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // INC DI (1000_A8C7 / 0x1A8C7)
     DI = Alu.Inc16(DI);
     // INC DI (1000_A8C8 / 0x1A8C8)
     DI = Alu.Inc16(DI);
     // STOSB ES:DI (1000_A8C9 / 0x1A8C9)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // POP BX (1000_A8CA / 0x1A8CA)
     BX = Stack.Pop();
     // MOV CL,0x4 (1000_A8CB / 0x1A8CB)
@@ -51237,7 +49780,7 @@ public partial class Overrides : CSharpOverrideHelper {
     NearCall(cs1, 0xA8D2, Unknown_1000_A8B1_1A8B1);
     // STOSB ES:DI (1000_A8D2 / 0x1A8D2)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // MOV AL,BL (1000_A8D3 / 0x1A8D3)
     AL = BL;
     // SHR AL,CL (1000_A8D5 / 0x1A8D5)
@@ -51247,14 +49790,14 @@ public partial class Overrides : CSharpOverrideHelper {
     NearCall(cs1, 0xA8DA, Unknown_1000_A8B1_1A8B1);
     // STOSB ES:DI (1000_A8DA / 0x1A8DA)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // MOV AL,BL (1000_A8DB / 0x1A8DB)
     AL = BL;
     // CALL 0x1000:a8b1 (1000_A8DD / 0x1A8DD)
     NearCall(cs1, 0xA8E0, Unknown_1000_A8B1_1A8B1);
     // STOSB ES:DI (1000_A8E0 / 0x1A8E0)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // MOV AL,0x4f (1000_A8E1 / 0x1A8E1)
     AL = 0x4F;
     // CMP byte ptr [0xea],0x0 (1000_A8E3 / 0x1A8E3)
@@ -51280,7 +49823,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_A8FA_1A8FA:
     // STOSB ES:DI (1000_A8FA / 0x1A8FA)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // MOV AL,0x20 (1000_A8FB / 0x1A8FB)
     AL = 0x20;
     // SHR BH,CL (1000_A8FD / 0x1A8FD)
@@ -51301,7 +49844,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_A909_1A909:
     // STOSB ES:DI (1000_A909 / 0x1A909)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     label_1000_A90A_1A90A:
     // RET  (1000_A90A / 0x1A90A)
     return NearRet();
@@ -51352,8 +49895,8 @@ public partial class Overrides : CSharpOverrideHelper {
     // MOV SI,0x3811 (1000_A93A / 0x1A93A)
     SI = 0x3811;
     // LES DX,[SI] (1000_A93D / 0x1A93D)
-    DX = UInt16[DS, SI];
     ES = UInt16[DS, (ushort)(SI + 2)];
+    DX = UInt16[DS, SI];
     // Function call generated as ASM continues to next function entry point without return
     if(JumpDispatcher.Jump(read_audio_file_ida_1000_A93F_1A93F, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
@@ -51561,8 +50104,8 @@ public partial class Overrides : CSharpOverrideHelper {
     // MOV BX,word ptr [0x3821] (1000_A9D2 / 0x1A9D2)
     BX = UInt16[DS, 0x3821];
     // LES DX,[SI] (1000_A9D6 / 0x1A9D6)
-    DX = UInt16[DS, SI];
     ES = UInt16[DS, (ushort)(SI + 2)];
+    DX = UInt16[DS, SI];
     // ADD DX,0x6 (1000_A9D8 / 0x1A9D8)
     // DX += 0x6;
     DX = Alu.Add16(DX, 0x6);
@@ -51582,7 +50125,7 @@ public partial class Overrides : CSharpOverrideHelper {
     // Indirect call to [0x39a1], generating possible targets from emulator records
     uint targetAddress_1000_A9E2 = (uint)(UInt16[DS, 0x39A3] * 0x10 + UInt16[DS, 0x39A1] - cs1 * 0x10);
     switch(targetAddress_1000_A9E2) {
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_A9E2);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_A9E2));
         break;
     }
     label_1000_A9E6_1A9E6:
@@ -51623,8 +50166,8 @@ public partial class Overrides : CSharpOverrideHelper {
     // MOV SI,word ptr [0x3824] (1000_A9F4 / 0x1A9F4)
     SI = UInt16[DS, 0x3824];
     // LES DI,[SI] (1000_A9F8 / 0x1A9F8)
-    DI = UInt16[DS, SI];
     ES = UInt16[DS, (ushort)(SI + 2)];
+    DI = UInt16[DS, SI];
     // ADD DI,0x6 (1000_A9FA / 0x1A9FA)
     // DI += 0x6;
     DI = Alu.Add16(DI, 0x6);
@@ -51634,7 +50177,7 @@ public partial class Overrides : CSharpOverrideHelper {
     // Indirect call to [0x39a1], generating possible targets from emulator records
     uint targetAddress_1000_AA00 = (uint)(UInt16[DS, 0x39A3] * 0x10 + UInt16[DS, 0x39A1] - cs1 * 0x10);
     switch(targetAddress_1000_AA00) {
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_AA00);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_AA00));
         break;
     }
     // MOV AX,0x3811 (1000_AA04 / 0x1AA04)
@@ -51682,8 +50225,8 @@ public partial class Overrides : CSharpOverrideHelper {
     // MOV SI,0x3811 (1000_AA28 / 0x1AA28)
     SI = 0x3811;
     // LES DI,[SI] (1000_AA2B / 0x1AA2B)
-    DI = UInt16[DS, SI];
     ES = UInt16[DS, (ushort)(SI + 2)];
+    DI = UInt16[DS, SI];
     // CALL 0x1000:aa70 (1000_AA2D / 0x1AA2D)
     NearCall(cs1, 0xAA30, transfer_sd_block_qq_ida_1000_AA70_1AA70);
     // SUB word ptr [0x3815],0x20 (1000_AA30 / 0x1AA30)
@@ -51700,40 +50243,44 @@ public partial class Overrides : CSharpOverrideHelper {
     SI = 0x1A;
     // XOR DI,DI (1000_AA43 / 0x1AA43)
     DI = 0;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSB ES:DI,ES:SI (1000_AA45 / 0x1AA45)
       UInt8[ES, DI] = UInt8[ES, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+      SI = (ushort)(SI + Direction8);
+      DI = (ushort)(DI + Direction8);
     }
     // LES DI,[0x3819] (1000_AA48 / 0x1AA48)
-    DI = UInt16[DS, 0x3819];
     ES = UInt16[DS, 0x381B];
+    DI = UInt16[DS, 0x3819];
     // MOV CX,word ptr [0x3815] (1000_AA4C / 0x1AA4C)
     CX = UInt16[DS, 0x3815];
     // PUSH DS (1000_AA50 / 0x1AA50)
     Stack.Push(DS);
     // LDS SI,[0x3811] (1000_AA51 / 0x1AA51)
-    SI = UInt16[DS, 0x3811];
     DS = UInt16[DS, 0x3813];
+    SI = UInt16[DS, 0x3811];
     // MOVSW ES:DI,SI (1000_AA55 / 0x1AA55)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // MOVSW ES:DI,SI (1000_AA56 / 0x1AA56)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // MOVSW ES:DI,SI (1000_AA57 / 0x1AA57)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // MOV AL,0x80 (1000_AA58 / 0x1AA58)
     AL = 0x80;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // STOSB ES:DI (1000_AA5A / 0x1AA5A)
       UInt8[ES, DI] = AL;
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+      DI = (ushort)(DI + Direction8);
     }
     // POP DS (1000_AA5C / 0x1AA5C)
     DS = Stack.Pop();
@@ -51745,7 +50292,7 @@ public partial class Overrides : CSharpOverrideHelper {
     // Indirect call to [0x3991], generating possible targets from emulator records
     uint targetAddress_1000_AA64 = (uint)(UInt16[DS, 0x3993] * 0x10 + UInt16[DS, 0x3991] - cs1 * 0x10);
     switch(targetAddress_1000_AA64) {
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_AA64);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_AA64));
         break;
     }
     // MOV SI,0x3811 (1000_AA68 / 0x1AA68)
@@ -51754,7 +50301,7 @@ public partial class Overrides : CSharpOverrideHelper {
     // Indirect call to [0x39a1], generating possible targets from emulator records
     uint targetAddress_1000_AA6B = (uint)(UInt16[DS, 0x39A3] * 0x10 + UInt16[DS, 0x39A1] - cs1 * 0x10);
     switch(targetAddress_1000_AA6B) {
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_AA6B);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_AA6B));
         break;
     }
     // RET  (1000_AA6F / 0x1AA6F)
@@ -51778,7 +50325,7 @@ public partial class Overrides : CSharpOverrideHelper {
     DS = UInt16[DS, 0xDBDE];
     // LODSW SI (1000_AA7A / 0x1AA7A)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // SUB AX,0x4 (1000_AA7B / 0x1AA7B)
     // AX -= 0x4;
     AX = Alu.Sub16(AX, 0x4);
@@ -51787,19 +50334,23 @@ public partial class Overrides : CSharpOverrideHelper {
     // SHR CX,1 (1000_AA80 / 0x1AA80)
     // CX >>= 1;
     CX = Alu.Shr16(CX, 1);
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSW ES:DI,SI (1000_AA82 / 0x1AA82)
       UInt16[ES, DI] = UInt16[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      SI = (ushort)(SI + Direction16);
+      DI = (ushort)(DI + Direction16);
     }
     // ADC CL,CL (1000_AA84 / 0x1AA84)
     CL = Alu.Adc8(CL, CL);
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSB ES:DI,SI (1000_AA86 / 0x1AA86)
       UInt8[ES, DI] = UInt8[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+      SI = (ushort)(SI + Direction8);
+      DI = (ushort)(DI + Direction8);
     }
     // POP DS (1000_AA88 / 0x1AA88)
     DS = Stack.Pop();
@@ -52043,8 +50594,8 @@ public partial class Overrides : CSharpOverrideHelper {
     goto label_1000_AB39_1AB39;
     label_1000_AB35_1AB35:
     // LES DI,[0x3811] (1000_AB35 / 0x1AB35)
-    DI = UInt16[DS, 0x3811];
     ES = UInt16[DS, 0x3813];
+    DI = UInt16[DS, 0x3811];
     label_1000_AB39_1AB39:
     // MOV SI,0x3811 (1000_AB39 / 0x1AB39)
     SI = 0x3811;
@@ -52052,7 +50603,7 @@ public partial class Overrides : CSharpOverrideHelper {
     // Indirect call to [0x3991], generating possible targets from emulator records
     uint targetAddress_1000_AB3C = (uint)(UInt16[DS, 0x3993] * 0x10 + UInt16[DS, 0x3991] - cs1 * 0x10);
     switch(targetAddress_1000_AB3C) {
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_AB3C);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_AB3C));
         break;
     }
     label_1000_AB40_1AB40:
@@ -52154,7 +50705,7 @@ public partial class Overrides : CSharpOverrideHelper {
     // Indirect call to [0x3991], generating possible targets from emulator records
     uint targetAddress_1000_AB89 = (uint)(UInt16[DS, 0x3993] * 0x10 + UInt16[DS, 0x3991] - cs1 * 0x10);
     switch(targetAddress_1000_AB89) {
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_AB89);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_AB89));
         break;
     }
     label_1000_AB8D_1AB8D:
@@ -52190,12 +50741,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:da5f (1000_ABA0 / 0x1ABA0)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_DA5F_1DA5F, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(check_res_file_open_ida_1000_ABA3_1ABA3, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -52326,8 +50871,8 @@ public partial class Overrides : CSharpOverrideHelper {
     // MOV word ptr [0x3811],0x0 (1000_ABE9 / 0x1ABE9)
     UInt16[DS, 0x3811] = 0x0;
     // LES DI,[0x3811] (1000_ABEF / 0x1ABEF)
-    DI = UInt16[DS, 0x3811];
     ES = UInt16[DS, 0x3813];
+    DI = UInt16[DS, 0x3811];
     // ADD word ptr [0x3811],0x1a (1000_ABF3 / 0x1ABF3)
     // UInt16[DS, 0x3811] += 0x1A;
     UInt16[DS, 0x3811] = Alu.Add16(UInt16[DS, 0x3811], 0x1A);
@@ -52385,7 +50930,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_AC24 = (uint)(UInt16[DS, 0x3997] * 0x10 + UInt16[DS, 0x3995] - cs1 * 0x10);
     switch(targetAddress_1000_AC24) {
       case 0x46459 : FarCall(cs1, 0xAC28, ClearAL_5635_0109_56459); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_AC24);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_AC24));
         break;
     }
     // POP ES (1000_AC28 / 0x1AC28)
@@ -52417,7 +50962,7 @@ public partial class Overrides : CSharpOverrideHelper {
     // Indirect call to [0x3999], generating possible targets from emulator records
     uint targetAddress_1000_AC30 = (uint)(UInt16[DS, 0x399B] * 0x10 + UInt16[DS, 0x3999] - cs1 * 0x10);
     switch(targetAddress_1000_AC30) {
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_AC30);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_AC30));
         break;
     }
     // RET  (1000_AC34 / 0x1AC34)
@@ -52600,7 +51145,7 @@ public partial class Overrides : CSharpOverrideHelper {
     SI = UInt16[DS, 0x380E];
     // LODSB SI (1000_AD1C / 0x1AD1C)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // OR AL,AL (1000_AD1D / 0x1AD1D)
     // AL |= AL;
     AL = Alu.Or8(AL, AL);
@@ -52612,7 +51157,7 @@ public partial class Overrides : CSharpOverrideHelper {
     SI = 0x37FA;
     // LODSB SI (1000_AD24 / 0x1AD24)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // TEST byte ptr [0x3810],0x2 (1000_AD25 / 0x1AD25)
     Alu.And8(UInt8[DS, 0x3810], 0x2);
     // JZ 0x1000:ad30 (1000_AD2A / 0x1AD2A)
@@ -52623,7 +51168,7 @@ public partial class Overrides : CSharpOverrideHelper {
     NearCall(cs1, 0xAD2F, not_observed_1000_ACBF_01ACBF);
     // LODSB SI (1000_AD2F / 0x1AD2F)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     label_1000_AD30_1AD30:
     // MOV word ptr [0x380e],SI (1000_AD30 / 0x1AD30)
     UInt16[DS, 0x380E] = SI;
@@ -52707,12 +51252,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(play_music_MORNING_HSQ_ida_1000_AD57_1AD57, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action play_music_MORNING_HSQ_ida_1000_AD57_1AD57(int loadOffset) {
@@ -52729,12 +51268,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:ad95 (1000_AD5C / 0x1AD5C)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_AD95_1AD95, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_AD5E_1AD5E, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -52806,7 +51339,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_AD84 = (uint)(UInt16[DS, 0x397B] * 0x10 + UInt16[DS, 0x3979] - cs1 * 0x10);
     switch(targetAddress_1000_AD84) {
       case 0x464E9 : FarCall(cs1, 0xAD88, unknown_563E_0109_564E9); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_AD84);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_AD84));
         break;
     }
     // RET  (1000_AD88 / 0x1AD88)
@@ -52862,8 +51395,8 @@ public partial class Overrides : CSharpOverrideHelper {
     // MOV [0xdbcb],AL (1000_ADA5 / 0x1ADA5)
     UInt8[DS, 0xDBCB] = AL;
     // LES SI,[0xdbb6] (1000_ADA8 / 0x1ADA8)
-    SI = UInt16[DS, 0xDBB6];
     ES = UInt16[DS, 0xDBB8];
+    SI = UInt16[DS, 0xDBB6];
     // MOV AL,[0x3810] (1000_ADAC / 0x1ADAC)
     AL = UInt8[DS, 0x3810];
     // AND AL,0x1 (1000_ADAF / 0x1ADAF)
@@ -52874,7 +51407,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_ADB1 = (uint)(UInt16[DS, 0x3973] * 0x10 + UInt16[DS, 0x3971] - cs1 * 0x10);
     switch(targetAddress_1000_ADB1) {
       case 0x464E3 : FarCall(cs1, 0xADB5, unknown_563E_0103_564E3); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_ADB1);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_ADB1));
         break;
     }
     // MOV [0xdbcd],AL (1000_ADB5 / 0x1ADB5)
@@ -52944,7 +51477,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_ADD7 = (uint)(UInt16[DS, 0x397F] * 0x10 + UInt16[DS, 0x397D] - cs1 * 0x10);
     switch(targetAddress_1000_ADD7) {
       case 0x464EC : FarCall(cs1, 0xADDB, unknown_563E_010C_564EC); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_ADD7);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_ADD7));
         break;
     }
     // MOV [0xdbcd],AL (1000_ADDB / 0x1ADDB)
@@ -52971,12 +51504,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:adf8 (1000_ADEB / 0x1ADEB)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(not_observed_1000_ADF8_01ADF8, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_ADED_1ADED, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -53025,7 +51552,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_ADFF = (uint)(UInt16[DS, 0x397F] * 0x10 + UInt16[DS, 0x397D] - cs1 * 0x10);
     switch(targetAddress_1000_ADFF) {
       case 0x464EC : FarCall(cs1, 0xAE03, unknown_563E_010C_564EC); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_ADFF);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_ADFF));
         break;
     }
     // RET  (1000_AE03 / 0x1AE03)
@@ -53157,12 +51684,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_AE54_1AE54, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_AE54_1AE54(int loadOffset) {
@@ -53187,12 +51708,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:f0f6 (1000_AE5F / 0x1AE5F)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(bump_alloc_get_addr_in_di_ida_1000_F0F6_1F0F6, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(load_music_ida_1000_AE62_1AE62, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -53226,8 +51741,8 @@ public partial class Overrides : CSharpOverrideHelper {
     // MOV SI,AX (1000_AE72 / 0x1AE72)
     SI = AX;
     // LES DI,[0xdbb6] (1000_AE74 / 0x1AE74)
-    DI = UInt16[DS, 0xDBB6];
     ES = UInt16[DS, 0xDBB8];
+    DI = UInt16[DS, 0xDBB6];
     // MOV AX,ES (1000_AE78 / 0x1AE78)
     AX = ES;
     // CMP AX,word ptr [0xce68] (1000_AE7A / 0x1AE7A)
@@ -53267,8 +51782,8 @@ public partial class Overrides : CSharpOverrideHelper {
     // PUSH ES (1000_AE9E / 0x1AE9E)
     Stack.Push(ES);
     // LES DI,[0xdbb6] (1000_AE9F / 0x1AE9F)
-    DI = UInt16[DS, 0xDBB6];
     ES = UInt16[DS, 0xDBB8];
+    DI = UInt16[DS, 0xDBB6];
     // POP DS (1000_AEA3 / 0x1AEA3)
     DS = Stack.Pop();
     // POP SI (1000_AEA4 / 0x1AEA4)
@@ -53302,7 +51817,7 @@ public partial class Overrides : CSharpOverrideHelper {
     // Indirect call to [0x3975], generating possible targets from emulator records
     uint targetAddress_1000_AEBD = (uint)(UInt16[DS, 0x3977] * 0x10 + UInt16[DS, 0x3975] - cs1 * 0x10);
     switch(targetAddress_1000_AEBD) {
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_AEBD);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_AEBD));
         break;
     }
     // MOV [0xdbcd],AL (1000_AEC1 / 0x1AEC1)
@@ -53382,12 +51897,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:ae04 (1000_AEFD / 0x1AEFD)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_AE04_1AE04, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_AF00_1AF00, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -53503,12 +52012,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_AF60_01AF60, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action not_observed_1000_AF60_01AF60(int loadOffset) {
@@ -53529,12 +52032,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_AF68_01AF68, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action not_observed_1000_AF68_01AF68(int loadOffset) {
@@ -53551,12 +52048,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:af76 (1000_AF6E / 0x1AF6E)
     // Jump converted to non entry function call
     if(JumpDispatcher.Jump(not_observed_1000_AF70_01AF70, 0x1AF76 - cs1 * 0x10)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_AF70_01AF70, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -53743,12 +52234,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_B024_1B024, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_B024_1B024(int loadOffset) {
@@ -53790,12 +52275,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:c108 (1000_B036 / 0x1B036)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(transition_ida_1000_C108_1C108, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_B039_1B039, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -53860,7 +52339,7 @@ public partial class Overrides : CSharpOverrideHelper {
     UInt16[DS, 0x477C] = SI;
     // LODSW SI (1000_B072 / 0x1B072)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // POP SI (1000_B073 / 0x1B073)
     SI = Stack.Pop();
     // PUSH AX (1000_B074 / 0x1B074)
@@ -54062,7 +52541,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AL = 0x20;
     // STOSB ES:DI (1000_B140 / 0x1B140)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     label_1000_B141_1B141:
     // MOV word ptr [0x47bc],DI (1000_B141 / 0x1B141)
     UInt16[DS, 0x47BC] = DI;
@@ -54215,12 +52694,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_B1AF_1B1AF, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_B1AF_1B1AF(int loadOffset) {
@@ -54295,12 +52768,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_B1EE_1B1EE, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_B1EE_1B1EE(int loadOffset) {
@@ -54315,7 +52782,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_B1EE = (uint)(UInt16[DS, 0x395B] * 0x10 + UInt16[DS, 0x3959] - cs1 * 0x10);
     switch(targetAddress_1000_B1EE) {
       case 0x2362B : FarCall(cs1, 0xB1F2, VgaFunc41CopyPalette2toPalette1_334B_017B_3362B); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_B1EE);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_B1EE));
         break;
     }
     // CALL 0x1000:aeb7 (1000_B1F2 / 0x1B1F2)
@@ -54361,7 +52828,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_B224 = (uint)(UInt16[DS, 0x396B] * 0x10 + UInt16[DS, 0x3969] - cs1 * 0x10);
     switch(targetAddress_1000_B224) {
       case 0x23637 : FarCall(cs1, 0xB228, unknown_334B_0187_33637); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_B224);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_B224));
         break;
     }
     // MOV AL,0x34 (1000_B228 / 0x1B228)
@@ -54375,12 +52842,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:abc6 (1000_B233 / 0x1B233)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(spice86_label_1000_ABC6_1ABC6, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_B236_1B236, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -54401,12 +52862,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:ca1b (1000_B23C / 0x1B23C)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(hnm_load_ida_1000_CA1B_1CA1B, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_B23F_1B23F, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -54439,12 +52894,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_B254_1B254, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_B254_1B254(int loadOffset) {
@@ -54466,11 +52915,13 @@ public partial class Overrides : CSharpOverrideHelper {
     DI = 0x2426;
     // MOV CX,0xc (1000_B25B / 0x1B25B)
     CX = 0xC;
-    while (CX-- != 0) {
+    // REPNE
+    while (CX != 0) {
+      CX--;
       // SCASW ES:DI (1000_B25E / 0x1B25E)
       Alu.Sub16(AX, UInt16[ES, DI]);
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-      if(ZeroFlag == false) {
+      DI = (ushort)(DI + Direction16);
+      if(ZeroFlag != false) {
         break;
       }
     }
@@ -54513,11 +52964,13 @@ public partial class Overrides : CSharpOverrideHelper {
     ES = Stack.Pop();
     // MOV CX,0xa (1000_B279 / 0x1B279)
     CX = 0xA;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSW ES:DI,SI (1000_B27C / 0x1B27C)
       UInt16[ES, DI] = UInt16[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      SI = (ushort)(SI + Direction16);
+      DI = (ushort)(DI + Direction16);
     }
     // MOV word ptr [0x11bd],DI (1000_B27E / 0x1B27E)
     UInt16[DS, 0x11BD] = DI;
@@ -54525,7 +52978,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AX = 0;
     // STOSW ES:DI (1000_B284 / 0x1B284)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // MOV byte ptr CS:[0xb270],0xc3 (1000_B285 / 0x1B285)
     UInt8[cs1, 0xB270] = 0xC3;
     // RET  (1000_B28B / 0x1B28B)
@@ -54552,12 +53005,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:d397 (1000_B29B / 0x1B29B)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_D397_1D397, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_B29E_01B29E, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -54601,12 +53048,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:d323 (1000_B2B0 / 0x1B2B0)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_D323_1D323, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_B2B3_1B2B3, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -54768,11 +53209,13 @@ public partial class Overrides : CSharpOverrideHelper {
     SI = Alu.Add16(SI, AX);
     // MOV CX,0xa (1000_B304 / 0x1B304)
     CX = 0xA;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSB ES:DI,ES:SI (1000_B307 / 0x1B307)
       UInt8[ES, DI] = UInt8[ES, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+      SI = (ushort)(SI + Direction8);
+      DI = (ushort)(DI + Direction8);
     }
     // POP ES (1000_B30A / 0x1B30A)
     ES = Stack.Pop();
@@ -54956,7 +53399,7 @@ public partial class Overrides : CSharpOverrideHelper {
     DI = 0;
     // STOSW ES:DI (1000_B39D / 0x1B39D)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // CALL 0x1000:b4ea (1000_B39E / 0x1B39E)
     NearCall(cs1, 0xB3A1, unknown_1000_B4EA_1B4EA);
     // POP DS (1000_B3A1 / 0x1B3A1)
@@ -54973,12 +53416,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:f27c (1000_B3AD / 0x1B3AD)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(not_observed_1000_F27C_01F27C, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_B3B0_01B3B0, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -55043,11 +53480,13 @@ public partial class Overrides : CSharpOverrideHelper {
     CX = Alu.Sub16(CX, 0x2);
     // STD  (1000_B3DF / 0x1B3DF)
     DirectionFlag = true;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSB ES:DI,SI (1000_B3E0 / 0x1B3E0)
       UInt8[ES, DI] = UInt8[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+      SI = (ushort)(SI + Direction8);
+      DI = (ushort)(DI + Direction8);
     }
     // CLD  (1000_B3E2 / 0x1B3E2)
     DirectionFlag = false;
@@ -55116,12 +53555,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(map_func_ida_1000_B427_1B427, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action map_func_ida_1000_B427_1B427(int loadOffset) {
@@ -55144,8 +53577,8 @@ public partial class Overrides : CSharpOverrideHelper {
     // PUSH DS (1000_B432 / 0x1B432)
     Stack.Push(DS);
     // LDS SI,[0xdcfe] (1000_B433 / 0x1B433)
-    SI = UInt16[DS, 0xDCFE];
     DS = UInt16[DS, 0xDD00];
+    SI = UInt16[DS, 0xDCFE];
     // XOR SI,SI (1000_B437 / 0x1B437)
     SI = 0;
     // MOV CX,0xc5fc (1000_B439 / 0x1B439)
@@ -55162,7 +53595,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_B442_1B442:
     // LODSB SI (1000_B442 / 0x1B442)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // SHL AL,1 (1000_B443 / 0x1B443)
     // AL <<= 1;
     AL = Alu.Shl8(AL, 1);
@@ -55183,7 +53616,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AL = AH;
     // STOSB ES:DI (1000_B44F / 0x1B44F)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // LOOP 0x1000:b440 (1000_B450 / 0x1B450)
     if(--CX != 0) {
       goto label_1000_B440_1B440;
@@ -55196,11 +53629,13 @@ public partial class Overrides : CSharpOverrideHelper {
     SI = 0xAA;
     // MOV CX,0xa2 (1000_B457 / 0x1B457)
     CX = 0xA2;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSB ES:DI,SI (1000_B45A / 0x1B45A)
       UInt8[ES, DI] = UInt8[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+      SI = (ushort)(SI + Direction8);
+      DI = (ushort)(DI + Direction8);
     }
     // POP DS (1000_B45C / 0x1B45C)
     DS = Stack.Pop();
@@ -55208,21 +53643,25 @@ public partial class Overrides : CSharpOverrideHelper {
     SI = 0xAA76;
     // MOV CX,0x11f8 (1000_B460 / 0x1B460)
     CX = 0x11F8;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSB ES:DI,SI (1000_B463 / 0x1B463)
       UInt8[ES, DI] = UInt8[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+      SI = (ushort)(SI + Direction8);
+      DI = (ushort)(DI + Direction8);
     }
     // MOV SI,0x0 (1000_B465 / 0x1B465)
     SI = 0x0;
     // MOV CX,0x1261 (1000_B468 / 0x1B468)
     CX = 0x1261;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSB ES:DI,SI (1000_B46B / 0x1B46B)
       UInt8[ES, DI] = UInt8[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+      SI = (ushort)(SI + Direction8);
+      DI = (ushort)(DI + Direction8);
     }
     // POP ES (1000_B46D / 0x1B46D)
     ES = Stack.Pop();
@@ -55256,7 +53695,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_B481_1B481:
     // LODSB SI (1000_B481 / 0x1B481)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // MOV CX,0x4 (1000_B482 / 0x1B482)
     CX = 0x4;
     // MOV AH,AL (1000_B485 / 0x1B485)
@@ -55279,7 +53718,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AL = Alu.Xor8(AL, AH);
     // STOSB ES:DI (1000_B494 / 0x1B494)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // ROL AH,1 (1000_B495 / 0x1B495)
     AH = Alu.Rol8(AH, 1);
     // ROL AH,1 (1000_B497 / 0x1B497)
@@ -55302,11 +53741,13 @@ public partial class Overrides : CSharpOverrideHelper {
     DI = 0xAA;
     // MOV CX,0xa2 (1000_B4A3 / 0x1B4A3)
     CX = 0xA2;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSB ES:DI,SI (1000_B4A6 / 0x1B4A6)
       UInt8[ES, DI] = UInt8[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+      SI = (ushort)(SI + Direction8);
+      DI = (ushort)(DI + Direction8);
     }
     // PUSH SS (1000_B4A8 / 0x1B4A8)
     Stack.Push(SS);
@@ -55316,21 +53757,25 @@ public partial class Overrides : CSharpOverrideHelper {
     DI = 0xAA76;
     // MOV CX,0x11f8 (1000_B4AD / 0x1B4AD)
     CX = 0x11F8;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSB ES:DI,SI (1000_B4B0 / 0x1B4B0)
       UInt8[ES, DI] = UInt8[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+      SI = (ushort)(SI + Direction8);
+      DI = (ushort)(DI + Direction8);
     }
     // MOV DI,0x0 (1000_B4B2 / 0x1B4B2)
     DI = 0x0;
     // MOV CX,0x1261 (1000_B4B5 / 0x1B4B5)
     CX = 0x1261;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSB ES:DI,SI (1000_B4B8 / 0x1B4B8)
       UInt8[ES, DI] = UInt8[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+      SI = (ushort)(SI + Direction8);
+      DI = (ushort)(DI + Direction8);
     }
     // RET  (1000_B4BA / 0x1B4BA)
     return NearRet();
@@ -55345,12 +53790,12 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_B4BB_1B4BB:
     // LODSW SI (1000_B4BB / 0x1B4BB)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV BL,AL (1000_B4BC / 0x1B4BC)
     BL = AL;
     // LODSW SI (1000_B4BE / 0x1B4BE)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV CX,AX (1000_B4BF / 0x1B4BF)
     CX = AX;
     // SUB CX,0x4 (1000_B4C1 / 0x1B4C1)
@@ -55361,7 +53806,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_B4C5_1B4C5:
     // LODSB SI (1000_B4C5 / 0x1B4C5)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // CMP AL,BL (1000_B4C6 / 0x1B4C6)
     Alu.Sub8(AL, BL);
     // JZ 0x1000:b4d3 (1000_B4C8 / 0x1B4C8)
@@ -55370,7 +53815,7 @@ public partial class Overrides : CSharpOverrideHelper {
     }
     // STOSB ES:DI (1000_B4CA / 0x1B4CA)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // LOOP 0x1000:b4c5 (1000_B4CB / 0x1B4CB)
     if(--CX != 0) {
       goto label_1000_B4C5_1B4C5;
@@ -55390,7 +53835,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_B4D3_1B4D3:
     // LODSB SI (1000_B4D3 / 0x1B4D3)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // MOV DX,CX (1000_B4D4 / 0x1B4D4)
     DX = CX;
     // MOV CL,AL (1000_B4D6 / 0x1B4D6)
@@ -55399,11 +53844,13 @@ public partial class Overrides : CSharpOverrideHelper {
     CH = 0;
     // LODSB SI (1000_B4DA / 0x1B4DA)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-    while (CX-- != 0) {
+    SI = (ushort)(SI + Direction8);
+    // REP
+    while (CX != 0) {
+      CX--;
       // STOSB ES:DI (1000_B4DB / 0x1B4DB)
       UInt8[ES, DI] = AL;
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+      DI = (ushort)(DI + Direction8);
     }
     // MOV CX,DX (1000_B4DD / 0x1B4DD)
     CX = DX;
@@ -55446,7 +53893,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_B4F2_1B4F2:
     // LODSB SI (1000_B4F2 / 0x1B4F2)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // INC DH (1000_B4F3 / 0x1B4F3)
     DH = Alu.Inc8(DH);
     // CMP AL,byte ptr [SI] (1000_B4F5 / 0x1B4F5)
@@ -55498,18 +53945,18 @@ public partial class Overrides : CSharpOverrideHelper {
     AL = DL;
     // STOSB ES:DI (1000_B516 / 0x1B516)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // MOV AL,DH (1000_B517 / 0x1B517)
     AL = DH;
     // STOSB ES:DI (1000_B519 / 0x1B519)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // MOV AL,AH (1000_B51A / 0x1B51A)
     AL = AH;
     label_1000_B51C_1B51C:
     // STOSB ES:DI (1000_B51C / 0x1B51C)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // LOOP 0x1000:b4f0 (1000_B51D / 0x1B51D)
     if(--CX != 0) {
       goto label_1000_B4F0_1B4F0;
@@ -55520,7 +53967,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AX = 0;
     // STOSW ES:DI (1000_B523 / 0x1B523)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // POP DI (1000_B524 / 0x1B524)
     DI = Stack.Pop();
     // SUB CX,DI (1000_B525 / 0x1B525)
@@ -55535,7 +53982,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_B52F_1B52F:
     // STOSB ES:DI (1000_B52F / 0x1B52F)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // JMP 0x1000:b51c (1000_B530 / 0x1B530)
     goto label_1000_B51C_1B51C;
   }
@@ -55699,8 +54146,8 @@ public partial class Overrides : CSharpOverrideHelper {
     // CALL 0x1000:b5a0 (1000_B58B / 0x1B58B)
     NearCall(cs1, 0xB58E, unknown_1000_B5A0_1B5A0);
     // LES DI,[0xdcfe] (1000_B58E / 0x1B58E)
-    DI = UInt16[DS, 0xDCFE];
     ES = UInt16[DS, 0xDD00];
+    DI = UInt16[DS, 0xDCFE];
     // ADD DI,AX (1000_B592 / 0x1B592)
     // DI += AX;
     DI = Alu.Add16(DI, AX);
@@ -56201,8 +54648,8 @@ public partial class Overrides : CSharpOverrideHelper {
     // AX -= CX;
     AX = Alu.Sub16(AX, CX);
     // LES DI,[0xdcfe] (1000_B704 / 0x1B704)
-    DI = UInt16[DS, 0xDCFE];
     ES = UInt16[DS, 0xDD00];
+    DI = UInt16[DS, 0xDCFE];
     // MOV SI,0x4c60 (1000_B708 / 0x1B708)
     SI = 0x4C60;
     // MOV BX,word ptr [0xdbda] (1000_B70B / 0x1B70B)
@@ -56212,7 +54659,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_B70F = (uint)(UInt16[DS, 0x392B] * 0x10 + UInt16[DS, 0x3929] - cs1 * 0x10);
     switch(targetAddress_1000_B70F) {
       case 0x23607 : FarCall(cs1, 0xB713, unknown_334B_0157_33607); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_B70F);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_B70F));
         break;
     }
     // RET  (1000_B713 / 0x1B713)
@@ -56413,7 +54860,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_B7CD = (uint)(UInt16[DS, 0x390F] * 0x10 + UInt16[DS, 0x390D] - cs1 * 0x10);
     switch(targetAddress_1000_B7CD) {
       case 0x235F2 : FarCall(cs1, 0xB7D1, unknown_334B_0142_335F2); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_B7CD);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_B7CD));
         break;
     }
     label_1000_B7D1_1B7D1:
@@ -56435,8 +54882,8 @@ public partial class Overrides : CSharpOverrideHelper {
     // PUSH DS (1000_B7D4 / 0x1B7D4)
     Stack.Push(DS);
     // LDS SI,[0xdcfe] (1000_B7D5 / 0x1B7D5)
-    SI = UInt16[DS, 0xDCFE];
     DS = UInt16[DS, 0xDD00];
+    SI = UInt16[DS, 0xDCFE];
     // PUSH SS (1000_B7D9 / 0x1B7D9)
     Stack.Push(SS);
     // POP ES (1000_B7DA / 0x1B7DA)
@@ -56523,11 +54970,13 @@ public partial class Overrides : CSharpOverrideHelper {
     // ADD SI,AX (1000_B816 / 0x1B816)
     // SI += AX;
     SI = Alu.Add16(SI, AX);
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSB ES:DI,SI (1000_B818 / 0x1B818)
       UInt8[ES, DI] = UInt8[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+      SI = (ushort)(SI + Direction8);
+      DI = (ushort)(DI + Direction8);
     }
     // POP SI (1000_B81A / 0x1B81A)
     SI = Stack.Pop();
@@ -56536,11 +54985,13 @@ public partial class Overrides : CSharpOverrideHelper {
     CX = BX;
     BX = tmp_1000_B81B;
     label_1000_B81D_1B81D:
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSB ES:DI,SI (1000_B81D / 0x1B81D)
       UInt8[ES, DI] = UInt8[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+      SI = (ushort)(SI + Direction8);
+      DI = (ushort)(DI + Direction8);
     }
     // POP DS (1000_B81F / 0x1B81F)
     DS = Stack.Pop();
@@ -56587,12 +55038,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_B84A_1B84A, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_B84A_1B84A(int loadOffset) {
@@ -56615,7 +55060,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_B856 = (uint)(UInt16[DS, 0x38DF] * 0x10 + UInt16[DS, 0x38DD] - cs1 * 0x10);
     switch(targetAddress_1000_B856) {
       case 0x235CE : FarCall(cs1, 0xB85A, unknown_334B_011E_335CE); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_B856);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_B856));
         break;
     }
     // Function call generated as ASM continues to next function entry point without return
@@ -56658,12 +55103,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:b977 (1000_B87B / 0x1B87B)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(map_func_gfx_ida_1000_B977_1B977, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_B87E_1B87E, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -56711,12 +55150,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_B8A7_1B8A7, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_B8A7_1B8A7(int loadOffset) {
@@ -56749,12 +55182,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:c0f4 (1000_B8C3 / 0x1B8C3)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_C0F4_1C0F4, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_B8C6_1B8C6, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -56814,12 +55241,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:da25 (1000_B8F0 / 0x1B8F0)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_DA25_1DA25, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_B8F3_1B8F3, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -56893,12 +55314,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_B930_1B930, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_B930_1B930(int loadOffset) {
@@ -56934,12 +55349,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:da5f (1000_B93E / 0x1B93E)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_DA5F_1DA5F, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_B941_1B941, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -56983,12 +55392,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_B96B_1B96B, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_B96B_1B96B(int loadOffset) {
@@ -57011,12 +55414,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(map_func_gfx_ida_1000_B977_1B977, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action map_func_gfx_ida_1000_B977_1B977(int loadOffset) {
@@ -57033,14 +55430,14 @@ public partial class Overrides : CSharpOverrideHelper {
     // MOV AL,[0xdd02] (1000_B97E / 0x1B97E)
     AL = UInt8[DS, 0xDD02];
     // LDS SI,[0xdcfe] (1000_B981 / 0x1B981)
-    SI = UInt16[DS, 0xDCFE];
     DS = UInt16[DS, 0xDD00];
+    SI = UInt16[DS, 0xDCFE];
     // CALLF [0x3911] (1000_B985 / 0x1B985)
     // Indirect call to [0x3911], generating possible targets from emulator records
     uint targetAddress_1000_B985 = (uint)(UInt16[SS, 0x3913] * 0x10 + UInt16[SS, 0x3911] - cs1 * 0x10);
     switch(targetAddress_1000_B985) {
       case 0x235F5 : FarCall(cs1, 0xB98A, unknown_334B_0145_335F5); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_B985);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_B985));
         break;
     }
     // RET  (1000_B98A / 0x1B98A)
@@ -57095,12 +55492,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_B9AE_1B9AE, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_B9AE_1B9AE(int loadOffset) {
@@ -57117,7 +55508,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_B9B2 = (uint)(UInt16[DS, 0x3917] * 0x10 + UInt16[DS, 0x3915] - cs1 * 0x10);
     switch(targetAddress_1000_B9B2) {
       case 0x235F8 : FarCall(cs1, 0xB9B6, unknown_334B_0148_335F8); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_B9B2);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_B9B2));
         break;
     }
     // JC 0x1000:b98e (1000_B9B6 / 0x1B9B6)
@@ -57232,7 +55623,7 @@ public partial class Overrides : CSharpOverrideHelper {
     SI = Alu.Add16(SI, 0x6);
     // LODSW SI (1000_BA06 / 0x1BA06)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MUL BX (1000_BA07 / 0x1BA07)
     Cpu.Mul16(BX);
     // ADD AX,AX (1000_BA09 / 0x1BA09)
@@ -57322,7 +55713,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AL = Alu.Dec8(AL);
     // STOSW ES:DI (1000_BA49 / 0x1BA49)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // CMP AL,BL (1000_BA4A / 0x1BA4A)
     Alu.Sub8(AL, BL);
     // JLE 0x1000:ba50 (1000_BA4C / 0x1BA4C)
@@ -57343,7 +55734,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_BA55_1BA55:
     // STOSW ES:DI (1000_BA55 / 0x1BA55)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // DEC AL (1000_BA56 / 0x1BA56)
     AL = Alu.Dec8(AL);
     // JS 0x1000:ba5c (1000_BA58 / 0x1BA58)
@@ -57368,7 +55759,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_BA61_1BA61:
     // STOSW ES:DI (1000_BA61 / 0x1BA61)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // INC AL (1000_BA62 / 0x1BA62)
     AL = Alu.Inc8(AL);
     // CMP AL,BL (1000_BA64 / 0x1BA64)
@@ -57397,7 +55788,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AL = Alu.Inc8(AL);
     // STOSW ES:DI (1000_BA71 / 0x1BA71)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // LOOP 0x1000:ba6f (1000_BA72 / 0x1BA72)
     if(--CX != 0) {
       goto label_1000_BA6F_1BA6F;
@@ -57451,12 +55842,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:ba2d (1000_BA9C / 0x1BA9C)
     // Jump converted to non entry function call
     if(JumpDispatcher.Jump(unknown_1000_BA15_1BA15, 0x1BA2D - cs1 * 0x10)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_BA9E_1BA9E, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -57699,11 +56084,13 @@ public partial class Overrides : CSharpOverrideHelper {
     // XOR BX,BX (1000_BB5E / 0x1BB5E)
     BX = 0;
     label_1000_BB60_1BB60:
-    while (CX-- != 0) {
+    // REPNE
+    while (CX != 0) {
+      CX--;
       // SCASB ES:DI (1000_BB60 / 0x1BB60)
       Alu.Sub8(AL, UInt8[ES, DI]);
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-      if(ZeroFlag == false) {
+      DI = (ushort)(DI + Direction8);
+      if(ZeroFlag != false) {
         break;
       }
     }
@@ -57763,11 +56150,13 @@ public partial class Overrides : CSharpOverrideHelper {
     DI = 0x8BBB;
     // MOV CX,0x80 (1000_BB93 / 0x1BB93)
     CX = 0x80;
-    while (CX-- != 0) {
+    // REPNE
+    while (CX != 0) {
+      CX--;
       // SCASW ES:DI (1000_BB96 / 0x1BB96)
       Alu.Sub16(AX, UInt16[ES, DI]);
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-      if(ZeroFlag == false) {
+      DI = (ushort)(DI + Direction16);
+      if(ZeroFlag != false) {
         break;
       }
     }
@@ -57811,7 +56200,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_BBBC_1BBBC:
     // LODSB SI (1000_BBBC / 0x1BBBC)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // INC AL (1000_BBBD / 0x1BBBD)
     AL = Alu.Inc8(AL);
     // JZ 0x1000:bbe1 (1000_BBBF / 0x1BBBF)
@@ -57940,12 +56329,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:c22f (1000_BC1C / 0x1BC1C)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(draw_sprite_ida_1000_C22F_1C22F, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_BC1F_1BC1F, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -58092,12 +56475,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:5a3d (1000_BC96 / 0x1BC96)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(not_observed_1000_5A3D_015A3D, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_BC99_1BC99, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -58308,8 +56685,8 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_BDEB_1BDEB:
     // CMPSB ES:DI,SI (1000_BDEB / 0x1BDEB)
     Alu.Sub8(UInt8[DS, SI], UInt8[ES, DI]);
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
+    DI = (ushort)(DI + Direction8);
     // LOOPNZ 0x1000:bdeb (1000_BDEC / 0x1BDEC)
     if(--CX != 0 && !ZeroFlag) {
       goto label_1000_BDEB_1BDEB;
@@ -58370,12 +56747,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:d1a6 (1000_BE1A / 0x1BE1A)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_D1A6_1D1A6, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_BE1D_1BE1D, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -58579,12 +56950,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_BED7_1BED7, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_BED7_1BED7(int loadOffset) {
@@ -58620,7 +56985,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AX = Alu.Inc16(AX);
     // STOSB ES:DI (1000_BEF1 / 0x1BEF1)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // MOV AX,[0xa2] (1000_BEF2 / 0x1BEF2)
     AX = UInt16[DS, 0xA2];
     // SHR AX,1 (1000_BEF5 / 0x1BEF5)
@@ -58630,7 +56995,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AX = Alu.Inc16(AX);
     // STOSB ES:DI (1000_BEF8 / 0x1BEF8)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // MOV AX,[0xa8] (1000_BEF9 / 0x1BEF9)
     AX = UInt16[DS, 0xA8];
     // SHR AX,1 (1000_BEFC / 0x1BEFC)
@@ -58649,7 +57014,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AL = Alu.Inc8(AL);
     // STOSB ES:DI (1000_BF06 / 0x1BF06)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // MOV AX,[0xa6] (1000_BF07 / 0x1BF07)
     AX = UInt16[DS, 0xA6];
     // SHR AX,1 (1000_BF0A / 0x1BF0A)
@@ -58668,7 +57033,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AL = Alu.Inc8(AL);
     // STOSB ES:DI (1000_BF14 / 0x1BF14)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // MOV AX,[0xac] (1000_BF15 / 0x1BF15)
     AX = UInt16[DS, 0xAC];
     // MOV AL,AH (1000_BF18 / 0x1BF18)
@@ -58677,7 +57042,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AL = Alu.Inc8(AL);
     // STOSB ES:DI (1000_BF1C / 0x1BF1C)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // MOV AX,[0xaa] (1000_BF1D / 0x1BF1D)
     AX = UInt16[DS, 0xAA];
     // MOV AL,AH (1000_BF20 / 0x1BF20)
@@ -58686,7 +57051,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AL = Alu.Inc8(AL);
     // STOSB ES:DI (1000_BF24 / 0x1BF24)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // RET  (1000_BF25 / 0x1BF25)
     return NearRet();
   }
@@ -58735,12 +57100,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_BF61_1BF61, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_BF61_1BF61(int loadOffset) {
@@ -58771,12 +57130,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:bf7d (1000_BF71 / 0x1BF71)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(not_observed_1000_BF7D_01BF7D, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_BF73_1BF73, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -58974,7 +57327,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_BFF1_1BFF1:
     // LODSB SI (1000_BFF1 / 0x1BFF1)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // AND AL,0x30 (1000_BFF2 / 0x1BFF2)
     // AL &= 0x30;
     AL = Alu.And8(AL, 0x30);
@@ -59231,7 +57584,7 @@ public partial class Overrides : CSharpOverrideHelper {
       case 0x1A0F : NearCall(cs1, 0xC0A8, unknown_1000_1A0F_11A0F); break;
       case 0x401F : NearCall(cs1, 0xC0A8, unknown_1000_401F_1401F); break;
       case 0x4057 : NearCall(cs1, 0xC0A8, unknown_1000_4057_14057); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_C0A6);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_C0A6));
         break;
     }
     // POP word ptr [0xdbd8] (1000_C0A8 / 0x1C0A8)
@@ -59253,7 +57606,7 @@ public partial class Overrides : CSharpOverrideHelper {
     // Indirect call to [0x38d5], generating possible targets from emulator records
     uint targetAddress_1000_C0B1 = (uint)(UInt16[DS, 0x38D7] * 0x10 + UInt16[DS, 0x38D5] - cs1 * 0x10);
     switch(targetAddress_1000_C0B1) {
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_C0B1);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_C0B1));
         break;
     }
     // RET  (1000_C0B5 / 0x1C0B5)
@@ -59280,7 +57633,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_C0E1 = (uint)(UInt16[SS, 0x392F] * 0x10 + UInt16[SS, 0x392D] - cs1 * 0x10);
     switch(targetAddress_1000_C0E1) {
       case 0x2360A : FarCall(cs1, 0xC0E6, unknown_334B_015A_3360A); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_C0E1);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_C0E1));
         break;
     }
     // POP DS (1000_C0E6 / 0x1C0E6)
@@ -59305,7 +57658,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_C0EF = (uint)(UInt16[DS, 0x392F] * 0x10 + UInt16[DS, 0x392D] - cs1 * 0x10);
     switch(targetAddress_1000_C0EF) {
       case 0x2360A : FarCall(cs1, 0xC0F3, unknown_334B_015A_3360A); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_C0EF);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_C0EF));
         break;
     }
     // RET  (1000_C0F3 / 0x1C0F3)
@@ -59334,7 +57687,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_C0FD = (uint)(UInt16[DS, 0x3937] * 0x10 + UInt16[DS, 0x3935] - cs1 * 0x10);
     switch(targetAddress_1000_C0FD) {
       case 0x23610 : FarCall(cs1, 0xC101, unknown_334B_0160_33610); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_C0FD);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_C0FD));
         break;
     }
     label_1000_C101_1C101:
@@ -59354,7 +57707,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_C102 = (uint)(UInt16[DS, 0x395B] * 0x10 + UInt16[DS, 0x3959] - cs1 * 0x10);
     switch(targetAddress_1000_C102) {
       case 0x2362B : FarCall(cs1, 0xC106, VgaFunc41CopyPalette2toPalette1_334B_017B_3362B); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_C102);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_C102));
         break;
     }
     // MOV AL,0x3a (1000_C106 / 0x1C106)
@@ -59401,7 +57754,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_C124 = (uint)(UInt16[SS, 0x3923] * 0x10 + UInt16[SS, 0x3921] - cs1 * 0x10);
     switch(targetAddress_1000_C124) {
       case 0x23601 : FarCall(cs1, 0xC129, unknown_334B_0151_33601); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_C124);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_C124));
         break;
     }
     // POP DS (1000_C129 / 0x1C129)
@@ -59413,7 +57766,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_C12D = (uint)(UInt16[DS, 0x3937] * 0x10 + UInt16[DS, 0x3935] - cs1 * 0x10);
     switch(targetAddress_1000_C12D) {
       case 0x23610 : FarCall(cs1, 0xC131, unknown_334B_0160_33610); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_C12D);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_C12D));
         break;
     }
     // MOV byte ptr [0xdce6],0x0 (1000_C131 / 0x1C131)
@@ -59438,12 +57791,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_C13B_1C13B, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_C13B_1C13B(int loadOffset) {
@@ -59454,7 +57801,6 @@ public partial class Overrides : CSharpOverrideHelper {
     
     label_1000_C13B_1C13B:
     // MOV AX,0x25 (1000_C13B / 0x1C13B)
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_0B24_10B24
     AX = 0x25;
     // Function call generated as ASM continues to next function entry point without return
     if(JumpDispatcher.Jump(open_sprite_sheet_ida_1000_C13E_1C13E, 0)) {
@@ -59523,8 +57869,8 @@ public partial class Overrides : CSharpOverrideHelper {
     // SI += 0xD844;
     SI = Alu.Add16(SI, 0xD844);
     // LES DI,[SI] (1000_C165 / 0x1C165)
-    DI = UInt16[DS, SI];
     ES = UInt16[DS, (ushort)(SI + 2)];
+    DI = UInt16[DS, SI];
     // MOV BX,ES (1000_C167 / 0x1C167)
     BX = ES;
     // OR BX,BX (1000_C169 / 0x1C169)
@@ -59584,7 +57930,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_C197 = (uint)(UInt16[DS, 0x3907] * 0x10 + UInt16[DS, 0x3905] - cs1 * 0x10);
     switch(targetAddress_1000_C197) {
       case 0x235EC : FarCall(cs1, 0xC19B, VgaFunc20NoOp_334B_013C_335EC); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_C197);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_C197));
         break;
     }
     // POP BP (1000_C19B / 0x1C19B)
@@ -59659,7 +58005,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_C1BD_1C1BD:
     // LODSW ES:SI (1000_C1BD / 0x1C1BD)
     AX = UInt16[ES, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // CMP AX,0x100 (1000_C1BF / 0x1C1BF)
     Alu.Sub16(AX, 0x100);
     // JNZ 0x1000:c1c9 (1000_C1C2 / 0x1C1C2)
@@ -59720,7 +58066,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_C1EA = (uint)(UInt16[DS, 0x38BF] * 0x10 + UInt16[DS, 0x38BD] - cs1 * 0x10);
     switch(targetAddress_1000_C1EA) {
       case 0x235B6 : FarCall(cs1, 0xC1EE, unknown_334B_0106_335B6); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_C1EA);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_C1EA));
         break;
     }
     // JMP 0x1000:c1bd (1000_C1EE / 0x1C1EE)
@@ -59746,8 +58092,8 @@ public partial class Overrides : CSharpOverrideHelper {
     // PUSH BX (1000_C1F4 / 0x1C1F4)
     Stack.Push(BX);
     // LES SI,[0xdbb0] (1000_C1F5 / 0x1C1F5)
-    SI = UInt16[DS, 0xDBB0];
     ES = UInt16[DS, 0xDBB2];
+    SI = UInt16[DS, 0xDBB0];
     // MOV BX,AX (1000_C1F9 / 0x1C1F9)
     BX = AX;
     // SHL BX,1 (1000_C1FB / 0x1C1FB)
@@ -59777,7 +58123,7 @@ public partial class Overrides : CSharpOverrideHelper {
     NearCall(cs1, 0xC207, GetEsSiPointerToUnknown_1000_C1F4_1C1F4);
     // LODSW ES:SI (1000_C207 / 0x1C207)
     AX = UInt16[ES, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // AND AH,0xf (1000_C209 / 0x1C209)
     // AH &= 0xF;
     AH = Alu.And8(AH, 0xF);
@@ -59789,7 +58135,7 @@ public partial class Overrides : CSharpOverrideHelper {
     DX = Alu.Sub16(DX, AX);
     // LODSB ES:SI (1000_C210 / 0x1C210)
     AL = UInt8[ES, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // SHR AL,1 (1000_C212 / 0x1C212)
     // AL >>= 1;
     AL = Alu.Shr8(AL, 1);
@@ -59815,7 +58161,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_C21B_1C21B:
     // LODSW SI (1000_C21B / 0x1C21B)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // CMP AX,0xffff (1000_C21C / 0x1C21C)
     Alu.Sub16(AX, 0xFFFF);
     // JZ 0x1000:c26a (1000_C21F / 0x1C21F)
@@ -59828,12 +58174,12 @@ public partial class Overrides : CSharpOverrideHelper {
     BX = AX;
     // LODSW SI (1000_C223 / 0x1C223)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV DX,AX (1000_C224 / 0x1C224)
     DX = AX;
     // LODSW SI (1000_C226 / 0x1C226)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // XCHG AX,BX (1000_C227 / 0x1C227)
     ushort tmp_1000_C227 = AX;
     AX = BX;
@@ -59858,8 +58204,8 @@ public partial class Overrides : CSharpOverrideHelper {
     // MOV ES,word ptr [0xdbda] (1000_C22F / 0x1C22F)
     ES = UInt16[DS, 0xDBDA];
     // LDS SI,[0xdbb0] (1000_C233 / 0x1C233)
-    SI = UInt16[DS, 0xDBB0];
     DS = UInt16[DS, 0xDBB2];
+    SI = UInt16[DS, 0xDBB0];
     // MOV BP,AX (1000_C237 / 0x1C237)
     BP = AX;
     // AND BP,0x1ff (1000_C239 / 0x1C239)
@@ -59877,7 +58223,7 @@ public partial class Overrides : CSharpOverrideHelper {
     Stack.Push(AX);
     // LODSW SI (1000_C245 / 0x1C245)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // AND CH,0x60 (1000_C246 / 0x1C246)
     // CH &= 0x60;
     CH = Alu.And8(CH, 0x60);
@@ -59888,7 +58234,7 @@ public partial class Overrides : CSharpOverrideHelper {
     DI = AX;
     // LODSW SI (1000_C24D / 0x1C24D)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV CX,AX (1000_C24E / 0x1C24E)
     CX = AX;
     // CMP byte ptr CS:[0xc21a],0x0 (1000_C250 / 0x1C250)
@@ -59919,7 +58265,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_C263 = (uint)(UInt16[SS, 0x38CB] * 0x10 + UInt16[SS, 0x38C9] - cs1 * 0x10);
     switch(targetAddress_1000_C263) {
       case 0x235BF : FarCall(cs1, 0xC268, VgaFunc05Blit_334B_010F_335BF); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_C263);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_C263));
         break;
     }
     // PUSH SS (1000_C268 / 0x1C268)
@@ -60017,7 +58363,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_C299 = (uint)(UInt16[SS, 0x3943] * 0x10 + UInt16[SS, 0x3941] - cs1 * 0x10);
     switch(targetAddress_1000_C299) {
       case 0x23619 : FarCall(cs1, 0xC29E, unknown_334B_0169_33619); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_C299);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_C299));
         break;
     }
     // PUSH SS (1000_C29E / 0x1C29E)
@@ -60082,7 +58428,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_C2C3_1C2C3:
     // LODSB SI (1000_C2C3 / 0x1C2C3)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // TEST AL,0x80 (1000_C2C4 / 0x1C2C4)
     Alu.And8(AL, 0x80);
     // JNZ 0x1000:c2d6 (1000_C2C6 / 0x1C2C6)
@@ -60099,11 +58445,13 @@ public partial class Overrides : CSharpOverrideHelper {
     // SUB BX,CX (1000_C2CE / 0x1C2CE)
     // BX -= CX;
     BX = Alu.Sub16(BX, CX);
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSB ES:DI,SI (1000_C2D0 / 0x1C2D0)
       UInt8[ES, DI] = UInt8[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+      SI = (ushort)(SI + Direction8);
+      DI = (ushort)(DI + Direction8);
     }
     // JNZ 0x1000:c2c3 (1000_C2D2 / 0x1C2D2)
     if(!ZeroFlag) {
@@ -60124,11 +58472,13 @@ public partial class Overrides : CSharpOverrideHelper {
     BX = Alu.Sub16(BX, CX);
     // LODSB SI (1000_C2DE / 0x1C2DE)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-    while (CX-- != 0) {
+    SI = (ushort)(SI + Direction8);
+    // REP
+    while (CX != 0) {
+      CX--;
       // STOSB ES:DI (1000_C2DF / 0x1C2DF)
       UInt8[ES, DI] = AL;
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+      DI = (ushort)(DI + Direction8);
     }
     // JNZ 0x1000:c2c3 (1000_C2E1 / 0x1C2E1)
     if(!ZeroFlag) {
@@ -60240,8 +58590,8 @@ public partial class Overrides : CSharpOverrideHelper {
     // MOV ES,word ptr [0xdbda] (1000_C30D / 0x1C30D)
     ES = UInt16[DS, 0xDBDA];
     // LDS SI,[0xdbb0] (1000_C311 / 0x1C311)
-    SI = UInt16[DS, 0xDBB0];
     DS = UInt16[DS, 0xDBB2];
+    SI = UInt16[DS, 0xDBB0];
     // MOV BP,AX (1000_C315 / 0x1C315)
     BP = AX;
     // SHL BP,1 (1000_C317 / 0x1C317)
@@ -60252,12 +58602,12 @@ public partial class Overrides : CSharpOverrideHelper {
     SI = Alu.Add16(SI, UInt16[DS, (ushort)(BP + SI)]);
     // LODSW SI (1000_C31C / 0x1C31C)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV DI,AX (1000_C31D / 0x1C31D)
     DI = AX;
     // LODSW SI (1000_C31F / 0x1C31F)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // XOR AH,AH (1000_C320 / 0x1C320)
     AH = 0;
     // MOV CX,AX (1000_C322 / 0x1C322)
@@ -60269,7 +58619,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_C327 = (uint)(UInt16[SS, 0x38CF] * 0x10 + UInt16[SS, 0x38CD] - cs1 * 0x10);
     switch(targetAddress_1000_C327) {
       case 0x235C2 : FarCall(cs1, 0xC32C, unknown_334B_0112_335C2); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_C327);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_C327));
         break;
     }
     // PUSH SS (1000_C32C / 0x1C32C)
@@ -60290,8 +58640,8 @@ public partial class Overrides : CSharpOverrideHelper {
     // MOV ES,word ptr [0xdbda] (1000_C343 / 0x1C343)
     ES = UInt16[DS, 0xDBDA];
     // LDS SI,[0xdbb0] (1000_C347 / 0x1C347)
-    SI = UInt16[DS, 0xDBB0];
     DS = UInt16[DS, 0xDBB2];
+    SI = UInt16[DS, 0xDBB0];
     // MOV BP,AX (1000_C34B / 0x1C34B)
     BP = AX;
     // SHL BP,1 (1000_C34D / 0x1C34D)
@@ -60302,7 +58652,7 @@ public partial class Overrides : CSharpOverrideHelper {
     SI = Alu.Add16(SI, UInt16[DS, (ushort)(BP + SI)]);
     // LODSW SI (1000_C352 / 0x1C352)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV DI,AX (1000_C353 / 0x1C353)
     DI = AX;
     // AND AH,0xf (1000_C355 / 0x1C355)
@@ -60316,7 +58666,7 @@ public partial class Overrides : CSharpOverrideHelper {
     DX = Alu.Sub16(DX, AX);
     // LODSW SI (1000_C35C / 0x1C35C)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // XOR AH,AH (1000_C35D / 0x1C35D)
     AH = 0;
     // MOV CX,AX (1000_C35F / 0x1C35F)
@@ -60334,7 +58684,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_C368 = (uint)(UInt16[SS, 0x38CF] * 0x10 + UInt16[SS, 0x38CD] - cs1 * 0x10);
     switch(targetAddress_1000_C368) {
       case 0x235C2 : FarCall(cs1, 0xC36D, unknown_334B_0112_335C2); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_C368);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_C368));
         break;
     }
     // PUSH SS (1000_C36D / 0x1C36D)
@@ -60365,7 +58715,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_C374 = (uint)(UInt16[DS, 0x38DB] * 0x10 + UInt16[DS, 0x38D9] - cs1 * 0x10);
     switch(targetAddress_1000_C374) {
       case 0x235CB : FarCall(cs1, 0xC378, unknown_334B_011B_335CB); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_C374);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_C374));
         break;
     }
     // POP SI (1000_C378 / 0x1C378)
@@ -60397,8 +58747,8 @@ public partial class Overrides : CSharpOverrideHelper {
     // PUSH CX (1000_C38D / 0x1C38D)
     Stack.Push(CX);
     // LDS SI,[0xdbb0] (1000_C38E / 0x1C38E)
-    SI = UInt16[DS, 0xDBB0];
     DS = UInt16[DS, 0xDBB2];
+    SI = UInt16[DS, 0xDBB0];
     // MOV BP,AX (1000_C392 / 0x1C392)
     BP = AX;
     // SHL BP,1 (1000_C394 / 0x1C394)
@@ -60409,7 +58759,7 @@ public partial class Overrides : CSharpOverrideHelper {
     SI = Alu.Add16(SI, UInt16[DS, (ushort)(BP + SI)]);
     // LODSW SI (1000_C399 / 0x1C399)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV DI,AX (1000_C39A / 0x1C39A)
     DI = AX;
     // AND AX,0x1ff (1000_C39C / 0x1C39C)
@@ -60419,7 +58769,7 @@ public partial class Overrides : CSharpOverrideHelper {
     Stack.Push(AX);
     // LODSW SI (1000_C3A0 / 0x1C3A0)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV CX,AX (1000_C3A1 / 0x1C3A1)
     CX = AX;
     // XOR AH,AH (1000_C3A3 / 0x1C3A3)
@@ -60431,7 +58781,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_C3A6 = (uint)(UInt16[SS, 0x38CB] * 0x10 + UInt16[SS, 0x38C9] - cs1 * 0x10);
     switch(targetAddress_1000_C3A6) {
       case 0x235BF : FarCall(cs1, 0xC3AB, VgaFunc05Blit_334B_010F_335BF); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_C3A6);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_C3A6));
         break;
     }
     // PUSH ES (1000_C3AB / 0x1C3AB)
@@ -60487,7 +58837,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_C3D5 = (uint)(UInt16[SS, 0x3933] * 0x10 + UInt16[SS, 0x3931] - cs1 * 0x10);
     switch(targetAddress_1000_C3D5) {
       case 0x2360D : FarCall(cs1, 0xC3DA, unknown_334B_015D_3360D); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_C3D5);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_C3D5));
         break;
     }
     // POP DX (1000_C3DA / 0x1C3DA)
@@ -60539,7 +58889,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_C402 = (uint)(UInt16[SS, 0x3933] * 0x10 + UInt16[SS, 0x3931] - cs1 * 0x10);
     switch(targetAddress_1000_C402) {
       case 0x2360D : FarCall(cs1, 0xC407, unknown_334B_015D_3360D); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_C402);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_C402));
         break;
     }
     // POP BX (1000_C407 / 0x1C407)
@@ -60578,7 +58928,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_C41B = (uint)(UInt16[SS, 0x38E3] * 0x10 + UInt16[SS, 0x38E1] - cs1 * 0x10);
     switch(targetAddress_1000_C41B) {
       case 0x235D1 : FarCall(cs1, 0xC420, VgaFunc11MemcpyDSToESFor64000_334B_0121_335D1); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_C41B);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_C41B));
         break;
     }
     // POP DS (1000_C420 / 0x1C420)
@@ -60603,7 +58953,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_C439 = (uint)(UInt16[DS, 0x38DB] * 0x10 + UInt16[DS, 0x38D9] - cs1 * 0x10);
     switch(targetAddress_1000_C439) {
       case 0x235CB : FarCall(cs1, 0xC43D, unknown_334B_011B_335CB); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_C439);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_C439));
         break;
     }
     // RET  (1000_C43D / 0x1C43D)
@@ -60622,12 +58972,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:c446 (1000_C441 / 0x1C441)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_C446_1C446, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_C443_1C443, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -60701,7 +59045,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_C467 = (uint)(UInt16[DS, 0x38EF] * 0x10 + UInt16[DS, 0x38ED] - cs1 * 0x10);
     switch(targetAddress_1000_C467) {
       case 0x235DA : FarCall(cs1, 0xC46B, VgaFunc14CopySquareOfPixelsSiIsSourceSegment_334B_012A_335DA); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_C467);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_C467));
         break;
     }
     // POP DS (1000_C46B / 0x1C46B)
@@ -60727,12 +59071,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:c449 (1000_C472 / 0x1C472)
     // Jump converted to non entry function call
     if(JumpDispatcher.Jump(unknown_1000_C446_1C446, 0x1C449 - cs1 * 0x10)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_C474_1C474, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -60800,7 +59138,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_C493 = (uint)(UInt16[SS, 0x38E7] * 0x10 + UInt16[SS, 0x38E5] - cs1 * 0x10);
     switch(targetAddress_1000_C493) {
       case 0x235D4 : FarCall(cs1, 0xC498, VgaFunc12CopyRectangle_334B_0124_335D4); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_C493);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_C493));
         break;
     }
     // POP DS (1000_C498 / 0x1C498)
@@ -60828,7 +59166,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_C4A3 = (uint)(UInt16[SS, 0x38F3] * 0x10 + UInt16[SS, 0x38F1] - cs1 * 0x10);
     switch(targetAddress_1000_C4A3) {
       case 0x235DD : FarCall(cs1, 0xC4A8, VgaFunc15MemcpyDSToESFor64000_334B_012D_335DD); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_C4A3);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_C4A3));
         break;
     }
     // POP DS (1000_C4A8 / 0x1C4A8)
@@ -60881,7 +59219,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_C4C6 = (uint)(UInt16[SS, 0x38F7] * 0x10 + UInt16[SS, 0x38F5] - cs1 * 0x10);
     switch(targetAddress_1000_C4C6) {
       case 0x235E0 : FarCall(cs1, 0xC4CB, VgaFunc16CopySquareOfPixels_334B_0130_335E0); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_C4C6);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_C4C6));
         break;
     }
     // POP DS (1000_C4CB / 0x1C4CB)
@@ -60909,7 +59247,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_C4D6 = (uint)(UInt16[SS, 0x38F3] * 0x10 + UInt16[SS, 0x38F1] - cs1 * 0x10);
     switch(targetAddress_1000_C4D6) {
       case 0x235DD : FarCall(cs1, 0xC4DB, VgaFunc15MemcpyDSToESFor64000_334B_012D_335DD); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_C4D6);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_C4D6));
         break;
     }
     // POP DS (1000_C4DB / 0x1C4DB)
@@ -60941,12 +59279,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:c4f0 (1000_C4EB / 0x1C4EB)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(rect_at_si_to_regs_ida_1000_C4F0_1C4F0, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_C4ED_1C4ED, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -61129,7 +59461,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_C537 = (uint)(UInt16[SS, 0x38F7] * 0x10 + UInt16[SS, 0x38F5] - cs1 * 0x10);
     switch(targetAddress_1000_C537) {
       case 0x235E0 : FarCall(cs1, 0xC53C, VgaFunc16CopySquareOfPixels_334B_0130_335E0); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_C537);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_C537));
         break;
     }
     // POP DS (1000_C53C / 0x1C53C)
@@ -61159,7 +59491,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_C54C = (uint)(UInt16[DS, 0x3903] * 0x10 + UInt16[DS, 0x3901] - cs1 * 0x10);
     switch(targetAddress_1000_C54C) {
       case 0x235E9 : FarCall(cs1, 0xC550, unknown_334B_0139_335E9); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_C54C);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_C54C));
         break;
     }
     // RET  (1000_C550 / 0x1C550)
@@ -61175,31 +59507,31 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_C551_1C551:
     // LODSW SI (1000_C551 / 0x1C551)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV DX,AX (1000_C552 / 0x1C552)
     DX = AX;
     // LODSW SI (1000_C554 / 0x1C554)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV BX,AX (1000_C555 / 0x1C555)
     BX = AX;
     // LODSW SI (1000_C557 / 0x1C557)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV DI,AX (1000_C558 / 0x1C558)
     DI = AX;
     // DEC DI (1000_C55A / 0x1C55A)
     DI = Alu.Dec16(DI);
     // LODSW SI (1000_C55B / 0x1C55B)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV CX,AX (1000_C55C / 0x1C55C)
     CX = AX;
     // DEC CX (1000_C55E / 0x1C55E)
     CX = Alu.Dec16(CX);
     // LODSB SI (1000_C55F / 0x1C55F)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // Function call generated as ASM continues to next function entry point without return
     if(JumpDispatcher.Jump(unknown_1000_C560_1C560, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
@@ -61274,7 +59606,7 @@ public partial class Overrides : CSharpOverrideHelper {
     SI = 0x3CBE;
     // LODSW SI (1000_C590 / 0x1C590)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // OR AX,AX (1000_C591 / 0x1C591)
     // AX |= AX;
     AX = Alu.Or16(AX, AX);
@@ -61329,11 +59661,13 @@ public partial class Overrides : CSharpOverrideHelper {
     Stack.Push(DS);
     // POP ES (1000_C5B5 / 0x1C5B5)
     ES = Stack.Pop();
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSB ES:DI,SI (1000_C5B6 / 0x1C5B6)
       UInt8[ES, DI] = UInt8[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+      SI = (ushort)(SI + Direction8);
+      DI = (ushort)(DI + Direction8);
     }
     label_1000_C5B8_1C5B8:
     // DEC word ptr [0x3cbe] (1000_C5B8 / 0x1C5B8)
@@ -61347,7 +59681,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_C5C3_1C5C3:
     // LODSW SI (1000_C5C3 / 0x1C5C3)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // CMP AX,DI (1000_C5C4 / 0x1C5C4)
     Alu.Sub16(AX, DI);
     // JC 0x1000:c5cc (1000_C5C6 / 0x1C5C6)
@@ -61500,7 +59834,7 @@ public partial class Overrides : CSharpOverrideHelper {
     NearCall(cs1, 0xC637, GetEsSiPointerToUnknown_1000_C1F4_1C1F4);
     // LODSW ES:SI (1000_C637 / 0x1C637)
     AX = UInt16[ES, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // AND AH,0xf (1000_C639 / 0x1C639)
     // AH &= 0xF;
     AH = Alu.And8(AH, 0xF);
@@ -61571,20 +59905,20 @@ public partial class Overrides : CSharpOverrideHelper {
     ES = Stack.Pop();
     // MOVSW ES:DI,SI (1000_C66D / 0x1C66D)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // MOVSW ES:DI,SI (1000_C66E / 0x1C66E)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // MOVSW ES:DI,SI (1000_C66F / 0x1C66F)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // MOVSW ES:DI,SI (1000_C670 / 0x1C670)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // SUB SI,0x8 (1000_C671 / 0x1C671)
     // SI -= 0x8;
     SI = Alu.Sub16(SI, 0x8);
@@ -61735,7 +60069,7 @@ public partial class Overrides : CSharpOverrideHelper {
     BX = 0x8;
     // LODSW SI (1000_C6EE / 0x1C6EE)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // CMP AX,word ptr [BX + DI] (1000_C6EF / 0x1C6EF)
     Alu.Sub16(AX, UInt16[DS, (ushort)(BX + DI)]);
     // JGE 0x1000:c6f5 (1000_C6F1 / 0x1C6F1)
@@ -61747,10 +60081,10 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_C6F5_1C6F5:
     // STOSW ES:DI (1000_C6F5 / 0x1C6F5)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // LODSW SI (1000_C6F6 / 0x1C6F6)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // CMP AX,word ptr [BX + DI] (1000_C6F7 / 0x1C6F7)
     Alu.Sub16(AX, UInt16[DS, (ushort)(BX + DI)]);
     // JGE 0x1000:c6fd (1000_C6F9 / 0x1C6F9)
@@ -61762,10 +60096,10 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_C6FD_1C6FD:
     // STOSW ES:DI (1000_C6FD / 0x1C6FD)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // LODSW SI (1000_C6FE / 0x1C6FE)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // CMP AX,word ptr [BX + DI] (1000_C6FF / 0x1C6FF)
     Alu.Sub16(AX, UInt16[DS, (ushort)(BX + DI)]);
     // JLE 0x1000:c705 (1000_C701 / 0x1C701)
@@ -61785,10 +60119,10 @@ public partial class Overrides : CSharpOverrideHelper {
     }
     // STOSW ES:DI (1000_C70A / 0x1C70A)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // LODSW SI (1000_C70B / 0x1C70B)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // CMP AX,word ptr [BX + DI] (1000_C70C / 0x1C70C)
     Alu.Sub16(AX, UInt16[DS, (ushort)(BX + DI)]);
     // JLE 0x1000:c712 (1000_C70E / 0x1C70E)
@@ -61808,7 +60142,7 @@ public partial class Overrides : CSharpOverrideHelper {
     }
     // STOSW ES:DI (1000_C717 / 0x1C717)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // CALL 0x1000:c443 (1000_C718 / 0x1C718)
     NearCall(cs1, 0xC71B, unknown_1000_C443_1C443);
     // SUB SP,0x200 (1000_C71B / 0x1C71B)
@@ -61826,17 +60160,17 @@ public partial class Overrides : CSharpOverrideHelper {
     SI = 0xD834;
     // LODSW SI (1000_C72A / 0x1C72A)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV DX,AX (1000_C72B / 0x1C72B)
     DX = AX;
     // LODSW SI (1000_C72D / 0x1C72D)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV BX,AX (1000_C72E / 0x1C72E)
     BX = AX;
     // LODSW SI (1000_C730 / 0x1C730)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV BP,AX (1000_C731 / 0x1C731)
     BP = AX;
     // MOV AX,word ptr [SI] (1000_C733 / 0x1C733)
@@ -61909,7 +60243,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_C766 = (uint)(UInt16[DS, 0x2786]);
     switch(targetAddress_1000_C766) {
       case 0xC835 : NearCall(cs1, 0xC76A, unknown_1000_C835_1C835); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_C766);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_C766));
         break;
     }
     // JS 0x1000:c77f (1000_C76A / 0x1C76A)
@@ -62020,7 +60354,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_C7D4_1C7D4:
     // LODSW SI (1000_C7D4 / 0x1C7D4)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // CMP AX,word ptr [DI + 0x4] (1000_C7D5 / 0x1C7D5)
     Alu.Sub16(AX, UInt16[DS, (ushort)(DI + 0x4)]);
     // JGE 0x1000:c826 (1000_C7D8 / 0x1C7D8)
@@ -62033,7 +60367,7 @@ public partial class Overrides : CSharpOverrideHelper {
     DX = AX;
     // LODSW SI (1000_C7DC / 0x1C7DC)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // CMP AX,word ptr [DI + 0x6] (1000_C7DD / 0x1C7DD)
     Alu.Sub16(AX, UInt16[DS, (ushort)(DI + 0x6)]);
     // JGE 0x1000:c826 (1000_C7E0 / 0x1C7E0)
@@ -62046,7 +60380,7 @@ public partial class Overrides : CSharpOverrideHelper {
     BX = AX;
     // LODSW SI (1000_C7E4 / 0x1C7E4)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // CMP AX,word ptr [DI] (1000_C7E5 / 0x1C7E5)
     Alu.Sub16(AX, UInt16[DS, DI]);
     // JLE 0x1000:c826 (1000_C7E7 / 0x1C7E7)
@@ -62059,7 +60393,7 @@ public partial class Overrides : CSharpOverrideHelper {
     BP = AX;
     // LODSW SI (1000_C7EB / 0x1C7EB)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // CMP AX,word ptr [DI + 0x2] (1000_C7EC / 0x1C7EC)
     Alu.Sub16(AX, UInt16[DS, (ushort)(DI + 0x2)]);
     // JLE 0x1000:c826 (1000_C7EF / 0x1C7EF)
@@ -62131,7 +60465,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_C81F = (uint)(UInt16[SS, 0x38F7] * 0x10 + UInt16[SS, 0x38F5] - cs1 * 0x10);
     switch(targetAddress_1000_C81F) {
       case 0x235E0 : FarCall(cs1, 0xC824, VgaFunc16CopySquareOfPixels_334B_0130_335E0); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_C81F);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_C81F));
         break;
     }
     // PUSH SS (1000_C824 / 0x1C824)
@@ -62155,7 +60489,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_C838_1C838:
     // LODSW SI (1000_C838 / 0x1C838)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // OR AX,AX (1000_C839 / 0x1C839)
     // AX |= AX;
     AX = Alu.Or16(AX, AX);
@@ -62291,7 +60625,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_C8A3_1C8A3:
     // LODSB SI (1000_C8A3 / 0x1C8A3)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // OR AL,AL (1000_C8A4 / 0x1C8A4)
     // AL |= AL;
     AL = Alu.Or8(AL, AL);
@@ -62382,7 +60716,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_C8E6 = (uint)(UInt16[SS, 0x394B] * 0x10 + UInt16[SS, 0x3949] - cs1 * 0x10);
     switch(targetAddress_1000_C8E6) {
       case 0x2361F : FarCall(cs1, 0xC8EB, unknown_334B_016F_3361F); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_C8E6);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_C8E6));
         break;
     }
     // POP DS (1000_C8EB / 0x1C8EB)
@@ -62433,7 +60767,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_C909 = (uint)(BP);
     switch(targetAddress_1000_C909) {
       case 0x181E : NearCall(cs1, 0xC90B, unknown_1000_181E_1181E); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_C909);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_C909));
         break;
     }
     label_1000_C90B_1C90B:
@@ -62458,12 +60792,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:ca01 (1000_C91E / 0x1C91E)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(hnm_close_resource_ida_1000_CA01_1CA01, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(GetHnmResourceFlagNamePtrByIndexAXToBx_1000_C921_1C921, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -62593,11 +60921,11 @@ public partial class Overrides : CSharpOverrideHelper {
       return NearRet();
     }
     // LES SI,[0xdc0c] (1000_C992 / 0x1C992)
-    SI = UInt16[DS, 0xDC0C];
     ES = UInt16[DS, 0xDC0E];
+    SI = UInt16[DS, 0xDC0C];
     // LODSW ES:SI (1000_C996 / 0x1C996)
     AX = UInt16[ES, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // ADD AX,SI (1000_C998 / 0x1C998)
     // AX += SI;
     AX = Alu.Add16(AX, SI);
@@ -62710,12 +61038,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(do_frame_and_check_if_frame_advanced_ida_1000_C9F4_1C9F4, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action do_frame_and_check_if_frame_advanced_ida_1000_C9F4_1C9F4(int loadOffset) {
@@ -62808,11 +61130,11 @@ public partial class Overrides : CSharpOverrideHelper {
     // MOV byte ptr [0xdce6],0x0 (1000_CA25 / 0x1CA25)
     UInt8[DS, 0xDCE6] = 0x0;
     // LES SI,[0xdc10] (1000_CA2A / 0x1CA2A)
-    SI = UInt16[DS, 0xDC10];
     ES = UInt16[DS, 0xDC12];
+    SI = UInt16[DS, 0xDC10];
     // LODSW ES:SI (1000_CA2E / 0x1CA2E)
     AX = UInt16[ES, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV BP,word ptr [0xdbde] (1000_CA30 / 0x1CA30)
     BP = UInt16[DS, 0xDBDE];
     // CALL 0x1000:ccf4 (1000_CA34 / 0x1CA34)
@@ -63009,11 +61331,11 @@ public partial class Overrides : CSharpOverrideHelper {
       return NearRet();
     }
     // LES SI,[0xdc10] (1000_CAAE / 0x1CAAE)
-    SI = UInt16[DS, 0xDC10];
     ES = UInt16[DS, 0xDC12];
+    SI = UInt16[DS, 0xDC10];
     // LODSW ES:SI (1000_CAB2 / 0x1CAB2)
     AX = UInt16[ES, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // CMP word ptr ES:[SI],0x6d6d (1000_CAB4 / 0x1CAB4)
     Alu.Sub16(UInt16[ES, SI], 0x6D6D);
     // JZ 0x1000:cabf (1000_CAB9 / 0x1CAB9)
@@ -63285,8 +61607,8 @@ public partial class Overrides : CSharpOverrideHelper {
     NearCall(cs1, 0xCB9F, MemCopy8BytesDsSIToDsDi_1000_5B99_15B99);
     // MOVSB ES:DI,SI (1000_CB9F / 0x1CB9F)
     UInt8[ES, DI] = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
+    DI = (ushort)(DI + Direction8);
     label_1000_CBA0_1CBA0:
     // MOV AX,[0xdbfa] (1000_CBA0 / 0x1CBA0)
     AX = UInt16[DS, 0xDBFA];
@@ -63325,8 +61647,8 @@ public partial class Overrides : CSharpOverrideHelper {
     CX = 0x4;
     label_1000_CBCF_1CBCF:
     // LES DI,[0xdc0c] (1000_CBCF / 0x1CBCF)
-    DI = UInt16[DS, 0xDC0C];
     ES = UInt16[DS, 0xDC0E];
+    DI = UInt16[DS, 0xDC0C];
     // MOV AX,0x2 (1000_CBD3 / 0x1CBD3)
     AX = 0x2;
     // CALL 0x1000:cdf7 (1000_CBD6 / 0x1CBD6)
@@ -63335,7 +61657,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AX = 0xA;
     // STOSW ES:DI (1000_CBDC / 0x1CBDC)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // MOV SI,DI (1000_CBDD / 0x1CBDD)
     SI = DI;
     // CALL 0x1000:cc0c (1000_CBDF / 0x1CBDF)
@@ -63347,28 +61669,28 @@ public partial class Overrides : CSharpOverrideHelper {
     // PUSH ES (1000_CBEA / 0x1CBEA)
     Stack.Push(ES);
     // LES DI,[0xdc0c] (1000_CBEB / 0x1CBEB)
-    DI = UInt16[DS, 0xDC0C];
     ES = UInt16[DS, 0xDC0E];
+    DI = UInt16[DS, 0xDC0C];
     // MOV AX,0x6d6d (1000_CBEF / 0x1CBEF)
     AX = 0x6D6D;
     // STOSW ES:DI (1000_CBF2 / 0x1CBF2)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // MOV AX,BP (1000_CBF3 / 0x1CBF3)
     AX = BP;
     // STOSW ES:DI (1000_CBF5 / 0x1CBF5)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // POP AX (1000_CBF6 / 0x1CBF6)
     AX = Stack.Pop();
     // STOSW ES:DI (1000_CBF7 / 0x1CBF7)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // POP AX (1000_CBF8 / 0x1CBF8)
     AX = Stack.Pop();
     // STOSW ES:DI (1000_CBF9 / 0x1CBF9)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // ADD BP,AX (1000_CBFA / 0x1CBFA)
     // BP += AX;
     BP = Alu.Add16(BP, AX);
@@ -63489,11 +61811,11 @@ public partial class Overrides : CSharpOverrideHelper {
     
     label_1000_CC4E_1CC4E:
     // LES SI,[0xdc10] (1000_CC4E / 0x1CC4E)
-    SI = UInt16[DS, 0xDC10];
     ES = UInt16[DS, 0xDC12];
+    SI = UInt16[DS, 0xDC10];
     // LODSW ES:SI (1000_CC52 / 0x1CC52)
     AX = UInt16[ES, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // SUB word ptr [0xdc1a],AX (1000_CC54 / 0x1CC54)
     // UInt16[DS, 0xDC1A] -= AX;
     UInt16[DS, 0xDC1A] = Alu.Sub16(UInt16[DS, 0xDC1A], AX);
@@ -63617,7 +61939,7 @@ public partial class Overrides : CSharpOverrideHelper {
     DS = BP;
     // LODSW SI (1000_CCC5 / 0x1CCC5)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // AND AH,0xf9 (1000_CCC6 / 0x1CCC6)
     // AH &= 0xF9;
     AH = Alu.And8(AH, 0xF9);
@@ -63625,7 +61947,7 @@ public partial class Overrides : CSharpOverrideHelper {
     DI = AX;
     // LODSW SI (1000_CCCB / 0x1CCCB)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV CX,AX (1000_CCCC / 0x1CCCC)
     CX = AX;
     // OR CL,CL (1000_CCCE / 0x1CCCE)
@@ -63637,12 +61959,12 @@ public partial class Overrides : CSharpOverrideHelper {
     }
     // LODSW SI (1000_CCD2 / 0x1CCD2)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV DX,AX (1000_CCD3 / 0x1CCD3)
     DX = AX;
     // LODSW SI (1000_CCD5 / 0x1CCD5)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // XCHG AX,BX (1000_CCD6 / 0x1CCD6)
     ushort tmp_1000_CCD6 = AX;
     AX = BX;
@@ -63658,7 +61980,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_CCDC = (uint)(UInt16[SS, 0x38CB] * 0x10 + UInt16[SS, 0x38C9] - cs1 * 0x10);
     switch(targetAddress_1000_CCDC) {
       case 0x235BF : FarCall(cs1, 0xCCE1, VgaFunc05Blit_334B_010F_335BF); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_CCDC);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_CCDC));
         break;
     }
     label_1000_CCE1_1CCE1:
@@ -63672,7 +61994,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_CCE3 = (uint)(UInt16[cs1, 0xCC94] * 0x10 + UInt16[cs1, 0xCC92]);
     switch(targetAddress_1000_CCE3) {
       case 0x235E3 : FarCall(cs1, 0xCCE8, VgaFunc17CopyframebufferExplodeAndCenter_334B_0133_335E3); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_CCE3);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_CCE3));
         break;
     }
     // POP DS (1000_CCE8 / 0x1CCE8)
@@ -63704,12 +62026,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:4aeb (1000_CCF1 / 0x1CCF1)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(not_observed_1000_4AEB_014AEB, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_CCF4_1CCF4, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -63746,7 +62062,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_CD0C_1CD0C:
     // LODSW ES:SI (1000_CD0C / 0x1CD0C)
     AX = UInt16[ES, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // CMP AX,0x6473 (1000_CD0E / 0x1CD0E)
     Alu.Sub16(AX, 0x6473);
     // JNZ 0x1000:cd25 (1000_CD11 / 0x1CD11)
@@ -63764,7 +62080,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_CD1C_1CD1C:
     // LODSW ES:SI (1000_CD1C / 0x1CD1C)
     AX = UInt16[ES, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // SUB AX,0x4 (1000_CD1E / 0x1CD1E)
     // AX -= 0x4;
     AX = Alu.Sub16(AX, 0x4);
@@ -63773,7 +62089,7 @@ public partial class Overrides : CSharpOverrideHelper {
     SI = Alu.Add16(SI, AX);
     // LODSW ES:SI (1000_CD23 / 0x1CD23)
     AX = UInt16[ES, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     label_1000_CD25_1CD25:
     // CMP AX,0x6c70 (1000_CD25 / 0x1CD25)
     Alu.Sub16(AX, 0x6C70);
@@ -63783,7 +62099,7 @@ public partial class Overrides : CSharpOverrideHelper {
     }
     // LODSW ES:SI (1000_CD2A / 0x1CD2A)
     AX = UInt16[ES, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV word ptr [0xdc1e],SI (1000_CD2C / 0x1CD2C)
     UInt16[DS, 0xDC1E] = SI;
     // SUB AX,0x4 (1000_CD30 / 0x1CD30)
@@ -63804,16 +62120,16 @@ public partial class Overrides : CSharpOverrideHelper {
     // MOV BX,word ptr ES:[SI + 0x4] (1000_CD3C / 0x1CD3C)
     BX = UInt16[ES, (ushort)(SI + 0x4)];
     // LES SI,ES:[SI] (1000_CD40 / 0x1CD40)
-    SI = UInt16[ES, SI];
     ES = UInt16[ES, (ushort)(SI + 2)];
+    SI = UInt16[ES, SI];
     // LODSW ES:SI (1000_CD43 / 0x1CD43)
     AX = UInt16[ES, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // CMP AX,BX (1000_CD45 / 0x1CD45)
     Alu.Sub16(AX, BX);
     // LODSW ES:SI (1000_CD47 / 0x1CD47)
     AX = UInt16[ES, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // JZ 0x1000:cd4e (1000_CD49 / 0x1CD49)
     if(ZeroFlag) {
       goto label_1000_CD4E_1CD4E;
@@ -63855,7 +62171,7 @@ public partial class Overrides : CSharpOverrideHelper {
     CX = AX;
     // LODSW SI (1000_CD6B / 0x1CD6B)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // XCHG AX,CX (1000_CD6C / 0x1CD6C)
     ushort tmp_1000_CD6C = AX;
     AX = CX;
@@ -63868,14 +62184,14 @@ public partial class Overrides : CSharpOverrideHelper {
     }
     // STOSW ES:DI (1000_CD72 / 0x1CD72)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // XCHG AX,CX (1000_CD73 / 0x1CD73)
     ushort tmp_1000_CD73 = AX;
     AX = CX;
     CX = tmp_1000_CD73;
     // STOSW ES:DI (1000_CD74 / 0x1CD74)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // JCXZ 0x1000:cd7f (1000_CD75 / 0x1CD75)
     if(CX == 0) {
       goto label_1000_CD7F_1CD7F;
@@ -63928,8 +62244,8 @@ public partial class Overrides : CSharpOverrideHelper {
       return NearRet();
     }
     // LES SI,[0xdc0c] (1000_CD97 / 0x1CD97)
-    SI = UInt16[DS, 0xDC0C];
     ES = UInt16[DS, 0xDC0E];
+    SI = UInt16[DS, 0xDC0C];
     // MOV AX,word ptr ES:[SI + -0x2] (1000_CD9B / 0x1CD9B)
     AX = UInt16[ES, (ushort)(SI - 0x2)];
     label_1000_CD9F_1CD9F:
@@ -63966,7 +62282,7 @@ public partial class Overrides : CSharpOverrideHelper {
     UInt16[DS, 0xDC10] = DI;
     // STOSW ES:DI (1000_CDB5 / 0x1CDB5)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // MOV word ptr [0xdc0c],DI (1000_CDB6 / 0x1CDB6)
     UInt16[DS, 0xDC0C] = DI;
     // MOV CX,AX (1000_CDBA / 0x1CDBA)
@@ -64015,8 +62331,8 @@ public partial class Overrides : CSharpOverrideHelper {
     // PUSH DS (1000_CDD7 / 0x1CDD7)
     Stack.Push(DS);
     // LDS DX,[0xdc0c] (1000_CDD8 / 0x1CDD8)
-    DX = UInt16[DS, 0xDC0C];
     DS = UInt16[DS, 0xDC0E];
+    DX = UInt16[DS, 0xDC0C];
     // MOV AH,0x3f (1000_CDDC / 0x1CDDC)
     AH = 0x3F;
     // INT 0x21 (1000_CDDE / 0x1CDDE)
@@ -64156,8 +62472,8 @@ public partial class Overrides : CSharpOverrideHelper {
     
     label_1000_CE3B_1CE3B:
     // LES SI,[0xdc0c] (1000_CE3B / 0x1CE3B)
-    SI = UInt16[DS, 0xDC0C];
     ES = UInt16[DS, 0xDC0E];
+    SI = UInt16[DS, 0xDC0C];
     // MOV SI,word ptr [0xdc1e] (1000_CE3F / 0x1CE3F)
     SI = UInt16[DS, 0xDC1E];
     // CALL 0x1000:c1ba (1000_CE43 / 0x1CE43)
@@ -64167,7 +62483,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_CE46 = (uint)(UInt16[DS, 0x3937] * 0x10 + UInt16[DS, 0x3935] - cs1 * 0x10);
     switch(targetAddress_1000_CE46) {
       case 0x23610 : FarCall(cs1, 0xCE4A, unknown_334B_0160_33610); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_CE46);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_CE46));
         break;
     }
     // RET  (1000_CE4A / 0x1CE4A)
@@ -64309,12 +62625,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:ca01 (1000_CEAD / 0x1CEAD)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(hnm_close_resource_ida_1000_CA01_1CA01, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_CEB0_1CEB0, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -64467,7 +62777,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_CF0E = (uint)(UInt16[DS, 0x393B] * 0x10 + UInt16[DS, 0x3939] - cs1 * 0x10);
     switch(targetAddress_1000_CF0E) {
       case 0x23613 : FarCall(cs1, 0xCF12, VgaFunc33UpdateVgaOffset01A3FromLineNumberAsAx_334B_0163_33613); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_CF0E);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_CF0E));
         break;
     }
     // CALL 0x1000:c0ad (1000_CF12 / 0x1CF12)
@@ -64477,12 +62787,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:ca1b (1000_CF18 / 0x1CF18)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(hnm_load_ida_1000_CA1B_1CA1B, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(play_IRULx_HSQ_ida_1000_CF1B_1CF1B, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -64505,7 +62809,7 @@ public partial class Overrides : CSharpOverrideHelper {
     SI = UInt16[DS, 0x3622];
     // LODSW SI (1000_CF26 / 0x1CF26)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // CMP AX,word ptr [0xdbe8] (1000_CF27 / 0x1CF27)
     Alu.Sub16(AX, UInt16[DS, 0xDBE8]);
     // JA 0x1000:cf30 (1000_CF2B / 0x1CF2B)
@@ -64590,10 +62894,12 @@ public partial class Overrides : CSharpOverrideHelper {
     AX = 0;
     // MOV CX,0xb40 (1000_CF6A / 0x1CF6A)
     CX = 0xB40;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // STOSW ES:DI (1000_CF6D / 0x1CF6D)
       UInt16[ES, DI] = AX;
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      DI = (ushort)(DI + Direction16);
     }
     // RET  (1000_CF6F / 0x1CF6F)
     return NearRet();
@@ -64619,8 +62925,8 @@ public partial class Overrides : CSharpOverrideHelper {
     // CALL 0x1000:d00f (1000_CF78 / 0x1CF78)
     NearCall(cs1, 0xCF7B, load_PHRASExx_HSQ_ida_1000_D00F_1D00F);
     // LES BX,[0x47b0] (1000_CF7B / 0x1CF7B)
-    BX = UInt16[DS, 0x47B0];
     ES = UInt16[DS, 0x47B2];
+    BX = UInt16[DS, 0x47B0];
     // AND SI,0x7ff (1000_CF7F / 0x1CF7F)
     // SI &= 0x7FF;
     SI = Alu.And16(SI, 0x7FF);
@@ -64644,8 +62950,8 @@ public partial class Overrides : CSharpOverrideHelper {
     // SI <<= 1;
     SI = Alu.Shl16(SI, 1);
     // LES BX,[0x47ac] (1000_CF97 / 0x1CF97)
-    BX = UInt16[DS, 0x47AC];
     ES = UInt16[DS, 0x47AE];
+    BX = UInt16[DS, 0x47AC];
     // MOV SI,word ptr ES:[BX + SI] (1000_CF9B / 0x1CF9B)
     SI = UInt16[ES, (ushort)(BX + SI)];
     // POP BX (1000_CF9E / 0x1CF9E)
@@ -64741,7 +63047,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AX = Alu.Dec16(AX);
     // STOSW ES:DI (1000_CFD7 / 0x1CFD7)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // AND BX,0xfff0 (1000_CFD8 / 0x1CFD8)
     // BX &= 0xFFF0;
     BX = Alu.And16(BX, 0xFFF0);
@@ -64800,8 +63106,8 @@ public partial class Overrides : CSharpOverrideHelper {
     // MOV SI,AX (1000_D001 / 0x1D001)
     SI = AX;
     // LES DI,[0x47ac] (1000_D003 / 0x1D003)
-    DI = UInt16[DS, 0x47AC];
     ES = UInt16[DS, 0x47AE];
+    DI = UInt16[DS, 0x47AC];
     // CALL 0x1000:f0b9 (1000_D007 / 0x1D007)
     NearCall(cs1, 0xD00A, open_resource_by_index_si_ida_1000_F0B9_1F0B9);
     // CALL 0x1000:0098 (1000_D00A / 0x1D00A)
@@ -64809,12 +63115,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:d01a (1000_D00D / 0x1D00D)
     // Jump converted to non entry function call
     if(JumpDispatcher.Jump(load_PHRASExx_HSQ_ida_1000_D00F_1D00F, 0x1D01A - cs1 * 0x10)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(load_PHRASExx_HSQ_ida_1000_D00F_1D00F, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -64863,8 +63163,8 @@ public partial class Overrides : CSharpOverrideHelper {
     // MOV SI,AX (1000_D02C / 0x1D02C)
     SI = AX;
     // LES DI,[0x47b0] (1000_D02E / 0x1D02E)
-    DI = UInt16[DS, 0x47B0];
     ES = UInt16[DS, 0x47B2];
+    DI = UInt16[DS, 0x47B0];
     // CALL 0x1000:f0b9 (1000_D032 / 0x1D032)
     NearCall(cs1, 0xD035, open_resource_by_index_si_ida_1000_F0B9_1F0B9);
     // PUSH CX (1000_D035 / 0x1D035)
@@ -64889,7 +63189,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_D03C_1D03C:
     // LODSB ES:SI (1000_D03C / 0x1D03C)
     AL = UInt8[ES, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // SUB AL,0x30 (1000_D03E / 0x1D03E)
     // AL -= 0x30;
     AL = Alu.Sub8(AL, 0x30);
@@ -64902,7 +63202,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_D044_1D044:
     // LODSB ES:SI (1000_D044 / 0x1D044)
     AL = UInt8[ES, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // SUB AL,0x30 (1000_D046 / 0x1D046)
     // AL -= 0x30;
     AL = Alu.Sub8(AL, 0x30);
@@ -65061,7 +63361,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_D0C4 = (uint)(UInt16[DS, 0x38D3] * 0x10 + UInt16[DS, 0x38D1] - cs1 * 0x10);
     switch(targetAddress_1000_D0C4) {
       case 0x235C5 : FarCall(cs1, 0xD0C8, unknown_334B_0115_335C5); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_D0C4);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_D0C4));
         break;
     }
     // POP ES (1000_D0C8 / 0x1D0C8)
@@ -65105,11 +63405,13 @@ public partial class Overrides : CSharpOverrideHelper {
     DI = 0xD0D1;
     // MOV CX,0x9 (1000_D0EB / 0x1D0EB)
     CX = 0x9;
-    while (CX-- != 0) {
+    // REPNE
+    while (CX != 0) {
+      CX--;
       // SCASB ES:DI (1000_D0EE / 0x1D0EE)
       Alu.Sub8(AL, UInt8[ES, DI]);
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-      if(ZeroFlag == false) {
+      DI = (ushort)(DI + Direction8);
+      if(ZeroFlag != false) {
         break;
       }
     }
@@ -65264,7 +63566,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_D15D = (uint)(UInt16[DS, 0x38D3] * 0x10 + UInt16[DS, 0x38D1] - cs1 * 0x10);
     switch(targetAddress_1000_D15D) {
       case 0x235C5 : FarCall(cs1, 0xD161, unknown_334B_0115_335C5); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_D15D);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_D15D));
         break;
     }
     // POP ES (1000_D161 / 0x1D161)
@@ -65338,7 +63640,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_D1A6_1D1A6:
     // LODSW SI (1000_D1A6 / 0x1D1A6)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV CX,AX (1000_D1A7 / 0x1D1A7)
     CX = AX;
     // INC AX (1000_D1A9 / 0x1D1A9)
@@ -65351,17 +63653,17 @@ public partial class Overrides : CSharpOverrideHelper {
     }
     // LODSW SI (1000_D1AC / 0x1D1AC)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV DX,AX (1000_D1AD / 0x1D1AD)
     DX = AX;
     // LODSW SI (1000_D1AF / 0x1D1AF)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV BX,AX (1000_D1B0 / 0x1D1B0)
     BX = AX;
     // LODSW SI (1000_D1B2 / 0x1D1B2)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // XCHG AX,CX (1000_D1B3 / 0x1D1B3)
     ushort tmp_1000_D1B3 = AX;
     AX = CX;
@@ -65385,7 +63687,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_D1BB_1D1BB:
     // LODSB ES:SI (1000_D1BB / 0x1D1BB)
     AL = UInt8[ES, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // CMP AL,0xff (1000_D1BD / 0x1D1BD)
     Alu.Sub8(AL, 0xFF);
     // JZ 0x1000:d1a5 (1000_D1BF / 0x1D1BF)
@@ -65416,7 +63718,7 @@ public partial class Overrides : CSharpOverrideHelper {
     switch(targetAddress_1000_D1CB) {
       case 0xD12F : NearCall(cs1, 0xD1CF, unknown_1000_D12F_1D12F); break;
       case 0xD096 : NearCall(cs1, 0xD1CF, unknown_1000_D096_1D096); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_D1CB);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_D1CB));
         break;
     }
     // JMP 0x1000:d1bb (1000_D1CF / 0x1D1CF)
@@ -65456,7 +63758,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_D1EF_1D1EF:
     // LODSW SI (1000_D1EF / 0x1D1EF)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV CX,AX (1000_D1F0 / 0x1D1F0)
     CX = AX;
     // Function call generated as ASM continues to next function entry point without return
@@ -65522,7 +63824,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_D213 = (uint)(UInt16[DS, 0x38DB] * 0x10 + UInt16[DS, 0x38D9] - cs1 * 0x10);
     switch(targetAddress_1000_D213) {
       case 0x235CB : FarCall(cs1, 0xD217, unknown_334B_011B_335CB); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_D213);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_D213));
         break;
     }
     // POP SI (1000_D217 / 0x1D217)
@@ -65536,30 +63838,30 @@ public partial class Overrides : CSharpOverrideHelper {
     }
     // LODSW SI (1000_D21E / 0x1D21E)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV DX,AX (1000_D21F / 0x1D21F)
     DX = AX;
     // LODSW SI (1000_D221 / 0x1D221)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV BX,AX (1000_D222 / 0x1D222)
     BX = AX;
     // LODSW SI (1000_D224 / 0x1D224)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV DI,AX (1000_D225 / 0x1D225)
     DI = AX;
     // LODSW SI (1000_D227 / 0x1D227)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV CX,AX (1000_D228 / 0x1D228)
     CX = AX;
     // LODSW SI (1000_D22A / 0x1D22A)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // LODSW SI (1000_D22B / 0x1D22B)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // INC AX (1000_D22C / 0x1D22C)
     AX = Alu.Inc16(AX);
     // JZ 0x1000:d233 (1000_D22D / 0x1D22D)
@@ -65591,12 +63893,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:d23f (1000_D23B / 0x1D23B)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(not_observed_1000_D23F_01D23F, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_D23D_1D23D, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -65785,7 +64081,7 @@ public partial class Overrides : CSharpOverrideHelper {
     SI = UInt16[DS, SI];
     // LODSB SI (1000_D2CC / 0x1D2CC)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // CMP AL,0xff (1000_D2CD / 0x1D2CD)
     Alu.Sub8(AL, 0xFF);
     // JZ 0x1000:d2da (1000_D2CF / 0x1D2CF)
@@ -65826,12 +64122,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:d280 (1000_D2E8 / 0x1D2E8)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_D280_1D280, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_D2EA_1D2EA, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -65878,7 +64168,7 @@ public partial class Overrides : CSharpOverrideHelper {
       case 0xA541 : NearCall(cs1, 0xD2FD, unknown_1000_A541_1A541); break;
       case 0x824D : NearCall(cs1, 0xD2FD, unknown_1000_824D_1824D); break;
       case 0x4ABE : NearCall(cs1, 0xD2FD, unknown_1000_4ABE_14ABE); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_D2FB);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_D2FB));
         break;
     }
     // Function call generated as ASM continues to next function entry point without return
@@ -65979,12 +64269,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_D32F_01D32F, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action not_observed_1000_D32F_01D32F(int loadOffset) {
@@ -66001,12 +64285,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:d280 (1000_D335 / 0x1D335)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_D280_1D280, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_D338_1D338, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -66070,7 +64348,7 @@ public partial class Overrides : CSharpOverrideHelper {
       case 0xF66 : NearCall(cs1, 0xD351, NoOp_1000_0F66_10F66); break;
       case 0x97CF : NearCall(cs1, 0xD351, unknown_1000_97CF_197CF); break;
       case 0x2997 : NearCall(cs1, 0xD351, unknown_1000_2997_12997); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_D34F);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_D34F));
         break;
     }
     // SUB word ptr [0x21da],0x4 (1000_D351 / 0x1D351)
@@ -66188,7 +64466,7 @@ public partial class Overrides : CSharpOverrideHelper {
     SI = Alu.Inc16(SI);
     // LODSB SI (1000_D3A3 / 0x1D3A3)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // MOV [0xdce4],AL (1000_D3A4 / 0x1D3A4)
     UInt8[DS, 0xDCE4] = AL;
     // CBW  (1000_D3A7 / 0x1D3A7)
@@ -66328,12 +64606,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(SetBpToCurrentMenuTypeForScreenAction_1000_D41B_1D41B, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action SetBpToCurrentMenuTypeForScreenAction_1000_D41B_1D41B(int loadOffset) {
@@ -66367,12 +64639,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_D434_1D434, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_D434_1D434(int loadOffset) {
@@ -66387,12 +64653,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:d445 (1000_D437 / 0x1D437)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(not_observed_1000_D445_01D445, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_D439_1D439, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -66415,12 +64675,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_D43E_1D43E, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_D43E_1D43E(int loadOffset) {
@@ -66435,12 +64689,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:d445 (1000_D441 / 0x1D441)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(not_observed_1000_D445_01D445, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(DispatcherJumpsToBX_1000_D443_1D443, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -66838,23 +65086,7 @@ public partial class Overrides : CSharpOverrideHelper {
         }
         return JumpDispatcher.JumpAsmReturn!;
       }
-      case 0x92F2 : {
-        // Jump converted to entry function call
-        if(JumpDispatcher.Jump(not_observed_1000_92F2_0192F2, 0)) {
-          loadOffset = JumpDispatcher.NextEntryAddress;
-          goto entrydispatcher;
-        }
-        return JumpDispatcher.JumpAsmReturn!;
-      }
-      case 0x283E : {
-        // Jump converted to entry function call
-        if(JumpDispatcher.Jump(not_observed_1000_283E_01283E, 0)) {
-          loadOffset = JumpDispatcher.NextEntryAddress;
-          goto entrydispatcher;
-        }
-        return JumpDispatcher.JumpAsmReturn!;
-      }
-      default: throw FailAsUntested("Error: Jump not registered at address " + targetAddress_1000_D451);
+      default: throw FailAsUntested("Error: Jump not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_D451));
         break;
     }
     label_1000_D453_1D453:
@@ -66885,7 +65117,7 @@ public partial class Overrides : CSharpOverrideHelper {
     }
     // LODSB SI (1000_D463 / 0x1D463)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // CBW  (1000_D464 / 0x1D464)
     AX = (ushort)((short)((sbyte)AL));
     // ADD SI,AX (1000_D465 / 0x1D465)
@@ -67027,7 +65259,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_D4E2 = (uint)(UInt16[DS, 0x2518]);
     switch(targetAddress_1000_D4E2) {
       case 0xD12F : NearCall(cs1, 0xD4E6, unknown_1000_D12F_1D12F); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_D4E2);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_D4E2));
         break;
     }
     // CALL 0x1000:d1bb (1000_D4E6 / 0x1D4E6)
@@ -67057,7 +65289,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_D506 = (uint)(UInt16[DS, 0x38DF] * 0x10 + UInt16[DS, 0x38DD] - cs1 * 0x10);
     switch(targetAddress_1000_D506) {
       case 0x235CE : FarCall(cs1, 0xD50A, unknown_334B_011E_335CE); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_D506);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_D506));
         break;
     }
     // POP word ptr [0xdbda] (1000_D50A / 0x1D50A)
@@ -67383,12 +65615,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:d621 (1000_D61B / 0x1D61B)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(not_observed_1000_D621_01D621, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_D61D_1D61D, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -67767,11 +65993,13 @@ public partial class Overrides : CSharpOverrideHelper {
     DI = 0x1B8E;
     // MOV CX,0x2a (1000_D730 / 0x1D730)
     CX = 0x2A;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSW ES:DI,SI (1000_D733 / 0x1D733)
       UInt16[ES, DI] = UInt16[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      SI = (ushort)(SI + Direction16);
+      DI = (ushort)(DI + Direction16);
     }
     // Function call generated as ASM continues to next function entry point without return
     if(JumpDispatcher.Jump(not_observed_1000_D735_01D735, 0)) {
@@ -67797,12 +66025,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:d1f2 (1000_D73E / 0x1D73E)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_D1F2_1D1F2, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_D741_1D741, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -67840,7 +66062,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_D755 = (uint)(UInt16[DS, 0x38DF] * 0x10 + UInt16[DS, 0x38DD] - cs1 * 0x10);
     switch(targetAddress_1000_D755) {
       case 0x235CE : FarCall(cs1, 0xD759, unknown_334B_011E_335CE); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_D755);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_D755));
         break;
     }
     label_1000_D759_1D759:
@@ -67917,12 +66139,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_D792_1D792, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_D792_1D792(int loadOffset) {
@@ -67960,12 +66176,12 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_D79D_1D79D:
     // MOVSW ES:DI,SI (1000_D79D / 0x1D79D)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // MOVSW ES:DI,SI (1000_D79E / 0x1D79E)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // ADD DI,0xa (1000_D79F / 0x1D79F)
     // DI += 0xA;
     DI = Alu.Add16(DI, 0xA);
@@ -67980,12 +66196,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:d1f2 (1000_D7AA / 0x1D7AA)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_D1F2_1D1F2, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_D7AD_1D7AD, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -68008,12 +66218,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_D7B2_1D7B2, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_D7B2_1D7B2(int loadOffset) {
@@ -68028,12 +66232,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:d795 (1000_D7B5 / 0x1D7B5)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_D795_1D795, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_D7B7_1D7B7, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -68276,7 +66474,7 @@ public partial class Overrides : CSharpOverrideHelper {
       case 0x5C03 : NearCall(cs1, 0xD891, unknown_1000_5C03_15C03); break;
       case 0xBC1F : NearCall(cs1, 0xD891, unknown_1000_BC1F_1BC1F); break;
       case 0x4586 : NearCall(cs1, 0xD891, unknown_1000_4586_14586); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_D88F);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_D88F));
         break;
     }
     // JMP 0x1000:d820 (1000_D891 / 0x1D891)
@@ -68364,8 +66562,7 @@ public partial class Overrides : CSharpOverrideHelper {
       case 0x59C1 : NearCall(cs1, 0xD8D7, unknown_1000_59C1_159C1); break;
       case 0xF66 : NearCall(cs1, 0xD8D7, NoOp_1000_0F66_10F66); break;
       case 0x4586 : NearCall(cs1, 0xD8D7, unknown_1000_4586_14586); break;
-      case 0xA5DF : NearCall(cs1, 0xD8D7, not_observed_1000_A5DF_01A5DF); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_D8D4);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_D8D4));
         break;
     }
     label_1000_D8D7_1D8D7:
@@ -68462,7 +66659,7 @@ public partial class Overrides : CSharpOverrideHelper {
       case 0x450E : NearCall(cs1, 0xD914, unknown_1000_450E_1450E); break;
       case 0x81EC : NearCall(cs1, 0xD914, unknown_1000_81EC_181EC); break;
       case 0xA576 : NearCall(cs1, 0xD914, unknown_1000_A576_1A576); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_D911);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_D911));
         break;
     }
     // JMP 0x1000:d820 (1000_D914 / 0x1D914)
@@ -68541,8 +66738,7 @@ public partial class Overrides : CSharpOverrideHelper {
       case 0x941D : NearCall(cs1, 0xD941, unknown_1000_941D_1941D); break;
       case 0x9468 : NearCall(cs1, 0xD941, unknown_1000_9468_19468); break;
       case 0x8829 : NearCall(cs1, 0xD941, unknown_1000_8829_18829); break;
-      case 0xB9D3 : NearCall(cs1, 0xD941, not_observed_1000_B9D3_01B9D3); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_D93E);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_D93E));
         break;
     }
     // JMP 0x1000:d820 (1000_D941 / 0x1D941)
@@ -68574,18 +66770,12 @@ public partial class Overrides : CSharpOverrideHelper {
       case 0xF66 : NearCall(cs1, 0xD958, NoOp_1000_0F66_10F66); break;
       case 0x599F : NearCall(cs1, 0xD958, unknown_1000_599F_1599F); break;
       case 0xA5AA : NearCall(cs1, 0xD958, unknown_1000_A5AA_1A5AA); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_D955);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_D955));
         break;
     }
     // JMP 0x1000:d820 (1000_D958 / 0x1D958)
     // Jump converted to non entry function call
     if(JumpDispatcher.Jump(unknown_1000_D815_1D815, 0x1D820 - cs1 * 0x10)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(SetMapClickHandlerAddressToInGame_1000_D95B_1D95B, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -68767,12 +66957,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_D9D2_1D9D2, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_D9D2_1D9D2(int loadOffset) {
@@ -68813,7 +66997,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_D9EB_1D9EB:
     // LODSW SI (1000_D9EB / 0x1D9EB)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV BP,AX (1000_D9EC / 0x1D9EC)
     BP = AX;
     // MOV AX,BX (1000_D9EE / 0x1D9EE)
@@ -68881,7 +67065,7 @@ public partial class Overrides : CSharpOverrideHelper {
       case 0x44AB : NearCall(cs1, 0xDA1B, unknown_1000_44AB_144AB); break;
       case 0x176B : NearCall(cs1, 0xDA1B, unknown_1000_176B_1176B); break;
       case 0x2CC7 : NearCall(cs1, 0xDA1B, unknown_1000_2CC7_12CC7); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_DA18);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_DA18));
         break;
     }
     // POP SI (1000_DA1B / 0x1DA1B)
@@ -68928,7 +67112,7 @@ public partial class Overrides : CSharpOverrideHelper {
     }
     // STOSW ES:DI (1000_DA32 / 0x1DA32)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // DEC AX (1000_DA33 / 0x1DA33)
     AX = Alu.Dec16(AX);
     // ADD AX,AX (1000_DA34 / 0x1DA34)
@@ -68949,17 +67133,17 @@ public partial class Overrides : CSharpOverrideHelper {
     AX = BP;
     // STOSW ES:DI (1000_DA40 / 0x1DA40)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // XOR AX,AX (1000_DA41 / 0x1DA41)
     AX = 0;
     // STOSW ES:DI (1000_DA43 / 0x1DA43)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // MOV AX,SI (1000_DA44 / 0x1DA44)
     AX = SI;
     // STOSW ES:DI (1000_DA46 / 0x1DA46)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // MOV BP,word ptr [0xdc66] (1000_DA47 / 0x1DA47)
     BP = UInt16[DS, 0xDC66];
     // OR BP,BP (1000_DA4B / 0x1DA4B)
@@ -69085,11 +67269,13 @@ public partial class Overrides : CSharpOverrideHelper {
     Stack.Push(DS);
     // POP ES (1000_DA9F / 0x1DA9F)
     ES = Stack.Pop();
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSW ES:DI,SI (1000_DAA0 / 0x1DAA0)
       UInt16[ES, DI] = UInt16[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      SI = (ushort)(SI + Direction16);
+      DI = (ushort)(DI + Direction16);
     }
     // RET  (1000_DAA2 / 0x1DAA2)
     return NearRet();
@@ -69259,12 +67445,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(define_mouse_range_ida_1000_DB14_1DB14, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action define_mouse_range_ida_1000_DB14_1DB14(int loadOffset) {
@@ -69400,12 +67580,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:dbec (1000_DB72 / 0x1DB72)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(draw_mouse_ida_1000_DBEC_1DBEC, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_DB74_1DB74, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -69557,7 +67731,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_DBC4 = (uint)(UInt16[DS, 0x38C7] * 0x10 + UInt16[DS, 0x38C5] - cs1 * 0x10);
     switch(targetAddress_1000_DBC4) {
       case 0x235BC : FarCall(cs1, 0xDBC8, VgaFunc04RestoreImageUnderMouseCursor_334B_010C_335BC); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_DBC4);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_DBC4));
         break;
     }
     label_1000_DBC8_1DBC8:
@@ -69682,7 +67856,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_DC0F = (uint)(UInt16[DS, 0x38C3] * 0x10 + UInt16[DS, 0x38C1] - cs1 * 0x10);
     switch(targetAddress_1000_DC0F) {
       case 0x235B9 : FarCall(cs1, 0xDC13, VgaFunc03DrawMouseCursor_334B_0109_335B9); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_DC0F);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_DC0F));
         break;
     }
     // POP BP (1000_DC13 / 0x1DC13)
@@ -69779,7 +67953,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_DC52 = (uint)(UInt16[DS, 0x38C7] * 0x10 + UInt16[DS, 0x38C5] - cs1 * 0x10);
     switch(targetAddress_1000_DC52) {
       case 0x235BC : FarCall(cs1, 0xDC56, VgaFunc04RestoreImageUnderMouseCursor_334B_010C_335BC); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_DC52);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_DC52));
         break;
     }
     label_1000_DC56_1DC56:
@@ -69792,7 +67966,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_DC5E = (uint)(UInt16[DS, 0x38C3] * 0x10 + UInt16[DS, 0x38C1] - cs1 * 0x10);
     switch(targetAddress_1000_DC5E) {
       case 0x235B9 : FarCall(cs1, 0xDC62, VgaFunc03DrawMouseCursor_334B_0109_335B9); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_DC5E);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_DC5E));
         break;
     }
     label_1000_DC62_1DC62:
@@ -70467,12 +68641,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(SetCEE8To0_1000_DE4E_1DE4E, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action SetCEE8To0_1000_DE4E_1DE4E(int loadOffset) {
@@ -70539,12 +68707,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function body without return
-    if(JumpDispatcher.Jump(unknown_1000_DE7B_1DE7B, 0x1DE7A - cs1 * 0x10)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_DE7B_1DE7B(int loadOffset) {
@@ -70598,7 +68760,7 @@ public partial class Overrides : CSharpOverrideHelper {
     // Indirect call to [0x38b9], generating possible targets from emulator records
     uint targetAddress_1000_DEA5 = (uint)(UInt16[DS, 0x38BB] * 0x10 + UInt16[DS, 0x38B9] - cs1 * 0x10);
     switch(targetAddress_1000_DEA5) {
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_DEA5);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_DEA5));
         break;
     }
     // MOV [0xdbd6],AX (1000_DEA9 / 0x1DEA9)
@@ -70707,12 +68869,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(get_mouse_pos_etc_ida_1000_DF1E_1DF1E, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action get_mouse_pos_etc_ida_1000_DF1E_1DF1E(int loadOffset) {
@@ -70786,7 +68942,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_DF66_1DF66:
     // LODSB SI (1000_DF66 / 0x1DF66)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // OR AL,byte ptr [SI + 0x12] (1000_DF67 / 0x1DF67)
     // AL |= UInt8[DS, (ushort)(SI + 0x12)];
     AL = Alu.Or8(AL, UInt8[DS, (ushort)(SI + 0x12)]);
@@ -70982,7 +69138,7 @@ public partial class Overrides : CSharpOverrideHelper {
     // Indirect call to word ptr [BP + 0x0], generating possible targets from emulator records
     uint targetAddress_1000_E018 = (uint)(UInt16[SS, BP]);
     switch(targetAddress_1000_E018) {
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_E018);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_E018));
         break;
     }
     // CMP AX,word ptr [BP + 0x2] (1000_E01B / 0x1E01B)
@@ -71093,7 +69249,7 @@ public partial class Overrides : CSharpOverrideHelper {
     // Indirect call to word ptr [BP + 0x0], generating possible targets from emulator records
     uint targetAddress_1000_E083 = (uint)(UInt16[SS, BP]);
     switch(targetAddress_1000_E083) {
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_E083);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_E083));
         break;
     }
     // CMP AX,word ptr [BP + 0x2] (1000_E086 / 0x1E086)
@@ -71174,7 +69330,7 @@ public partial class Overrides : CSharpOverrideHelper {
     // Indirect call to word ptr [BP + 0x0], generating possible targets from emulator records
     uint targetAddress_1000_E0C1 = (uint)(UInt16[SS, BP]);
     switch(targetAddress_1000_E0C1) {
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_E0C1);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_E0C1));
         break;
     }
     // CMP AX,word ptr [BP + 0x2] (1000_E0C4 / 0x1E0C4)
@@ -71254,7 +69410,7 @@ public partial class Overrides : CSharpOverrideHelper {
     // Indirect call to word ptr [BP + 0x0], generating possible targets from emulator records
     uint targetAddress_1000_E0FC = (uint)(UInt16[SS, BP]);
     switch(targetAddress_1000_E0FC) {
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_E0FC);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_E0FC));
         break;
     }
     // CMP AX,word ptr [BP + 0x2] (1000_E0FF / 0x1E0FF)
@@ -71333,7 +69489,7 @@ public partial class Overrides : CSharpOverrideHelper {
     // Indirect call to word ptr [BP + 0x0], generating possible targets from emulator records
     uint targetAddress_1000_E13D = (uint)(UInt16[SS, BP]);
     switch(targetAddress_1000_E13D) {
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_E13D);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_E13D));
         break;
     }
     // CMP AX,word ptr [BP + 0x2] (1000_E140 / 0x1E140)
@@ -71548,12 +69704,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_E243_01E243, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action not_observed_1000_E243_01E243(int loadOffset) {
@@ -71718,12 +69868,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_E295_01E295, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action not_observed_1000_E295_01E295(int loadOffset) {
@@ -71775,7 +69919,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_E2A7 = (uint)(UInt16[DS, 0x2518]);
     switch(targetAddress_1000_E2A7) {
       case 0xD12F : NearCall(cs1, 0xE2AB, unknown_1000_D12F_1D12F); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_E2A7);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_E2A7));
         break;
     }
     // MOV AL,AH (1000_E2AB / 0x1E2AB)
@@ -71810,7 +69954,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_E2BE = (uint)(UInt16[DS, 0x2518]);
     switch(targetAddress_1000_E2BE) {
       case 0xD12F : NearCall(cs1, 0xE2C2, unknown_1000_D12F_1D12F); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_E2BE);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_E2BE));
         break;
     }
     // MOV AL,AH (1000_E2C2 / 0x1E2C2)
@@ -71820,7 +69964,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_E2C4 = (uint)(UInt16[DS, 0x2518]);
     switch(targetAddress_1000_E2C4) {
       case 0xD12F : NearCall(cs1, 0xE2C8, unknown_1000_D12F_1D12F); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_E2C4);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_E2C4));
         break;
     }
     // POP CX (1000_E2C8 / 0x1E2C8)
@@ -72015,12 +70159,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_1000_E353_1E353, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_1000_E353_1E353(int loadOffset) {
@@ -72044,7 +70182,7 @@ public partial class Overrides : CSharpOverrideHelper {
       case 0xA44 : NearCall(cs1, 0xE35A, unknown_1000_0A44_10A44); break;
       case 0x26AC : NearCall(cs1, 0xE35A, unknown_1000_26AC_126AC); break;
       case 0x391D : NearCall(cs1, 0xE35A, unknown_1000_391D_1391D); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_E358);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_E358));
         break;
     }
     // POP BX (1000_E35A / 0x1E35A)
@@ -72335,397 +70473,253 @@ public partial class Overrides : CSharpOverrideHelper {
     
     label_1000_E4AD_1E4AD:
     // MOV SI,0x80 (1000_E4AD / 0x1E4AD)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F8_149F8
     SI = 0x80;
     // LODSB SI (1000_E4B0 / 0x1E4B0)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // XOR AH,AH (1000_E4B1 / 0x1E4B1)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F8_149F8
     AH = 0;
     // MOV BP,AX (1000_E4B3 / 0x1E4B3)
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     BP = AX;
     // ADD BP,SI (1000_E4B5 / 0x1E4B5)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F8_149F8
     // BP += SI;
     BP = Alu.Add16(BP, SI);
     label_1000_E4B7_1E4B7:
     // PUSH CS (1000_E4B7 / 0x1E4B7)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     Stack.Push(cs1);
     // POP ES (1000_E4B8 / 0x1E4B8)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
     ES = Stack.Pop();
     label_1000_E4B9_1E4B9:
     // CALL 0x1000:e56b (1000_E4B9 / 0x1E4B9)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F8_149F8
     NearCall(cs1, 0xE4BC, parse_cmd_is_end_of_arg_ida_1000_E56B_1E56B);
     // JC 0x1000:e4e5 (1000_E4BC / 0x1E4BC)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
     if(CarryFlag) {
       // JC target is RET, inlining.
       // RET  (1000_E4E5 / 0x1E4E5)
-      // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
       return NearRet();
     }
     // JZ 0x1000:e4b9 (1000_E4BE / 0x1E4BE)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F8_149F8
     if(ZeroFlag) {
       goto label_1000_E4B9_1E4B9;
     }
     // MOV DL,AL (1000_E4C0 / 0x1E4C0)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
     DL = AL;
     // CALL 0x1000:e56b (1000_E4C2 / 0x1E4C2)
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F8_149F8
     NearCall(cs1, 0xE4C5, parse_cmd_is_end_of_arg_ida_1000_E56B_1E56B);
     // JBE 0x1000:e542 (1000_E4C5 / 0x1E4C5)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F8_149F8
     if(CarryFlag || ZeroFlag) {
       goto label_1000_E542_1E542;
     }
     // MOV AH,AL (1000_E4C7 / 0x1E4C7)
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     AH = AL;
     // CALL 0x1000:e56b (1000_E4C9 / 0x1E4C9)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F8_149F8
     NearCall(cs1, 0xE4CC, parse_cmd_is_end_of_arg_ida_1000_E56B_1E56B);
     // JBE 0x1000:e542 (1000_E4CC / 0x1E4CC)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
     if(CarryFlag || ZeroFlag) {
       goto label_1000_E542_1E542;
     }
     // XCHG DL,AL (1000_E4CE / 0x1E4CE)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F8_149F8
     byte tmp_1000_E4CE = DL;
     DL = AL;
     AL = tmp_1000_E4CE;
     // MOV DI,0xe40c (1000_E4D0 / 0x1E4D0)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F8_149F8
     DI = 0xE40C;
     // MOV CX,0x17 (1000_E4D3 / 0x1E4D3)
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     CX = 0x17;
     label_1000_E4D6_1E4D6:
     // SCASW ES:DI (1000_E4D6 / 0x1E4D6)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     Alu.Sub16(AX, UInt16[ES, DI]);
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // JNZ 0x1000:e4de (1000_E4D7 / 0x1E4D7)
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     if(!ZeroFlag) {
       goto label_1000_E4DE_1E4DE;
     }
     // CMP DL,byte ptr ES:[DI] (1000_E4D9 / 0x1E4D9)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F8_149F8
     Alu.Sub8(DL, UInt8[ES, DI]);
     // JZ 0x1000:e4e6 (1000_E4DC / 0x1E4DC)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
     if(ZeroFlag) {
       goto label_1000_E4E6_1E4E6;
     }
     label_1000_E4DE_1E4DE:
     // ADD DI,0x5 (1000_E4DE / 0x1E4DE)
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F8_149F8
     // DI += 0x5;
     DI = Alu.Add16(DI, 0x5);
     // LOOP 0x1000:e4d6 (1000_E4E1 / 0x1E4E1)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F8_149F8
     if(--CX != 0) {
       goto label_1000_E4D6_1E4D6;
     }
     // JMP 0x1000:e542 (1000_E4E3 / 0x1E4E3)
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     goto label_1000_E542_1E542;
     label_1000_E4E5_1E4E5:
     // RET  (1000_E4E5 / 0x1E4E5)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
     return NearRet();
     label_1000_E4E6_1E4E6:
     // MOV AX,0x1f4b (1000_E4E6 / 0x1E4E6)
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F8_149F8
     AX = 0x1F4B;
     // MOV ES,AX (1000_E4E9 / 0x1E4E9)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F8_149F8
     ES = AX;
     // MOV BL,byte ptr CS:[DI + 0x1] (1000_E4EB / 0x1E4EB)
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0, 3 modified by those instruction(s): 1000_49F8_149F8
     BL = UInt8[cs1, (ushort)(DI + 0x1)];
     // XOR BH,BH (1000_E4EF / 0x1E4EF)
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     BH = 0;
     // ADD BX,0x2942 (1000_E4F1 / 0x1E4F1)
-    // Instruction bytes at index 0, 3 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F8_149F8
     // BX += 0x2942;
     BX = Alu.Add16(BX, 0x2942);
     // MOV AL,byte ptr CS:[DI + 0x2] (1000_E4F5 / 0x1E4F5)
-    // Instruction bytes at index 0, 3 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F8_149F8
     AL = UInt8[cs1, (ushort)(DI + 0x2)];
     // OR byte ptr ES:[BX],AL (1000_E4F9 / 0x1E4F9)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F8_149F8
     // UInt8[ES, BX] |= AL;
     UInt8[ES, BX] = Alu.Or8(UInt8[ES, BX], AL);
     // MOV BX,word ptr CS:[DI + 0x3] (1000_E4FC / 0x1E4FC)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 2, 3 modified by those instruction(s): 1000_49F8_149F8
     BX = UInt16[cs1, (ushort)(DI + 0x3)];
     // OR BX,BX (1000_E500 / 0x1E500)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
     // BX |= BX;
     BX = Alu.Or16(BX, BX);
     // JZ 0x1000:e542 (1000_E502 / 0x1E502)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F8_149F8
     if(ZeroFlag) {
       goto label_1000_E542_1E542;
     }
     // CALL 0x1000:e56b (1000_E504 / 0x1E504)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F8_149F8
     NearCall(cs1, 0xE507, parse_cmd_is_end_of_arg_ida_1000_E56B_1E56B);
     // JC 0x1000:e4e5 (1000_E507 / 0x1E507)
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     if(CarryFlag) {
       // JC target is RET, inlining.
       // RET  (1000_E4E5 / 0x1E4E5)
-      // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
       return NearRet();
     }
     // JZ 0x1000:e542 (1000_E509 / 0x1E509)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F8_149F8
     if(ZeroFlag) {
       goto label_1000_E542_1E542;
     }
     // DEC SI (1000_E50B / 0x1E50B)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     SI = Alu.Dec16(SI);
     // CMP BX,0x3826 (1000_E50C / 0x1E50C)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 2, 3 modified by those instruction(s): 1000_49F8_149F8
     Alu.Sub16(BX, 0x3826);
     // JZ 0x1000:e54d (1000_E510 / 0x1E510)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
     if(ZeroFlag) {
       goto label_1000_E54D_1E54D;
     }
     label_1000_E512_1E512:
     // XOR DX,DX (1000_E512 / 0x1E512)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F8_149F8
     DX = 0;
     label_1000_E514_1E514:
     // CALL 0x1000:e56b (1000_E514 / 0x1E514)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F8_149F8
     NearCall(cs1, 0xE517, parse_cmd_is_end_of_arg_ida_1000_E56B_1E56B);
     // MOV AH,AL (1000_E517 / 0x1E517)
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     AH = AL;
     // JBE 0x1000:e537 (1000_E519 / 0x1E519)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F8_149F8
     if(CarryFlag || ZeroFlag) {
       goto label_1000_E537_1E537;
     }
     // SUB AL,0x30 (1000_E51B / 0x1E51B)
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     // AL -= 0x30;
     AL = Alu.Sub8(AL, 0x30);
     // JC 0x1000:e537 (1000_E51D / 0x1E51D)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F8_149F8
     if(CarryFlag) {
       goto label_1000_E537_1E537;
     }
     // CMP AL,0x9 (1000_E51F / 0x1E51F)
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     Alu.Sub8(AL, 0x9);
     // JBE 0x1000:e52b (1000_E521 / 0x1E521)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F8_149F8
     if(CarryFlag || ZeroFlag) {
       goto label_1000_E52B_1E52B;
     }
     // SUB AL,0x7 (1000_E523 / 0x1E523)
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     // AL -= 0x7;
     AL = Alu.Sub8(AL, 0x7);
     // JC 0x1000:e537 (1000_E525 / 0x1E525)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F8_149F8
     if(CarryFlag) {
       goto label_1000_E537_1E537;
     }
     // CMP AL,0xf (1000_E527 / 0x1E527)
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     Alu.Sub8(AL, 0xF);
     // JA 0x1000:e537 (1000_E529 / 0x1E529)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F8_149F8
     if(!CarryFlag && !ZeroFlag) {
       goto label_1000_E537_1E537;
     }
     label_1000_E52B_1E52B:
     // SHL DX,1 (1000_E52B / 0x1E52B)
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     // DX <<= 1;
     DX = Alu.Shl16(DX, 1);
     // SHL DX,1 (1000_E52D / 0x1E52D)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F8_149F8
     // DX <<= 1;
     DX = Alu.Shl16(DX, 1);
     // SHL DX,1 (1000_E52F / 0x1E52F)
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     // DX <<= 1;
     DX = Alu.Shl16(DX, 1);
     // SHL DX,1 (1000_E531 / 0x1E531)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F8_149F8
     // DX <<= 1;
     DX = Alu.Shl16(DX, 1);
     // OR DL,AL (1000_E533 / 0x1E533)
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     // DL |= AL;
     DL = Alu.Or8(DL, AL);
     // JMP 0x1000:e514 (1000_E535 / 0x1E535)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F8_149F8
     goto label_1000_E514_1E514;
     label_1000_E537_1E537:
     // MOV word ptr ES:[BX],DX (1000_E537 / 0x1E537)
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     UInt16[ES, BX] = DX;
     // ADD BX,0x2 (1000_E53A / 0x1E53A)
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F8_149F8
     // BX += 0x2;
     BX = Alu.Add16(BX, 0x2);
     // CMP AH,0x20 (1000_E53D / 0x1E53D)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F8_149F8
     Alu.Sub8(AH, 0x20);
     // JA 0x1000:e512 (1000_E540 / 0x1E540)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
     if(!CarryFlag && !ZeroFlag) {
       goto label_1000_E512_1E512;
     }
     label_1000_E542_1E542:
     // DEC SI (1000_E542 / 0x1E542)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     SI = Alu.Dec16(SI);
     label_1000_E543_1E543:
     // CALL 0x1000:e56b (1000_E543 / 0x1E543)
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     NearCall(cs1, 0xE546, parse_cmd_is_end_of_arg_ida_1000_E56B_1E56B);
     // JC 0x1000:e4e5 (1000_E546 / 0x1E546)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F8_149F8
     if(CarryFlag) {
       // JC target is RET, inlining.
       // RET  (1000_E4E5 / 0x1E4E5)
-      // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
       return NearRet();
     }
     // JNZ 0x1000:e543 (1000_E548 / 0x1E548)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
     if(!ZeroFlag) {
       goto label_1000_E543_1E543;
     }
     // JMP 0x1000:e4b7 (1000_E54A / 0x1E54A)
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F8_149F8
     goto label_1000_E4B7_1E4B7;
     label_1000_E54D_1E54D:
     // MOV DI,BX (1000_E54D / 0x1E54D)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F8_149F8
     DI = BX;
     label_1000_E54F_1E54F:
     // CALL 0x1000:e56b (1000_E54F / 0x1E54F)
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     NearCall(cs1, 0xE552, parse_cmd_is_end_of_arg_ida_1000_E56B_1E56B);
     // JBE 0x1000:e55b (1000_E552 / 0x1E552)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F8_149F8
     if(CarryFlag || ZeroFlag) {
       goto label_1000_E55B_1E55B;
     }
     // STOSB ES:DI (1000_E554 / 0x1E554)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // CMP DI,0x3898 (1000_E555 / 0x1E555)
-    // Instruction bytes at index 0, 3 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F8_149F8
     Alu.Sub16(DI, 0x3898);
     // JC 0x1000:e54f (1000_E559 / 0x1E559)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F8_149F8
     if(CarryFlag) {
       goto label_1000_E54F_1E54F;
     }
     label_1000_E55B_1E55B:
     // MOV AL,0x5c (1000_E55B / 0x1E55B)
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     AL = 0x5C;
     // CMP byte ptr ES:[DI + -0x1],AL (1000_E55D / 0x1E55D)
-    // Instruction bytes at index 0, 3 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F8_149F8
     Alu.Sub8(UInt8[ES, (ushort)(DI - 0x1)], AL);
     // JZ 0x1000:e564 (1000_E561 / 0x1E561)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F8_149F8
     if(ZeroFlag) {
       goto label_1000_E564_1E564;
     }
     // STOSB ES:DI (1000_E563 / 0x1E563)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     label_1000_E564_1E564:
     // MOV word ptr ES:[0x38a6],DI (1000_E564 / 0x1E564)
-    // Instruction bytes at index 0, 1, 4 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 2, 3 modified by those instruction(s): 1000_49F8_149F8
     UInt16[ES, 0x38A6] = DI;
     // JMP 0x1000:e542 (1000_E569 / 0x1E569)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F8_149F8
     goto label_1000_E542_1E542;
   }
   
@@ -72737,41 +70731,29 @@ public partial class Overrides : CSharpOverrideHelper {
     
     label_1000_E56B_1E56B:
     // MOV AL,0xd (1000_E56B / 0x1E56B)
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     AL = 0xD;
     // CMP SI,BP (1000_E56D / 0x1E56D)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F8_149F8
     Alu.Sub16(SI, BP);
     // JNC 0x1000:e578 (1000_E56F / 0x1E56F)
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     if(!CarryFlag) {
       goto label_1000_E578_1E578;
     }
     // LODSB SI (1000_E571 / 0x1E571)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // CMP AL,0x61 (1000_E572 / 0x1E572)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F8_149F8
     Alu.Sub8(AL, 0x61);
     // JC 0x1000:e578 (1000_E574 / 0x1E574)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
     if(CarryFlag) {
       goto label_1000_E578_1E578;
     }
     // AND AL,0xdf (1000_E576 / 0x1E576)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F8_149F8
     // AL &= 0xDF;
     AL = Alu.And8(AL, 0xDF);
     label_1000_E578_1E578:
     // CMP AL,0x20 (1000_E578 / 0x1E578)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
     Alu.Sub8(AL, 0x20);
     // RET  (1000_E57A / 0x1E57A)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     return NearRet();
   }
   
@@ -72783,55 +70765,36 @@ public partial class Overrides : CSharpOverrideHelper {
     
     label_1000_E57B_1E57B:
     // PUSH CX (1000_E57B / 0x1E57B)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     Stack.Push(CX);
     // PUSH SI (1000_E57C / 0x1E57C)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
     Stack.Push(SI);
     // ADD AX,0xc8 (1000_E57D / 0x1E57D)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F8_149F8
     // AX += 0xC8;
     AX = Alu.Add16(AX, 0xC8);
     // MOV SI,AX (1000_E580 / 0x1E580)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
     SI = AX;
     // CALL 0x1000:f0b9 (1000_E582 / 0x1E582)
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F8_149F8
     NearCall(cs1, 0xE585, open_resource_by_index_si_ida_1000_F0B9_1F0B9);
     // POP SI (1000_E585 / 0x1E585)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
     SI = Stack.Pop();
     // POP CX (1000_E586 / 0x1E586)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     CX = Stack.Pop();
     // MOV AX,ES (1000_E587 / 0x1E587)
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     AX = ES;
     // SUB AX,0x10 (1000_E589 / 0x1E589)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F8_149F8
     // AX -= 0x10;
     AX = Alu.Sub16(AX, 0x10);
     label_1000_E58C_1E58C:
     // MOV word ptr [SI],AX (1000_E58C / 0x1E58C)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
     UInt16[DS, SI] = AX;
     // ADD SI,0x4 (1000_E58E / 0x1E58E)
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F8_149F8
     // SI += 0x4;
     SI = Alu.Add16(SI, 0x4);
     // LOOP 0x1000:e58c (1000_E591 / 0x1E591)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F8_149F8
     if(--CX != 0) {
       goto label_1000_E58C_1E58C;
     }
     // RET  (1000_E593 / 0x1E593)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     return NearRet();
   }
   
@@ -72843,367 +70806,216 @@ public partial class Overrides : CSharpOverrideHelper {
     
     label_1000_E594_1E594:
     // MOV AX,0x1f4b (1000_E594 / 0x1E594)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F8_149F8
     AX = 0x1F4B;
     // MOV ES,AX (1000_E597 / 0x1E597)
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     ES = AX;
     // MOV CX,0xdd1d (1000_E599 / 0x1E599)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F8_149F8
     CX = 0xDD1D;
     // MOV DI,0x3cbc (1000_E59C / 0x1E59C)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F8_149F8
     DI = 0x3CBC;
     // SUB CX,DI (1000_E59F / 0x1E59F)
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     // CX -= DI;
     CX = Alu.Sub16(CX, DI);
     // CLD  (1000_E5A1 / 0x1E5A1)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
     DirectionFlag = false;
     // XOR AX,AX (1000_E5A2 / 0x1E5A2)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F8_149F8
     AX = 0;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // STOSB ES:DI (1000_E5A4 / 0x1E5A4)
-      // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
       UInt8[ES, DI] = AL;
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+      DI = (ushort)(DI + Direction8);
     }
     // MOV AX,[0x2] (1000_E5A6 / 0x1E5A6)
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F8_149F8
     AX = UInt16[DS, 0x2];
     // PUSH ES (1000_E5A9 / 0x1E5A9)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
     Stack.Push(ES);
     // POP DS (1000_E5AA / 0x1E5AA)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     DS = Stack.Pop();
     // MOV [0xce68],AX (1000_E5AB / 0x1E5AB)
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     UInt16[DS, 0xCE68] = AX;
     // MOV CX,0xdd1d (1000_E5AE / 0x1E5AE)
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F8_149F8
     CX = 0xDD1D;
     // CALL 0x1000:f0ff (1000_E5B1 / 0x1E5B1)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F8_149F8
     NearCall(cs1, 0xE5B4, bump_allocate_bump_cx_bytes_ida_1000_F0FF_1F0FF);
     // MOV AX,0x4c6f (1000_E5B4 / 0x1E5B4)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F8_149F8
     AX = 0x4C6F;
     // MOV CL,0x4 (1000_E5B7 / 0x1E5B7)
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     CL = 0x4;
     // SHR AX,CL (1000_E5B9 / 0x1E5B9)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F8_149F8
     // AX >>= CL;
     AX = Alu.Shr16(AX, CL);
     // MOV CX,DS (1000_E5BB / 0x1E5BB)
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     CX = DS;
     // ADD AX,CX (1000_E5BD / 0x1E5BD)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F8_149F8
     // AX += CX;
     AX = Alu.Add16(AX, CX);
     // MOV [0xdc32],AX (1000_E5BF / 0x1E5BF)
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     UInt16[DS, 0xDC32] = AX;
     // MOV AH,0x19 (1000_E5C2 / 0x1E5C2)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F8_149F8
     AH = 0x19;
     // INT 0x21 (1000_E5C4 / 0x1E5C4)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
     Interrupt(0x21);
     // MOV [0xce76],AL (1000_E5C6 / 0x1E5C6)
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F8_149F8
     UInt8[DS, 0xCE76] = AL;
     // MOV [0xce77],AL (1000_E5C9 / 0x1E5C9)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F8_149F8
     UInt8[DS, 0xCE77] = AL;
     // MOV AX,0x3301 (1000_E5CC / 0x1E5CC)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F8_149F8
     AX = 0x3301;
     // INT 0x21 (1000_E5CF / 0x1E5CF)
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     Interrupt(0x21);
     // MOV byte ptr [0x2941],DL (1000_E5D1 / 0x1E5D1)
-    // Instruction bytes at index 0, 3 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F8_149F8
     UInt8[DS, 0x2941] = DL;
     // MOV AX,0x3301 (1000_E5D5 / 0x1E5D5)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F8_149F8
     AX = 0x3301;
     // XOR DX,DX (1000_E5D8 / 0x1E5D8)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
     DX = 0;
     // INT 0x21 (1000_E5DA / 0x1E5DA)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F8_149F8
     Interrupt(0x21);
     // CALL 0x1000:e675 (1000_E5DC / 0x1E5DC)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F8_149F8
     NearCall(cs1, 0xE5DF, open_dune_dat_ida_1000_E675_1E675);
     // MOV AL,[0x2942] (1000_E5DF / 0x1E5DF)
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     AL = UInt8[DS, 0x2942];
     // AND AX,0x1 (1000_E5E2 / 0x1E5E2)
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F8_149F8
     // AX &= 0x1;
     AX = Alu.And16(AX, 0x1);
     // MOV SI,0x38b7 (1000_E5E5 / 0x1E5E5)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F8_149F8
     SI = 0x38B7;
     // MOV CX,0x2e (1000_E5E8 / 0x1E5E8)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F8_149F8
     CX = 0x2E;
     // CALL 0x1000:e57b (1000_E5EB / 0x1E5EB)
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     NearCall(cs1, 0xE5EE, load_driver_ax_with_vtable_at_si_ida_1000_E57B_1E57B);
     // CALLF [0x38b9] (1000_E5EE / 0x1E5EE)
-    // Instruction bytes at index 2, 3 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F8_149F8
     // Indirect call to [0x38b9], generating possible targets from emulator records
     uint targetAddress_1000_E5EE = (uint)(UInt16[DS, 0x38BB] * 0x10 + UInt16[DS, 0x38B9] - cs1 * 0x10);
     switch(targetAddress_1000_E5EE) {
       case 0x235B3 : FarCall(cs1, 0xE5F2, VgaFunc01GetInfoInAxCxBp_334B_0103_335B3); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_E5EE);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_E5EE));
         break;
     }
     // MOV [0xdbd8],AX (1000_E5F2 / 0x1E5F2)
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F8_149F8
     UInt16[DS, 0xDBD8] = AX;
     // CALL 0x1000:c08e (1000_E5F5 / 0x1E5F5)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F8_149F8
     NearCall(cs1, 0xE5F8, SetTextBufferAsActiveFrameBuffer_1000_C08E_1C08E);
     // MOV word ptr [0xce74],CX (1000_E5F8 / 0x1E5F8)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 2, 3 modified by those instruction(s): 1000_49F8_149F8
     UInt16[DS, 0xCE74] = CX;
     // MOV DI,0xdbdc (1000_E5FC / 0x1E5FC)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F8_149F8
     DI = 0xDBDC;
     // CALL 0x1000:f0f6 (1000_E5FF / 0x1E5FF)
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     NearCall(cs1, 0xE602, bump_alloc_get_addr_in_di_ida_1000_F0F6_1F0F6);
     // MOV word ptr [0xdbd6],BP (1000_E602 / 0x1E602)
-    // Instruction bytes at index 2, 3 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F8_149F8
     UInt16[DS, 0xDBD6] = BP;
     // OR BP,BP (1000_E606 / 0x1E606)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F8_149F8
     // BP |= BP;
     BP = Alu.Or16(BP, BP);
     // JNZ 0x1000:e610 (1000_E608 / 0x1E608)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
     if(!ZeroFlag) {
       goto label_1000_E610_1E610;
     }
     // MOV DI,0xdbd4 (1000_E60A / 0x1E60A)
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F8_149F8
     DI = 0xDBD4;
     // CALL 0x1000:f0f6 (1000_E60D / 0x1E60D)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F8_149F8
     NearCall(cs1, 0xE610, bump_alloc_get_addr_in_di_ida_1000_F0F6_1F0F6);
     label_1000_E610_1E610:
     // CALLF [0x38b5] (1000_E610 / 0x1E610)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 2, 3 modified by those instruction(s): 1000_49F8_149F8
     // Indirect call to [0x38b5], generating possible targets from emulator records
     uint targetAddress_1000_E610 = (uint)(UInt16[DS, 0x38B7] * 0x10 + UInt16[DS, 0x38B5] - cs1 * 0x10);
     switch(targetAddress_1000_E610) {
       case 0x235B0 : FarCall(cs1, 0xE614, VgaFunc00SetMode_334B_0100_335B0); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_E610);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_E610));
         break;
     }
     // MOV AL,[0x2942] (1000_E614 / 0x1E614)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F8_149F8
     AL = UInt8[DS, 0x2942];
     // PUSH AX (1000_E617 / 0x1E617)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     Stack.Push(AX);
     // SHR AL,1 (1000_E618 / 0x1E618)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
     // AL >>= 1;
     AL = Alu.Shr8(AL, 1);
     // SHR AL,1 (1000_E61A / 0x1E61A)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F8_149F8
     // AL >>= 1;
     AL = Alu.Shr8(AL, 1);
     // AND AL,0x7 (1000_E61C / 0x1E61C)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
     // AL &= 0x7;
     AL = Alu.And8(AL, 0x7);
     // MOV [0xceeb],AL (1000_E61E / 0x1E61E)
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F8_149F8
     UInt8[DS, 0xCEEB] = AL;
     // POP AX (1000_E621 / 0x1E621)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
     AX = Stack.Pop();
     // OR AL,AL (1000_E622 / 0x1E622)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F8_149F8
     // AL |= AL;
     AL = Alu.Or8(AL, AL);
     // JNS 0x1000:e62b (1000_E624 / 0x1E624)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
     if(!SignFlag) {
       goto label_1000_E62B_1E62B;
     }
     // PUSH AX (1000_E626 / 0x1E626)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     Stack.Push(AX);
     // CALL 0x1000:ea32 (1000_E627 / 0x1E627)
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     NearCall(cs1, 0xE62A, initialize_joystick_ida_1000_EA32_1EA32);
     // POP AX (1000_E62A / 0x1E62A)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     AX = Stack.Pop();
     label_1000_E62B_1E62B:
     // TEST AL,0x40 (1000_E62B / 0x1E62B)
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     Alu.And8(AL, 0x40);
     // JNZ 0x1000:e632 (1000_E62D / 0x1E62D)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F8_149F8
     if(!ZeroFlag) {
       goto label_1000_E632_1E632;
     }
     // CALL 0x1000:e97a (1000_E62F / 0x1E62F)
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     NearCall(cs1, 0xE632, initialize_mouse_ida_1000_E97A_1E97A);
     label_1000_E632_1E632:
     // CALL 0x1000:e85c (1000_E632 / 0x1E632)
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F8_149F8
     NearCall(cs1, 0xE635, unknown_1000_E85C_1E85C);
     // CALL 0x1000:ea7b (1000_E635 / 0x1E635)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F8_149F8
     NearCall(cs1, 0xE638, memory_func_qq_ida_1000_EA7B_1EA7B);
     // MOV AL,[0x2942] (1000_E638 / 0x1E638)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F8_149F8
     AL = UInt8[DS, 0x2942];
     // AND AL,0x2 (1000_E63B / 0x1E63B)
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     // AL &= 0x2;
     AL = Alu.And8(AL, 0x2);
     // MOV BP,0xce7a (1000_E63D / 0x1E63D)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F8_149F8
     BP = 0xCE7A;
     // CALLF [0x3925] (1000_E640 / 0x1E640)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 2, 3 modified by those instruction(s): 1000_49F8_149F8
     // Indirect call to [0x3925], generating possible targets from emulator records
     uint targetAddress_1000_E640 = (uint)(UInt16[DS, 0x3927] * 0x10 + UInt16[DS, 0x3925] - cs1 * 0x10);
     switch(targetAddress_1000_E640) {
       case 0x23604 : FarCall(cs1, 0xE644, unknown_334B_0154_33604); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_E640);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_E640));
         break;
     }
     // MOV word ptr [0xdc48],0x271c (1000_E644 / 0x1E644)
-    // Instruction bytes at index 0, 1, 4, 5 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 2, 3 modified by those instruction(s): 1000_49F8_149F8
     UInt16[DS, 0xDC48] = 0x271C;
     // MOV byte ptr [0xdc46],0xff (1000_E64A / 0x1E64A)
-    // Instruction bytes at index 2, 3 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0, 1, 4 modified by those instruction(s): 1000_49F8_149F8
     UInt8[DS, 0xDC46] = 0xFF;
     // XOR AX,AX (1000_E64F / 0x1E64F)
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     AX = 0;
     // MOV BX,0xc7 (1000_E651 / 0x1E651)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F8_149F8
     BX = 0xC7;
     // XOR CX,CX (1000_E654 / 0x1E654)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
     CX = 0;
     // MOV DX,0x13f (1000_E656 / 0x1E656)
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F8_149F8
     DX = 0x13F;
     // CALL 0x1000:db14 (1000_E659 / 0x1E659)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F8_149F8
     NearCall(cs1, 0xE65C, define_mouse_range_ida_1000_DB14_1DB14);
     // MOV BX,0xab (1000_E65C / 0x1E65C)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F8_149F8
     BX = 0xAB;
     // MOV DX,0xed (1000_E65F / 0x1E65F)
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     DX = 0xED;
     // CALL 0x1000:db03 (1000_E662 / 0x1E662)
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F8_149F8
     NearCall(cs1, 0xE665, unknown_1000_DB03_1DB03);
     // CALL 0x1000:e76a (1000_E665 / 0x1E665)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F8_149F8
     NearCall(cs1, 0xE668, initialize_audio_ida_1000_E76A_1E76A);
     // CALL 0x1000:ce6c (1000_E668 / 0x1E668)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F8_149F8
     NearCall(cs1, 0xE66B, initialize_memory_handler_ida_1000_CE6C_1CE6C);
     // CALL 0x1000:c07c (1000_E66B / 0x1E66B)
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     NearCall(cs1, 0xE66E, SetFrontBufferAsActiveFrameBuffer_1000_C07C_1C07C);
     // CALL 0x1000:c0ad (1000_E66E / 0x1E66E)
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F8_149F8
     NearCall(cs1, 0xE671, ClearCurrentVideoBuffer_1000_C0AD_1C0AD);
     // JMP 0x1000:c412 (1000_E671 / 0x1E671)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F8_149F8
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_1000_C412_1C412, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function body without return
-    if(JumpDispatcher.Jump(open_dune_dat_ida_1000_E675_1E675, 0x1E674 - cs1 * 0x10)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -73218,373 +71030,235 @@ public partial class Overrides : CSharpOverrideHelper {
     }
     label_1000_E674_1E674:
     // RET  (1000_E674 / 0x1E674)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
     return NearRet();
     entry:
     label_1000_E675_1E675:
     // MOV DX,0x37f2 (1000_E675 / 0x1E675)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F8_149F8
     DX = 0x37F2;
     // CALL 0x1000:f1fb (1000_E678 / 0x1E678)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F8_149F8
     NearCall(cs1, 0xE67B, open_res_or_file_to_dx_size_ax_ida_1000_F1FB_1F1FB);
     // JC 0x1000:e692 (1000_E67B / 0x1E67B)
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     if(CarryFlag) {
       goto label_1000_E692_1E692;
     }
     // LES DI,[0x39b7] (1000_E67D / 0x1E67D)
-    // Instruction bytes at index 0, 3 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F8_149F8
-    DI = UInt16[DS, 0x39B7];
     ES = UInt16[DS, 0x39B9];
+    DI = UInt16[DS, 0x39B7];
     // CALL 0x1000:f260 (1000_E681 / 0x1E681)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F8_149F8
     NearCall(cs1, 0xE684, read_ffff_to_esdi_and_close_ida_1000_F260_1F260);
     // CMP word ptr ES:[DI],0xc089 (1000_E684 / 0x1E684)
-    // Instruction bytes at index 0, 1, 4 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 2, 3 modified by those instruction(s): 1000_49F8_149F8
     Alu.Sub16(UInt16[ES, DI], 0xC089);
     // JNZ 0x1000:e692 (1000_E689 / 0x1E689)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F8_149F8
     if(!ZeroFlag) {
       goto label_1000_E692_1E692;
     }
     // MOV DX,0x31ff (1000_E68B / 0x1E68B)
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     DX = 0x31FF;
     // CALLF [0x39b7] (1000_E68E / 0x1E68E)
-    // Instruction bytes at index 2, 3 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F8_149F8
     // Indirect call to [0x39b7], generating possible targets from emulator records
     uint targetAddress_1000_E68E = (uint)(UInt16[DS, 0x39B9] * 0x10 + UInt16[DS, 0x39B7] - cs1 * 0x10);
     switch(targetAddress_1000_E68E) {
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_E68E);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_E68E));
         break;
     }
     label_1000_E692_1E692:
     // MOV SI,0x37f7 (1000_E692 / 0x1E692)
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F8_149F8
     SI = 0x37F7;
     // INC byte ptr [SI] (1000_E695 / 0x1E695)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F8_149F8
     UInt8[DS, SI] = Alu.Inc8(UInt8[DS, SI]);
     // CMP byte ptr [SI],0x39 (1000_E697 / 0x1E697)
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     Alu.Sub8(UInt8[DS, SI], 0x39);
     // JBE 0x1000:e675 (1000_E69A / 0x1E69A)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F8_149F8
     if(CarryFlag || ZeroFlag) {
       goto label_1000_E675_1E675;
     }
     // MOV DX,0x37e9 (1000_E69C / 0x1E69C)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F8_149F8
     DX = 0x37E9;
     // MOV AX,0x3d00 (1000_E69F / 0x1E69F)
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     AX = 0x3D00;
     // INT 0x21 (1000_E6A2 / 0x1E6A2)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F8_149F8
     Interrupt(0x21);
     // JC 0x1000:e674 (1000_E6A4 / 0x1E6A4)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
     if(CarryFlag) {
       // JC target is RET, inlining.
       // RET  (1000_E674 / 0x1E674)
-      // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
       return NearRet();
     }
     // MOV [0xdbba],AX (1000_E6A6 / 0x1E6A6)
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F8_149F8
     UInt16[DS, 0xDBBA] = AX;
     // CALL 0x1000:e741 (1000_E6A9 / 0x1E6A9)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F8_149F8
     NearCall(cs1, 0xE6AC, read_dune_dat_toc_ida_1000_E741_1E741);
     // MOV SI,DI (1000_E6AC / 0x1E6AC)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
     SI = DI;
     // MOV BP,ES (1000_E6AE / 0x1E6AE)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F8_149F8
     BP = ES;
     // LES DI,[0x39b7] (1000_E6B0 / 0x1E6B0)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 2, 3 modified by those instruction(s): 1000_49F8_149F8
-    DI = UInt16[DS, 0x39B7];
     ES = UInt16[DS, 0x39B9];
+    DI = UInt16[DS, 0x39B7];
     // MOV word ptr [0xdbbc],DI (1000_E6B4 / 0x1E6B4)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 2, 3 modified by those instruction(s): 1000_49F8_149F8
     UInt16[DS, 0xDBBC] = DI;
     // MOV word ptr [0xdbbe],ES (1000_E6B8 / 0x1E6B8)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 2, 3 modified by those instruction(s): 1000_49F8_149F8
     UInt16[DS, 0xDBBE] = ES;
     // MOV AX,0x145 (1000_E6BC / 0x1E6BC)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F8_149F8
     AX = 0x145;
     // STOSW ES:DI (1000_E6BF / 0x1E6BF)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // MOV CX,0x14d (1000_E6C0 / 0x1E6C0)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F8_149F8
     CX = 0x14D;
     // MOV AL,0xff (1000_E6C3 / 0x1E6C3)
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     AL = 0xFF;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // STOSB ES:DI (1000_E6C5 / 0x1E6C5)
-      // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-      // Instruction bytes at index 1 modified by those instruction(s): 1000_49F8_149F8
       UInt8[ES, DI] = AL;
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+      DI = (ushort)(DI + Direction8);
     }
     // MOV word ptr [0xd820],DI (1000_E6C7 / 0x1E6C7)
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0, 3 modified by those instruction(s): 1000_49F8_149F8
     UInt16[DS, 0xD820] = DI;
     // PUSH DS (1000_E6CB / 0x1E6CB)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     Stack.Push(DS);
     // MOV DS,BP (1000_E6CC / 0x1E6CC)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
     DS = BP;
     // LODSW SI (1000_E6CE / 0x1E6CE)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     label_1000_E6CF_1E6CF:
     // PUSH SI (1000_E6CF / 0x1E6CF)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     Stack.Push(SI);
     // CALL 0x1000:f314 (1000_E6D0 / 0x1E6D0)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F8_149F8
     NearCall(cs1, 0xE6D3, locate_res_by_name_dssi_ida_1000_F314_1F314);
     // POP SI (1000_E6D3 / 0x1E6D3)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     SI = Stack.Pop();
     // JC 0x1000:e702 (1000_E6D4 / 0x1E6D4)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
     if(CarryFlag) {
       goto label_1000_E702_1E702;
     }
     // CALL 0x1000:f3a7 (1000_E6D6 / 0x1E6D6)
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F8_149F8
     NearCall(cs1, 0xE6D9, unknown_1000_F3A7_1F3A7);
     // JZ 0x1000:e6f9 (1000_E6D9 / 0x1E6D9)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F8_149F8
     if(ZeroFlag) {
       goto label_1000_E6F9_1E6F9;
     }
     // PUSH AX (1000_E6DB / 0x1E6DB)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     Stack.Push(AX);
     // PUSH DX (1000_E6DC / 0x1E6DC)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
     Stack.Push(DX);
     // PUSH SI (1000_E6DD / 0x1E6DD)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
     Stack.Push(SI);
     // PUSH DI (1000_E6DE / 0x1E6DE)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     Stack.Push(DI);
     // MOV CX,word ptr SS:[0xd820] (1000_E6DF / 0x1E6DF)
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0, 3, 4 modified by those instruction(s): 1000_49F8_149F8
     CX = UInt16[SS, 0xD820];
     // MOV SI,CX (1000_E6E4 / 0x1E6E4)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
     SI = CX;
     // SUB CX,DI (1000_E6E6 / 0x1E6E6)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F8_149F8
     // CX -= DI;
     CX = Alu.Sub16(CX, DI);
     // SUB SI,0x2 (1000_E6E8 / 0x1E6E8)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F8_149F8
     // SI -= 0x2;
     SI = Alu.Sub16(SI, 0x2);
     // LEA DI,[SI + 0xa] (1000_E6EB / 0x1E6EB)
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     DI = (ushort)(SI + 0xA);
     // SHR CX,1 (1000_E6EE / 0x1E6EE)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F8_149F8
     // CX >>= 1;
     CX = Alu.Shr16(CX, 1);
     // STD  (1000_E6F0 / 0x1E6F0)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
     DirectionFlag = true;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSW ES:DI,ES:SI (1000_E6F1 / 0x1E6F1)
-      // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-      // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F8_149F8
       UInt16[ES, DI] = UInt16[ES, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      SI = (ushort)(SI + Direction16);
+      DI = (ushort)(DI + Direction16);
     }
     // CLD  (1000_E6F4 / 0x1E6F4)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
     DirectionFlag = false;
     // POP DI (1000_E6F5 / 0x1E6F5)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
     DI = Stack.Pop();
     // POP SI (1000_E6F6 / 0x1E6F6)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     SI = Stack.Pop();
     // POP DX (1000_E6F7 / 0x1E6F7)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     DX = Stack.Pop();
     // POP AX (1000_E6F8 / 0x1E6F8)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
     AX = Stack.Pop();
     label_1000_E6F9_1E6F9:
     // CALL 0x1000:e75b (1000_E6F9 / 0x1E6F9)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F8_149F8
     NearCall(cs1, 0xE6FC, UnknownStructCreation_1000_E75B_1E75B);
     // ADD word ptr SS:[0xd820],0xa (1000_E6FC / 0x1E6FC)
-    // Instruction bytes at index 0, 1, 4, 5 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 2, 3 modified by those instruction(s): 1000_49F8_149F8
     // UInt16[SS, 0xD820] += 0xA;
     UInt16[SS, 0xD820] = Alu.Add16(UInt16[SS, 0xD820], 0xA);
     label_1000_E702_1E702:
     // ADD SI,0x19 (1000_E702 / 0x1E702)
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F8_149F8
     // SI += 0x19;
     SI = Alu.Add16(SI, 0x19);
     // CMP byte ptr [SI],0x0 (1000_E705 / 0x1E705)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F8_149F8
     Alu.Sub8(UInt8[DS, SI], 0x0);
     // JNZ 0x1000:e6cf (1000_E708 / 0x1E708)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
     if(!ZeroFlag) {
       goto label_1000_E6CF_1E6CF;
     }
     // POP DS (1000_E70A / 0x1E70A)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     DS = Stack.Pop();
     // MOV SI,0x145 (1000_E70B / 0x1E70B)
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     SI = 0x145;
     // MOV AX,[0xd820] (1000_E70E / 0x1E70E)
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F8_149F8
     AX = UInt16[DS, 0xD820];
     // SUB AX,SI (1000_E711 / 0x1E711)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F8_149F8
     // AX -= SI;
     AX = Alu.Sub16(AX, SI);
     // XOR DX,DX (1000_E713 / 0x1E713)
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     DX = 0;
     // MOV CX,0x280 (1000_E715 / 0x1E715)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F8_149F8
     CX = 0x280;
     // DIV CX (1000_E718 / 0x1E718)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
     Cpu.Div16(CX);
     // MOV DX,0xa (1000_E71A / 0x1E71A)
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F8_149F8
     DX = 0xA;
     // MUL DX (1000_E71D / 0x1E71D)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F8_149F8
     Cpu.Mul16(DX);
     // MOV DX,AX (1000_E71F / 0x1E71F)
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     DX = AX;
     // LES DI,SS:[0xdbbc] (1000_E721 / 0x1E721)
-    // Instruction bytes at index 0, 3, 4 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F8_149F8
-    DI = UInt16[SS, 0xDBBC];
     ES = UInt16[SS, 0xDBBE];
+    DI = UInt16[SS, 0xDBBC];
     // ADD DI,0x2 (1000_E726 / 0x1E726)
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F8_149F8
     // DI += 0x2;
     DI = Alu.Add16(DI, 0x2);
     label_1000_E729_1E729:
     // ADD SI,DX (1000_E729 / 0x1E729)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F8_149F8
     // SI += DX;
     SI = Alu.Add16(SI, DX);
     // PUSH SI (1000_E72B / 0x1E72B)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     Stack.Push(SI);
     // MOVSW ES:DI,ES:SI (1000_E72C / 0x1E72C)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
     UInt16[ES, DI] = UInt16[ES, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // MOVSB ES:DI,ES:SI (1000_E72E / 0x1E72E)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F8_149F8
     UInt8[ES, DI] = UInt8[ES, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
+    DI = (ushort)(DI + Direction8);
     // POP SI (1000_E730 / 0x1E730)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
     SI = Stack.Pop();
     // MOV AX,SI (1000_E731 / 0x1E731)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F8_149F8
     AX = SI;
     // STOSW ES:DI (1000_E733 / 0x1E733)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // CMP DI,0x140 (1000_E734 / 0x1E734)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 2, 3 modified by those instruction(s): 1000_49F8_149F8
     Alu.Sub16(DI, 0x140);
     // JC 0x1000:e729 (1000_E738 / 0x1E738)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
     if(CarryFlag) {
       goto label_1000_E729_1E729;
     }
     // MOV CX,word ptr [0xd820] (1000_E73A / 0x1E73A)
-    // Instruction bytes at index 2, 3 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F8_149F8
     CX = UInt16[DS, 0xD820];
     // JMP 0x1000:f0ff (1000_E73E / 0x1E73E)
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F8_149F8
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(bump_allocate_bump_cx_bytes_ida_1000_F0FF_1F0FF, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(read_dune_dat_toc_ida_1000_E741_1E741, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -73599,47 +71273,29 @@ public partial class Overrides : CSharpOverrideHelper {
     
     label_1000_E741_1E741:
     // XOR AX,AX (1000_E741 / 0x1E741)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F8_149F8
     AX = 0;
     // XOR DX,DX (1000_E743 / 0x1E743)
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     DX = 0;
     // CALL 0x1000:f2d6 (1000_E745 / 0x1E745)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F8_149F8
     NearCall(cs1, 0xE748, seek_dune_dat_offset_dxax_ida_1000_F2D6_1F2D6);
     // MOV AX,[0x39b9] (1000_E748 / 0x1E748)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F8_149F8
     AX = UInt16[DS, 0x39B9];
     // ADD AX,0x800 (1000_E74B / 0x1E74B)
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     // AX += 0x800;
     AX = Alu.Add16(AX, 0x800);
     // MOV ES,AX (1000_E74E / 0x1E74E)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F8_149F8
     ES = AX;
     // XOR DI,DI (1000_E750 / 0x1E750)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
     DI = 0;
     // MOV CX,0xffff (1000_E752 / 0x1E752)
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F8_149F8
     CX = 0xFFFF;
     // CALL 0x1000:f2ea (1000_E755 / 0x1E755)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F8_149F8
     NearCall(cs1, 0xE758, read_dune_dat_cx_to_esdi_ida_1000_F2EA_1F2EA);
     // JC 0x1000:e741 (1000_E758 / 0x1E758)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
     if(CarryFlag) {
       goto label_1000_E741_1E741;
     }
     // RET  (1000_E75A / 0x1E75A)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     return NearRet();
   }
   
@@ -73651,53 +71307,39 @@ public partial class Overrides : CSharpOverrideHelper {
     
     label_1000_E75B_1E75B:
     // PUSH SI (1000_E75B / 0x1E75B)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     Stack.Push(SI);
     // STOSW ES:DI (1000_E75C / 0x1E75C)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // MOV AL,DL (1000_E75D / 0x1E75D)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F8_149F8
     AL = DL;
     // STOSB ES:DI (1000_E75F / 0x1E75F)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // ADD SI,0x10 (1000_E760 / 0x1E760)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F8_149F8
     // SI += 0x10;
     SI = Alu.Add16(SI, 0x10);
     // MOVSW ES:DI,SI (1000_E763 / 0x1E763)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // MOVSB ES:DI,SI (1000_E764 / 0x1E764)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
     UInt8[ES, DI] = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
+    DI = (ushort)(DI + Direction8);
     // INC SI (1000_E765 / 0x1E765)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
     SI = Alu.Inc16(SI);
     // MOVSW ES:DI,SI (1000_E766 / 0x1E766)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // MOVSW ES:DI,SI (1000_E767 / 0x1E767)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // POP SI (1000_E768 / 0x1E768)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
     SI = Stack.Pop();
     // RET  (1000_E769 / 0x1E769)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
     return NearRet();
   }
   
@@ -73709,86 +71351,51 @@ public partial class Overrides : CSharpOverrideHelper {
     
     label_1000_E76A_1E76A:
     // MOV AL,[0x2944] (1000_E76A / 0x1E76A)
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F8_149F8
     AL = UInt8[DS, 0x2944];
     // MOV CL,0x4 (1000_E76D / 0x1E76D)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F8_149F8
     CL = 0x4;
     // SHR AL,CL (1000_E76F / 0x1E76F)
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     // AL >>= CL;
     AL = Alu.Shr8(AL, CL);
     // ADD AL,0x7 (1000_E771 / 0x1E771)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F8_149F8
     // AL += 0x7;
     AL = Alu.Add8(AL, 0x7);
     // XOR AH,AH (1000_E773 / 0x1E773)
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     AH = 0;
     // MOV SI,0x398b (1000_E775 / 0x1E775)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F8_149F8
     SI = 0x398B;
     // MOV CX,0x8 (1000_E778 / 0x1E778)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F8_149F8
     CX = 0x8;
     // CALL 0x1000:e57b (1000_E77B / 0x1E77B)
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     NearCall(cs1, 0xE77E, load_driver_ax_with_vtable_at_si_ida_1000_E57B_1E57B);
     // MOV AX,[0x39b5] (1000_E77E / 0x1E77E)
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F8_149F8
     AX = UInt16[DS, 0x39B5];
     // CALLF [0x3989] (1000_E781 / 0x1E781)
-    // Instruction bytes at index 0, 3 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F8_149F8
     // Indirect call to [0x3989], generating possible targets from emulator records
     uint targetAddress_1000_E781 = (uint)(UInt16[DS, 0x398B] * 0x10 + UInt16[DS, 0x3989] - cs1 * 0x10);
     switch(targetAddress_1000_E781) {
       case 0x46450 : FarCall(cs1, 0xE785, PcSpeakerActivationWithBXAndALCleanup_5635_0100_56450); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_E781);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_E781));
         break;
     }
     // MOV word ptr [0xdbc8],BX (1000_E785 / 0x1E785)
-    // Instruction bytes at index 0, 3 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F8_149F8
     UInt16[DS, 0xDBC8] = BX;
     // CALL 0x1000:a637 (1000_E789 / 0x1E789)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F8_149F8
     NearCall(cs1, 0xE78C, unknown_1000_A637_1A637);
     // CALL 0x1000:ae54 (1000_E78C / 0x1E78C)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F8_149F8
     NearCall(cs1, 0xE78F, unknown_1000_AE54_1AE54);
     // CALL 0x1000:e851 (1000_E78F / 0x1E78F)
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     NearCall(cs1, 0xE792, CheckUnknown39B9_1000_E851_1E851);
     // JC 0x1000:e7bc (1000_E792 / 0x1E792)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F8_149F8
     if(CarryFlag) {
       goto label_1000_E7BC_1E7BC;
     }
     // TEST byte ptr [0x2944],0xf0 (1000_E794 / 0x1E794)
-    // Instruction bytes at index 0, 1, 4 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 2, 3 modified by those instruction(s): 1000_49F8_149F8
     Alu.And8(UInt8[DS, 0x2944], 0xF0);
     // JZ 0x1000:e7b9 (1000_E799 / 0x1E799)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F8_149F8
     if(ZeroFlag) {
       // JZ target is JMP, inlining.
       // JMP 0x1000:f131 (1000_E7B9 / 0x1E7B9)
-      // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-      // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F8_149F8
       // Jump converted to entry function call
       if(JumpDispatcher.Jump(not_observed_1000_F131_01F131, 0)) {
         loadOffset = JumpDispatcher.NextEntryAddress;
@@ -73797,46 +71404,27 @@ public partial class Overrides : CSharpOverrideHelper {
       return JumpDispatcher.JumpAsmReturn!;
     }
     // AND byte ptr [0x2944],0xf (1000_E79B / 0x1E79B)
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0, 3, 4 modified by those instruction(s): 1000_49F8_149F8
     // UInt8[DS, 0x2944] &= 0xF;
     UInt8[DS, 0x2944] = Alu.And8(UInt8[DS, 0x2944], 0xF);
     // XOR AX,AX (1000_E7A0 / 0x1E7A0)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
     AX = 0;
     // MOV [0x3813],AX (1000_E7A2 / 0x1E7A2)
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F8_149F8
     UInt16[DS, 0x3813] = AX;
     // MOV [0xdbc8],AL (1000_E7A5 / 0x1E7A5)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F8_149F8
     UInt8[DS, 0xDBC8] = AL;
     // MOV AX,[0x398b] (1000_E7A8 / 0x1E7A8)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F8_149F8
     AX = UInt16[DS, 0x398B];
     // ADD AX,0x10 (1000_E7AB / 0x1E7AB)
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     // AX += 0x10;
     AX = Alu.Add16(AX, 0x10);
     // MOV [0x39b9],AX (1000_E7AE / 0x1E7AE)
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F8_149F8
     UInt16[DS, 0x39B9] = AX;
     // MOV word ptr [0x3cbc],0x3624 (1000_E7B1 / 0x1E7B1)
-    // Instruction bytes at index 0, 3, 4 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1, 2, 5 modified by those instruction(s): 1000_49F8_149F8
     UInt16[DS, 0x3CBC] = 0x3624;
     // JMP 0x1000:e76a (1000_E7B7 / 0x1E7B7)
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     goto label_1000_E76A_1E76A;
     label_1000_E7B9_1E7B9:
     // JMP 0x1000:f131 (1000_E7B9 / 0x1E7B9)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F8_149F8
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(not_observed_1000_F131_01F131, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
@@ -73845,100 +71433,59 @@ public partial class Overrides : CSharpOverrideHelper {
     return JumpDispatcher.JumpAsmReturn!;
     label_1000_E7BC_1E7BC:
     // MOV AX,[0x3813] (1000_E7BC / 0x1E7BC)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F8_149F8
     AX = UInt16[DS, 0x3813];
     // MOV [0x381b],AX (1000_E7BF / 0x1E7BF)
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     UInt16[DS, 0x381B] = AX;
     // CALL 0x1000:a87e (1000_E7C2 / 0x1E7C2)
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F8_149F8
     NearCall(cs1, 0xE7C5, audio_test_frequency_ida_1000_A87E_1A87E);
     label_1000_E7C5_1E7C5:
     // MOV AL,[0x2944] (1000_E7C5 / 0x1E7C5)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F8_149F8
     AL = UInt8[DS, 0x2944];
     // AND AX,0xf (1000_E7C8 / 0x1E7C8)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F8_149F8
     // AX &= 0xF;
     AX = Alu.And16(AX, 0xF);
     // ADD AX,0x2 (1000_E7CB / 0x1E7CB)
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     // AX += 0x2;
     AX = Alu.Add16(AX, 0x2);
     // MOV SI,0x396f (1000_E7CE / 0x1E7CE)
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F8_149F8
     SI = 0x396F;
     // MOV CX,0x7 (1000_E7D1 / 0x1E7D1)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F8_149F8
     CX = 0x7;
     // CALL 0x1000:e57b (1000_E7D4 / 0x1E7D4)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F8_149F8
     NearCall(cs1, 0xE7D7, load_driver_ax_with_vtable_at_si_ida_1000_E57B_1E57B);
     // MOV BP,0x3349 (1000_E7D7 / 0x1E7D7)
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     BP = 0x3349;
     // MOV CX,0xa (1000_E7DA / 0x1E7DA)
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F8_149F8
     CX = 0xA;
     // MOV AX,[0x39b3] (1000_E7DD / 0x1E7DD)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F8_149F8
     AX = UInt16[DS, 0x39B3];
     // CALLF [0x396d] (1000_E7E0 / 0x1E7E0)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 2, 3 modified by those instruction(s): 1000_49F8_149F8
     // Indirect call to [0x396d], generating possible targets from emulator records
     uint targetAddress_1000_E7E0 = (uint)(UInt16[DS, 0x396F] * 0x10 + UInt16[DS, 0x396D] - cs1 * 0x10);
     switch(targetAddress_1000_E7E0) {
       case 0x464E0 : FarCall(cs1, 0xE7E4, PcSpeakerActivationWithBXAndALCleanup_563E_0100_564E0); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_E7E0);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_E7E0));
         break;
     }
     // OR word ptr [0xdbc8],BX (1000_E7E4 / 0x1E7E4)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 2, 3 modified by those instruction(s): 1000_49F8_149F8
     // UInt16[DS, 0xDBC8] |= BX;
     UInt16[DS, 0xDBC8] = Alu.Or16(UInt16[DS, 0xDBC8], BX);
     // CALL 0x1000:a650 (1000_E7E8 / 0x1E7E8)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F8_149F8
     NearCall(cs1, 0xE7EB, unknown_1000_A650_1A650);
     // CALL 0x1000:ae3f (1000_E7EB / 0x1E7EB)
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     NearCall(cs1, 0xE7EE, unknown_1000_AE3F_1AE3F);
     // CALL 0x1000:e851 (1000_E7EE / 0x1E7EE)
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F8_149F8
     NearCall(cs1, 0xE7F1, CheckUnknown39B9_1000_E851_1E851);
     // JC 0x1000:e818 (1000_E7F1 / 0x1E7F1)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F8_149F8
     if(CarryFlag) {
       goto label_1000_E818_1E818;
     }
     // TEST byte ptr [0x2944],0xf (1000_E7F3 / 0x1E7F3)
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0, 3, 4 modified by those instruction(s): 1000_49F8_149F8
     Alu.And8(UInt8[DS, 0x2944], 0xF);
     // JZ 0x1000:e7b9 (1000_E7F8 / 0x1E7F8)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
     if(ZeroFlag) {
       // JZ target is JMP, inlining.
       // JMP 0x1000:f131 (1000_E7B9 / 0x1E7B9)
-      // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-      // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F8_149F8
       // Jump converted to entry function call
       if(JumpDispatcher.Jump(not_observed_1000_F131_01F131, 0)) {
         loadOffset = JumpDispatcher.NextEntryAddress;
@@ -73947,68 +71494,41 @@ public partial class Overrides : CSharpOverrideHelper {
       return JumpDispatcher.JumpAsmReturn!;
     }
     // AND byte ptr [0x2944],0xf0 (1000_E7FA / 0x1E7FA)
-    // Instruction bytes at index 2, 3 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0, 1, 4 modified by those instruction(s): 1000_49F8_149F8
     // UInt8[DS, 0x2944] &= 0xF0;
     UInt8[DS, 0x2944] = Alu.And8(UInt8[DS, 0x2944], 0xF0);
     // XOR AX,AX (1000_E7FF / 0x1E7FF)
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     AX = 0;
     // MOV [0xdbb8],AX (1000_E801 / 0x1E801)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F8_149F8
     UInt16[DS, 0xDBB8] = AX;
     // MOV [0xdbc9],AL (1000_E804 / 0x1E804)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F8_149F8
     UInt8[DS, 0xDBC9] = AL;
     // MOV AX,[0x396f] (1000_E807 / 0x1E807)
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     AX = UInt16[DS, 0x396F];
     // ADD AX,0x10 (1000_E80A / 0x1E80A)
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F8_149F8
     // AX += 0x10;
     AX = Alu.Add16(AX, 0x10);
     // MOV [0x39b9],AX (1000_E80D / 0x1E80D)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F8_149F8
     UInt16[DS, 0x39B9] = AX;
     // MOV word ptr [0x3cbc],0x364b (1000_E810 / 0x1E810)
-    // Instruction bytes at index 0, 1, 4, 5 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 2, 3 modified by those instruction(s): 1000_49F8_149F8
     UInt16[DS, 0x3CBC] = 0x364B;
     // JMP 0x1000:e7c5 (1000_E816 / 0x1E816)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F8_149F8
     goto label_1000_E7C5_1E7C5;
     label_1000_E818_1E818:
     // CALL 0x1000:ae28 (1000_E818 / 0x1E818)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F8_149F8
     NearCall(cs1, 0xE81B, IsUnknownDBC80x100_1000_AE28_1AE28);
     // JZ 0x1000:e825 (1000_E81B / 0x1E81B)
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     if(ZeroFlag) {
       // JZ target is RET, inlining.
       // RET  (1000_E825 / 0x1E825)
-      // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
       return NearRet();
     }
     // CALL 0x1000:e826 (1000_E81D / 0x1E81D)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F8_149F8
     NearCall(cs1, 0xE820, unknown_1000_E826_1E826);
     // AND byte ptr [0x2943],0xef (1000_E820 / 0x1E820)
-    // Instruction bytes at index 0, 1, 4 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 2, 3 modified by those instruction(s): 1000_49F8_149F8
     // UInt8[DS, 0x2943] &= 0xEF;
     UInt8[DS, 0x2943] = Alu.And8(UInt8[DS, 0x2943], 0xEF);
     label_1000_E825_1E825:
     // RET  (1000_E825 / 0x1E825)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
     return NearRet();
   }
   
@@ -74020,97 +71540,63 @@ public partial class Overrides : CSharpOverrideHelper {
     
     label_1000_E826_1E826:
     // CMP word ptr [0xdbba],0x0 (1000_E826 / 0x1E826)
-    // Instruction bytes at index 2, 3 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0, 1, 4 modified by those instruction(s): 1000_49F8_149F8
     Alu.Sub16(UInt16[DS, 0xDBBA], 0x0);
     // JZ 0x1000:e850 (1000_E82B / 0x1E82B)
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     if(ZeroFlag) {
       // JZ target is RET, inlining.
       // RET  (1000_E850 / 0x1E850)
-      // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
       return NearRet();
     }
     // CALL 0x1000:e741 (1000_E82D / 0x1E82D)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F8_149F8
     NearCall(cs1, 0xE830, read_dune_dat_toc_ida_1000_E741_1E741);
     // PUSH DS (1000_E830 / 0x1E830)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
     Stack.Push(DS);
     // MOV SI,DI (1000_E831 / 0x1E831)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F8_149F8
     SI = DI;
     // PUSH ES (1000_E833 / 0x1E833)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     Stack.Push(ES);
     // POP DS (1000_E834 / 0x1E834)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
     DS = Stack.Pop();
     // LODSW SI (1000_E835 / 0x1E835)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV CX,0xfa (1000_E836 / 0x1E836)
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F8_149F8
     CX = 0xFA;
     label_1000_E839_1E839:
     // PUSH CX (1000_E839 / 0x1E839)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
     Stack.Push(CX);
     // PUSH SI (1000_E83A / 0x1E83A)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     Stack.Push(SI);
     // CALL 0x1000:f314 (1000_E83B / 0x1E83B)
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     NearCall(cs1, 0xE83E, locate_res_by_name_dssi_ida_1000_F314_1F314);
     // POP SI (1000_E83E / 0x1E83E)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     SI = Stack.Pop();
     // JC 0x1000:e849 (1000_E83F / 0x1E83F)
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     if(CarryFlag) {
       goto label_1000_E849_1E849;
     }
     // CALL 0x1000:f3a7 (1000_E841 / 0x1E841)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F8_149F8
     NearCall(cs1, 0xE844, unknown_1000_F3A7_1F3A7);
     // JNZ 0x1000:e849 (1000_E844 / 0x1E844)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
     if(!ZeroFlag) {
       goto label_1000_E849_1E849;
     }
     // CALL 0x1000:e75b (1000_E846 / 0x1E846)
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F8_149F8
     NearCall(cs1, 0xE849, UnknownStructCreation_1000_E75B_1E75B);
     label_1000_E849_1E849:
     // ADD SI,0x19 (1000_E849 / 0x1E849)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F8_149F8
     // SI += 0x19;
     SI = Alu.Add16(SI, 0x19);
     // POP CX (1000_E84C / 0x1E84C)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
     CX = Stack.Pop();
     // LOOP 0x1000:e839 (1000_E84D / 0x1E84D)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1 modified by those instruction(s): 1000_49F8_149F8
     if(--CX != 0) {
       goto label_1000_E839_1E839;
     }
     // POP DS (1000_E84F / 0x1E84F)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     DS = Stack.Pop();
     label_1000_E850_1E850:
     // RET  (1000_E850 / 0x1E850)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
     return NearRet();
   }
   
@@ -74122,20 +71608,13 @@ public partial class Overrides : CSharpOverrideHelper {
     
     label_1000_E851_1E851:
     // MOV AX,[0x39b9] (1000_E851 / 0x1E851)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F8_149F8
     AX = UInt16[DS, 0x39B9];
     // ADD AX,0x2f13 (1000_E854 / 0x1E854)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 2 modified by those instruction(s): 1000_49F8_149F8
     // AX += 0x2F13;
     AX = Alu.Add16(AX, 0x2F13);
     // CMP AX,word ptr [0xce68] (1000_E857 / 0x1E857)
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 1000_49F7_149F7
-    // Instruction bytes at index 0, 3 modified by those instruction(s): 1000_49F8_149F8
     Alu.Sub16(AX, UInt16[DS, 0xCE68]);
     // RET  (1000_E85B / 0x1E85B)
-    // Instruction bytes at index 0 modified by those instruction(s): 1000_49F8_149F8
     return NearRet();
   }
   
@@ -74305,12 +71784,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(uninitialize_memory_driver_ida_1000_E8D5_1E8D5, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action uninitialize_memory_driver_ida_1000_E8D5_1E8D5(int loadOffset) {
@@ -74399,13 +71872,13 @@ public partial class Overrides : CSharpOverrideHelper {
     InterruptFlag = false;
     // LODSW SI (1000_E91D / 0x1E91D)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     label_1000_E91E_1E91E:
     // MOV DI,AX (1000_E91E / 0x1E91E)
     DI = AX;
     // LODSW SI (1000_E920 / 0x1E920)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // XCHG AX,DI (1000_E921 / 0x1E921)
     ushort tmp_1000_E921 = AX;
     AX = DI;
@@ -74444,7 +71917,7 @@ public partial class Overrides : CSharpOverrideHelper {
     SI = Stack.Pop();
     // LODSW SI (1000_E943 / 0x1E943)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // OR AX,AX (1000_E944 / 0x1E944)
     // AX |= AX;
     AX = Alu.Or16(AX, AX);
@@ -74695,7 +72168,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_EA3A_1EA3A:
     // LODSW SI (1000_EA3A / 0x1EA3A)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // OR BX,AX (1000_EA3B / 0x1EA3B)
     // BX |= AX;
     BX = Alu.Or16(BX, AX);
@@ -74826,16 +72299,18 @@ public partial class Overrides : CSharpOverrideHelper {
     // CALL 0x1000:f0f6 (1000_EAAA / 0x1EAAA)
     NearCall(cs1, 0xEAAD, bump_alloc_get_addr_in_di_ida_1000_F0F6_1F0F6);
     // LES DI,[0xce6a] (1000_EAAD / 0x1EAAD)
-    DI = UInt16[DS, 0xCE6A];
     ES = UInt16[DS, 0xCE6C];
+    DI = UInt16[DS, 0xCE6A];
     // POP CX (1000_EAB1 / 0x1EAB1)
     CX = Stack.Pop();
     // XOR AX,AX (1000_EAB2 / 0x1EAB2)
     AX = 0;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // STOSW ES:DI (1000_EAB4 / 0x1EAB4)
       UInt16[ES, DI] = AX;
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      DI = (ushort)(DI + Direction16);
     }
     label_1000_EAB6_1EAB6:
     // RET  (1000_EAB6 / 0x1EAB6)
@@ -74867,8 +72342,8 @@ public partial class Overrides : CSharpOverrideHelper {
     // PUSH ES (1000_EAC5 / 0x1EAC5)
     Stack.Push(ES);
     // LES DI,[0xce6a] (1000_EAC6 / 0x1EAC6)
-    DI = UInt16[DS, 0xCE6A];
     ES = UInt16[DS, 0xCE6C];
+    DI = UInt16[DS, 0xCE6A];
     // MOV SI,AX (1000_EACA / 0x1EACA)
     SI = AX;
     // MOV AX,[0x39a9] (1000_EACC / 0x1EACC)
@@ -74921,11 +72396,13 @@ public partial class Overrides : CSharpOverrideHelper {
     CX = Alu.Shr16(CX, 1);
     // XOR AX,AX (1000_EAFB / 0x1EAFB)
     AX = 0;
-    while (CX-- != 0) {
+    // REPNE
+    while (CX != 0) {
+      CX--;
       // SCASW ES:DI (1000_EAFD / 0x1EAFD)
       Alu.Sub16(AX, UInt16[ES, DI]);
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-      if(ZeroFlag == false) {
+      DI = (ushort)(DI + Direction16);
+      if(ZeroFlag != false) {
         break;
       }
     }
@@ -75003,7 +72480,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AX = UInt16[SS, (ushort)(BP + 0x2)];
     // STOSW ES:DI (1000_EB3C / 0x1EB3C)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // ADD CX,AX (1000_EB3D / 0x1EB3D)
     // CX += AX;
     CX = Alu.Add16(CX, AX);
@@ -75321,7 +72798,7 @@ public partial class Overrides : CSharpOverrideHelper {
     // Indirect call to word ptr CS:[0xea79], generating possible targets from emulator records
     uint targetAddress_1000_EC4B = (uint)(UInt16[cs1, 0xEA79]);
     switch(targetAddress_1000_EC4B) {
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_EC4B);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_EC4B));
         break;
     }
     // POP ES (1000_EC50 / 0x1EC50)
@@ -75364,7 +72841,7 @@ public partial class Overrides : CSharpOverrideHelper {
     // Indirect call to word ptr CS:[0xea77], generating possible targets from emulator records
     uint targetAddress_1000_EC5E = (uint)(UInt16[cs1, 0xEA77]);
     switch(targetAddress_1000_EC5E) {
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_EC5E);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_EC5E));
         break;
     }
     // POP AX (1000_EC63 / 0x1EC63)
@@ -75796,12 +73273,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(ems_memory_func_2_ida_1000_EE02_1EE02, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action ems_memory_func_2_ida_1000_EE02_1EE02(int loadOffset) {
@@ -75875,19 +73346,23 @@ public partial class Overrides : CSharpOverrideHelper {
     // SHR CX,1 (1000_EE33 / 0x1EE33)
     // CX >>= 1;
     CX = Alu.Shr16(CX, 1);
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSW ES:DI,SI (1000_EE35 / 0x1EE35)
       UInt16[ES, DI] = UInt16[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      SI = (ushort)(SI + Direction16);
+      DI = (ushort)(DI + Direction16);
     }
     // ADC CL,CL (1000_EE37 / 0x1EE37)
     CL = Alu.Adc8(CL, CL);
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSB ES:DI,SI (1000_EE39 / 0x1EE39)
       UInt8[ES, DI] = UInt8[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+      SI = (ushort)(SI + Direction8);
+      DI = (ushort)(DI + Direction8);
     }
     // MOV CX,DX (1000_EE3B / 0x1EE3B)
     CX = DX;
@@ -75980,19 +73455,23 @@ public partial class Overrides : CSharpOverrideHelper {
     // SHR CX,1 (1000_EE77 / 0x1EE77)
     // CX >>= 1;
     CX = Alu.Shr16(CX, 1);
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSW ES:DI,SI (1000_EE79 / 0x1EE79)
       UInt16[ES, DI] = UInt16[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      SI = (ushort)(SI + Direction16);
+      DI = (ushort)(DI + Direction16);
     }
     // ADC CL,CL (1000_EE7B / 0x1EE7B)
     CL = Alu.Adc8(CL, CL);
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSB ES:DI,SI (1000_EE7D / 0x1EE7D)
       UInt8[ES, DI] = UInt8[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+      SI = (ushort)(SI + Direction8);
+      DI = (ushort)(DI + Direction8);
     }
     // MOV CX,DX (1000_EE7F / 0x1EE7F)
     CX = DX;
@@ -76090,7 +73569,7 @@ public partial class Overrides : CSharpOverrideHelper {
     // Indirect call to [0xee8c], generating possible targets from emulator records
     uint targetAddress_1000_EF22 = (uint)(UInt16[cs1, 0xEE8E] * 0x10 + UInt16[cs1, 0xEE8C]);
     switch(targetAddress_1000_EF22) {
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_EF22);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_EF22));
         break;
     }
     // CMP AX,0x1 (1000_EF27 / 0x1EF27)
@@ -76111,12 +73590,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:ef22 (1000_EF30 / 0x1EF30)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(call_xms_driver_func_ida_1000_EF22_1EF22, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(xms_move_memory_ida_1000_EF32_1EF32, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -76186,12 +73659,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:ef22 (1000_EF68 / 0x1EF68)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(call_xms_driver_func_ida_1000_EF22_1EF22, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(interrupt_handler_0x8_1000_EF6A_1EF6A, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -76307,7 +73774,7 @@ public partial class Overrides : CSharpOverrideHelper {
     uint targetAddress_1000_EFC3 = (uint)(UInt16[DS, 0x3983] * 0x10 + UInt16[DS, 0x3981] - cs1 * 0x10);
     switch(targetAddress_1000_EFC3) {
       case 0x464EF : FarCall(cs1, 0xEFC7, unknown_563E_010F_564EF); break;
-      default: throw FailAsUntested("Error: Function not registered at address " + targetAddress_1000_EFC3);
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_EFC3));
         break;
     }
     // MOV [0xdbcd],AL (1000_EFC7 / 0x1EFC7)
@@ -76422,10 +73889,12 @@ public partial class Overrides : CSharpOverrideHelper {
     DI = 0xCE81;
     // MOV CX,0x67 (1000_F099 / 0x1F099)
     CX = 0x67;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // STOSB ES:DI (1000_F09C / 0x1F09C)
       UInt8[ES, DI] = AL;
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+      DI = (ushort)(DI + Direction8);
     }
     // POP ES (1000_F09E / 0x1F09E)
     ES = Stack.Pop();
@@ -76469,12 +73938,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(open_resource_by_index_si_ida_1000_F0B9_1F0B9, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action open_resource_by_index_si_ida_1000_F0B9_1F0B9(int loadOffset) {
@@ -76493,7 +73956,7 @@ public partial class Overrides : CSharpOverrideHelper {
     SI = UInt16[DS, (ushort)(SI + 0x31FF)];
     // LODSW SI (1000_F0C3 / 0x1F0C3)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV DX,SI (1000_F0C4 / 0x1F0C4)
     DX = SI;
     // OR AX,AX (1000_F0C6 / 0x1F0C6)
@@ -76521,12 +73984,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:f0ff (1000_F0D4 / 0x1F0D4)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(bump_allocate_bump_cx_bytes_ida_1000_F0FF_1F0FF, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(read_and_maybe_hsq_ida_1000_F0D6_1F0D6, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -76589,12 +74046,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(bump_alloc_get_addr_in_di_ida_1000_F0F6_1F0F6, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action bump_alloc_get_addr_in_di_ida_1000_F0F6_1F0F6(int loadOffset) {
@@ -76605,8 +74056,8 @@ public partial class Overrides : CSharpOverrideHelper {
     
     label_1000_F0F6_1F0F6:
     // LES SI,[0x39b7] (1000_F0F6 / 0x1F0F6)
-    SI = UInt16[DS, 0x39B7];
     ES = UInt16[DS, 0x39B9];
+    SI = UInt16[DS, 0x39B7];
     // MOV word ptr [DI],SI (1000_F0FA / 0x1F0FA)
     UInt16[DS, DI] = SI;
     // MOV word ptr [DI + 0x2],ES (1000_F0FC / 0x1F0FC)
@@ -76674,8 +74125,8 @@ public partial class Overrides : CSharpOverrideHelper {
     
     label_1000_F11C_1F11C:
     // LES DI,[0x39b7] (1000_F11C / 0x1F11C)
-    DI = UInt16[DS, 0x39B7];
     ES = UInt16[DS, 0x39B9];
+    DI = UInt16[DS, 0x39B7];
     // MOV AX,ES (1000_F120 / 0x1F120)
     AX = ES;
     // ADD AX,CX (1000_F122 / 0x1F122)
@@ -76729,12 +74180,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x1000:003a (1000_F13C / 0x1F13C)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(exit_1000_003A_01003A, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(allocator_attempt_to_free_space_ida_1000_F13F_1F13F, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -76845,7 +74290,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_F193_1F193:
     // LODSW SI (1000_F193 / 0x1F193)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // ADD SI,0x2 (1000_F194 / 0x1F194)
     // SI += 0x2;
     SI = Alu.Add16(SI, 0x2);
@@ -76934,11 +74379,13 @@ public partial class Overrides : CSharpOverrideHelper {
     }
     // MOV CX,0x8000 (1000_F1D6 / 0x1F1D6)
     CX = 0x8000;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSW ES:DI,SI (1000_F1D9 / 0x1F1D9)
       UInt16[ES, DI] = UInt16[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      SI = (ushort)(SI + Direction16);
+      DI = (ushort)(DI + Direction16);
     }
     // MOV DX,ES (1000_F1DB / 0x1F1DB)
     DX = ES;
@@ -76959,11 +74406,13 @@ public partial class Overrides : CSharpOverrideHelper {
     // SHL CX,1 (1000_F1E9 / 0x1F1E9)
     // CX <<= 1;
     CX = Alu.Shl16(CX, 1);
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSW ES:DI,SI (1000_F1EB / 0x1F1EB)
       UInt16[ES, DI] = UInt16[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      SI = (ushort)(SI + Direction16);
+      DI = (ushort)(DI + Direction16);
     }
     // PUSH SS (1000_F1ED / 0x1F1ED)
     Stack.Push(SS);
@@ -77108,23 +74557,19 @@ public partial class Overrides : CSharpOverrideHelper {
     Stack.Push(DS);
     // POP ES (1000_F238 / 0x1F238)
     ES = Stack.Pop();
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSB ES:DI,SI (1000_F239 / 0x1F239)
       UInt8[ES, DI] = UInt8[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+      SI = (ushort)(SI + Direction8);
+      DI = (ushort)(DI + Direction8);
     }
     // MOV word ptr [0x3cbc],0x36b4 (1000_F23B / 0x1F23B)
     UInt16[DS, 0x3CBC] = 0x36B4;
     // JMP 0x1000:003a (1000_F241 / 0x1F241)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(exit_1000_003A_01003A, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(read_resource_to_esdi_ida_1000_F244_1F244, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -77482,7 +74927,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_F323_1F323:
     // LODSB SI (1000_F323 / 0x1F323)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // OR AL,AL (1000_F324 / 0x1F324)
     // AL |= AL;
     AL = Alu.Or8(AL, AL);
@@ -77522,12 +74967,14 @@ public partial class Overrides : CSharpOverrideHelper {
     Stack.Push(CX);
     // PUSH SI (1000_F342 / 0x1F342)
     Stack.Push(SI);
-    while (CX-- != 0) {
+    // REPE
+    while (CX != 0) {
+      CX--;
       // CMPSB ES:DI,SI (1000_F343 / 0x1F343)
       Alu.Sub8(UInt8[DS, SI], UInt8[ES, DI]);
-      SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-      if(ZeroFlag == true) {
+      SI = (ushort)(SI + Direction8);
+      DI = (ushort)(DI + Direction8);
+      if(ZeroFlag != true) {
         break;
       }
     }
@@ -77564,12 +75011,14 @@ public partial class Overrides : CSharpOverrideHelper {
     Stack.Push(CX);
     // PUSH SI (1000_F360 / 0x1F360)
     Stack.Push(SI);
-    while (CX-- != 0) {
+    // REPE
+    while (CX != 0) {
+      CX--;
       // CMPSB ES:DI,SI (1000_F361 / 0x1F361)
       Alu.Sub8(UInt8[DS, SI], UInt8[ES, DI]);
-      SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-      if(ZeroFlag == true) {
+      SI = (ushort)(SI + Direction8);
+      DI = (ushort)(DI + Direction8);
+      if(ZeroFlag != true) {
         break;
       }
     }
@@ -77597,7 +75046,7 @@ public partial class Overrides : CSharpOverrideHelper {
     SI = Alu.Add16(SI, 0x4);
     // LODSB SI (1000_F36F / 0x1F36F)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // SUB AL,0x40 (1000_F370 / 0x1F370)
     // AL -= 0x40;
     AL = Alu.Sub8(AL, 0x40);
@@ -77610,7 +75059,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_F379_1F379:
     // LODSB SI (1000_F379 / 0x1F379)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // CMP AL,0x41 (1000_F37A / 0x1F37A)
     Alu.Sub8(AL, 0x41);
     // JC 0x1000:f380 (1000_F37C / 0x1F37C)
@@ -77645,7 +75094,7 @@ public partial class Overrides : CSharpOverrideHelper {
     }
     // LODSB SI (1000_F38E / 0x1F38E)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // CMP AL,0x4f (1000_F38F / 0x1F38F)
     Alu.Sub8(AL, 0x4F);
     // CMC  (1000_F391 / 0x1F391)
@@ -77654,7 +75103,7 @@ public partial class Overrides : CSharpOverrideHelper {
     DL = Alu.Rcl8(DL, 1);
     // LODSB SI (1000_F394 / 0x1F394)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // SUB AL,0x41 (1000_F395 / 0x1F395)
     // AL -= 0x41;
     AL = Alu.Sub8(AL, 0x41);
@@ -77695,8 +75144,8 @@ public partial class Overrides : CSharpOverrideHelper {
     
     label_1000_F3A7_1F3A7:
     // LES DI,SS:[0xdbbc] (1000_F3A7 / 0x1F3A7)
-    DI = UInt16[SS, 0xDBBC];
     ES = UInt16[SS, 0xDBBE];
+    DI = UInt16[SS, 0xDBBC];
     // SUB DI,0x5 (1000_F3AC / 0x1F3AC)
     // DI -= 0x5;
     DI = Alu.Sub16(DI, 0x5);
@@ -77782,7 +75231,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_F3EA_1F3EA:
     // LODSB SI (1000_F3EA / 0x1F3EA)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // ADD AH,AL (1000_F3EB / 0x1F3EB)
     // AH += AL;
     AH = Alu.Add8(AH, AL);
@@ -77800,12 +75249,12 @@ public partial class Overrides : CSharpOverrideHelper {
     SI = DI;
     // LODSW SI (1000_F3F6 / 0x1F3F6)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV DI,AX (1000_F3F7 / 0x1F3F7)
     DI = AX;
     // LODSB SI (1000_F3F9 / 0x1F3F9)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // OR AL,AL (1000_F3FA / 0x1F3FA)
     // AL |= AL;
     AL = Alu.Or8(AL, AL);
@@ -77857,12 +75306,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_1000_F40D_01F40D, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action not_observed_1000_F40D_01F40D(int loadOffset) {
@@ -77875,7 +75318,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_F40D_1F40D:
     // LODSW SI (1000_F40D / 0x1F40D)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV CX,AX (1000_F40E / 0x1F40E)
     CX = AX;
     // SUB SI,0x5 (1000_F410 / 0x1F410)
@@ -77910,18 +75353,20 @@ public partial class Overrides : CSharpOverrideHelper {
     }
     // MOVSB ES:DI,SI (1000_F426 / 0x1F426)
     UInt8[ES, DI] = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
+    DI = (ushort)(DI + Direction8);
     label_1000_F427_1F427:
     // DEC SI (1000_F427 / 0x1F427)
     SI = Alu.Dec16(SI);
     // DEC DI (1000_F428 / 0x1F428)
     DI = Alu.Dec16(DI);
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSW ES:DI,SI (1000_F429 / 0x1F429)
       UInt16[ES, DI] = UInt16[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      SI = (ushort)(SI + Direction16);
+      DI = (ushort)(DI + Direction16);
     }
     // CLD  (1000_F42B / 0x1F42B)
     DirectionFlag = false;
@@ -77949,14 +75394,14 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_F43B_1F43B:
     // MOVSB ES:DI,SI (1000_F43B / 0x1F43B)
     UInt8[ES, DI] = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
+    DI = (ushort)(DI + Direction8);
     // JMP 0x1000:f435 (1000_F43C / 0x1F43C)
     goto label_1000_F435_1F435;
     label_1000_F43E_1F43E:
     // LODSW SI (1000_F43E / 0x1F43E)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV BP,AX (1000_F43F / 0x1F43F)
     BP = AX;
     // STC  (1000_F441 / 0x1F441)
@@ -77979,7 +75424,7 @@ public partial class Overrides : CSharpOverrideHelper {
     }
     // LODSW SI (1000_F44C / 0x1F44C)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV BP,AX (1000_F44D / 0x1F44D)
     BP = AX;
     // STC  (1000_F44F / 0x1F44F)
@@ -78000,7 +75445,7 @@ public partial class Overrides : CSharpOverrideHelper {
     }
     // LODSW SI (1000_F458 / 0x1F458)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV BP,AX (1000_F459 / 0x1F459)
     BP = AX;
     // STC  (1000_F45B / 0x1F45B)
@@ -78019,7 +75464,7 @@ public partial class Overrides : CSharpOverrideHelper {
     }
     // LODSW SI (1000_F464 / 0x1F464)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV BP,AX (1000_F465 / 0x1F465)
     BP = AX;
     // STC  (1000_F467 / 0x1F467)
@@ -78031,7 +75476,7 @@ public partial class Overrides : CSharpOverrideHelper {
     CX = Alu.Rcl16(CX, 1);
     // LODSB SI (1000_F46C / 0x1F46C)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // MOV AH,0xff (1000_F46D / 0x1F46D)
     AH = 0xFF;
     label_1000_F46F_1F46F:
@@ -78052,11 +75497,13 @@ public partial class Overrides : CSharpOverrideHelper {
     CX = Alu.Inc16(CX);
     // INC CX (1000_F479 / 0x1F479)
     CX = Alu.Inc16(CX);
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSB ES:DI,SI (1000_F47A / 0x1F47A)
       UInt8[ES, DI] = UInt8[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+      SI = (ushort)(SI + Direction8);
+      DI = (ushort)(DI + Direction8);
     }
     // MOV DS,BX (1000_F47C / 0x1F47C)
     DS = BX;
@@ -78067,7 +75514,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_1000_F482_1F482:
     // LODSW SI (1000_F482 / 0x1F482)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV CL,AL (1000_F483 / 0x1F483)
     CL = AL;
     // SHR AX,1 (1000_F485 / 0x1F485)
@@ -78093,7 +75540,7 @@ public partial class Overrides : CSharpOverrideHelper {
     BX = AX;
     // LODSB SI (1000_F495 / 0x1F495)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // MOV CL,AL (1000_F496 / 0x1F496)
     CL = AL;
     // MOV AX,BX (1000_F498 / 0x1F498)
@@ -78137,12 +75584,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(VgaFunc01GetInfoInAxCxBp_334B_0103_335B3, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action VgaFunc01GetInfoInAxCxBp_334B_0103_335B3(int loadOffset) {
@@ -78155,12 +75596,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x3000:3e89 (334B_0103 / 0x335B3)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(not_observed_334B_09D9_033E89, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_334B_0106_335B6, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -78181,12 +75616,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(VgaFunc03DrawMouseCursor_334B_0109_335B9, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action VgaFunc03DrawMouseCursor_334B_0109_335B9(int loadOffset) {
@@ -78199,12 +75628,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x3000:4d38 (334B_0109 / 0x335B9)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(spice86_label_334B_1888_34D38, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(VgaFunc04RestoreImageUnderMouseCursor_334B_010C_335BC, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -78225,12 +75648,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(VgaFunc05Blit_334B_010F_335BF, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action VgaFunc05Blit_334B_010F_335BF(int loadOffset) {
@@ -78243,12 +75660,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x3000:440b (334B_010F / 0x335BF)
     // Jump converted to non entry function call
     if(JumpDispatcher.Jump(not_observed_334B_0D85_034235, 0x3440B - cs1 * 0x10)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_334B_0112_335C2, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -78280,12 +75691,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(VgaFunc08FillWithZeroFor64000AtES_334B_0118_335C8, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action VgaFunc08FillWithZeroFor64000AtES_334B_0118_335C8(int loadOffset) {
@@ -78298,12 +75703,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x3000:4ea7 (334B_0118 / 0x335C8)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(not_observed_334B_19F7_034EA7, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_334B_011B_335CB, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -78324,12 +75723,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_334B_011E_335CE, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_334B_011E_335CE(int loadOffset) {
@@ -78342,12 +75735,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x3000:4e2b (334B_011E / 0x335CE)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(spice86_label_334B_197B_34E2B, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(VgaFunc11MemcpyDSToESFor64000_334B_0121_335D1, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -78368,12 +75755,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(VgaFunc12CopyRectangle_334B_0124_335D4, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action VgaFunc12CopyRectangle_334B_0124_335D4(int loadOffset) {
@@ -78386,12 +75767,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x3000:503e (334B_0124 / 0x335D4)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(CopySquareOfPixels_334B_1B8E_3503E, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(VgaFunc14CopySquareOfPixelsSiIsSourceSegment_334B_012A_335DA, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -78412,12 +75787,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(VgaFunc15MemcpyDSToESFor64000_334B_012D_335DD, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action VgaFunc15MemcpyDSToESFor64000_334B_012D_335DD(int loadOffset) {
@@ -78430,12 +75799,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x3000:502c (334B_012D / 0x335DD)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(MemcpyDSToESFor64000_334B_1B7C_3502C, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(VgaFunc16CopySquareOfPixels_334B_0130_335E0, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -78456,12 +75819,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(VgaFunc17CopyframebufferExplodeAndCenter_334B_0133_335E3, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action VgaFunc17CopyframebufferExplodeAndCenter_334B_0133_335E3(int loadOffset) {
@@ -78474,12 +75831,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x3000:507a (334B_0133 / 0x335E3)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(spice86_label_334B_1BCA_3507A, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_334B_0136_335E6, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -78500,12 +75851,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_334B_0139_335E9, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_334B_0139_335E9(int loadOffset) {
@@ -78518,12 +75863,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x3000:4eb7 (334B_0139 / 0x335E9)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(spice86_label_334B_1A07_34EB7, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(VgaFunc20NoOp_334B_013C_335EC, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -78555,12 +75894,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_334B_0142_335F2, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_334B_0142_335F2(int loadOffset) {
@@ -78573,12 +75906,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x3000:589b (334B_0142 / 0x335F2)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(spice86_label_334B_23EB_3589B, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_334B_0145_335F5, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -78599,12 +75926,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_334B_0148_335F8, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_334B_0148_335F8(int loadOffset) {
@@ -78617,12 +75938,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x3000:51b7 (334B_0148 / 0x335F8)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(UnknownGlobeRelated_334B_1D07_351B7, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_334B_014B_335FB, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -78643,12 +75958,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_334B_014E_335FE, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_334B_014E_335FE(int loadOffset) {
@@ -78661,12 +75970,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x3000:5126 (334B_014E / 0x335FE)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(spice86_label_334B_1C76_35126, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_334B_0151_33601, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -78687,12 +75990,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_334B_0154_33604, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_334B_0154_33604(int loadOffset) {
@@ -78705,12 +76002,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x3000:3e25 (334B_0154 / 0x33604)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(spice86_label_334B_0975_33E25, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_334B_0157_33607, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -78731,12 +76022,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_334B_015A_3360A, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_334B_015A_3360A(int loadOffset) {
@@ -78749,12 +76034,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x3000:66b0 (334B_015A / 0x3360A)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(spice86_label_334B_3200_366B0, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_334B_015D_3360D, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -78775,12 +76054,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_334B_0160_33610, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_334B_0160_33610(int loadOffset) {
@@ -78793,12 +76066,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x3000:3fbc (334B_0160 / 0x33610)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_334B_0B0C_33FBC, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(VgaFunc33UpdateVgaOffset01A3FromLineNumberAsAx_334B_0163_33613, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -78819,12 +76086,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_334B_0169_33619, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_334B_0169_33619(int loadOffset) {
@@ -78837,12 +76098,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x3000:4235 (334B_0169 / 0x33619)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(not_observed_334B_0D85_034235, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(VgaFunc36GenerateTextureOutBP_334B_016C_3361C, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -78863,12 +76118,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_334B_016F_3361F, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_334B_016F_3361F(int loadOffset) {
@@ -78881,12 +76130,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x3000:6ec4 (334B_016F / 0x3361F)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(spice86_label_334B_3A14_36EC4, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_334B_0172_33622, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -78907,12 +76150,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_334B_0175_33625, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_334B_0175_33625(int loadOffset) {
@@ -78925,12 +76162,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x3000:3f87 (334B_0175 / 0x33625)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(spice86_label_334B_0AD7_33F87, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(VgaFunc41CopyPalette2toPalette1_334B_017B_3362B, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -78951,12 +76182,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_334B_017E_3362E, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_334B_017E_3362E(int loadOffset) {
@@ -78969,12 +76194,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x3000:58f1 (334B_017E / 0x3362E)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(spice86_label_334B_2441_358F1, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_334B_0181_33631, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -78995,12 +76214,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_334B_0184_33634, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_334B_0184_33634(int loadOffset) {
@@ -79017,12 +76230,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_334B_0187_33637, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_334B_0187_33637(int loadOffset) {
@@ -79035,12 +76242,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x3000:3f26 (334B_0187 / 0x33637)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(spice86_label_334B_0A76_33F26, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(spice86_label_334B_0967_33E17, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -79142,12 +76343,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x3000:3fbc (334B_09B5 / 0x33E65)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_334B_0B0C_33FBC, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(WaitForRetrace_334B_09B8_33E68, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -79267,12 +76462,14 @@ public partial class Overrides : CSharpOverrideHelper {
     AX = CX;
     // MOV SI,DX (334B_09F4 / 0x33EA4)
     SI = DX;
-    while (CX-- != 0) {
+    // REPE
+    while (CX != 0) {
+      CX--;
       // CMPSB ES:DI,SI (334B_09F6 / 0x33EA6)
       Alu.Sub8(UInt8[DS, SI], UInt8[ES, DI]);
-      SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-      if(ZeroFlag == true) {
+      SI = (ushort)(SI + Direction8);
+      DI = (ushort)(DI + Direction8);
+      if(ZeroFlag != true) {
         break;
       }
     }
@@ -79293,11 +76490,13 @@ public partial class Overrides : CSharpOverrideHelper {
     CX = AX;
     // PUSH CX (334B_0A09 / 0x33EB9)
     Stack.Push(CX);
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSB ES:DI,SI (334B_0A0A / 0x33EBA)
       UInt8[ES, DI] = UInt8[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+      SI = (ushort)(SI + Direction8);
+      DI = (ushort)(DI + Direction8);
     }
     // POP CX (334B_0A0C / 0x33EBC)
     CX = Stack.Pop();
@@ -79310,10 +76509,12 @@ public partial class Overrides : CSharpOverrideHelper {
     DI = Alu.Add16(DI, BX);
     // MOV AL,0x1 (334B_0A15 / 0x33EC5)
     AL = 0x1;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // STOSB ES:DI (334B_0A17 / 0x33EC7)
       UInt8[ES, DI] = AL;
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+      DI = (ushort)(DI + Direction8);
     }
     label_334B_0A19_33EC9:
     // POP ES (334B_0A19 / 0x33EC9)
@@ -79412,11 +76613,13 @@ public partial class Overrides : CSharpOverrideHelper {
     DI = Alu.Add16(DI, BX);
     // MOV SI,DX (334B_0A4E / 0x33EFE)
     SI = DX;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSB ES:DI,SI (334B_0A50 / 0x33F00)
       UInt8[ES, DI] = UInt8[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+      SI = (ushort)(SI + Direction8);
+      DI = (ushort)(DI + Direction8);
     }
     // POP ES (334B_0A52 / 0x33F02)
     ES = Stack.Pop();
@@ -79453,11 +76656,13 @@ public partial class Overrides : CSharpOverrideHelper {
     DI = 0x2BF;
     // MOV CX,0x180 (334B_0A62 / 0x33F12)
     CX = 0x180;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSW ES:DI,SI (334B_0A65 / 0x33F15)
       UInt16[ES, DI] = UInt16[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      SI = (ushort)(SI + Direction16);
+      DI = (ushort)(DI + Direction16);
     }
     // RET  (334B_0A67 / 0x33F17)
     return NearRet();
@@ -79538,7 +76743,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AX = tmp_334B_0A8B;
     // STOSW ES:DI (334B_0A8D / 0x33F3D)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // ADD SI,0x2 (334B_0A8E / 0x33F3E)
     // SI += 0x2;
     SI = Alu.Add16(SI, 0x2);
@@ -79552,10 +76757,12 @@ public partial class Overrides : CSharpOverrideHelper {
     DI = 0x1BE;
     // MOV CX,0x101 (334B_0A98 / 0x33F48)
     CX = 0x101;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // STOSB ES:DI (334B_0A9B / 0x33F4B)
       UInt8[ES, DI] = AL;
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+      DI = (ushort)(DI + Direction8);
     }
     // POP ES (334B_0A9D / 0x33F4D)
     ES = Stack.Pop();
@@ -79632,7 +76839,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_0AF6_33FA6:
     // LODSB SI (334B_0AF6 / 0x33FA6)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // SUB AL,byte ptr [DI] (334B_0AF7 / 0x33FA7)
     // AL -= UInt8[DS, DI];
     AL = Alu.Sub8(AL, UInt8[DS, DI]);
@@ -79645,7 +76852,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AL = Alu.Add8(AL, UInt8[DS, DI]);
     // STOSB ES:DI (334B_0AFE / 0x33FAE)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // LOOP 0x3000:3fa6 (334B_0AFF / 0x33FAF)
     if(--CX != 0) {
       goto label_334B_0AF6_33FA6;
@@ -79663,12 +76870,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x3000:400f (334B_0B0A / 0x33FBA)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(not_observed_334B_0B5F_03400F, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_334B_0B0C_33FBC, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -79719,11 +76920,13 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_0B2A_33FDA:
     // XOR AL,AL (334B_0B2A / 0x33FDA)
     AL = 0;
-    while (CX-- != 0) {
+    // REPE
+    while (CX != 0) {
+      CX--;
       // SCASB ES:DI (334B_0B2C / 0x33FDC)
       Alu.Sub8(AL, UInt8[ES, DI]);
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-      if(ZeroFlag == true) {
+      DI = (ushort)(DI + Direction8);
+      if(ZeroFlag != true) {
         break;
       }
     }
@@ -79737,11 +76940,13 @@ public partial class Overrides : CSharpOverrideHelper {
     CX = Alu.Inc16(CX);
     // MOV BX,CX (334B_0B32 / 0x33FE2)
     BX = CX;
-    while (CX-- != 0) {
+    // REPNE
+    while (CX != 0) {
+      CX--;
       // SCASB ES:DI (334B_0B34 / 0x33FE4)
       Alu.Sub8(AL, UInt8[ES, DI]);
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-      if(ZeroFlag == false) {
+      DI = (ushort)(DI + Direction8);
+      if(ZeroFlag != false) {
         break;
       }
     }
@@ -79793,10 +76998,12 @@ public partial class Overrides : CSharpOverrideHelper {
     CX = 0x80;
     // XOR AX,AX (334B_0B5B / 0x3400B)
     AX = 0;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // STOSW ES:DI (334B_0B5D / 0x3400D)
       UInt16[ES, DI] = AX;
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      DI = (ushort)(DI + Direction16);
     }
     // Function call generated as ASM continues to next function entry point without return
     if(JumpDispatcher.Jump(not_observed_334B_0B5F_03400F, 0)) {
@@ -79926,7 +77133,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_0BA1_34051:
     // LODSB SI (334B_0BA1 / 0x34051)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // OUT DX,AL (334B_0BA2 / 0x34052)
     Cpu.Out8(DX, AL);
     // LOOP 0x3000:4051 (334B_0BA3 / 0x34053)
@@ -79944,7 +77151,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_0BA9_34059:
     // LODSB SI (334B_0BA9 / 0x34059)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // AND AX,0x3f (334B_0BAA / 0x3405A)
     // AX &= 0x3F;
     AX = Alu.And16(AX, 0x3F);
@@ -79961,7 +77168,7 @@ public partial class Overrides : CSharpOverrideHelper {
     BP = Alu.Add16(BP, AX);
     // LODSB SI (334B_0BB5 / 0x34065)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // AND AL,0x3f (334B_0BB6 / 0x34066)
     // AL &= 0x3F;
     AL = Alu.And8(AL, 0x3F);
@@ -79981,7 +77188,7 @@ public partial class Overrides : CSharpOverrideHelper {
     BX = Alu.Add16(BX, AX);
     // LODSB SI (334B_0BC2 / 0x34072)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // AND AL,0x3f (334B_0BC3 / 0x34073)
     // AL &= 0x3F;
     AL = Alu.And8(AL, 0x3F);
@@ -80055,26 +77262,28 @@ public partial class Overrides : CSharpOverrideHelper {
     DI = SI;
     // LODSW SI (334B_0BEA / 0x3409A)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV BL,byte ptr [SI] (334B_0BEB / 0x3409B)
     BL = UInt8[DS, SI];
     // INC SI (334B_0BED / 0x3409D)
     SI = Alu.Inc16(SI);
     // MOV CX,0x5e (334B_0BEE / 0x3409E)
     CX = 0x5E;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSW ES:DI,SI (334B_0BF1 / 0x340A1)
       UInt16[ES, DI] = UInt16[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      SI = (ushort)(SI + Direction16);
+      DI = (ushort)(DI + Direction16);
     }
     // MOVSB ES:DI,SI (334B_0BF3 / 0x340A3)
     UInt8[ES, DI] = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
+    DI = (ushort)(DI + Direction8);
     // STOSW ES:DI (334B_0BF4 / 0x340A4)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // MOV byte ptr [DI],BL (334B_0BF5 / 0x340A5)
     UInt8[DS, DI] = BL;
     // MOV BX,0x80 (334B_0BF7 / 0x340A7)
@@ -80170,7 +77379,7 @@ public partial class Overrides : CSharpOverrideHelper {
     BX = Stack.Pop();
     // STOSB ES:DI (334B_0C32 / 0x340E2)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // RETF  (334B_0C33 / 0x340E3)
     return FarRet();
   }
@@ -80202,7 +77411,6 @@ public partial class Overrides : CSharpOverrideHelper {
     }
     label_334B_0C3B_340EB:
     // MOV BP,0x1234 (334B_0C3B / 0x340EB)
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 334B_13DD_3488D, 334B_0FB4_34464
     BP = 0x1234;
     // SUB DI,BP (334B_0C3E / 0x340EE)
     // DI -= BP;
@@ -80211,13 +77419,12 @@ public partial class Overrides : CSharpOverrideHelper {
     // DI -= BP;
     DI = Alu.Sub16(DI, BP);
     // ADD DI,0x140 (334B_0C42 / 0x340F2)
-    // Instruction bytes at index 1 modified by those instruction(s): 334B_0C74_34124, 334B_0FBE_3446E
     // DI += 0x140;
     DI = Alu.Add16(DI, 0x140);
     label_334B_0C46_340F6:
     // LODSB SI (334B_0C46 / 0x340F6)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // OR AL,AL (334B_0C47 / 0x340F7)
     // AL |= AL;
     AL = Alu.Or8(AL, AL);
@@ -80237,7 +77444,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_0C52_34102:
     // LODSB SI (334B_0C52 / 0x34102)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // MOV AH,AL (334B_0C53 / 0x34103)
     AH = AL;
     // AND AL,DL (334B_0C55 / 0x34105)
@@ -80252,7 +77459,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AL = Alu.Add8(AL, DH);
     // STOSB ES:DI (334B_0C5B / 0x3410B)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // SHR AH,1 (334B_0C5C / 0x3410C)
     // AH >>= 1;
     AH = Alu.Shr8(AH, 1);
@@ -80277,7 +77484,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AL = Alu.Add8(AL, DH);
     // STOSB ES:DI (334B_0C6A / 0x3411A)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // LOOP 0x3000:4102 (334B_0C6B / 0x3411B)
     if(--CX != 0) {
       goto label_334B_0C52_34102;
@@ -80333,7 +77540,7 @@ public partial class Overrides : CSharpOverrideHelper {
     BP = Alu.Sub16(BP, CX);
     // LODSB SI (334B_0C8E / 0x3413E)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // SHL AX,1 (334B_0C8F / 0x3413F)
     // AX <<= 1;
     AX = Alu.Shl16(AX, 1);
@@ -80379,10 +77586,12 @@ public partial class Overrides : CSharpOverrideHelper {
     // ADD AH,DH (334B_0CA9 / 0x34159)
     // AH += DH;
     AH = Alu.Add8(AH, DH);
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // STOSW ES:DI (334B_0CAB / 0x3415B)
       UInt16[ES, DI] = AX;
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      DI = (ushort)(DI + Direction16);
     }
     label_334B_0CAD_3415D:
     // OR BP,BP (334B_0CAD / 0x3415D)
@@ -80428,7 +77637,7 @@ public partial class Overrides : CSharpOverrideHelper {
     DI = Alu.Inc16(DI);
     // STOSB ES:DI (334B_0CC5 / 0x34175)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // LOOP 0x3000:4174 (334B_0CC6 / 0x34176)
     if(--CX != 0) {
       goto label_334B_0CC4_34174;
@@ -80445,7 +77654,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_0CCF_3417F:
     // STOSB ES:DI (334B_0CCF / 0x3417F)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // INC DI (334B_0CD0 / 0x34180)
     DI = Alu.Inc16(DI);
     // LOOP 0x3000:417f (334B_0CD1 / 0x34181)
@@ -80456,7 +77665,6 @@ public partial class Overrides : CSharpOverrideHelper {
     goto label_334B_0CAD_3415D;
     label_334B_0CD5_34185:
     // MOV BP,0x1234 (334B_0CD5 / 0x34185)
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 334B_0FD9_34489
     BP = 0x1234;
     // ADD DI,BP (334B_0CD8 / 0x34188)
     // DI += BP;
@@ -80465,7 +77673,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // DI += BP;
     DI = Alu.Add16(DI, BP);
     // ADD DI,0x140 (334B_0CDC / 0x3418C)
-    // Instruction bytes at index 1 modified by those instruction(s): 334B_0D13_341C3, 334B_0D4A_341FA, 334B_0FE3_34493
     // DI += 0x140;
     DI = Alu.Add16(DI, 0x140);
     label_334B_0CE0_34190:
@@ -80513,7 +77720,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AL = Alu.Add8(AL, DH);
     // STOSB ES:DI (334B_0CF9 / 0x341A9)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // SHR AH,1 (334B_0CFA / 0x341AA)
     // AH >>= 1;
     AH = Alu.Shr8(AH, 1);
@@ -80538,7 +77745,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AL = Alu.Add8(AL, DH);
     // STOSB ES:DI (334B_0D08 / 0x341B8)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // LOOP 0x3000:419e (334B_0D09 / 0x341B9)
     if(--CX != 0) {
       goto label_334B_0CEE_3419E;
@@ -80603,12 +77810,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_334B_0D2F_0341DF, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action not_observed_334B_0D2F_0341DF(int loadOffset) {
@@ -80628,7 +77829,7 @@ public partial class Overrides : CSharpOverrideHelper {
     DI = Alu.Dec16(DI);
     // STOSB ES:DI (334B_0D34 / 0x341E4)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // LOOP 0x3000:41e3 (334B_0D35 / 0x341E5)
     if(--CX != 0) {
       goto label_334B_0D33_341E3;
@@ -80652,12 +77853,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_334B_0D3E_0341EE, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action not_observed_334B_0D3E_0341EE(int loadOffset) {
@@ -80671,7 +77866,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_0D3E_341EE:
     // STOSB ES:DI (334B_0D3E / 0x341EE)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // DEC DI (334B_0D3F / 0x341EF)
     DI = Alu.Dec16(DI);
     // LOOP 0x3000:41ee (334B_0D40 / 0x341F0)
@@ -80785,10 +77980,12 @@ public partial class Overrides : CSharpOverrideHelper {
     byte tmp_334B_0D7A = AL;
     AL = AH;
     AH = tmp_334B_0D7A;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // STOSW ES:DI (334B_0D7C / 0x3422C)
       UInt16[ES, DI] = AX;
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      DI = (ushort)(DI + Direction16);
     }
     // INC DI (334B_0D7E / 0x3422E)
     DI = Alu.Inc16(DI);
@@ -80876,7 +78073,6 @@ public partial class Overrides : CSharpOverrideHelper {
     UInt16[cs2, 0xD83] = BX;
     label_334B_0DDD_3428D:
     // MOV AX,0x1234 (334B_0DDD / 0x3428D)
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 334B_0DA2_34252
     AX = 0x1234;
     // PUSH SI (334B_0DE0 / 0x34290)
     Stack.Push(SI);
@@ -80934,7 +78130,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AL = Alu.Add8(AL, AH);
     // STOSB ES:DI (334B_0E0A / 0x342BA)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // ADD DX,BP (334B_0E0B / 0x342BB)
     // DX += BP;
     DX = Alu.Add16(DX, BP);
@@ -80950,7 +78146,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // POP SI (334B_0E11 / 0x342C1)
     SI = Stack.Pop();
     // ADD DI,0x140 (334B_0E12 / 0x342C2)
-    // Instruction bytes at index 1 modified by those instruction(s): 334B_0DA7_34257, 334B_0DB2_34262
     // DI += 0x140;
     DI = Alu.Add16(DI, 0x140);
     // MOV BX,word ptr CS:[0xd83] (334B_0E16 / 0x342C6)
@@ -80970,7 +78165,6 @@ public partial class Overrides : CSharpOverrideHelper {
     return FarRet();
     label_334B_0E26_342D6:
     // INC DI (334B_0E26 / 0x342D6)
-    // Instruction bytes at index 0 modified by those instruction(s): 334B_0DBB_3426B, 334B_0DC6_34276
     DI = Alu.Inc16(DI);
     // ADD DX,BP (334B_0E27 / 0x342D7)
     // DX += BP;
@@ -80988,13 +78182,12 @@ public partial class Overrides : CSharpOverrideHelper {
     // DI -= BP;
     DI = Alu.Sub16(DI, BP);
     // ADD DI,0x140 (334B_0E31 / 0x342E1)
-    // Instruction bytes at index 1 modified by those instruction(s): 334B_0E51_34301
     // DI += 0x140;
     DI = Alu.Add16(DI, 0x140);
     label_334B_0E35_342E5:
     // LODSB SI (334B_0E35 / 0x342E5)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // OR AL,AL (334B_0E36 / 0x342E6)
     // AL |= AL;
     AL = Alu.Or8(AL, AL);
@@ -81014,7 +78207,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_0E41_342F1:
     // LODSB SI (334B_0E41 / 0x342F1)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // OR AL,AL (334B_0E42 / 0x342F2)
     // AL |= AL;
     AL = Alu.Or8(AL, AL);
@@ -81024,7 +78217,7 @@ public partial class Overrides : CSharpOverrideHelper {
     }
     // STOSB ES:DI (334B_0E46 / 0x342F6)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // LOOP 0x3000:42f1 (334B_0E47 / 0x342F7)
     if(--CX != 0) {
       goto label_334B_0E41_342F1;
@@ -81086,7 +78279,7 @@ public partial class Overrides : CSharpOverrideHelper {
     BP = Alu.Sub16(BP, CX);
     // LODSB SI (334B_0E73 / 0x34323)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // OR AL,AL (334B_0E74 / 0x34324)
     // AL |= AL;
     AL = Alu.Or8(AL, AL);
@@ -81094,10 +78287,12 @@ public partial class Overrides : CSharpOverrideHelper {
     if(ZeroFlag) {
       goto label_334B_0E83_34333;
     }
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // STOSB ES:DI (334B_0E78 / 0x34328)
       UInt8[ES, DI] = AL;
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+      DI = (ushort)(DI + Direction8);
     }
     // OR BP,BP (334B_0E7A / 0x3432A)
     // BP |= BP;
@@ -81177,7 +78372,7 @@ public partial class Overrides : CSharpOverrideHelper {
     }
     // STOSB ES:DI (334B_0EAB / 0x3435B)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // LOOP 0x3000:4354 (334B_0EAC / 0x3435C)
     if(--CX != 0) {
       goto label_334B_0EA4_34354;
@@ -81241,10 +78436,12 @@ public partial class Overrides : CSharpOverrideHelper {
     if(ZeroFlag) {
       goto label_334B_0EDF_3438F;
     }
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // STOSB ES:DI (334B_0ED3 / 0x34383)
       UInt8[ES, DI] = AL;
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+      DI = (ushort)(DI + Direction8);
     }
     // OR BP,BP (334B_0ED5 / 0x34385)
     // BP |= BP;
@@ -81287,13 +78484,12 @@ public partial class Overrides : CSharpOverrideHelper {
     // DI -= BP;
     DI = Alu.Sub16(DI, BP);
     // ADD DI,0x140 (334B_0EEF / 0x3439F)
-    // Instruction bytes at index 1 modified by those instruction(s): 334B_0E57_34307
     // DI += 0x140;
     DI = Alu.Add16(DI, 0x140);
     label_334B_0EF3_343A3:
     // LODSB SI (334B_0EF3 / 0x343A3)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // OR AL,AL (334B_0EF4 / 0x343A4)
     // AL |= AL;
     AL = Alu.Or8(AL, AL);
@@ -81310,11 +78506,13 @@ public partial class Overrides : CSharpOverrideHelper {
     // SUB BP,CX (334B_0EFD / 0x343AD)
     // BP -= CX;
     BP = Alu.Sub16(BP, CX);
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSB ES:DI,SI (334B_0EFF / 0x343AF)
       UInt8[ES, DI] = UInt8[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+      SI = (ushort)(SI + Direction8);
+      DI = (ushort)(DI + Direction8);
     }
     // JA 0x3000:43a3 (334B_0F01 / 0x343B1)
     if(!CarryFlag && !ZeroFlag) {
@@ -81341,11 +78539,13 @@ public partial class Overrides : CSharpOverrideHelper {
     BP = Alu.Sub16(BP, CX);
     // LODSB SI (334B_0F12 / 0x343C2)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-    while (CX-- != 0) {
+    SI = (ushort)(SI + Direction8);
+    // REP
+    while (CX != 0) {
+      CX--;
       // STOSB ES:DI (334B_0F13 / 0x343C3)
       UInt8[ES, DI] = AL;
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+      DI = (ushort)(DI + Direction8);
     }
     // JA 0x3000:43a3 (334B_0F15 / 0x343C5)
     if(!CarryFlag && !ZeroFlag) {
@@ -81396,7 +78596,7 @@ public partial class Overrides : CSharpOverrideHelper {
     SI = Alu.Inc16(SI);
     // STOSB ES:DI (334B_0F36 / 0x343E6)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // LOOP 0x3000:43e3 (334B_0F37 / 0x343E7)
     if(--CX != 0) {
       goto label_334B_0F33_343E3;
@@ -81431,10 +78631,12 @@ public partial class Overrides : CSharpOverrideHelper {
     AL = UInt8[DS, SI];
     // INC SI (334B_0F4E / 0x343FE)
     SI = Alu.Inc16(SI);
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // STOSB ES:DI (334B_0F4F / 0x343FF)
       UInt8[ES, DI] = AL;
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+      DI = (ushort)(DI + Direction8);
     }
     // OR BP,BP (334B_0F51 / 0x34401)
     // BP |= BP;
@@ -81650,12 +78852,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_334B_100A_0344BA, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action not_observed_334B_100A_0344BA(int loadOffset) {
@@ -81705,11 +78901,13 @@ public partial class Overrides : CSharpOverrideHelper {
     CX = BP;
     // MOV DI,AX (334B_102A / 0x344DA)
     DI = AX;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSW ES:DI,SI (334B_102C / 0x344DC)
       UInt16[ES, DI] = UInt16[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      SI = (ushort)(SI + Direction16);
+      DI = (ushort)(DI + Direction16);
     }
     // ADD AX,0x140 (334B_102E / 0x344DE)
     // AX += 0x140;
@@ -81727,16 +78925,18 @@ public partial class Overrides : CSharpOverrideHelper {
     CX = BP;
     // MOV DI,AX (334B_1037 / 0x344E7)
     DI = AX;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSW ES:DI,SI (334B_1039 / 0x344E9)
       UInt16[ES, DI] = UInt16[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      SI = (ushort)(SI + Direction16);
+      DI = (ushort)(DI + Direction16);
     }
     // MOVSB ES:DI,SI (334B_103B / 0x344EB)
     UInt8[ES, DI] = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
+    DI = (ushort)(DI + Direction8);
     // ADD AX,0x140 (334B_103C / 0x344EC)
     // AX += 0x140;
     AX = Alu.Add16(AX, 0x140);
@@ -81759,7 +78959,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_1049_344F9:
     // LODSB SI (334B_1049 / 0x344F9)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // OR AL,AL (334B_104A / 0x344FA)
     // AL |= AL;
     AL = Alu.Or8(AL, AL);
@@ -81769,7 +78969,7 @@ public partial class Overrides : CSharpOverrideHelper {
     }
     // STOSB ES:DI (334B_104E / 0x344FE)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // LOOP 0x3000:44f9 (334B_104F / 0x344FF)
     if(--CX != 0) {
       goto label_334B_1049_344F9;
@@ -81957,12 +79157,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_334B_10E2_034592, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action not_observed_334B_10E2_034592(int loadOffset) {
@@ -81999,7 +79193,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_10F4_345A4:
     // LODSB SI (334B_10F4 / 0x345A4)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // XOR AH,AH (334B_10F5 / 0x345A5)
     AH = 0;
     // MOV DL,AL (334B_10F7 / 0x345A7)
@@ -82043,7 +79237,7 @@ public partial class Overrides : CSharpOverrideHelper {
     }
     // LODSB SI (334B_1114 / 0x345C4)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // JMP 0x3000:45e2 (334B_1115 / 0x345C5)
     goto label_334B_1132_345E2;
     label_334B_1117_345C7:
@@ -82148,12 +79342,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_334B_1151_034601, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action not_observed_334B_1151_034601(int loadOffset) {
@@ -82168,7 +79356,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_1151_34601:
     // LODSB SI (334B_1151 / 0x34601)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // XOR AH,AH (334B_1152 / 0x34602)
     AH = 0;
     // MOV DL,AL (334B_1154 / 0x34604)
@@ -82202,7 +79390,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_1165_34615:
     // LODSB SI (334B_1165 / 0x34615)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // MOV AH,AL (334B_1166 / 0x34616)
     AH = AL;
     // AND AL,0xf (334B_1168 / 0x34618)
@@ -82217,7 +79405,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AL = Alu.Add8(AL, DH);
     // STOSB ES:DI (334B_116E / 0x3461E)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // SHR AH,1 (334B_116F / 0x3461F)
     // AH >>= 1;
     AH = Alu.Shr8(AH, 1);
@@ -82242,7 +79430,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AL = Alu.Add8(AL, DH);
     // STOSB ES:DI (334B_117D / 0x3462D)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // LOOP 0x3000:4615 (334B_117E / 0x3462E)
     if(--CX != 0) {
       goto label_334B_1165_34615;
@@ -82374,10 +79562,12 @@ public partial class Overrides : CSharpOverrideHelper {
     // ADD AH,DH (334B_11CD / 0x3467D)
     // AH += DH;
     AH = Alu.Add8(AH, DH);
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // STOSW ES:DI (334B_11CF / 0x3467F)
       UInt16[ES, DI] = AX;
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      DI = (ushort)(DI + Direction16);
     }
     label_334B_11D1_34681:
     // OR BP,BP (334B_11D1 / 0x34681)
@@ -82409,7 +79599,7 @@ public partial class Overrides : CSharpOverrideHelper {
     DI = Alu.Inc16(DI);
     // STOSB ES:DI (334B_11E3 / 0x34693)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // LOOP 0x3000:4692 (334B_11E4 / 0x34694)
     if(--CX != 0) {
       goto label_334B_11E2_34692;
@@ -82419,7 +79609,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_11E8_34698:
     // STOSB ES:DI (334B_11E8 / 0x34698)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // INC DI (334B_11E9 / 0x34699)
     DI = Alu.Inc16(DI);
     // LOOP 0x3000:4698 (334B_11EA / 0x3469A)
@@ -82448,12 +79638,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x3000:4716 (334B_11FC / 0x346AC)
     // Jump converted to non entry function call
     if(JumpDispatcher.Jump(not_observed_334B_11FF_0346AF, 0x34716 - cs1 * 0x10)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_334B_11FF_0346AF, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -82493,7 +79677,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_120C_346BC:
     // LODSB SI (334B_120C / 0x346BC)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // XOR AH,AH (334B_120D / 0x346BD)
     AH = 0;
     // MOV DL,AL (334B_120F / 0x346BF)
@@ -82537,7 +79721,7 @@ public partial class Overrides : CSharpOverrideHelper {
     }
     // LODSB SI (334B_122C / 0x346DC)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // JMP 0x3000:46fa (334B_122D / 0x346DD)
     goto label_334B_124A_346FA;
     label_334B_122F_346DF:
@@ -82648,12 +79832,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_334B_1272_034722, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action not_observed_334B_1272_034722(int loadOffset) {
@@ -82669,7 +79847,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_1272_34722:
     // LODSB SI (334B_1272 / 0x34722)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // XOR AH,AH (334B_1273 / 0x34723)
     AH = 0;
     // MOV DL,AL (334B_1275 / 0x34725)
@@ -82703,7 +79881,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_1286_34736:
     // LODSB SI (334B_1286 / 0x34736)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // MOV AH,AL (334B_1287 / 0x34737)
     AH = AL;
     // AND AL,0xf (334B_1289 / 0x34739)
@@ -82723,7 +79901,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AL = Alu.Add8(AL, DH);
     // STOSB ES:DI (334B_128F / 0x3473F)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // SHR AH,1 (334B_1290 / 0x34740)
     // AH >>= 1;
     AH = Alu.Shr8(AH, 1);
@@ -82753,7 +79931,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AL = Alu.Add8(AL, DH);
     // STOSB ES:DI (334B_129E / 0x3474E)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // LOOP 0x3000:4736 (334B_129F / 0x3474F)
     if(--CX != 0) {
       goto label_334B_1286_34736;
@@ -82787,16 +79965,10 @@ public partial class Overrides : CSharpOverrideHelper {
     }
     // LODSB SI (334B_12B3 / 0x34763)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // JMP 0x3000:47ce (334B_12B4 / 0x34764)
     // Jump converted to non entry function call
     if(JumpDispatcher.Jump(not_observed_334B_12C7_034777, 0x347CE - cs1 * 0x10)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_334B_12B7_034767, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -82844,7 +80016,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    throw FailAsUntested("Function does not end with return and no other function found after the body at address 0x34771");
   }
   
   public Action not_observed_334B_12C7_034777(int loadOffset) {
@@ -82918,10 +80089,12 @@ public partial class Overrides : CSharpOverrideHelper {
     // ADD AH,DH (334B_12EC / 0x3479C)
     // AH += DH;
     AH = Alu.Add8(AH, DH);
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // STOSW ES:DI (334B_12EE / 0x3479E)
       UInt16[ES, DI] = AX;
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      DI = (ushort)(DI + Direction16);
     }
     // JMP 0x3000:47b6 (334B_12F0 / 0x347A0)
     goto label_334B_1306_347B6;
@@ -82945,7 +80118,7 @@ public partial class Overrides : CSharpOverrideHelper {
     DI = Alu.Inc16(DI);
     // STOSB ES:DI (334B_12FD / 0x347AD)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // LOOP 0x3000:47ac (334B_12FE / 0x347AE)
     if(--CX != 0) {
       goto label_334B_12FC_347AC;
@@ -82955,7 +80128,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_1302_347B2:
     // STOSB ES:DI (334B_1302 / 0x347B2)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // INC DI (334B_1303 / 0x347B3)
     DI = Alu.Inc16(DI);
     // LOOP 0x3000:47b2 (334B_1304 / 0x347B4)
@@ -83042,7 +80215,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_1338_347E8:
     // LODSB SI (334B_1338 / 0x347E8)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // XOR AH,AH (334B_1339 / 0x347E9)
     AH = 0;
     // MOV DL,AL (334B_133B / 0x347EB)
@@ -83191,7 +80364,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_13A1_34851:
     // LODSB SI (334B_13A1 / 0x34851)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // OR AL,AL (334B_13A2 / 0x34852)
     // AL |= AL;
     AL = Alu.Or8(AL, AL);
@@ -83401,7 +80574,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    throw FailAsUntested("Function does not end with return and no other function found after the body at address 0x348FF");
   }
   
   public Action not_observed_334B_14B8_034968(int loadOffset) {
@@ -83513,15 +80685,10 @@ public partial class Overrides : CSharpOverrideHelper {
         }
         return JumpDispatcher.JumpAsmReturn!;
       }
-      default: throw FailAsUntested("Error: Jump not registered at address " + targetAddress_334B_14F3);
+      default: throw FailAsUntested("Error: Jump not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_334B_14F3));
         break;
     }
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_334B_14FD_0349AD, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
+    throw FailAsUntested("Function does not end with return and no instruction after the body ...");
   }
   
   public Action not_observed_334B_14FD_0349AD(int loadOffset) {
@@ -83673,15 +80840,10 @@ public partial class Overrides : CSharpOverrideHelper {
         }
         return JumpDispatcher.JumpAsmReturn!;
       }
-      default: throw FailAsUntested("Error: Jump not registered at address " + targetAddress_334B_1580);
+      default: throw FailAsUntested("Error: Jump not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_334B_1580));
         break;
     }
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_334B_158A_034A3A, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
+    throw FailAsUntested("Function does not end with return and no instruction after the body ...");
   }
   
   public Action not_observed_334B_158A_034A3A(int loadOffset) {
@@ -83692,14 +80854,13 @@ public partial class Overrides : CSharpOverrideHelper {
     
     label_334B_158A_34A3A:
     // MOV BP,0x1234 (334B_158A / 0x34A3A)
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 334B_137D_3482D, 334B_1465_34915, 334B_14A9_34959, 334B_14B9_34969, 334B_14FD_349AD, 334B_0F7E_3442E
     BP = 0x1234;
     // PUSH DI (334B_158D / 0x34A3D)
     Stack.Push(DI);
     label_334B_158E_34A3E:
     // LODSW SI (334B_158E / 0x34A3E)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV BL,AL (334B_158F / 0x34A3F)
     BL = AL;
     // AND AL,DL (334B_1591 / 0x34A41)
@@ -83714,7 +80875,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AL = Alu.Add8(AL, DH);
     // STOSB ES:DI (334B_1597 / 0x34A47)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // SHR BL,1 (334B_1598 / 0x34A48)
     // BL >>= 1;
     BL = Alu.Shr8(BL, 1);
@@ -83739,7 +80900,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AL = Alu.Add8(AL, DH);
     // STOSB ES:DI (334B_15A6 / 0x34A56)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // MOV AL,AH (334B_15A7 / 0x34A57)
     AL = AH;
     label_334B_15A9_34A59:
@@ -83755,7 +80916,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AL = Alu.Add8(AL, DH);
     // STOSB ES:DI (334B_15AF / 0x34A5F)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // SHR AH,1 (334B_15B0 / 0x34A60)
     // AH >>= 1;
     AH = Alu.Shr8(AH, 1);
@@ -83780,7 +80941,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AL = Alu.Add8(AL, DH);
     // STOSB ES:DI (334B_15BE / 0x34A6E)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // DEC BP (334B_15BF / 0x34A6F)
     BP = Alu.Dec16(BP);
     // JNZ 0x3000:4a3e (334B_15C0 / 0x34A70)
@@ -83916,7 +81077,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_1602_34AB2:
     // LODSW SI (334B_1602 / 0x34AB2)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV BL,AL (334B_1603 / 0x34AB3)
     BL = AL;
     // AND AL,DL (334B_1605 / 0x34AB5)
@@ -83931,7 +81092,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AL = Alu.Add8(AL, DH);
     // STOSB ES:DI (334B_160B / 0x34ABB)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // SHR BL,1 (334B_160C / 0x34ABC)
     // BL >>= 1;
     BL = Alu.Shr8(BL, 1);
@@ -83956,7 +81117,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AL = Alu.Add8(AL, DH);
     // STOSB ES:DI (334B_161A / 0x34ACA)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // MOV AL,AH (334B_161B / 0x34ACB)
     AL = AH;
     label_334B_161D_34ACD:
@@ -83972,7 +81133,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AL = Alu.Add8(AL, DH);
     // STOSB ES:DI (334B_1623 / 0x34AD3)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // SHR AH,1 (334B_1624 / 0x34AD4)
     // AH >>= 1;
     AH = Alu.Shr8(AH, 1);
@@ -83998,7 +81159,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AL = Alu.Add8(AL, DH);
     // STOSB ES:DI (334B_1632 / 0x34AE2)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // DEC BP (334B_1633 / 0x34AE3)
     BP = Alu.Dec16(BP);
     // JNZ 0x3000:4ab2 (334B_1634 / 0x34AE4)
@@ -84110,7 +81271,7 @@ public partial class Overrides : CSharpOverrideHelper {
     Stack.Push(DI);
     // LODSB SI (334B_1675 / 0x34B25)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // CMP AL,DL (334B_1676 / 0x34B26)
     Alu.Sub8(AL, DL);
     // JBE 0x3000:4b18 (334B_1678 / 0x34B28)
@@ -84149,18 +81310,12 @@ public partial class Overrides : CSharpOverrideHelper {
     Stack.Push(DI);
     // LODSB SI (334B_168B / 0x34B3B)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // MOV AH,AL (334B_168C / 0x34B3C)
     AH = AL;
     // JMP 0x3000:4acd (334B_168E / 0x34B3E)
     // Jump converted to non entry function call
     if(JumpDispatcher.Jump(not_observed_334B_166E_034B1E, 0x34ACD - cs1 * 0x10)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_334B_1690_034B40, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -84183,7 +81338,7 @@ public partial class Overrides : CSharpOverrideHelper {
     Stack.Push(DI);
     // LODSW SI (334B_1697 / 0x34B47)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // AND AL,0xf0 (334B_1698 / 0x34B48)
     // AL &= 0xF0;
     AL = Alu.And8(AL, 0xF0);
@@ -84215,12 +81370,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_334B_16A7_034B57, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action not_observed_334B_16A7_034B57(int loadOffset) {
@@ -84232,12 +81381,10 @@ public partial class Overrides : CSharpOverrideHelper {
     }
     label_334B_16A7_34B57:
     // ADD SI,0x12 (334B_16A7 / 0x34B57)
-    // Instruction bytes at index 2 modified by those instruction(s): 334B_151E_349CE
     // SI += 0x12;
     SI = Alu.Add16(SI, 0x12);
     label_334B_16AA_34B5A:
     // MOV BP,0x1234 (334B_16AA / 0x34B5A)
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 334B_150F_349BF
     BP = 0x1234;
     // PUSH DI (334B_16AD / 0x34B5D)
     Stack.Push(DI);
@@ -84247,7 +81394,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_16B0_34B60:
     // LODSW SI (334B_16B0 / 0x34B60)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV BL,AL (334B_16B1 / 0x34B61)
     BL = AL;
     // AND AL,DL (334B_16B3 / 0x34B63)
@@ -84262,7 +81409,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AL = Alu.Add8(AL, DH);
     // STOSB ES:DI (334B_16B9 / 0x34B69)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // CMP DI,BP (334B_16BA / 0x34B6A)
     Alu.Sub16(DI, BP);
     // JNC 0x3000:4ba1 (334B_16BC / 0x34B6C)
@@ -84293,7 +81440,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AL = Alu.Add8(AL, DH);
     // STOSB ES:DI (334B_16CC / 0x34B7C)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // CMP DI,BP (334B_16CD / 0x34B7D)
     Alu.Sub16(DI, BP);
     // JNC 0x3000:4ba1 (334B_16CF / 0x34B7F)
@@ -84315,7 +81462,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AL = Alu.Add8(AL, DH);
     // STOSB ES:DI (334B_16D9 / 0x34B89)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // CMP DI,BP (334B_16DA / 0x34B8A)
     Alu.Sub16(DI, BP);
     // JNC 0x3000:4ba1 (334B_16DC / 0x34B8C)
@@ -84346,7 +81493,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AL = Alu.Add8(AL, DH);
     // STOSB ES:DI (334B_16EC / 0x34B9C)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     label_334B_16ED_34B9D:
     // CMP DI,BP (334B_16ED / 0x34B9D)
     Alu.Sub16(DI, BP);
@@ -84463,7 +81610,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_1731_34BE1:
     // LODSW SI (334B_1731 / 0x34BE1)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV BL,AL (334B_1732 / 0x34BE2)
     BL = AL;
     // AND AL,DL (334B_1734 / 0x34BE4)
@@ -84478,7 +81625,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AL = Alu.Add8(AL, DH);
     // STOSB ES:DI (334B_173A / 0x34BEA)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // CMP DI,BP (334B_173B / 0x34BEB)
     Alu.Sub16(DI, BP);
     // JNC 0x3000:4c22 (334B_173D / 0x34BED)
@@ -84509,7 +81656,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AL = Alu.Add8(AL, DH);
     // STOSB ES:DI (334B_174D / 0x34BFD)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // CMP DI,BP (334B_174E / 0x34BFE)
     Alu.Sub16(DI, BP);
     // JNC 0x3000:4c22 (334B_1750 / 0x34C00)
@@ -84531,7 +81678,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AL = Alu.Add8(AL, DH);
     // STOSB ES:DI (334B_175A / 0x34C0A)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // CMP DI,BP (334B_175B / 0x34C0B)
     Alu.Sub16(DI, BP);
     // JNC 0x3000:4c22 (334B_175D / 0x34C0D)
@@ -84562,7 +81709,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AL = Alu.Add8(AL, DH);
     // STOSB ES:DI (334B_176D / 0x34C1D)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     label_334B_176E_34C1E:
     // CMP DI,BP (334B_176E / 0x34C1E)
     Alu.Sub16(DI, BP);
@@ -84679,7 +81826,7 @@ public partial class Overrides : CSharpOverrideHelper {
     BP = Alu.Add16(BP, DI);
     // LODSW SI (334B_17D8 / 0x34C88)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // AND AL,0xf0 (334B_17D9 / 0x34C89)
     // AL &= 0xF0;
     AL = Alu.And8(AL, 0xF0);
@@ -84707,12 +81854,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x3000:4bfb (334B_17E5 / 0x34C95)
     // Jump converted to non entry function call
     if(JumpDispatcher.Jump(not_observed_334B_1728_034BD8, 0x34BFB - cs1 * 0x10)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_334B_17E8_034C98, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -84830,12 +81971,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_334B_1825_034CD5, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action not_observed_334B_1825_034CD5(int loadOffset) {
@@ -84884,7 +82019,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_183B_34CEB:
     // LODSB SI (334B_183B / 0x34CEB)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // OR AL,AL (334B_183C / 0x34CEC)
     // AL |= AL;
     AL = Alu.Or8(AL, AL);
@@ -84894,7 +82029,7 @@ public partial class Overrides : CSharpOverrideHelper {
     }
     // STOSB ES:DI (334B_1840 / 0x34CF0)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // LOOP 0x3000:4ceb (334B_1841 / 0x34CF1)
     if(--CX != 0) {
       goto label_334B_183B_34CEB;
@@ -84998,7 +82133,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_1888_34D38:
     // LODSW SI (334B_1888 / 0x34D38)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // SUB DX,AX (334B_1889 / 0x34D39)
     // DX -= AX;
     DX = Alu.Sub16(DX, AX);
@@ -85011,7 +82146,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_188F_34D3F:
     // LODSW SI (334B_188F / 0x34D3F)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // SUB BX,AX (334B_1890 / 0x34D40)
     // BX -= AX;
     BX = Alu.Sub16(BX, AX);
@@ -85078,7 +82213,7 @@ public partial class Overrides : CSharpOverrideHelper {
     BP = UInt16[DS, (ushort)(SI + 0x20)];
     // LODSW SI (334B_18E0 / 0x34D90)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV DX,AX (334B_18E1 / 0x34D91)
     DX = AX;
     // JCXZ 0x3000:4dc1 (334B_18E3 / 0x34D93)
@@ -85135,7 +82270,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_190E_34DBE:
     // STOSW ES:DI (334B_190E / 0x34DBE)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // LOOP 0x3000:4d95 (334B_190F / 0x34DBF)
     if(--CX != 0) {
       goto label_334B_18E5_34D95;
@@ -85178,7 +82313,7 @@ public partial class Overrides : CSharpOverrideHelper {
     DI = Alu.Dec16(DI);
     // STOSB ES:DI (334B_192E / 0x34DDE)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     label_334B_192F_34DDF:
     // SUB DI,word ptr CS:[0x18c] (334B_192F / 0x34DDF)
     // DI -= UInt16[cs2, 0x18C];
@@ -85240,11 +82375,13 @@ public partial class Overrides : CSharpOverrideHelper {
     DI = BP;
     // MOV CX,BX (334B_1964 / 0x34E14)
     CX = BX;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSB ES:DI,SI (334B_1966 / 0x34E16)
       UInt8[ES, DI] = UInt8[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+      SI = (ushort)(SI + Direction8);
+      DI = (ushort)(DI + Direction8);
     }
     // ADD BP,0x140 (334B_1968 / 0x34E18)
     // BP += 0x140;
@@ -85307,19 +82444,19 @@ public partial class Overrides : CSharpOverrideHelper {
     Stack.Push(AX);
     // LODSW SI (334B_197E / 0x34E2E)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV DX,AX (334B_197F / 0x34E2F)
     DX = AX;
     // LODSW SI (334B_1981 / 0x34E31)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV BX,AX (334B_1982 / 0x34E32)
     BX = AX;
     // CALL 0x3000:40c0 (334B_1984 / 0x34E34)
     NearCall(cs2, 0x1987, SetDiFromXYCordsDxBx_334B_0C10_340C0);
     // LODSW SI (334B_1987 / 0x34E37)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV BP,AX (334B_1988 / 0x34E38)
     BP = AX;
     // SUB BP,DX (334B_198A / 0x34E3A)
@@ -85331,7 +82468,7 @@ public partial class Overrides : CSharpOverrideHelper {
     }
     // LODSW SI (334B_198E / 0x34E3E)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // SUB BX,AX (334B_198F / 0x34E3F)
     // BX -= AX;
     BX = Alu.Sub16(BX, AX);
@@ -85363,10 +82500,12 @@ public partial class Overrides : CSharpOverrideHelper {
     DI = SI;
     // MOV CX,BP (334B_19A0 / 0x34E50)
     CX = BP;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // STOSW ES:DI (334B_19A2 / 0x34E52)
       UInt16[ES, DI] = AX;
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      DI = (ushort)(DI + Direction16);
     }
     // ADD SI,0x140 (334B_19A4 / 0x34E54)
     // SI += 0x140;
@@ -85389,14 +82528,16 @@ public partial class Overrides : CSharpOverrideHelper {
     DI = SI;
     // MOV CX,BP (334B_19B0 / 0x34E60)
     CX = BP;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // STOSW ES:DI (334B_19B2 / 0x34E62)
       UInt16[ES, DI] = AX;
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      DI = (ushort)(DI + Direction16);
     }
     // STOSB ES:DI (334B_19B4 / 0x34E64)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // ADD SI,0x140 (334B_19B5 / 0x34E65)
     // SI += 0x140;
     SI = Alu.Add16(SI, 0x140);
@@ -85414,7 +82555,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_19BF_34E6F:
     // STOSB ES:DI (334B_19BF / 0x34E6F)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // ADD DI,0x13f (334B_19C0 / 0x34E70)
     // DI += 0x13F;
     DI = Alu.Add16(DI, 0x13F);
@@ -85460,11 +82601,13 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_19E3_34E93:
     // MOV CX,DX (334B_19E3 / 0x34E93)
     CX = DX;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSB ES:DI,SI (334B_19E5 / 0x34E95)
       UInt8[ES, DI] = UInt8[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+      SI = (ushort)(SI + Direction8);
+      DI = (ushort)(DI + Direction8);
     }
     // SUB SI,DX (334B_19E7 / 0x34E97)
     // SI -= DX;
@@ -85507,10 +82650,12 @@ public partial class Overrides : CSharpOverrideHelper {
     AX = 0;
     // MOV CX,0x7d00 (334B_19FE / 0x34EAE)
     CX = 0x7D00;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // STOSW ES:DI (334B_1A01 / 0x34EB1)
       UInt16[ES, DI] = AX;
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      DI = (ushort)(DI + Direction16);
     }
     // POP DI (334B_1A03 / 0x34EB3)
     DI = Stack.Pop();
@@ -85649,7 +82794,7 @@ public partial class Overrides : CSharpOverrideHelper {
     }
     // STOSB ES:DI (334B_1A7D / 0x34F2D)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // DEC DI (334B_1A7E / 0x34F2E)
     DI = Alu.Dec16(DI);
     label_334B_1A7F_34F2F:
@@ -85745,7 +82890,7 @@ public partial class Overrides : CSharpOverrideHelper {
     }
     // STOSB ES:DI (334B_1AD0 / 0x34F80)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // DEC DI (334B_1AD1 / 0x34F81)
     DI = Alu.Dec16(DI);
     label_334B_1AD2_34F82:
@@ -85935,7 +83080,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AL = UInt8[cs2, 0x19C];
     // STOSB ES:DI (334B_1B71 / 0x35021)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     label_334B_1B72_35022:
     // POP DI (334B_1B72 / 0x35022)
     DI = Stack.Pop();
@@ -85976,11 +83121,13 @@ public partial class Overrides : CSharpOverrideHelper {
     DI = SI;
     // MOV CX,0x7d00 (334B_1B83 / 0x35033)
     CX = 0x7D00;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSW ES:DI,SI (334B_1B86 / 0x35036)
       UInt16[ES, DI] = UInt16[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      SI = (ushort)(SI + Direction16);
+      DI = (ushort)(DI + Direction16);
     }
     // POP DI (334B_1B88 / 0x35038)
     DI = Stack.Pop();
@@ -86040,11 +83187,13 @@ public partial class Overrides : CSharpOverrideHelper {
     DI = SI;
     // MOV CX,BP (334B_1B9D / 0x3504D)
     CX = BP;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSW ES:DI,SI (334B_1B9F / 0x3504F)
       UInt16[ES, DI] = UInt16[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      SI = (ushort)(SI + Direction16);
+      DI = (ushort)(DI + Direction16);
     }
     // ADD DX,0x140 (334B_1BA1 / 0x35051)
     // DX += 0x140;
@@ -86071,16 +83220,18 @@ public partial class Overrides : CSharpOverrideHelper {
     DI = SI;
     // MOV CX,BP (334B_1BB1 / 0x35061)
     CX = BP;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSW ES:DI,SI (334B_1BB3 / 0x35063)
       UInt16[ES, DI] = UInt16[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      SI = (ushort)(SI + Direction16);
+      DI = (ushort)(DI + Direction16);
     }
     // MOVSB ES:DI,SI (334B_1BB5 / 0x35065)
     UInt8[ES, DI] = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
+    DI = (ushort)(DI + Direction8);
     // ADD DX,0x140 (334B_1BB6 / 0x35066)
     // DX += 0x140;
     DX = Alu.Add16(DX, 0x140);
@@ -86101,8 +83252,8 @@ public partial class Overrides : CSharpOverrideHelper {
     SI = DI;
     // MOVSB ES:DI,SI (334B_1BC2 / 0x35072)
     UInt8[ES, DI] = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
+    DI = (ushort)(DI + Direction8);
     // ADD DI,0x13f (334B_1BC3 / 0x35073)
     // DI += 0x13F;
     DI = Alu.Add16(DI, 0x13F);
@@ -86140,8 +83291,8 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_1BDA_3508A:
     // MOVSB ES:DI,SI (334B_1BDA / 0x3508A)
     UInt8[ES, DI] = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
+    DI = (ushort)(DI + Direction8);
     // INC DI (334B_1BDB / 0x3508B)
     DI = Alu.Inc16(DI);
     // LOOP 0x3000:508a (334B_1BDC / 0x3508C)
@@ -86180,11 +83331,13 @@ public partial class Overrides : CSharpOverrideHelper {
     DI = SI;
     // MOV CX,0x5f00 (334B_1BEE / 0x3509E)
     CX = 0x5F00;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSW ES:DI,SI (334B_1BF1 / 0x350A1)
       UInt16[ES, DI] = UInt16[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      SI = (ushort)(SI + Direction16);
+      DI = (ushort)(DI + Direction16);
     }
     // POP DS (334B_1BF3 / 0x350A3)
     DS = Stack.Pop();
@@ -86221,7 +83374,7 @@ public partial class Overrides : CSharpOverrideHelper {
     CL = DL;
     // LODSB SI (334B_1C06 / 0x350B6)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // MOV AH,AL (334B_1C07 / 0x350B7)
     AH = AL;
     label_334B_1C09_350B9:
@@ -86239,7 +83392,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_1C11_350C1:
     // STOSB ES:DI (334B_1C11 / 0x350C1)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // LOOP 0x3000:50b9 (334B_1C12 / 0x350C2)
     if(--CX != 0) {
       goto label_334B_1C09_350B9;
@@ -86262,7 +83415,7 @@ public partial class Overrides : CSharpOverrideHelper {
     CL = DL;
     // LODSB SI (334B_1C21 / 0x350D1)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // MOV AH,AL (334B_1C22 / 0x350D2)
     AH = AL;
     // MOV AL,BL (334B_1C24 / 0x350D4)
@@ -86297,7 +83450,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_1C38_350E8:
     // STOSB ES:DI (334B_1C38 / 0x350E8)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // LOOP 0x3000:50d6 (334B_1C39 / 0x350E9)
     if(--CX != 0) {
       goto label_334B_1C26_350D6;
@@ -86363,19 +83516,23 @@ public partial class Overrides : CSharpOverrideHelper {
     // SHR CX,1 (334B_1C65 / 0x35115)
     // CX >>= 1;
     CX = Alu.Shr16(CX, 1);
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSW ES:DI,SI (334B_1C67 / 0x35117)
       UInt16[ES, DI] = UInt16[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      SI = (ushort)(SI + Direction16);
+      DI = (ushort)(DI + Direction16);
     }
     // ADC CX,CX (334B_1C69 / 0x35119)
     CX = Alu.Adc16(CX, CX);
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSB ES:DI,SI (334B_1C6B / 0x3511B)
       UInt8[ES, DI] = UInt8[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+      SI = (ushort)(SI + Direction8);
+      DI = (ushort)(DI + Direction8);
     }
     // POP CX (334B_1C6D / 0x3511D)
     CX = Stack.Pop();
@@ -86430,19 +83587,23 @@ public partial class Overrides : CSharpOverrideHelper {
     // SHR CX,1 (334B_1C8F / 0x3513F)
     // CX >>= 1;
     CX = Alu.Shr16(CX, 1);
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSW ES:DI,SI (334B_1C91 / 0x35141)
       UInt16[ES, DI] = UInt16[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      SI = (ushort)(SI + Direction16);
+      DI = (ushort)(DI + Direction16);
     }
     // ADC CX,CX (334B_1C93 / 0x35143)
     CX = Alu.Adc16(CX, CX);
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSB ES:DI,SI (334B_1C95 / 0x35145)
       UInt8[ES, DI] = UInt8[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+      SI = (ushort)(SI + Direction8);
+      DI = (ushort)(DI + Direction8);
     }
     // POP CX (334B_1C97 / 0x35147)
     CX = Stack.Pop();
@@ -86598,15 +83759,8 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x3000:5355 (334B_1D57 / 0x35207)
     // JMP target is JMP, inlining.
     // JMP 0x3000:5235 (334B_1EA5 / 0x35355)
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 334B_1D5A_3520A, 334B_1D27_351D7, 334B_1D5F_3520F
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(not_observed_334B_1D85_035235, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(UnknownGlobeInitRelated_334B_1D5A_3520A, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -86742,12 +83896,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_334B_1DC2_035272, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action not_observed_334B_1DC2_035272(int loadOffset) {
@@ -86791,7 +83939,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    throw FailAsUntested("Function does not end with return and no other function found after the body at address 0x35293");
   }
   
   public Action not_observed_334B_1E32_0352E2(int loadOffset) {
@@ -86833,10 +83980,8 @@ public partial class Overrides : CSharpOverrideHelper {
     // MOV AL,byte ptr DS:[BP + SI] (334B_1E47 / 0x352F7)
     AL = UInt8[DS, (ushort)(BP + SI)];
     // NOP  (334B_1E4A / 0x352FA)
-    // Instruction bytes at index 0 modified by those instruction(s): 334B_1CC0_35170
     
     // NOP  (334B_1E4B / 0x352FB)
-    // Instruction bytes at index 0 modified by those instruction(s): 334B_1CC0_35170
     
     // MOV AH,AL (334B_1E4C / 0x352FC)
     AH = AL;
@@ -86868,7 +84013,7 @@ public partial class Overrides : CSharpOverrideHelper {
     DirectionFlag = true;
     // STOSB ES:DI (334B_1E64 / 0x35314)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // CLD  (334B_1E65 / 0x35315)
     DirectionFlag = false;
     // MOV word ptr CS:[0x1cae],DI (334B_1E66 / 0x35316)
@@ -86919,7 +84064,7 @@ public partial class Overrides : CSharpOverrideHelper {
     DI = UInt16[cs2, 0x1CB0];
     // STOSB ES:DI (334B_1E8F / 0x3533F)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // MOV word ptr CS:[0x1cb0],DI (334B_1E90 / 0x35340)
     UInt16[cs2, 0x1CB0] = DI;
     // POP DI (334B_1E95 / 0x35345)
@@ -86944,7 +84089,6 @@ public partial class Overrides : CSharpOverrideHelper {
     }
     label_334B_1EA5_35355:
     // JMP 0x3000:5235 (334B_1EA5 / 0x35355)
-    // Instruction bytes at index 1, 2 modified by those instruction(s): 334B_1D5A_3520A, 334B_1D27_351D7, 334B_1D5F_3520F
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(not_observed_334B_1D85_035235, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
@@ -87010,7 +84154,7 @@ public partial class Overrides : CSharpOverrideHelper {
     DirectionFlag = true;
     // STOSB ES:DI (334B_1EE4 / 0x35394)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // CLD  (334B_1EE5 / 0x35395)
     DirectionFlag = false;
     // MOV word ptr CS:[0x1cae],DI (334B_1EE6 / 0x35396)
@@ -87065,7 +84209,7 @@ public partial class Overrides : CSharpOverrideHelper {
     DI = UInt16[cs2, 0x1CB0];
     // STOSB ES:DI (334B_1F12 / 0x353C2)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // MOV word ptr CS:[0x1cb0],DI (334B_1F13 / 0x353C3)
     UInt16[cs2, 0x1CB0] = DI;
     // POP DI (334B_1F18 / 0x353C8)
@@ -87286,8 +84430,8 @@ public partial class Overrides : CSharpOverrideHelper {
     // PUSH DS (334B_2026 / 0x354D6)
     Stack.Push(DS);
     // LDS SI,CS:[0x1a7] (334B_2027 / 0x354D7)
-    SI = UInt16[cs2, 0x1A7];
     DS = UInt16[cs2, 0x1A9];
+    SI = UInt16[cs2, 0x1A7];
     // MOV AX,SS (334B_202C / 0x354DC)
     AX = SS;
     // MOV ES,AX (334B_202E / 0x354DE)
@@ -87401,12 +84545,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_334B_2079_035529, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action not_observed_334B_2079_035529(int loadOffset) {
@@ -87473,12 +84611,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x3000:559b (334B_209B / 0x3554B)
     // Jump converted to non entry function call
     if(JumpDispatcher.Jump(not_observed_334B_209E_03554E, 0x3559B - cs1 * 0x10)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_334B_209E_03554E, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -87565,7 +84697,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AH = Alu.Add8(AH, DL);
     // STOSW ES:DI (334B_20CF / 0x3557F)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // ADD AH,DL (334B_20D0 / 0x35580)
     // AH += DL;
     AH = Alu.Add8(AH, DL);
@@ -87576,7 +84708,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AH = Alu.Add8(AH, DL);
     // STOSW ES:DI (334B_20D6 / 0x35586)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // MOV AL,DH (334B_20D7 / 0x35587)
     AL = DH;
     // LOOP 0x3000:5563 (334B_20D9 / 0x35589)
@@ -87594,10 +84726,10 @@ public partial class Overrides : CSharpOverrideHelper {
     AH = AL;
     // STOSW ES:DI (334B_20E2 / 0x35592)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // STOSW ES:DI (334B_20E3 / 0x35593)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // MOV AL,DH (334B_20E4 / 0x35594)
     AL = DH;
     // LOOP 0x3000:5563 (334B_20E6 / 0x35596)
@@ -87654,7 +84786,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AH = Alu.Add8(AH, DL);
     // STOSW ES:DI (334B_2109 / 0x355B9)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // ADD AH,DL (334B_210A / 0x355BA)
     // AH += DL;
     AH = Alu.Add8(AH, DL);
@@ -87665,7 +84797,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AH = Alu.Add8(AH, DL);
     // STOSW ES:DI (334B_2110 / 0x355C0)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // MOV AL,DH (334B_2111 / 0x355C1)
     AL = DH;
     // LOOP 0x3000:559d (334B_2113 / 0x355C3)
@@ -87684,10 +84816,10 @@ public partial class Overrides : CSharpOverrideHelper {
     AH = AL;
     // STOSW ES:DI (334B_211A / 0x355CA)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // STOSW ES:DI (334B_211B / 0x355CB)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // MOV AL,DH (334B_211C / 0x355CC)
     AL = DH;
     // LOOP 0x3000:559d (334B_211E / 0x355CE)
@@ -87749,12 +84881,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x3000:5633 (334B_2151 / 0x35601)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(not_observed_334B_2183_035633, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_334B_2153_35603, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -87884,7 +85010,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_21C3_35673:
     // LODSB SI (334B_21C3 / 0x35673)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // MOV AH,byte ptr [DI] (334B_21C4 / 0x35674)
     AH = UInt8[DS, DI];
     // INC DI (334B_21C6 / 0x35676)
@@ -87935,7 +85061,7 @@ public partial class Overrides : CSharpOverrideHelper {
     DI = tmp_334B_21E5;
     // STOSB ES:DI (334B_21EA / 0x3569A)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // ADD CL,byte ptr CS:[0x1b1] (334B_21EB / 0x3569B)
     // CL += UInt8[cs2, 0x1B1];
     CL = Alu.Add8(CL, UInt8[cs2, 0x1B1]);
@@ -87982,7 +85108,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_2216_356C6:
     // STOSB ES:DI (334B_2216 / 0x356C6)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // JMP 0x3000:56a2 (334B_2217 / 0x356C7)
     goto label_334B_21F2_356A2;
     label_334B_2219_356C9:
@@ -88026,7 +85152,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_2246_356F6:
     // LODSB SI (334B_2246 / 0x356F6)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // MOV AH,byte ptr [DI] (334B_2247 / 0x356F7)
     AH = UInt8[DS, DI];
     // DEC DI (334B_2249 / 0x356F9)
@@ -88077,7 +85203,7 @@ public partial class Overrides : CSharpOverrideHelper {
     DI = tmp_334B_2268;
     // STOSB ES:DI (334B_226D / 0x3571D)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // ADD CL,byte ptr CS:[0x1b1] (334B_226E / 0x3571E)
     // CL += UInt8[cs2, 0x1B1];
     CL = Alu.Add8(CL, UInt8[cs2, 0x1B1]);
@@ -88127,7 +85253,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_229A_3574A:
     // STOSB ES:DI (334B_229A / 0x3574A)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // JMP 0x3000:5725 (334B_229B / 0x3574B)
     goto label_334B_2275_35725;
     label_334B_229D_3574D:
@@ -88186,30 +85312,34 @@ public partial class Overrides : CSharpOverrideHelper {
     SI = Alu.Add16(SI, CX);
     // MOV CL,BH (334B_22D3 / 0x35783)
     CL = BH;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSB ES:DI,SI (334B_22D5 / 0x35785)
       UInt8[ES, DI] = UInt8[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+      SI = (ushort)(SI + Direction8);
+      DI = (ushort)(DI + Direction8);
     }
     // JMP 0x3000:578f (334B_22D7 / 0x35787)
     goto label_334B_22DF_3578F;
     label_334B_22D9_35789:
     // XOR AL,AL (334B_22D9 / 0x35789)
     AL = 0;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // STOSB ES:DI (334B_22DB / 0x3578B)
       UInt8[ES, DI] = AL;
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+      DI = (ushort)(DI + Direction8);
     }
     // MOVSW ES:DI,SI (334B_22DD / 0x3578D)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // MOVSW ES:DI,SI (334B_22DE / 0x3578E)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     label_334B_22DF_3578F:
     // MOV CL,byte ptr CS:[BP + 0x1] (334B_22DF / 0x3578F)
     CL = UInt8[cs2, (ushort)(BP + 0x1)];
@@ -88232,29 +85362,33 @@ public partial class Overrides : CSharpOverrideHelper {
     CL = BH;
     // XOR CH,CH (334B_22F0 / 0x357A0)
     CH = 0;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSB ES:DI,SI (334B_22F2 / 0x357A2)
       UInt8[ES, DI] = UInt8[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+      SI = (ushort)(SI + Direction8);
+      DI = (ushort)(DI + Direction8);
     }
     // JMP 0x3000:57ac (334B_22F4 / 0x357A4)
     goto label_334B_22FC_357AC;
     label_334B_22F6_357A6:
     // MOVSW ES:DI,SI (334B_22F6 / 0x357A6)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // MOVSW ES:DI,SI (334B_22F7 / 0x357A7)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // XOR AL,AL (334B_22F8 / 0x357A8)
     AL = 0;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // STOSB ES:DI (334B_22FA / 0x357AA)
       UInt8[ES, DI] = AL;
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+      DI = (ushort)(DI + Direction8);
     }
     label_334B_22FC_357AC:
     // ADD DI,0x58 (334B_22FC / 0x357AC)
@@ -88305,11 +85439,13 @@ public partial class Overrides : CSharpOverrideHelper {
     SI = Alu.Add16(SI, 0x640);
     // MOV CX,0x15e (334B_233B / 0x357EB)
     CX = 0x15E;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSW ES:DI,SI (334B_233E / 0x357EE)
       UInt16[ES, DI] = UInt16[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      SI = (ushort)(SI + Direction16);
+      DI = (ushort)(DI + Direction16);
     }
     // POP BP (334B_2340 / 0x357F0)
     BP = Stack.Pop();
@@ -88348,7 +85484,7 @@ public partial class Overrides : CSharpOverrideHelper {
     }
     // LODSB SI (334B_2352 / 0x35802)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // SHR AL,1 (334B_2353 / 0x35803)
     // AL >>= 1;
     AL = Alu.Shr8(AL, 1);
@@ -88369,11 +85505,11 @@ public partial class Overrides : CSharpOverrideHelper {
     AL = Alu.Add8(AL, DL);
     // STOSB ES:DI (334B_235F / 0x3580F)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     label_334B_2360_35810:
     // LODSW SI (334B_2360 / 0x35810)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // SHR AX,1 (334B_2361 / 0x35811)
     // AX >>= 1;
     AX = Alu.Shr16(AX, 1);
@@ -88394,7 +85530,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AX = Alu.Add16(AX, DX);
     // STOSW ES:DI (334B_236D / 0x3581D)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // LOOP 0x3000:5810 (334B_236E / 0x3581E)
     if(--CX != 0) {
       goto label_334B_2360_35810;
@@ -88491,22 +85627,24 @@ public partial class Overrides : CSharpOverrideHelper {
     if(CarryFlag) {
       goto label_334B_23C4_35874;
     }
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // STOSB ES:DI (334B_23BE / 0x3586E)
       UInt8[ES, DI] = AL;
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+      DI = (ushort)(DI + Direction8);
     }
     // MOV AX,0x191c (334B_23C0 / 0x35870)
     AX = 0x191C;
     // STOSW ES:DI (334B_23C3 / 0x35873)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     label_334B_23C4_35874:
     // MOV AX,0x1718 (334B_23C4 / 0x35874)
     AX = 0x1718;
     // STOSW ES:DI (334B_23C7 / 0x35877)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // MOV CX,DX (334B_23C8 / 0x35878)
     CX = DX;
     // POP DX (334B_23CA / 0x3587A)
@@ -88521,10 +85659,12 @@ public partial class Overrides : CSharpOverrideHelper {
     // ADD CX,DX (334B_23CE / 0x3587E)
     // CX += DX;
     CX = Alu.Add16(CX, DX);
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // STOSB ES:DI (334B_23D0 / 0x35880)
       UInt8[ES, DI] = AL;
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+      DI = (ushort)(DI + Direction8);
     }
     // XOR CX,CX (334B_23D2 / 0x35882)
     CX = 0;
@@ -88551,7 +85691,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AX = 0x1817;
     // STOSW ES:DI (334B_23DC / 0x3588C)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // SUB CX,0x4 (334B_23DD / 0x3588D)
     // CX -= 0x4;
     CX = Alu.Sub16(CX, 0x4);
@@ -88565,13 +85705,15 @@ public partial class Overrides : CSharpOverrideHelper {
     AX = 0x1C19;
     // STOSW ES:DI (334B_23E5 / 0x35895)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // XOR AL,AL (334B_23E6 / 0x35896)
     AL = 0;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // STOSB ES:DI (334B_23E8 / 0x35898)
       UInt8[ES, DI] = AL;
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+      DI = (ushort)(DI + Direction8);
     }
     label_334B_23EA_3589A:
     // RET  (334B_23EA / 0x3589A)
@@ -88673,7 +85815,7 @@ public partial class Overrides : CSharpOverrideHelper {
     }
     // LODSB SI (334B_2426 / 0x358D6)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // AND AX,BP (334B_2427 / 0x358D7)
     // AX &= BP;
     AX = Alu.And16(AX, BP);
@@ -88682,7 +85824,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AL = Alu.Add8(AL, DL);
     // STOSB ES:DI (334B_242B / 0x358DB)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     label_334B_242C_358DC:
     // JCXZ 0x3000:58e6 (334B_242C / 0x358DC)
     if(CX == 0) {
@@ -88691,7 +85833,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_242E_358DE:
     // LODSW SI (334B_242E / 0x358DE)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // AND AX,BP (334B_242F / 0x358DF)
     // AX &= BP;
     AX = Alu.And16(AX, BP);
@@ -88700,7 +85842,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AX = Alu.Add16(AX, DX);
     // STOSW ES:DI (334B_2433 / 0x358E3)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // LOOP 0x3000:58de (334B_2434 / 0x358E4)
     if(--CX != 0) {
       goto label_334B_242E_358DE;
@@ -88909,7 +86051,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_24BB_3596B:
     // LODSB SI (334B_24BB / 0x3596B)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // CMP AL,byte ptr [SI] (334B_24BC / 0x3596C)
     Alu.Sub8(AL, UInt8[DS, SI]);
     // JNZ 0x3000:597c (334B_24BE / 0x3596E)
@@ -88926,7 +86068,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AL = UInt8[DS, (ushort)(BX + AL)];
     // STOSB ES:DI (334B_24C7 / 0x35977)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // LOOP 0x3000:596b (334B_24C8 / 0x35978)
     if(--CX != 0) {
       goto label_334B_24BB_3596B;
@@ -88938,7 +86080,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AL = AH;
     // STOSB ES:DI (334B_24CE / 0x3597E)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // LOOP 0x3000:596b (334B_24CF / 0x3597F)
     if(--CX != 0) {
       goto label_334B_24BB_3596B;
@@ -88946,7 +86088,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_24D1_35981:
     // LODSB SI (334B_24D1 / 0x35981)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // CMP AL,byte ptr [SI + 0xc7] (334B_24D2 / 0x35982)
     Alu.Sub8(AL, UInt8[DS, (ushort)(SI + 0xC7)]);
     // JNZ 0x3000:598b (334B_24D6 / 0x35986)
@@ -88963,7 +86105,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_24DD_3598D:
     // STOSB ES:DI (334B_24DD / 0x3598D)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // POP CX (334B_24DE / 0x3598E)
     CX = Stack.Pop();
     // CALL 0x3000:5887 (334B_24DF / 0x3598F)
@@ -89014,7 +86156,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_24F7_359A7:
     // LODSB SI (334B_24F7 / 0x359A7)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // CMP AL,byte ptr [SI] (334B_24F8 / 0x359A8)
     Alu.Sub8(AL, UInt8[DS, SI]);
     // JNZ 0x3000:59c0 (334B_24FA / 0x359AA)
@@ -89043,7 +86185,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AL = Alu.Add8(AL, 0x71);
     // STOSB ES:DI (334B_250B / 0x359BB)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // LOOP 0x3000:59a7 (334B_250C / 0x359BC)
     if(--CX != 0) {
       goto label_334B_24F7_359A7;
@@ -89056,7 +86198,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_2512_359C2:
     // STOSB ES:DI (334B_2512 / 0x359C2)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // LOOP 0x3000:59a7 (334B_2513 / 0x359C3)
     if(--CX != 0) {
       goto label_334B_24F7_359A7;
@@ -89064,7 +86206,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_2515_359C5:
     // LODSB SI (334B_2515 / 0x359C5)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // CMP AL,byte ptr [SI + 0xc7] (334B_2516 / 0x359C6)
     Alu.Sub8(AL, UInt8[DS, (ushort)(SI + 0xC7)]);
     // JNZ 0x3000:59d7 (334B_251A / 0x359CA)
@@ -89093,7 +86235,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_2529_359D9:
     // STOSB ES:DI (334B_2529 / 0x359D9)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // POP CX (334B_252A / 0x359DA)
     CX = Stack.Pop();
     // CALL 0x3000:5887 (334B_252B / 0x359DB)
@@ -89388,15 +86530,10 @@ public partial class Overrides : CSharpOverrideHelper {
         }
         return JumpDispatcher.JumpAsmReturn!;
       }
-      default: throw FailAsUntested("Error: Jump not registered at address " + targetAddress_334B_2616);
+      default: throw FailAsUntested("Error: Jump not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_334B_2616));
         break;
     }
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(WaitForRetraceDuringIntroVideo_334B_261D_35ACD, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
+    throw FailAsUntested("Function does not end with return and no instruction after the body ...");
   }
   
   public Action WaitForRetraceDuringIntroVideo_334B_261D_35ACD(int loadOffset) {
@@ -89472,7 +86609,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_2673_35B23:
     // LODSB SI (334B_2673 / 0x35B23)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // SUB AL,byte ptr [DI] (334B_2674 / 0x35B24)
     // AL -= UInt8[DS, DI];
     AL = Alu.Sub8(AL, UInt8[DS, DI]);
@@ -89689,7 +86826,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AX = tmp_334B_273D;
     // STOSW ES:DI (334B_273F / 0x35BEF)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // ADD SI,0x2 (334B_2740 / 0x35BF0)
     // SI += 0x2;
     SI = Alu.Add16(SI, 0x2);
@@ -89714,12 +86851,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_334B_2757_035C07, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action not_observed_334B_2757_035C07(int loadOffset) {
@@ -89739,11 +86870,13 @@ public partial class Overrides : CSharpOverrideHelper {
     SI = DI;
     // MOV CX,0x5f00 (334B_2762 / 0x35C12)
     CX = 0x5F00;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSW ES:DI,SI (334B_2765 / 0x35C15)
       UInt16[ES, DI] = UInt16[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      SI = (ushort)(SI + Direction16);
+      DI = (ushort)(DI + Direction16);
     }
     // RETF  (334B_2767 / 0x35C17)
     return FarRet();
@@ -89761,12 +86894,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x3000:5ec8 (334B_2A13 / 0x35EC3)
     // Jump converted to non entry function call
     if(JumpDispatcher.Jump(not_observed_334B_2A15_035EC5, 0x35EC8 - cs1 * 0x10)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_334B_2A15_035EC5, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -89809,8 +86936,8 @@ public partial class Overrides : CSharpOverrideHelper {
     DI = SI;
     // MOVSB ES:DI,SI (334B_2A2F / 0x35EDF)
     UInt8[ES, DI] = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
+    DI = (ushort)(DI + Direction8);
     // SUB SI,word ptr CS:[0x1a3] (334B_2A30 / 0x35EE0)
     // SI -= UInt16[cs2, 0x1A3];
     SI = Alu.Sub16(SI, UInt16[cs2, 0x1A3]);
@@ -89830,8 +86957,8 @@ public partial class Overrides : CSharpOverrideHelper {
     DI = SI;
     // MOVSB ES:DI,SI (334B_2A44 / 0x35EF4)
     UInt8[ES, DI] = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
+    DI = (ushort)(DI + Direction8);
     // SUB SI,word ptr CS:[0x1a3] (334B_2A45 / 0x35EF5)
     // SI -= UInt16[cs2, 0x1A3];
     SI = Alu.Sub16(SI, UInt16[cs2, 0x1A3]);
@@ -89879,8 +87006,8 @@ public partial class Overrides : CSharpOverrideHelper {
     DI = SI;
     // MOVSB ES:DI,SI (334B_2A66 / 0x35F16)
     UInt8[ES, DI] = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
+    DI = (ushort)(DI + Direction8);
     // RETF  (334B_2A67 / 0x35F17)
     return FarRet();
   }
@@ -89974,20 +87101,20 @@ public partial class Overrides : CSharpOverrideHelper {
     SI = DI;
     // MOVSW ES:DI,SI (334B_2ABA / 0x35F6A)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // MOVSW ES:DI,SI (334B_2ABB / 0x35F6B)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // MOVSW ES:DI,SI (334B_2ABC / 0x35F6C)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // MOVSW ES:DI,SI (334B_2ABD / 0x35F6D)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // ADD DI,0x138 (334B_2ABE / 0x35F6E)
     // DI += 0x138;
     DI = Alu.Add16(DI, 0x138);
@@ -90247,11 +87374,13 @@ public partial class Overrides : CSharpOverrideHelper {
     // SHR CX,1 (334B_2B84 / 0x36034)
     // CX >>= 1;
     CX = Alu.Shr16(CX, 1);
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSW ES:DI,SI (334B_2B86 / 0x36036)
       UInt16[ES, DI] = UInt16[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      SI = (ushort)(SI + Direction16);
+      DI = (ushort)(DI + Direction16);
     }
     // SUB SI,AX (334B_2B88 / 0x36038)
     // SI -= AX;
@@ -90272,16 +87401,18 @@ public partial class Overrides : CSharpOverrideHelper {
     // SHR CX,1 (334B_2B97 / 0x36047)
     // CX >>= 1;
     CX = Alu.Shr16(CX, 1);
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSW ES:DI,SI (334B_2B99 / 0x36049)
       UInt16[ES, DI] = UInt16[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      SI = (ushort)(SI + Direction16);
+      DI = (ushort)(DI + Direction16);
     }
     // MOVSB ES:DI,SI (334B_2B9B / 0x3604B)
     UInt8[ES, DI] = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
+    DI = (ushort)(DI + Direction8);
     // SUB SI,AX (334B_2B9C / 0x3604C)
     // SI -= AX;
     SI = Alu.Sub16(SI, AX);
@@ -90344,11 +87475,13 @@ public partial class Overrides : CSharpOverrideHelper {
     CX = DX;
     // MOV SI,DI (334B_2BC8 / 0x36078)
     SI = DI;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSB ES:DI,SI (334B_2BCA / 0x3607A)
       UInt8[ES, DI] = UInt8[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+      SI = (ushort)(SI + Direction8);
+      DI = (ushort)(DI + Direction8);
     }
     // SUB DI,DX (334B_2BCC / 0x3607C)
     // DI -= DX;
@@ -90378,11 +87511,13 @@ public partial class Overrides : CSharpOverrideHelper {
     SI = DI;
     // MOV CX,0x4 (334B_2BDF / 0x3608F)
     CX = 0x4;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSW ES:DI,SI (334B_2BE2 / 0x36092)
       UInt16[ES, DI] = UInt16[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      SI = (ushort)(SI + Direction16);
+      DI = (ushort)(DI + Direction16);
     }
     // ADD DI,0x137 (334B_2BE4 / 0x36094)
     // DI += 0x137;
@@ -90409,11 +87544,13 @@ public partial class Overrides : CSharpOverrideHelper {
     CX = DX;
     // MOV SI,DI (334B_2BF4 / 0x360A4)
     SI = DI;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSB ES:DI,SI (334B_2BF6 / 0x360A6)
       UInt8[ES, DI] = UInt8[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-      DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+      SI = (ushort)(SI + Direction8);
+      DI = (ushort)(DI + Direction8);
     }
     // SUB DI,DX (334B_2BF8 / 0x360A8)
     // DI -= DX;
@@ -90489,11 +87626,13 @@ public partial class Overrides : CSharpOverrideHelper {
     CX = Alu.Shr16(CX, 1);
     // MOV SI,DI (334B_2C2C / 0x360DC)
     SI = DI;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSW ES:DI,SI (334B_2C2E / 0x360DE)
       UInt16[ES, DI] = UInt16[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      SI = (ushort)(SI + Direction16);
+      DI = (ushort)(DI + Direction16);
     }
     // SUB DI,AX (334B_2C30 / 0x360E0)
     // DI -= AX;
@@ -90524,11 +87663,13 @@ public partial class Overrides : CSharpOverrideHelper {
     SI = DI;
     // MOV CX,0x4 (334B_2C45 / 0x360F5)
     CX = 0x4;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSW ES:DI,SI (334B_2C48 / 0x360F8)
       UInt16[ES, DI] = UInt16[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      SI = (ushort)(SI + Direction16);
+      DI = (ushort)(DI + Direction16);
     }
     // ADD DI,0x138 (334B_2C4A / 0x360FA)
     // DI += 0x138;
@@ -90607,7 +87748,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_2C82_36132:
     // STOSW ES:DI (334B_2C82 / 0x36132)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // MOV AH,byte ptr [SI + 0xfc40] (334B_2C83 / 0x36133)
     AH = UInt8[DS, (ushort)(SI + 0xFC40)];
     // CMP AH,BH (334B_2C87 / 0x36137)
@@ -90646,7 +87787,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_2CA0_36150:
     // STOSW ES:DI (334B_2CA0 / 0x36150)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // SUB SI,0x500 (334B_2CA1 / 0x36151)
     // SI -= 0x500;
     SI = Alu.Sub16(SI, 0x500);
@@ -90679,20 +87820,20 @@ public partial class Overrides : CSharpOverrideHelper {
     SI = (ushort)(DI + 0xD5D0);
     // MOVSW ES:DI,SI (334B_2CB9 / 0x36169)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // MOVSW ES:DI,SI (334B_2CBA / 0x3616A)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // MOVSW ES:DI,SI (334B_2CBB / 0x3616B)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // MOVSW ES:DI,SI (334B_2CBC / 0x3616C)
     UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
     // ADD DI,0xc0 (334B_2CBD / 0x3616D)
     // DI += 0xC0;
     DI = Alu.Add16(DI, 0xC0);
@@ -90751,11 +87892,13 @@ public partial class Overrides : CSharpOverrideHelper {
     // SHR CX,1 (334B_2CE3 / 0x36193)
     // CX >>= 1;
     CX = Alu.Shr16(CX, 1);
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSW ES:DI,SI (334B_2CE5 / 0x36195)
       UInt16[ES, DI] = UInt16[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      SI = (ushort)(SI + Direction16);
+      DI = (ushort)(DI + Direction16);
     }
     // POP SI (334B_2CE7 / 0x36197)
     SI = Stack.Pop();
@@ -90764,10 +87907,12 @@ public partial class Overrides : CSharpOverrideHelper {
     CX = 0x500;
     // MOV AX,0x707 (334B_2CEB / 0x3619B)
     AX = 0x707;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // STOSW ES:DI (334B_2CEE / 0x3619E)
       UInt16[ES, DI] = AX;
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      DI = (ushort)(DI + Direction16);
     }
     // SUB SI,0xa00 (334B_2CF0 / 0x361A0)
     // SI -= 0xA00;
@@ -90812,11 +87957,13 @@ public partial class Overrides : CSharpOverrideHelper {
     // SHR CX,1 (334B_2D1C / 0x361CC)
     // CX >>= 1;
     CX = Alu.Shr16(CX, 1);
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSW ES:DI,SI (334B_2D1E / 0x361CE)
       UInt16[ES, DI] = UInt16[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      SI = (ushort)(SI + Direction16);
+      DI = (ushort)(DI + Direction16);
     }
     // MOV DS,AX (334B_2D20 / 0x361D0)
     DS = AX;
@@ -90824,10 +87971,12 @@ public partial class Overrides : CSharpOverrideHelper {
     CX = 0x500;
     // MOV AX,0x707 (334B_2D25 / 0x361D5)
     AX = 0x707;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // STOSW ES:DI (334B_2D28 / 0x361D8)
       UInt16[ES, DI] = AX;
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      DI = (ushort)(DI + Direction16);
     }
     // CMP DI,DX (334B_2D2A / 0x361DA)
     Alu.Sub16(DI, DX);
@@ -90839,11 +87988,13 @@ public partial class Overrides : CSharpOverrideHelper {
     CX = 0x500;
     // MOV SI,DI (334B_2D31 / 0x361E1)
     SI = DI;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSW ES:DI,SI (334B_2D33 / 0x361E3)
       UInt16[ES, DI] = UInt16[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      SI = (ushort)(SI + Direction16);
+      DI = (ushort)(DI + Direction16);
     }
     label_334B_2D35_361E5:
     // POP SI (334B_2D35 / 0x361E5)
@@ -90900,7 +88051,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_2DCD_3627D:
     // LODSW CS:SI (334B_2DCD / 0x3627D)
     AX = UInt16[cs2, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // OR AX,AX (334B_2DCF / 0x3627F)
     // AX |= AX;
     AX = Alu.Or16(AX, AX);
@@ -90927,7 +88078,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_2DE2_36292:
     // STOSB ES:DI (334B_2DE2 / 0x36292)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // ADD DI,0x3 (334B_2DE3 / 0x36293)
     // DI += 0x3;
     DI = Alu.Add16(DI, 0x3);
@@ -90966,7 +88117,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_2E01_362B1:
     // LODSW CS:SI (334B_2E01 / 0x362B1)
     AX = UInt16[cs2, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // OR AX,AX (334B_2E03 / 0x362B3)
     // AX |= AX;
     AX = Alu.Or16(AX, AX);
@@ -90995,8 +88146,8 @@ public partial class Overrides : CSharpOverrideHelper {
     SI = DI;
     // MOVSB ES:DI,SI (334B_2E16 / 0x362C6)
     UInt8[ES, DI] = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
+    DI = (ushort)(DI + Direction8);
     // ADD DI,0x3 (334B_2E17 / 0x362C7)
     // DI += 0x3;
     DI = Alu.Add16(DI, 0x3);
@@ -91077,7 +88228,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_2F10_363C0:
     // STOSB ES:DI (334B_2F10 / 0x363C0)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // ADD DI,0x7 (334B_2F11 / 0x363C1)
     // DI += 0x7;
     DI = Alu.Add16(DI, 0x7);
@@ -91110,7 +88261,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_2F28_363D8:
     // LODSW CS:SI (334B_2F28 / 0x363D8)
     AX = UInt16[cs2, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // OR AX,AX (334B_2F2A / 0x363DA)
     // AX |= AX;
     AX = Alu.Or16(AX, AX);
@@ -91139,8 +88290,8 @@ public partial class Overrides : CSharpOverrideHelper {
     DI = SI;
     // MOVSB ES:DI,SI (334B_2F3D / 0x363ED)
     UInt8[ES, DI] = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
+    DI = (ushort)(DI + Direction8);
     // ADD SI,0x7 (334B_2F3E / 0x363EE)
     // SI += 0x7;
     SI = Alu.Add16(SI, 0x7);
@@ -91253,7 +88404,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_2FC7_36477:
     // LODSW CS:SI (334B_2FC7 / 0x36477)
     AX = UInt16[cs2, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // OR AX,AX (334B_2FC9 / 0x36479)
     // AX |= AX;
     AX = Alu.Or16(AX, AX);
@@ -91292,7 +88443,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_2FFF_364AF:
     // LODSW CS:SI (334B_2FFF / 0x364AF)
     AX = UInt16[cs2, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // OR AX,AX (334B_3001 / 0x364B1)
     // AX |= AX;
     AX = Alu.Or16(AX, AX);
@@ -91331,7 +88482,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_3037_364E7:
     // LODSW CS:SI (334B_3037 / 0x364E7)
     AX = UInt16[cs2, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // OR AX,AX (334B_3039 / 0x364E9)
     // AX |= AX;
     AX = Alu.Or16(AX, AX);
@@ -91391,7 +88542,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_305B_3650B:
     // LODSB SI (334B_305B / 0x3650B)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // ADD SI,0x7 (334B_305C / 0x3650C)
     // SI += 0x7;
     SI = Alu.Add16(SI, 0x7);
@@ -91402,16 +88553,16 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_3064_36514:
     // STOSW ES:DI (334B_3064 / 0x36514)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // STOSW ES:DI (334B_3065 / 0x36515)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // STOSW ES:DI (334B_3066 / 0x36516)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // STOSW ES:DI (334B_3067 / 0x36517)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // ADD DI,0x138 (334B_3068 / 0x36518)
     // DI += 0x138;
     DI = Alu.Add16(DI, 0x138);
@@ -91490,7 +88641,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_309E_3654E:
     // LODSB SI (334B_309E / 0x3654E)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // ADD SI,0x3 (334B_309F / 0x3654F)
     // SI += 0x3;
     SI = Alu.Add16(SI, 0x3);
@@ -91501,10 +88652,10 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_30A7_36557:
     // STOSW ES:DI (334B_30A7 / 0x36557)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // STOSW ES:DI (334B_30A8 / 0x36558)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // ADD DI,0x13c (334B_30A9 / 0x36559)
     // DI += 0x13C;
     DI = Alu.Add16(DI, 0x13C);
@@ -91544,12 +88695,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_334B_30C5_36575, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_334B_30C5_36575(int loadOffset) {
@@ -91581,7 +88726,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_30D5_36585:
     // LODSB SI (334B_30D5 / 0x36585)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // INC SI (334B_30D6 / 0x36586)
     SI = Alu.Inc16(SI);
     // MOV AH,AL (334B_30D7 / 0x36587)
@@ -91590,7 +88735,7 @@ public partial class Overrides : CSharpOverrideHelper {
     UInt16[ES, (ushort)(DI + 0x140)] = AX;
     // STOSW ES:DI (334B_30DE / 0x3658E)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // LOOP 0x3000:6585 (334B_30DF / 0x3658F)
     if(--CX != 0) {
       goto label_334B_30D5_36585;
@@ -91618,12 +88763,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_334B_311A_0365CA, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action not_observed_334B_311A_0365CA(int loadOffset) {
@@ -91639,10 +88778,12 @@ public partial class Overrides : CSharpOverrideHelper {
     AX = 0;
     // MOV CX,0x12c0 (334B_3121 / 0x365D1)
     CX = 0x12C0;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // STOSW ES:DI (334B_3124 / 0x365D4)
       UInt16[ES, DI] = AX;
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      DI = (ushort)(DI + Direction16);
     }
     // MOV DS,word ptr CS:[0x2537] (334B_3126 / 0x365D6)
     DS = UInt16[cs2, 0x2537];
@@ -91777,11 +88918,13 @@ public partial class Overrides : CSharpOverrideHelper {
     }
     // MOV CX,0xa0 (334B_3196 / 0x36646)
     CX = 0xA0;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSW ES:DI,SI (334B_3199 / 0x36649)
       UInt16[ES, DI] = UInt16[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      SI = (ushort)(SI + Direction16);
+      DI = (ushort)(DI + Direction16);
     }
     // XCHG BP,DI (334B_319B / 0x3664B)
     ushort tmp_334B_319B = BP;
@@ -91793,11 +88936,13 @@ public partial class Overrides : CSharpOverrideHelper {
     SI = tmp_334B_319D;
     // MOV CX,0xa0 (334B_319F / 0x3664F)
     CX = 0xA0;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSW ES:DI,SI (334B_31A2 / 0x36652)
       UInt16[ES, DI] = UInt16[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      SI = (ushort)(SI + Direction16);
+      DI = (ushort)(DI + Direction16);
     }
     // XCHG BP,DI (334B_31A4 / 0x36654)
     ushort tmp_334B_31A4 = BP;
@@ -91867,10 +89012,12 @@ public partial class Overrides : CSharpOverrideHelper {
     ushort tmp_334B_31D5 = DI;
     DI = BP;
     BP = tmp_334B_31D5;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // STOSW ES:DI (334B_31D7 / 0x36687)
       UInt16[ES, DI] = AX;
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      DI = (ushort)(DI + Direction16);
     }
     // XCHG DI,BP (334B_31D9 / 0x36689)
     ushort tmp_334B_31D9 = DI;
@@ -91878,10 +89025,12 @@ public partial class Overrides : CSharpOverrideHelper {
     BP = tmp_334B_31D9;
     // MOV CL,0xa0 (334B_31DB / 0x3668B)
     CL = 0xA0;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // STOSW ES:DI (334B_31DD / 0x3668D)
       UInt16[ES, DI] = AX;
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      DI = (ushort)(DI + Direction16);
     }
     // SUB DI,0x280 (334B_31DF / 0x3668F)
     // DI -= 0x280;
@@ -92000,15 +89149,10 @@ public partial class Overrides : CSharpOverrideHelper {
         }
         return JumpDispatcher.JumpAsmReturn!;
       }
-      default: throw FailAsUntested("Error: Jump not registered at address " + targetAddress_334B_321E);
+      default: throw FailAsUntested("Error: Jump not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_334B_321E));
         break;
     }
-    // Function call generated as ASM continues to next function body without return
-    if(JumpDispatcher.Jump(GenerateMenuTransitionFrame_334B_32C1_36771, 0x36730 - cs1 * 0x10)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
+    throw FailAsUntested("Function does not end with return and no instruction after the body ...");
   }
   
   public Action GenerateMenuTransitionFrame_334B_32C1_36771(int loadOffset) {
@@ -92027,10 +89171,12 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_3289_36739:
     // MOV CX,0x44 (334B_3289 / 0x36739)
     CX = 0x44;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // STOSW ES:DI (334B_328C / 0x3673C)
       UInt16[ES, DI] = AX;
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      DI = (ushort)(DI + Direction16);
     }
     // ADD DI,0xb8 (334B_328E / 0x3673E)
     // DI += 0xB8;
@@ -92048,10 +89194,12 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_329B_3674B:
     // MOV CX,0x44 (334B_329B / 0x3674B)
     CX = 0x44;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // STOSW ES:DI (334B_329E / 0x3674E)
       UInt16[ES, DI] = AX;
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      DI = (ushort)(DI + Direction16);
     }
     // ADD DI,0xb8 (334B_32A0 / 0x36750)
     // DI += 0xB8;
@@ -92073,10 +89221,12 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_32AF_3675F:
     // MOV CX,0x44 (334B_32AF / 0x3675F)
     CX = 0x44;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // STOSW ES:DI (334B_32B2 / 0x36762)
       UInt16[ES, DI] = AX;
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      DI = (ushort)(DI + Direction16);
     }
     // ADD DI,0xb8 (334B_32B4 / 0x36764)
     // DI += 0xB8;
@@ -92111,11 +89261,13 @@ public partial class Overrides : CSharpOverrideHelper {
     CX = 0x44;
     // MOV SI,DI (334B_32D9 / 0x36789)
     SI = DI;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSW ES:DI,SI (334B_32DB / 0x3678B)
       UInt16[ES, DI] = UInt16[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      SI = (ushort)(SI + Direction16);
+      DI = (ushort)(DI + Direction16);
     }
     // ADD DI,0xb8 (334B_32DD / 0x3678D)
     // DI += 0xB8;
@@ -92150,11 +89302,13 @@ public partial class Overrides : CSharpOverrideHelper {
     }
     // MOV CX,0x44 (334B_32FD / 0x367AD)
     CX = 0x44;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSW ES:DI,SI (334B_3300 / 0x367B0)
       UInt16[ES, DI] = UInt16[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      SI = (ushort)(SI + Direction16);
+      DI = (ushort)(DI + Direction16);
     }
     // XCHG BP,DI (334B_3302 / 0x367B2)
     ushort tmp_334B_3302 = BP;
@@ -92166,11 +89320,13 @@ public partial class Overrides : CSharpOverrideHelper {
     SI = tmp_334B_3304;
     // MOV CX,0x44 (334B_3306 / 0x367B6)
     CX = 0x44;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSW ES:DI,SI (334B_3309 / 0x367B9)
       UInt16[ES, DI] = UInt16[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      SI = (ushort)(SI + Direction16);
+      DI = (ushort)(DI + Direction16);
     }
     // XCHG BP,DI (334B_330B / 0x367BB)
     ushort tmp_334B_330B = BP;
@@ -92252,10 +89408,12 @@ public partial class Overrides : CSharpOverrideHelper {
     ushort tmp_334B_334A = DI;
     DI = BP;
     BP = tmp_334B_334A;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // STOSW ES:DI (334B_334C / 0x367FC)
       UInt16[ES, DI] = AX;
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      DI = (ushort)(DI + Direction16);
     }
     // XCHG AX,BX (334B_334E / 0x367FE)
     ushort tmp_334B_334E = AX;
@@ -92267,10 +89425,12 @@ public partial class Overrides : CSharpOverrideHelper {
     BP = tmp_334B_334F;
     // MOV CL,0x44 (334B_3351 / 0x36801)
     CL = 0x44;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // STOSW ES:DI (334B_3353 / 0x36803)
       UInt16[ES, DI] = AX;
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      DI = (ushort)(DI + Direction16);
     }
     // XCHG AH,AL (334B_3355 / 0x36805)
     byte tmp_334B_3355 = AH;
@@ -92301,10 +89461,12 @@ public partial class Overrides : CSharpOverrideHelper {
     ushort tmp_334B_3369 = DI;
     DI = BP;
     BP = tmp_334B_3369;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // STOSW ES:DI (334B_336B / 0x3681B)
       UInt16[ES, DI] = AX;
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      DI = (ushort)(DI + Direction16);
     }
     // XCHG DI,BP (334B_336D / 0x3681D)
     ushort tmp_334B_336D = DI;
@@ -92312,10 +89474,12 @@ public partial class Overrides : CSharpOverrideHelper {
     BP = tmp_334B_336D;
     // MOV CL,0x44 (334B_336F / 0x3681F)
     CL = 0x44;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // STOSW ES:DI (334B_3371 / 0x36821)
       UInt16[ES, DI] = AX;
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      DI = (ushort)(DI + Direction16);
     }
     // SUB DI,0x1c8 (334B_3373 / 0x36823)
     // DI -= 0x1C8;
@@ -92486,11 +89650,13 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_33F6_368A6:
     // MOV CX,DX (334B_33F6 / 0x368A6)
     CX = DX;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSW ES:DI,SI (334B_33F8 / 0x368A8)
       UInt16[ES, DI] = UInt16[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      SI = (ushort)(SI + Direction16);
+      DI = (ushort)(DI + Direction16);
     }
     // SUB SI,AX (334B_33FA / 0x368AA)
     // SI -= AX;
@@ -92545,12 +89711,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x3000:503e (334B_3426 / 0x368D6)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(CopySquareOfPixels_334B_1B8E_3503E, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_334B_3429_0368D9, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -92616,11 +89776,13 @@ public partial class Overrides : CSharpOverrideHelper {
     CX = DX;
     // LEA SI,[DI + 0x780] (334B_3454 / 0x36904)
     SI = (ushort)(DI + 0x780);
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSW ES:DI,SI (334B_3458 / 0x36908)
       UInt16[ES, DI] = UInt16[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      SI = (ushort)(SI + Direction16);
+      DI = (ushort)(DI + Direction16);
     }
     // SUB DI,AX (334B_345A / 0x3690A)
     // DI -= AX;
@@ -92644,11 +89806,13 @@ public partial class Overrides : CSharpOverrideHelper {
     CX = DX;
     // MOV SI,DI (334B_3469 / 0x36919)
     SI = DI;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSW ES:DI,SI (334B_346B / 0x3691B)
       UInt16[ES, DI] = UInt16[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      SI = (ushort)(SI + Direction16);
+      DI = (ushort)(DI + Direction16);
     }
     // SUB DI,AX (334B_346D / 0x3691D)
     // DI -= AX;
@@ -92751,11 +89915,13 @@ public partial class Overrides : CSharpOverrideHelper {
     // ADD CX,0x5 (334B_3544 / 0x369F4)
     // CX += 0x5;
     CX = Alu.Add16(CX, 0x5);
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSW ES:DI,SI (334B_3547 / 0x369F7)
       UInt16[ES, DI] = UInt16[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      SI = (ushort)(SI + Direction16);
+      DI = (ushort)(DI + Direction16);
     }
     // POP DI (334B_3549 / 0x369F9)
     DI = Stack.Pop();
@@ -92764,7 +89930,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_354D_369FD:
     // LODSB CS:SI (334B_354D / 0x369FD)
     AL = UInt8[cs2, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // CMP AL,0x80 (334B_354F / 0x369FF)
     Alu.Sub8(AL, 0x80);
     // JZ 0x3000:6a1d (334B_3551 / 0x36A01)
@@ -92828,11 +89994,13 @@ public partial class Overrides : CSharpOverrideHelper {
     DI = Alu.Add16(DI, AX);
     // MOV CX,DX (334B_3576 / 0x36A26)
     CX = DX;
-    while (CX-- != 0) {
+    // REP
+    while (CX != 0) {
+      CX--;
       // MOVSW ES:DI,SI (334B_3578 / 0x36A28)
       UInt16[ES, DI] = UInt16[DS, SI];
-      SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-      DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+      SI = (ushort)(SI + Direction16);
+      DI = (ushort)(DI + Direction16);
     }
     // POP DI (334B_357A / 0x36A2A)
     DI = Stack.Pop();
@@ -92888,7 +90056,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_35A6_36A56:
     // LODSW CS:SI (334B_35A6 / 0x36A56)
     AX = UInt16[cs2, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // OR AX,AX (334B_35A8 / 0x36A58)
     // AX |= AX;
     AX = Alu.Or16(AX, AX);
@@ -92966,7 +90134,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_35D0_36A80:
     // LODSB SI (334B_35D0 / 0x36A80)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // INC SI (334B_35D1 / 0x36A81)
     SI = Alu.Inc16(SI);
     // MOV AH,AL (334B_35D2 / 0x36A82)
@@ -92975,7 +90143,7 @@ public partial class Overrides : CSharpOverrideHelper {
     UInt16[ES, (ushort)(DI + 0x140)] = AX;
     // STOSW ES:DI (334B_35D9 / 0x36A89)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // LOOP 0x3000:6a80 (334B_35DA / 0x36A8A)
     if(--CX != 0) {
       goto label_334B_35D0_36A80;
@@ -93011,7 +90179,7 @@ public partial class Overrides : CSharpOverrideHelper {
     Stack.Push(DS);
     // LODSW SI (334B_3603 / 0x36AB3)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // OR AX,AX (334B_3604 / 0x36AB4)
     // AX |= AX;
     AX = Alu.Or16(AX, AX);
@@ -93037,7 +90205,7 @@ public partial class Overrides : CSharpOverrideHelper {
     Stack.Push(AX);
     // LODSW SI (334B_3617 / 0x36AC7)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // OR AX,AX (334B_3618 / 0x36AC8)
     // AX |= AX;
     AX = Alu.Or16(AX, AX);
@@ -93911,7 +91079,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_38D8_36D88:
     // LODSW SI (334B_38D8 / 0x36D88)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // ADD AX,0x8 (334B_38D9 / 0x36D89)
     // AX += 0x8;
     AX = Alu.Add16(AX, 0x8);
@@ -93919,7 +91087,7 @@ public partial class Overrides : CSharpOverrideHelper {
     UInt16[cs2, 0x38C8] = AX;
     // LODSW SI (334B_38E0 / 0x36D90)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // ADD AX,0x8 (334B_38E1 / 0x36D91)
     // AX += 0x8;
     AX = Alu.Add16(AX, 0x8);
@@ -93929,22 +91097,22 @@ public partial class Overrides : CSharpOverrideHelper {
     SI = DI;
     // LODSW SI (334B_38EA / 0x36D9A)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV DX,AX (334B_38EB / 0x36D9B)
     DX = AX;
     // LODSW SI (334B_38ED / 0x36D9D)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV BX,AX (334B_38EE / 0x36D9E)
     BX = AX;
     // LODSW SI (334B_38F0 / 0x36DA0)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV CX,AX (334B_38F1 / 0x36DA1)
     CX = AX;
     // LODSW SI (334B_38F3 / 0x36DA3)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // MOV SI,AX (334B_38F4 / 0x36DA4)
     SI = AX;
     // XCHG SI,CX (334B_38F6 / 0x36DA6)
@@ -94237,7 +91405,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AL = Alu.Add8(AL, DH);
     // STOSB ES:DI (334B_39FF / 0x36EAF)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // ADD DX,BX (334B_3A00 / 0x36EB0)
     // DX += BX;
     DX = Alu.Add16(DX, BX);
@@ -94303,15 +91471,10 @@ public partial class Overrides : CSharpOverrideHelper {
         }
         return JumpDispatcher.JumpAsmReturn!;
       }
-      default: throw FailAsUntested("Error: Jump not registered at address " + targetAddress_334B_3A20);
+      default: throw FailAsUntested("Error: Jump not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_334B_3A20));
         break;
     }
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(not_observed_334B_3A9D_036F4D, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
+    throw FailAsUntested("Function does not end with return and no instruction after the body ...");
   }
   
   public Action not_observed_334B_3A9D_036F4D(int loadOffset) {
@@ -94331,28 +91494,28 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_3AA4_36F54:
     // LODSB SI (334B_3AA4 / 0x36F54)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // MOV AH,AL (334B_3AA5 / 0x36F55)
     AH = AL;
     // STOSW ES:DI (334B_3AA7 / 0x36F57)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // MOVSB ES:DI,SI (334B_3AA8 / 0x36F58)
     UInt8[ES, DI] = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
+    DI = (ushort)(DI + Direction8);
     // LOOP 0x3000:6f54 (334B_3AA9 / 0x36F59)
     if(--CX != 0) {
       goto label_334B_3AA4_36F54;
     }
     // LODSB SI (334B_3AAB / 0x36F5B)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // MOV AH,AL (334B_3AAC / 0x36F5C)
     AH = AL;
     // STOSW ES:DI (334B_3AAE / 0x36F5E)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // POP CX (334B_3AAF / 0x36F5F)
     CX = Stack.Pop();
     // ADD SI,CX (334B_3AB0 / 0x36F60)
@@ -94363,36 +91526,36 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_3AB3_36F63:
     // LODSB SI (334B_3AB3 / 0x36F63)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // MOV AH,AL (334B_3AB4 / 0x36F64)
     AH = AL;
     // MOV word ptr ES:[DI + 0x140],AX (334B_3AB6 / 0x36F66)
     UInt16[ES, (ushort)(DI + 0x140)] = AX;
     // STOSW ES:DI (334B_3ABB / 0x36F6B)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // LODSB SI (334B_3ABC / 0x36F6C)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // MOV byte ptr ES:[DI + 0x140],AL (334B_3ABD / 0x36F6D)
     UInt8[ES, (ushort)(DI + 0x140)] = AL;
     // STOSB ES:DI (334B_3AC2 / 0x36F72)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // LOOP 0x3000:6f63 (334B_3AC3 / 0x36F73)
     if(--CX != 0) {
       goto label_334B_3AB3_36F63;
     }
     // LODSB SI (334B_3AC5 / 0x36F75)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // MOV AH,AL (334B_3AC6 / 0x36F76)
     AH = AL;
     // MOV word ptr ES:[DI + 0x140],AX (334B_3AC8 / 0x36F78)
     UInt16[ES, (ushort)(DI + 0x140)] = AX;
     // STOSW ES:DI (334B_3ACD / 0x36F7D)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // ADD SI,0x6b (334B_3ACE / 0x36F7E)
     // SI += 0x6B;
     SI = Alu.Add16(SI, 0x6B);
@@ -94424,14 +91587,14 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_3ADF_36F8F:
     // LODSB SI (334B_3ADF / 0x36F8F)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // MOV AH,AL (334B_3AE0 / 0x36F90)
     AH = AL;
     // MOV word ptr ES:[DI + 0x140],AX (334B_3AE2 / 0x36F92)
     UInt16[ES, (ushort)(DI + 0x140)] = AX;
     // STOSW ES:DI (334B_3AE7 / 0x36F97)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // LOOP 0x3000:6f8f (334B_3AE8 / 0x36F98)
     if(--CX != 0) {
       goto label_334B_3ADF_36F8F;
@@ -94467,33 +91630,33 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_3AFC_36FAC:
     // LODSB SI (334B_3AFC / 0x36FAC)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // MOV AH,AL (334B_3AFD / 0x36FAD)
     AH = AL;
     // STOSW ES:DI (334B_3AFF / 0x36FAF)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // STOSB ES:DI (334B_3B00 / 0x36FB0)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // ADD DI,0x13d (334B_3B01 / 0x36FB1)
     // DI += 0x13D;
     DI = Alu.Add16(DI, 0x13D);
     // STOSW ES:DI (334B_3B05 / 0x36FB5)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // STOSB ES:DI (334B_3B06 / 0x36FB6)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // ADD DI,0x13d (334B_3B07 / 0x36FB7)
     // DI += 0x13D;
     DI = Alu.Add16(DI, 0x13D);
     // STOSW ES:DI (334B_3B0B / 0x36FBB)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // STOSB ES:DI (334B_3B0C / 0x36FBC)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // SUB DI,0x280 (334B_3B0D / 0x36FBD)
     // DI -= 0x280;
     DI = Alu.Sub16(DI, 0x280);
@@ -94503,24 +91666,24 @@ public partial class Overrides : CSharpOverrideHelper {
     }
     // LODSB SI (334B_3B13 / 0x36FC3)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // MOV AH,AL (334B_3B14 / 0x36FC4)
     AH = AL;
     // STOSW ES:DI (334B_3B16 / 0x36FC6)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // ADD DI,0x13e (334B_3B17 / 0x36FC7)
     // DI += 0x13E;
     DI = Alu.Add16(DI, 0x13E);
     // STOSW ES:DI (334B_3B1B / 0x36FCB)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // ADD DI,0x13e (334B_3B1C / 0x36FCC)
     // DI += 0x13E;
     DI = Alu.Add16(DI, 0x13E);
     // STOSW ES:DI (334B_3B20 / 0x36FD0)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // ADD SI,0xd5 (334B_3B21 / 0x36FD1)
     // SI += 0xD5;
     SI = Alu.Add16(SI, 0xD5);
@@ -94535,24 +91698,24 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_3B2B_36FDB:
     // LODSB SI (334B_3B2B / 0x36FDB)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // MOV AH,AL (334B_3B2C / 0x36FDC)
     AH = AL;
     // STOSW ES:DI (334B_3B2E / 0x36FDE)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // STOSB ES:DI (334B_3B2F / 0x36FDF)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // ADD DI,0x13d (334B_3B30 / 0x36FE0)
     // DI += 0x13D;
     DI = Alu.Add16(DI, 0x13D);
     // STOSW ES:DI (334B_3B34 / 0x36FE4)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // STOSB ES:DI (334B_3B35 / 0x36FE5)
     UInt8[ES, DI] = AL;
-    DI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    DI = (ushort)(DI + Direction8);
     // SUB DI,0x140 (334B_3B36 / 0x36FE6)
     // DI -= 0x140;
     DI = Alu.Sub16(DI, 0x140);
@@ -94562,18 +91725,18 @@ public partial class Overrides : CSharpOverrideHelper {
     }
     // LODSB SI (334B_3B3C / 0x36FEC)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // MOV AH,AL (334B_3B3D / 0x36FED)
     AH = AL;
     // STOSW ES:DI (334B_3B3F / 0x36FEF)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // ADD DI,0x13e (334B_3B40 / 0x36FF0)
     // DI += 0x13E;
     DI = Alu.Add16(DI, 0x13E);
     // STOSW ES:DI (334B_3B44 / 0x36FF4)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // RETF  (334B_3B45 / 0x36FF5)
     return FarRet();
   }
@@ -94593,7 +91756,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_3B4C_36FFC:
     // LODSB SI (334B_3B4C / 0x36FFC)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // MOV AH,AL (334B_3B4D / 0x36FFD)
     AH = AL;
     // MOV BP,0x4 (334B_3B4F / 0x36FFF)
@@ -94601,10 +91764,10 @@ public partial class Overrides : CSharpOverrideHelper {
     label_334B_3B52_37002:
     // STOSW ES:DI (334B_3B52 / 0x37002)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // STOSW ES:DI (334B_3B53 / 0x37003)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    DI = (ushort)(DI + Direction16);
     // ADD DI,0x13c (334B_3B54 / 0x37004)
     // DI += 0x13C;
     DI = Alu.Add16(DI, 0x13C);
@@ -94646,6 +91809,14 @@ public partial class Overrides : CSharpOverrideHelper {
     label_5635_0100_56450:
     // JMP 0x5000:64cb (5635_0100 / 0x56450)
     throw FailAsUntested("Would have been a goto but label label_5635_017B_564CB does not exist because no instruction was found there that belongs to a function.");
+    label_5635_0103_56453:
+    // JMP 0x5000:64d5 (5635_0103 / 0x56453)
+    // Jump converted to non entry function call
+    if(JumpDispatcher.Jump(PcSpeakerActivationWithALCleanup_5635_0182_564D2, 0x564D5 - cs1 * 0x10)) {
+      loadOffset = JumpDispatcher.NextEntryAddress;
+      goto entrydispatcher;
+    }
+    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action ClearAL_5635_0103_56453(int loadOffset) {
@@ -94658,12 +91829,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x5000:64d5 (5635_0103 / 0x56453)
     // Jump converted to non entry function call
     if(JumpDispatcher.Jump(PcSpeakerActivationWithALCleanup_5635_0182_564D2, 0x564D5 - cs1 * 0x10)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(ClearAL_5635_0109_56459, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -94684,12 +91849,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(ClearAL_5635_010C_5645C, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action ClearAL_5635_010C_5645C(int loadOffset) {
@@ -94706,8 +91865,10 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(ClearAL_5635_0115_56465, 0)) {
+    label_5635_0115_56465:
+    // JMP 0x5000:64d5 (5635_0115 / 0x56465)
+    // Jump converted to non entry function call
+    if(JumpDispatcher.Jump(PcSpeakerActivationWithALCleanup_5635_0182_564D2, 0x564D5 - cs1 * 0x10)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -94728,7 +91889,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    throw FailAsUntested("Function does not end with return and no other function found after the body at address 0x564CB");
   }
   
   public Action PcSpeakerActivationWithALCleanup_5635_0182_564D2(int loadOffset) {
@@ -94763,6 +91923,9 @@ public partial class Overrides : CSharpOverrideHelper {
     Cpu.Out8(0x61, AL);
     // RET  (5635_018E / 0x564DE)
     return NearRet();
+    label_5635_0190_564E0:
+    // JMP 0x5000:65ab (5635_0190 / 0x564E0)
+    throw FailAsUntested("Would have been a goto but label label_5635_025B_565AB does not exist because no instruction was found there that belongs to a function.");
   }
   
   public Action PcSpeakerActivationWithBXAndALCleanup_563E_0100_564E0(int loadOffset) {
@@ -94790,12 +91953,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(ClearAL_563E_0106_564E6, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action ClearAL_563E_0106_564E6(int loadOffset) {
@@ -94808,12 +91965,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x5000:65c1 (563E_0106 / 0x564E6)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_563E_01E1_565C1, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_563E_0109_564E9, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -94834,12 +91985,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_563E_010C_564EC, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_563E_010C_564EC(int loadOffset) {
@@ -94852,12 +91997,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x5000:65ce (563E_010C / 0x564EC)
     // Jump converted to non entry function call
     if(JumpDispatcher.Jump(not_observed_563E_01ED_0565CD, 0x565CE - cs1 * 0x10)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_563E_010F_564EF, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -94878,12 +92017,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(ClearAL_563E_0112_564F2, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action ClearAL_563E_0112_564F2(int loadOffset) {
@@ -94900,12 +92033,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(PcSpeakerActivationWithALCleanup_563E_0182_56562, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action PcSpeakerActivationWithALCleanup_563E_0182_56562(int loadOffset) {
@@ -94916,11 +92043,9 @@ public partial class Overrides : CSharpOverrideHelper {
     
     label_563E_0182_56562:
     // XOR AX,0x1310 (563E_0182 / 0x56562)
-    // Instruction bytes at index 0, 1, 2 modified by those instruction(s): 563E_03EB_567CB
     // AX ^= 0x1310;
     AX = Alu.Xor16(AX, 0x1310);
     // ADD byte ptr [SI + -0x2c],CL (563E_0185 / 0x56565)
-    // Instruction bytes at index 0, 1, 2 modified by those instruction(s): 563E_03EB_567CB
     // UInt8[DS, (ushort)(SI - 0x2C)] += CL;
     UInt8[DS, (ushort)(SI - 0x2C)] = Alu.Add8(UInt8[DS, (ushort)(SI - 0x2C)], CL);
     // Function call generated as ASM continues to next function entry point without return
@@ -94939,7 +92064,6 @@ public partial class Overrides : CSharpOverrideHelper {
     
     label_563E_0188_56568:
     // POPA  (563E_0188 / 0x56568)
-    // Instruction bytes at index 0 modified by those instruction(s): 563E_03EB_567CB
     DI = Stack.Pop();
     SI = Stack.Pop();
     BP =Stack.Pop();
@@ -94950,37 +92074,27 @@ public partial class Overrides : CSharpOverrideHelper {
     CX = Stack.Pop();
     AX = Stack.Pop();
     // MOV AL,[0x35] (563E_0189 / 0x56569)
-    // Instruction bytes at index 0, 1, 2 modified by those instruction(s): 563E_03EB_567CB
     AL = UInt8[DS, 0x35];
     // CMP AX,0x7000 (563E_018C / 0x5656C)
-    // Instruction bytes at index 0, 1, 2 modified by those instruction(s): 563E_03EB_567CB
     Alu.Sub16(AX, 0x7000);
     // ADD byte ptr [BP + DI + 0x0],CH (563E_018F / 0x5656F)
-    // Instruction bytes at index 0, 1, 2 modified by those instruction(s): 563E_03EB_567CB
     // UInt8[SS, (ushort)(BP + DI)] += CH;
     UInt8[SS, (ushort)(BP + DI)] = Alu.Add8(UInt8[SS, (ushort)(BP + DI)], CH);
     // JG 0x5000:6574 (563E_0192 / 0x56572)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 563E_03EB_567CB
     if(!ZeroFlag && SignFlag == OverflowFlag) {
       goto label_563E_0194_56574;
     }
     label_563E_0194_56574:
     // ADC AL,byte ptr [BX + DI] (563E_0194 / 0x56574)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 563E_03EB_567CB
     AL = Alu.Adc8(AL, UInt8[DS, (ushort)(BX + DI)]);
     // MOV AL,0x1 (563E_0196 / 0x56576)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 563E_03EB_567CB
     AL = 0x1;
     // SUB AX,word ptr [BX + DI] (563E_0198 / 0x56578)
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 563E_03EB_567CB
     // AX -= UInt16[DS, (ushort)(BX + DI)];
     AX = Alu.Sub16(AX, UInt16[DS, (ushort)(BX + DI)]);
     // CMP AX,word ptr [BP + SI + 0x60] (563E_019A / 0x5657A)
-    // Instruction bytes at index 2 modified by those instruction(s): 563E_02D9_566B9
-    // Instruction bytes at index 0, 1 modified by those instruction(s): 563E_03EB_567CB
     Alu.Sub16(AX, UInt16[SS, (ushort)(BP + SI + 0x60)]);
     // PUSHA  (563E_019D / 0x5657D)
-    // Instruction bytes at index 0 modified by those instruction(s): 563E_02D9_566B9
     ushort sp563E_019D = SP;
     Stack.Push(AX);
     Stack.Push(CX);
@@ -94991,7 +92105,6 @@ public partial class Overrides : CSharpOverrideHelper {
     Stack.Push(SI);
     Stack.Push(DI);
     // PUSHA  (563E_019E / 0x5657E)
-    // Instruction bytes at index 0 modified by those instruction(s): 563E_02D9_566B9
     ushort sp563E_019E = SP;
     Stack.Push(AX);
     Stack.Push(CX);
@@ -95002,7 +92115,6 @@ public partial class Overrides : CSharpOverrideHelper {
     Stack.Push(SI);
     Stack.Push(DI);
     // PUSHA  (563E_019F / 0x5657F)
-    // Instruction bytes at index 0 modified by those instruction(s): 563E_02D9_566B9
     ushort sp563E_019F = SP;
     Stack.Push(AX);
     Stack.Push(CX);
@@ -95013,7 +92125,6 @@ public partial class Overrides : CSharpOverrideHelper {
     Stack.Push(SI);
     Stack.Push(DI);
     // PUSHA  (563E_01A0 / 0x56580)
-    // Instruction bytes at index 0 modified by those instruction(s): 563E_02D9_566B9, 563E_0443_56823
     ushort sp563E_01A0 = SP;
     Stack.Push(AX);
     Stack.Push(CX);
@@ -95024,7 +92135,6 @@ public partial class Overrides : CSharpOverrideHelper {
     Stack.Push(SI);
     Stack.Push(DI);
     // PUSHA  (563E_01A1 / 0x56581)
-    // Instruction bytes at index 0 modified by those instruction(s): 563E_02D9_566B9
     ushort sp563E_01A1 = SP;
     Stack.Push(AX);
     Stack.Push(CX);
@@ -95035,7 +92145,6 @@ public partial class Overrides : CSharpOverrideHelper {
     Stack.Push(SI);
     Stack.Push(DI);
     // PUSHA  (563E_01A2 / 0x56582)
-    // Instruction bytes at index 0 modified by those instruction(s): 563E_02D9_566B9
     ushort sp563E_01A2 = SP;
     Stack.Push(AX);
     Stack.Push(CX);
@@ -95046,9 +92155,8 @@ public partial class Overrides : CSharpOverrideHelper {
     Stack.Push(SI);
     Stack.Push(DI);
     // POP ES (563E_01A3 / 0x56583)
-    // Instruction bytes at index 0 modified by those instruction(s): 563E_02D9_566B9, 563E_0443_56823
     ES = Stack.Pop();
-    throw FailAsUntested("Function does not end with return and no other function found after the body at address 0x56584");
+    throw FailAsUntested("Function does not end with return and no instruction after the body ...");
   }
   
   public Action unknown_563E_01E1_565C1(int loadOffset) {
@@ -95121,7 +92229,7 @@ public partial class Overrides : CSharpOverrideHelper {
     BX = 0x8888;
     // CMP AX,0x180 (563E_0202 / 0x565E2)
     Alu.Sub16(AX, 0x180);
-    throw FailAsUntested("Function does not end with return and no other function found after the body at address 0x565E5");
+    throw FailAsUntested("Function does not end with return and no instruction after the body ...");
   }
   
   public Action not_observed_563E_0211_0565F1(int loadOffset) {
@@ -95161,7 +92269,7 @@ public partial class Overrides : CSharpOverrideHelper {
     UInt8[cs4, 0x13F] = AL;
     // MOV CS:[0x13e],AL (563E_022F / 0x5660F)
     UInt8[cs4, 0x13E] = AL;
-    throw FailAsUntested("Function does not end with return and no other function found after the body at address 0x56613");
+    throw FailAsUntested("Function does not end with return and no instruction after the body ...");
   }
   
   public Action not_observed_563E_023B_05661B(int loadOffset) {
@@ -95177,6 +92285,15 @@ public partial class Overrides : CSharpOverrideHelper {
     AL = UInt8[cs4, 0x139];
     // RETF  (563E_0245 / 0x56625)
     return FarRet();
+    label_563E_0250_56630:
+    // PUSH DS (563E_0250 / 0x56630)
+    Stack.Push(DS);
+    // Function call generated as ASM continues to next function body without return
+    if(JumpDispatcher.Jump(not_observed_563E_0250_056630, 0x56631 - cs1 * 0x10)) {
+      loadOffset = JumpDispatcher.NextEntryAddress;
+      goto entrydispatcher;
+    }
+    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action not_observed_563E_0250_056630(int loadOffset) {
@@ -95212,7 +92329,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AX = UInt16[ES, (ushort)(SI + 0x8000)];
     // MOV word ptr [DI + 0x8],AX (563E_0271 / 0x56651)
     UInt16[DS, (ushort)(DI + 0x8)] = AX;
-    throw FailAsUntested("Function does not end with return and no other function found after the body at address 0x56654");
+    throw FailAsUntested("Function does not end with return and no instruction after the body ...");
   }
   
   public Action unknown_563E_02AE_5668E(int loadOffset) {
@@ -95231,8 +92348,8 @@ public partial class Overrides : CSharpOverrideHelper {
     // MOV word ptr [0x140],0x0 (563E_02B1 / 0x56691)
     UInt16[DS, 0x140] = 0x0;
     // LDS SI,[0x115] (563E_02B7 / 0x56697)
-    SI = UInt16[DS, 0x115];
     DS = UInt16[DS, 0x117];
+    SI = UInt16[DS, 0x115];
     // MOV BP,SI (563E_02BB / 0x5669B)
     BP = SI;
     // MOV DI,0x166 (563E_02BD / 0x5669D)
@@ -95242,7 +92359,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_563E_02C3_566A3:
     // LODSW SI (563E_02C3 / 0x566A3)
     AX = UInt16[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -2 : 2));
+    SI = (ushort)(SI + Direction16);
     // OR AX,AX (563E_02C4 / 0x566A4)
     // AX |= AX;
     AX = Alu.Or16(AX, AX);
@@ -95258,8 +92375,8 @@ public partial class Overrides : CSharpOverrideHelper {
     label_563E_02CF_566AF:
     // STOSW ES:DI (563E_02CF / 0x566AF)
     UInt16[ES, DI] = AX;
-    DI = (ushort)(SI + (DirectionFlag ? -2 : 2));
-    throw FailAsUntested("Function does not end with return and no other function found after the body at address 0x566B0");
+    DI = (ushort)(DI + Direction16);
+    throw FailAsUntested("Function does not end with return and no instruction after the body ...");
   }
   
   public Action unknown_563E_02E0_566C0(int loadOffset) {
@@ -95293,7 +92410,7 @@ public partial class Overrides : CSharpOverrideHelper {
     }
     // MOV AX,CX (563E_0300 / 0x566E0)
     AX = CX;
-    throw FailAsUntested("Function does not end with return and no other function found after the body at address 0x566E2");
+    throw FailAsUntested("Function does not end with return and no instruction after the body ...");
   }
   
   public Action not_observed_563E_030F_0566EF(int loadOffset) {
@@ -95434,8 +92551,8 @@ public partial class Overrides : CSharpOverrideHelper {
     // PUSH ES (563E_034A / 0x5672A)
     Stack.Push(ES);
     // LES SI,[0x246] (563E_034B / 0x5672B)
-    SI = UInt16[DS, 0x246];
     ES = UInt16[DS, 0x248];
+    SI = UInt16[DS, 0x246];
     // MOV AX,word ptr ES:[SI] (563E_034F / 0x5672F)
     AX = UInt16[ES, SI];
     // CMP word ptr [0x24a],AX (563E_0352 / 0x56732)
@@ -95456,7 +92573,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AX = UInt16[ES, (ushort)(SI + 0x8000)];
     // CMP word ptr [0x24e],AX (563E_0368 / 0x56748)
     Alu.Sub16(UInt16[DS, 0x24E], AX);
-    throw FailAsUntested("Function does not end with return and no other function found after the body at address 0x5674C");
+    throw FailAsUntested("Function does not end with return and no instruction after the body ...");
   }
   
   public Action unknown_563E_036F_5674F(int loadOffset) {
@@ -95468,8 +92585,8 @@ public partial class Overrides : CSharpOverrideHelper {
     }
     label_563E_036F_5674F:
     // LES BX,[0x115] (563E_036F / 0x5674F)
-    BX = UInt16[DS, 0x115];
     ES = UInt16[DS, 0x117];
+    BX = UInt16[DS, 0x115];
     // MOV AX,word ptr ES:[BX + 0x30] (563E_0373 / 0x56753)
     AX = UInt16[ES, (ushort)(BX + 0x30)];
     // ADD word ptr [0x11d],AX (563E_0377 / 0x56757)
@@ -95510,7 +92627,7 @@ public partial class Overrides : CSharpOverrideHelper {
     }
     // PUSH CX (563E_0390 / 0x56770)
     Stack.Push(CX);
-    throw FailAsUntested("Function does not end with return and no other function found after the body at address 0x56771");
+    throw FailAsUntested("Function does not end with return and no instruction after the body ...");
   }
   
   public Action not_observed_563E_03B2_056792(int loadOffset) {
@@ -95542,7 +92659,7 @@ public partial class Overrides : CSharpOverrideHelper {
     UInt8[DS, 0x121] = 0x60;
     // INC word ptr [0x11f] (563E_03C2 / 0x567A2)
     UInt16[DS, 0x11F] = Alu.Inc16(UInt16[DS, 0x11F]);
-    throw FailAsUntested("Function does not end with return and no other function found after the body at address 0x567A6");
+    throw FailAsUntested("Function does not end with return and no instruction after the body ...");
   }
   
   public Action unknown_563E_03C7_567A7(int loadOffset) {
@@ -95587,7 +92704,7 @@ public partial class Overrides : CSharpOverrideHelper {
     ES = Stack.Pop();
     // MOV CX,0x12 (563E_03E8 / 0x567C8)
     CX = 0x12;
-    throw FailAsUntested("Function does not end with return and no other function found after the body at address 0x567CB");
+    throw FailAsUntested("Function does not end with return and no instruction after the body ...");
   }
   
   public Action unknown_563E_041C_567FC(int loadOffset) {
@@ -95636,12 +92753,6 @@ public partial class Overrides : CSharpOverrideHelper {
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_563E_0432_56812, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action unknown_563E_0432_56812(int loadOffset) {
@@ -95670,7 +92781,44 @@ public partial class Overrides : CSharpOverrideHelper {
       }
       return JumpDispatcher.JumpAsmReturn!;
     }
-    throw FailAsUntested("Function does not end with return and no other function found after the body at address 0x5681E");
+    // Function call generated as ASM continues to next function entry point without return
+    if(JumpDispatcher.Jump(not_observed_563E_043E_05681E, 0)) {
+      loadOffset = JumpDispatcher.NextEntryAddress;
+      goto entrydispatcher;
+    }
+    return JumpDispatcher.JumpAsmReturn!;
+  }
+  
+  public Action not_observed_563E_043E_05681E(int loadOffset) {
+    entrydispatcher:
+    if(loadOffset!=0){
+      throw FailAsUntested("External goto not supported for this function.");
+    }
+    
+    label_563E_043E_5681E:
+    // MOV BX,AX (563E_043E / 0x5681E)
+    BX = AX;
+    // AND BX,0xf (563E_0440 / 0x56820)
+    // BX &= 0xF;
+    BX = Alu.And16(BX, 0xF);
+    // MOV byte ptr [BX + 0x19c],CL (563E_0443 / 0x56823)
+    UInt8[DS, (ushort)(BX + 0x19C)] = CL;
+    // PUSH AX (563E_0447 / 0x56827)
+    Stack.Push(AX);
+    // MOV AL,[0x13d] (563E_0448 / 0x56828)
+    AL = UInt8[DS, 0x13D];
+    // MUL CL (563E_044B / 0x5682B)
+    Cpu.Mul8(CL);
+    // MOV CL,AH (563E_044D / 0x5682D)
+    CL = AH;
+    // POP AX (563E_044F / 0x5682F)
+    AX = Stack.Pop();
+    // Function call generated as ASM continues to next function entry point without return
+    if(JumpDispatcher.Jump(not_observed_563E_0450_056830, 0)) {
+      loadOffset = JumpDispatcher.NextEntryAddress;
+      goto entrydispatcher;
+    }
+    return JumpDispatcher.JumpAsmReturn!;
   }
   
   public Action not_observed_563E_0450_056830(int loadOffset) {
@@ -95683,12 +92831,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x5000:6986 (563E_0450 / 0x56830)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_563E_05A6_56986, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_563E_0453_56833, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -95711,12 +92853,6 @@ public partial class Overrides : CSharpOverrideHelper {
     // JMP 0x5000:6986 (563E_045A / 0x5683A)
     // Jump converted to entry function call
     if(JumpDispatcher.Jump(unknown_563E_05A6_56986, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(unknown_563E_045D_5683D, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
@@ -95761,7 +92897,7 @@ public partial class Overrides : CSharpOverrideHelper {
     if(!SignFlag) {
       throw FailAsUntested("Would have been a goto but label label_563E_047A_5685A does not exist because no instruction was found there that belongs to a function.");
     }
-    throw FailAsUntested("Function does not end with return and no other function found after the body at address 0x56856");
+    throw FailAsUntested("Function does not end with return and no instruction after the body ...");
   }
   
   public Action unknown_563E_049B_5687B(int loadOffset) {
@@ -95779,7 +92915,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AX = 0;
     // LODSB ES:SI (563E_049F / 0x5687F)
     AL = UInt8[ES, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // OR AL,AL (563E_04A1 / 0x56881)
     // AL |= AL;
     AL = Alu.Or8(AL, AL);
@@ -95803,7 +92939,7 @@ public partial class Overrides : CSharpOverrideHelper {
     AH = AL;
     // LODSB ES:SI (563E_04AD / 0x5688D)
     AL = UInt8[ES, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // OR AL,AL (563E_04AF / 0x5688F)
     // AL |= AL;
     AL = Alu.Or8(AL, AL);
@@ -95823,7 +92959,7 @@ public partial class Overrides : CSharpOverrideHelper {
     // SHR CX,1 (563E_04BC / 0x5689C)
     // CX >>= 1;
     CX = Alu.Shr16(CX, 1);
-    throw FailAsUntested("Function does not end with return and no other function found after the body at address 0x5689E");
+    throw FailAsUntested("Function does not end with return and no instruction after the body ...");
   }
   
   public Action not_observed_563E_04CF_0568AF(int loadOffset) {
@@ -95901,7 +93037,7 @@ public partial class Overrides : CSharpOverrideHelper {
     }
     // MOV AL,0x3 (563E_04F7 / 0x568D7)
     AL = 0x3;
-    throw FailAsUntested("Function does not end with return and no other function found after the body at address 0x568D9");
+    throw FailAsUntested("Function does not end with return and no instruction after the body ...");
   }
   
   public Action not_observed_563E_04FB_0568DB(int loadOffset) {
@@ -95951,7 +93087,7 @@ public partial class Overrides : CSharpOverrideHelper {
     label_563E_050F_568EF:
     // LODSB SI (563E_050F / 0x568EF)
     AL = UInt8[DS, SI];
-    SI = (ushort)(SI + (DirectionFlag ? -1 : 1));
+    SI = (ushort)(SI + Direction8);
     // MUL BL (563E_0510 / 0x568F0)
     Cpu.Mul8(BL);
     // MOV CL,AH (563E_0512 / 0x568F2)
@@ -95964,7 +93100,7 @@ public partial class Overrides : CSharpOverrideHelper {
     DX = Alu.Inc16(DX);
     // CMP DL,0xba (563E_051A / 0x568FA)
     Alu.Sub8(DL, 0xBA);
-    throw FailAsUntested("Function does not end with return and no other function found after the body at address 0x568FD");
+    throw FailAsUntested("Function does not end with return and no instruction after the body ...");
   }
   
   public Action unknown_563E_052F_5690F(int loadOffset) {
@@ -96005,7 +93141,7 @@ public partial class Overrides : CSharpOverrideHelper {
     if(CarryFlag) {
       goto label_563E_0538_56918;
     }
-    throw FailAsUntested("Function does not end with return and no other function found after the body at address 0x56932");
+    throw FailAsUntested("Function does not end with return and no instruction after the body ...");
   }
   
   public Action unknown_563E_0564_56944(int loadOffset) {
@@ -96063,7 +93199,7 @@ public partial class Overrides : CSharpOverrideHelper {
     DX = Alu.Inc16(DX);
     // CMP AL,0xfe (563E_0584 / 0x56964)
     Alu.Sub8(AL, 0xFE);
-    throw FailAsUntested("Function does not end with return and no other function found after the body at address 0x56966");
+    throw FailAsUntested("Function does not end with return and no instruction after the body ...");
   }
   
   public Action unknown_563E_05A6_56986(int loadOffset) {
@@ -96137,7 +93273,48 @@ public partial class Overrides : CSharpOverrideHelper {
     DX = Alu.Inc16(DX);
     // MOV CX,0xff (563E_05C5 / 0x569A5)
     CX = 0xFF;
-    throw FailAsUntested("Function does not end with return and no other function found after the body at address 0x569A8");
+    // Function call generated as ASM continues to next function entry point without return
+    if(JumpDispatcher.Jump(not_observed_563E_05C8_0569A8, 0)) {
+      loadOffset = JumpDispatcher.NextEntryAddress;
+      goto entrydispatcher;
+    }
+    return JumpDispatcher.JumpAsmReturn!;
+  }
+  
+  public Action not_observed_563E_05C8_0569A8(int loadOffset) {
+    entrydispatcher:
+    if(loadOffset!=0){
+      throw FailAsUntested("External goto not supported for this function.");
+    }
+    
+    label_563E_05C8_569A8:
+    // IN AL,DX (563E_05C8 / 0x569A8)
+    AL = Cpu.In8(DX);
+    // TEST AL,0x40 (563E_05C9 / 0x569A9)
+    Alu.And8(AL, 0x40);
+    // LOOPNZ 0x5000:69a8 (563E_05CB / 0x569AB)
+    if(--CX != 0 && !ZeroFlag) {
+      goto label_563E_05C8_569A8;
+    }
+    // DEC DX (563E_05CD / 0x569AD)
+    DX = Alu.Dec16(DX);
+    // MOV AL,BL (563E_05CE / 0x569AE)
+    AL = BL;
+    // OUT DX,AL (563E_05D0 / 0x569B0)
+    Cpu.Out8(DX, AL);
+    // INC DX (563E_05D1 / 0x569B1)
+    DX = Alu.Inc16(DX);
+    // MOV CX,word ptr CS:[0x127] (563E_05D2 / 0x569B2)
+    CX = UInt16[cs4, 0x127];
+    label_563E_05D7_569B7:
+    // IN AL,DX (563E_05D7 / 0x569B7)
+    AL = Cpu.In8(DX);
+    // LOOP 0x5000:69b7 (563E_05D8 / 0x569B8)
+    if(--CX != 0) {
+      goto label_563E_05D7_569B7;
+    }
+    // RET  (563E_05DA / 0x569BA)
+    return NearRet();
   }
   
 }
