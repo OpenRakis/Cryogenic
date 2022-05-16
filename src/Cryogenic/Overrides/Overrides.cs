@@ -2,8 +2,6 @@ namespace Cryogenic.Overrides;
 
 using Globals;
 
-using JetBrains.Annotations;
-
 using Serilog;
 
 using Spice86.Emulator.Function;
@@ -18,6 +16,7 @@ public partial class Overrides {
     private ushort cs2; // 0x334B
     private ushort cs3; // 0x5635
     private ushort cs4; // 0x563E
+    private ushort cs5 = 0xF000;
     private ExtraGlobalsOnDs globalsOnDs;
     private ExtraGlobalsOnCsSegment0x2538 globalsOnCsSegment0X2538;
 
@@ -57,6 +56,6 @@ public partial class Overrides {
             return NearJump(0xd);
         });
         // Generated code, crashes for various reasons
-        //DefineGeneratedCodeOverrides();
+        DefineGeneratedCodeOverrides();
     }
 }
