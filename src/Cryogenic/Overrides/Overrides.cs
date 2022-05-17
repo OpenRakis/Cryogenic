@@ -48,14 +48,74 @@ public partial class Overrides {
         DefineTimerCodeOverrides();
         DefineUnknownCodeOverrides();
         DefineVideoCodeOverrides();
-        // Do code rewrite detection after dune initialization, so override instruction
-        OverrideInstruction(cs1, 0xc, () => {
-            // cs1:000C is STI
-            InterruptFlag = true;
-            DetectCodeRewrites();
-            return NearJump(0xd);
-        });
+        DetectCodeRewrites();
+        SetupExecutableCodeModificationStrategy();
         // Generated code, crashes for various reasons
-        DefineGeneratedCodeOverrides();
+        //DefineGeneratedCodeOverrides();
+    }
+
+    private void SetupExecutableCodeModificationStrategy() {
+        // Don't detect code modification in cases where the result will already be in the dump and won't change. This is so that the generated code does not become overloaded.
+        OverrideInstruction(cs1, 0xF2F6, () => {
+            // Driver load from file to executable area, disable code modification detection
+            IsRegisterExecutableCodeModificationEnabled = false;
+            Interrupt(0x21);
+            IsRegisterExecutableCodeModificationEnabled = true;
+            return NearJump(0xF2F8);
+        });
+        OverrideInstruction(cs1, 0xF43B, () => {
+            // Part of HSQ decompression, disable code modification detection
+            IsRegisterExecutableCodeModificationEnabled = false;
+            // MOVSB ES:DI,SI (1000_F43B / 0x1F43B)
+            UInt8[ES, DI] = UInt8[DS, SI];
+            SI = (ushort)(SI + Direction8);
+            DI = (ushort)(DI + Direction8);
+            IsRegisterExecutableCodeModificationEnabled = true;
+            return NearJump(0xF43C);
+        });
+        OverrideInstruction(cs1, 0xF429, () => {
+            // Part of HSQ decompression, disable code modification detection
+            IsRegisterExecutableCodeModificationEnabled = false;
+            // REP
+            while (CX != 0) {
+                CX--;
+                // MOVSW ES:DI,SI (1000_F429 / 0x1F429)
+                UInt16[ES, DI] = UInt16[DS, SI];
+                SI = (ushort)(SI + Direction16);
+                DI = (ushort)(DI + Direction16);
+            }
+            IsRegisterExecutableCodeModificationEnabled = true;
+            return NearJump(0xF42B);
+        });
+        OverrideInstruction(cs1, 0xF47A, () => {
+            // Part of HSQ decompression, disable code modification detection
+            IsRegisterExecutableCodeModificationEnabled = false;
+            // REP
+            while (CX != 0) {
+                CX--;
+                // MOVSB ES:DI,SI (1000_F47A / 0x1F47A)
+                UInt8[ES, DI] = UInt8[DS, SI];
+                SI = (ushort)(SI + Direction8);
+                DI = (ushort)(DI + Direction8);
+            }
+            IsRegisterExecutableCodeModificationEnabled = true;
+            return NearJump(0xF47C);
+        });
+        OverrideInstruction(cs1, 0xE933, () => {
+            // Installation of interrupt handlers and update of jumps, only done once and already in the dump -> we dont care
+            IsRegisterExecutableCodeModificationEnabled = false;
+            // MOV word ptr CS:[DI],AX (1000_E933 / 0x1E933)
+            UInt16[cs1, DI] = AX;
+            // MOV AX,word ptr CS:[DI + 0x2] (1000_E936 / 0x1E936)
+            AX = UInt16[cs1, (ushort)(DI + 0x2)];
+            // XCHG word ptr ES:[SI + 0x2],AX (1000_E93A / 0x1E93A)
+            ushort tmp_1000_E93A = UInt16[ES, (ushort)(SI + 0x2)];
+            UInt16[ES, (ushort)(SI + 0x2)] = AX;
+            AX = tmp_1000_E93A;
+            // MOV word ptr CS:[DI + 0x2],AX (1000_E93E / 0x1E93E)
+            UInt16[cs1, (ushort)(DI + 0x2)] = AX;
+            IsRegisterExecutableCodeModificationEnabled = true;
+            return NearJump(0xE942);
+        });
     }
 }
