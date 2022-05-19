@@ -51,7 +51,7 @@ public partial class Overrides {
         DetectCodeRewrites();
         SetupExecutableCodeModificationStrategy();
         // Generated code, crashes for various reasons
-        //DefineGeneratedCodeOverrides();
+        DefineGeneratedCodeOverrides();
     }
 
     private void SetupExecutableCodeModificationStrategy() {
@@ -116,6 +116,33 @@ public partial class Overrides {
             UInt16[cs1, (ushort)(DI + 0x2)] = AX;
             IsRegisterExecutableCodeModificationEnabled = true;
             return NearJump(0xE942);
+        });
+        OverrideInstruction(cs4, 0x02D9, () => {
+            // Driver modifying itself only once (setting opcodes from 0x00 to 0x60)
+            IsRegisterExecutableCodeModificationEnabled = false;
+            // REP
+            while (CX != 0) {
+                CX--;
+                // STOSB ES:DI (563E_02D9 / 0x566B9)
+                UInt8[ES, DI] = AL;
+                DI = (ushort)(DI + Direction8);
+            }
+            IsRegisterExecutableCodeModificationEnabled = true;
+            return NearJump(0x02DB);
+        });
+        OverrideInstruction(cs4, 0x03EB , () => {
+            // Driver modifying itself only once (Copying to memory containing 0s)
+            IsRegisterExecutableCodeModificationEnabled = false;
+            // REP
+            while (CX != 0) {
+                CX--;
+                // MOVSW ES:DI,SI (563E_03EB / 0x567CB)
+                UInt16[ES, DI] = UInt16[DS, SI];
+                SI = (ushort)(SI + Direction16);
+                DI = (ushort)(DI + Direction16);
+            }
+            IsRegisterExecutableCodeModificationEnabled = true;
+            return NearJump(0x03ED);
         });
     }
 }
