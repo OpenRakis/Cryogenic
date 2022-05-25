@@ -1,11 +1,7 @@
 namespace Cryogenic.Overrides;
 
-using Spice86.Emulator.ReverseEngineer;
-
-using System;
-
 // Method names contain _ to separate addresses.
-public partial class Overrides : CSharpOverrideHelper {
+public partial class Overrides {
     public static readonly int MENU_TYPE_BOOK = 0x2032;
     public static readonly int MENU_TYPE_CHANGE_TROOP_OCCUPATION = 0x216E;
     public static readonly int MENU_TYPE_DIALOGUE = 0x1F7E;
@@ -26,11 +22,11 @@ public partial class Overrides : CSharpOverrideHelper {
     public static readonly int MENU_TYPE_WALK_AROUND = 0x1F0E;
 
     public void DefineMenuCodeOverrides() {
-        DefineFunction(cs1, 0xD316, MenuAnimationRelated_1ED_D316_F1E6);
-        DefineFunction(cs1, 0xD41B, SetBpToCurrentMenuTypeForScreenAction_1ED_D41B_F2EB);
+        DefineFunction(cs1, 0xD316, MenuAnimationRelated_1000_D316_01D316);
+        DefineFunction(cs1, 0xD41B, SetBpToCurrentMenuTypeForScreenAction_1000_D41B_01D41B);
     }
 
-    public Action MenuAnimationRelated_1ED_D316_F1E6(int gotoAddress) {
+    public Action MenuAnimationRelated_1000_D316_01D316(int gotoAddress) {
         // called when a menu has a submenu
         int isAnimateMenuUneeded = globalsOnDs.Get1138_35A6_Word16_IsAnimateMenuUnneeded();
         byte value2 = globalsOnDs.Get1138_DCE6_Byte8_TransitionBitmask();
@@ -43,15 +39,15 @@ public partial class Overrides : CSharpOverrideHelper {
         return NearRet();
     }
 
-    public Action SetBpToCurrentMenuTypeForScreenAction_1ED_D41B_F2EB(int gotoAddress) {
+    public Action SetBpToCurrentMenuTypeForScreenAction_1000_D41B_01D41B(int gotoAddress) {
         // If BP does not point to a correct menu type, menu is still OK but no action is clickable on the screen
-        if (State.SS != State.DS) {
+        if (SS != DS) {
             throw FailAsUntested(
                 "Was implemented considering base address is DS since I couldnt see a case where DS!=SS for this method, but you found one :)");
         }
 
         ushort value = globalsOnDs.GetMenuType();
-        State.BP = value;
+        BP = value;
         return NearRet();
     }
 }

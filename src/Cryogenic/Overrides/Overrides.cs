@@ -10,21 +10,14 @@ using Spice86.Emulator.VM;
 
 using System.Collections.Generic;
 
-public partial class Overrides {
+public partial class Overrides : GeneratedOverrides {
     private static readonly ILogger _logger = Log.Logger.ForContext<Overrides>();
-    private ushort cs1; // 0x1000
-    private ushort cs2; // 0x334B
-    private ushort cs3; // 0x5635
-    private ushort cs4; // 0x563E
-    private ushort cs5 = 0xF000;
     private ExtraGlobalsOnDs globalsOnDs;
     private ExtraGlobalsOnCsSegment0x2538 globalsOnCsSegment0X2538;
 
     public Overrides(Dictionary<SegmentedAddress, FunctionInformation> functionInformations, ushort entrySegment, Machine machine) : base(functionInformations, machine) {
-        this.cs1 = entrySegment;
-        this.cs2 = (ushort)(entrySegment + 0x234B);
-        this.cs3 = (ushort)(entrySegment + 0x4635);
-        this.cs4 = (ushort)(entrySegment + 0x463E);
+        // This does not depend on the entry segment. 
+        this.cs5 = 0xF000;
         globalsOnDs = new ExtraGlobalsOnDs(machine);
         globalsOnCsSegment0X2538 = new ExtraGlobalsOnCsSegment0x2538(machine, cs2);
 
@@ -42,16 +35,17 @@ public partial class Overrides {
         DefineMapCodeOverrides();
         DefineMenuCodeOverrides();
         DefineScriptedSceneCodeOverrides();
-        DefineSoundCodeOverrides();
-        DefineSoundDriverCodeOverrides();
         DefineTimeCodeOverrides();
         DefineTimerCodeOverrides();
         DefineUnknownCodeOverrides();
         DefineVideoCodeOverrides();
-        DetectCodeRewrites();
+        if (!Machine.Configuration.UseCodeOverride) {
+            // Detect code rewrites only in emulated mode
+            DetectCodeRewrites();
+        }
         SetupExecutableCodeModificationStrategy();
         // Generated code, crashes for various reasons
-        DefineGeneratedCodeOverrides();
+        //DefineGeneratedCodeOverrides();
     }
 
     private void SetupExecutableCodeModificationStrategy() {

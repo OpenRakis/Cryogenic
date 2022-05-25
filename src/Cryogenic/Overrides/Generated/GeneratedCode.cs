@@ -1,14 +1,16 @@
 namespace Cryogenic.Overrides;
 
-public partial class Overrides : CSharpOverrideHelper {
+using Spice86.Emulator.Function;
 
-/*  private ushort cs1; // 0x1000
-  private ushort cs2; // 0x334B
-  private ushort cs3; // 0x5635
-  private ushort cs4; // 0x563E
-  private ushort cs5; // 0xF000
+public partial class GeneratedOverrides : CSharpOverrideHelper {
+
+  protected ushort cs1; // 0x1000
+  protected ushort cs2; // 0x334B
+  protected ushort cs3; // 0x5635
+  protected ushort cs4; // 0x563E
+  protected ushort cs5; // 0xF000
   
-  public Overrides(Dictionary<SegmentedAddress, FunctionInformation> functionInformations, Machine machine, ushort entrySegment = 0x1000) : base(functionInformations, machine) {
+  public GeneratedOverrides(Dictionary<SegmentedAddress, FunctionInformation> functionInformations, Machine machine, ushort entrySegment = 0x1000) : base(functionInformations, machine) {
     // Observed cs1 address at generation time is 0x1000. Do not set entrySegment to something else if the program is not relocatable.
     this.cs1 = (ushort)(entrySegment + 0x0);
     this.cs2 = (ushort)(entrySegment + 0x234B);
@@ -16,12 +18,11 @@ public partial class Overrides : CSharpOverrideHelper {
     this.cs4 = (ushort)(entrySegment + 0x463E);
     this.cs5 = (ushort)(entrySegment + 0xE000);
     
-    DefineGeneratedCodeOverrides();
-    DetectCodeRewrites();
+    // DefineGeneratedCodeOverrides();
+    // DetectCodeRewrites();
   }
   
-  */
-  public void DefineGeneratedCodeOverrides() {
+    public void DefineGeneratedCodeOverrides() {
     // 0x1000
     DefineFunction(cs1, 0x0, entry_1000_0000_10000, false);
     DefineFunction(cs1, 0x10, spice86_generated_label_ret_target_1000_0010_010010, false);
@@ -2395,21 +2396,27 @@ public partial class Overrides : CSharpOverrideHelper {
     if(loadOffset != 0) {
       throw FailAsUntested("External goto not supported for this function.");
     }
+    State.IncCycles();
     label_1000_0000_10000:
     // MOV AX,0xdd1d (1000_0000 / 0x10000)
     AX = 0xDD1D;
+    State.IncCycles();
     CheckExternalEvents(cs1, 0x6);
     // CALL 0x1000:e4ad (1000_0003 / 0x10003)
     NearCall(cs1, 0x6, spice86_generated_label_call_target_1000_E4AD_01E4AD);
+    State.IncCycles();
     label_1000_0006_10006:
     // CALL 0x1000:e594 (1000_0006 / 0x10006)
     NearCall(cs1, 0x9, spice86_generated_label_call_target_1000_E594_01E594);
+    State.IncCycles();
     label_1000_0009_10009:
     // CALL 0x1000:00b0 (1000_0009 / 0x10009)
     NearCall(cs1, 0xC, spice86_generated_label_call_target_1000_00B0_0100B0);
+    State.IncCycles();
     label_1000_000C_1000C:
     // STI  (1000_000C / 0x1000C)
     InterruptFlag = true;
+    State.IncCycles();
     // CALL 0x1000:0580 (1000_000D / 0x1000D)
     NearCall(cs1, 0x10, spice86_generated_label_call_target_1000_0580_010580);
     // Function call generated as ASM continues to next function entry point without return

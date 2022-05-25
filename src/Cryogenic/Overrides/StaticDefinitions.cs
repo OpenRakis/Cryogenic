@@ -1,13 +1,6 @@
 namespace Cryogenic.Overrides;
 
-using Spice86.Emulator.Function;
-using Spice86.Emulator.Memory;
-using Spice86.Emulator.ReverseEngineer;
-using Spice86.Emulator.VM;
-
-using System.Collections.Generic;
-
-public partial class Overrides : CSharpOverrideHelper {
+public partial class Overrides {
 
     public void DefineStaticDefinitionsFunctions() {
         DefineFunction(cs1, 0x3A, "exit");

@@ -1,4859 +1,5165 @@
 namespace Cryogenic.Overrides;
 
-public partial class Overrides : CSharpOverrideHelper {
+using Spice86.Emulator.Function;
 
-  public virtual Action spice86_generated_label_jump_target_334B_17E8_034C98(int loadOffset) {
+public partial class GeneratedOverrides : CSharpOverrideHelper {
+
+  public virtual Action not_observed_1000_E0A2_01E0A2(int loadOffset) {
     entrydispatcher:
     if(loadOffset != 0) {
       throw FailAsUntested("External goto not supported for this function.");
     }
-    label_334B_17E8_34C98:
-    // XOR CH,CH (334B_17E8 / 0x34C98)
-    CH = 0;
-    // MOV AX,word ptr [BP + 0x2] (334B_17EA / 0x34C9A)
-    AX = UInt16[SS, (ushort)(BP + 0x2)];
-    // SUB AX,BX (334B_17ED / 0x34C9D)
-    // AX -= BX;
-    AX = Alu.Sub16(AX, BX);
-    // JLE 0x3000:4cac (334B_17EF / 0x34C9F)
-    if(ZeroFlag || SignFlag != OverflowFlag) {
-      goto label_334B_17FC_34CAC;
-    }
-    // SUB CX,AX (334B_17F1 / 0x34CA1)
-    // CX -= AX;
-    CX = Alu.Sub16(CX, AX);
-    // JBE 0x3000:4cd5 (334B_17F3 / 0x34CA3)
-    if(CarryFlag || ZeroFlag) {
-      // JBE target is RETF, inlining.
-      // RETF  (334B_1825 / 0x34CD5)
-      return FarRet();
-    }
-    // ADD BX,AX (334B_17F5 / 0x34CA5)
-    BX += AX;
-    label_334B_17F7_34CA7:
-    // ADD SI,DI (334B_17F7 / 0x34CA7)
-    SI += DI;
-    // DEC AX (334B_17F9 / 0x34CA9)
-    AX = Alu.Dec16(AX);
-    // JNZ 0x3000:4ca7 (334B_17FA / 0x34CAA)
-    if(!ZeroFlag) {
-      goto label_334B_17F7_34CA7;
-    }
-    label_334B_17FC_34CAC:
-    // MOV AX,BX (334B_17FC / 0x34CAC)
-    AX = BX;
-    // ADD AX,CX (334B_17FE / 0x34CAE)
-    AX += CX;
-    // SUB AX,word ptr [BP + 0x6] (334B_1800 / 0x34CB0)
-    // AX -= UInt16[SS, (ushort)(BP + 0x6)];
-    AX = Alu.Sub16(AX, UInt16[SS, (ushort)(BP + 0x6)]);
-    // JBE 0x3000:4cb9 (334B_1803 / 0x34CB3)
-    if(CarryFlag || ZeroFlag) {
-      goto label_334B_1809_34CB9;
-    }
-    // SUB CX,AX (334B_1805 / 0x34CB5)
-    // CX -= AX;
-    CX = Alu.Sub16(CX, AX);
-    // JBE 0x3000:4cd5 (334B_1807 / 0x34CB7)
-    if(CarryFlag || ZeroFlag) {
-      // JBE target is RETF, inlining.
-      // RETF  (334B_1825 / 0x34CD5)
-      return FarRet();
-    }
-    label_334B_1809_34CB9:
-    // MOV AX,DX (334B_1809 / 0x34CB9)
-    AX = DX;
-    // ADD AX,DI (334B_180B / 0x34CBB)
-    AX += DI;
-    // SUB AX,word ptr [BP + 0x4] (334B_180D / 0x34CBD)
-    // AX -= UInt16[SS, (ushort)(BP + 0x4)];
-    AX = Alu.Sub16(AX, UInt16[SS, (ushort)(BP + 0x4)]);
-    // JG 0x3000:4d04 (334B_1810 / 0x34CC0)
-    if(!ZeroFlag && SignFlag == OverflowFlag) {
-      // Jump converted to entry function call
-      if(JumpDispatcher.Jump(spice86_generated_label_jump_target_334B_1854_034D04, 0)) {
-        loadOffset = JumpDispatcher.NextEntryAddress;
-        goto entrydispatcher;
-      }
-      return JumpDispatcher.JumpAsmReturn!;
-    }
-    // MOV AX,word ptr [BP + 0x0] (334B_1812 / 0x34CC2)
-    AX = UInt16[SS, BP];
-    // SUB AX,DX (334B_1815 / 0x34CC5)
-    // AX -= DX;
-    AX = Alu.Sub16(AX, DX);
-    // JG 0x3000:4cd6 (334B_1817 / 0x34CC7)
-    if(!ZeroFlag && SignFlag == OverflowFlag) {
-      // Jump converted to non entry function call
-      if(JumpDispatcher.Jump(not_observed_334B_1825_034CD5, 0x34CD6 - cs1 * 0x10)) {
-        loadOffset = JumpDispatcher.NextEntryAddress;
-        goto entrydispatcher;
-      }
-      return JumpDispatcher.JumpAsmReturn!;
-    }
-    // MOV BP,DI (334B_1819 / 0x34CC9)
-    BP = DI;
-    // PUSH DI (334B_181B / 0x34CCB)
-    Stack.Push(DI);
-    // CALL 0x3000:40c0 (334B_181C / 0x34CCC)
-    NearCall(cs2, 0x181F, spice86_generated_label_call_target_334B_0C10_0340C0);
-    // POP DX (334B_181F / 0x34CCF)
-    DX = Stack.Pop();
-    // MOV BX,CX (334B_1820 / 0x34CD0)
-    BX = CX;
-    // JMP 0x3000:4ce7 (334B_1822 / 0x34CD2)
-    // Jump converted to entry function call
-    if(JumpDispatcher.Jump(spice86_generated_label_jump_target_334B_1837_034CE7, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-  }
-  
-  public virtual Action not_observed_334B_1825_034CD5(int loadOffset) {
-    entrydispatcher:
-    if(loadOffset != 0) {
-      throw FailAsUntested("External goto not supported for this function.");
-    }
-    label_334B_1825_34CD5:
-    // RETF  (334B_1825 / 0x34CD5)
-    return FarRet();
-    label_334B_1826_34CD6:
-    // MOV BP,DI (334B_1826 / 0x34CD6)
-    BP = DI;
-    // SUB DI,AX (334B_1828 / 0x34CD8)
-    // DI -= AX;
-    DI = Alu.Sub16(DI, AX);
-    // JLE 0x3000:4cd5 (334B_182A / 0x34CDA)
-    if(ZeroFlag || SignFlag != OverflowFlag) {
-      // JLE target is RETF, inlining.
-      // RETF  (334B_1825 / 0x34CD5)
-      return FarRet();
-    }
-    // ADD DX,AX (334B_182C / 0x34CDC)
-    DX += AX;
-    // ADD SI,AX (334B_182E / 0x34CDE)
-    // SI += AX;
-    SI = Alu.Add16(SI, AX);
-    // PUSH DI (334B_1830 / 0x34CE0)
-    Stack.Push(DI);
-    // CALL 0x3000:40c0 (334B_1831 / 0x34CE1)
-    NearCall(cs2, 0x1834, spice86_generated_label_call_target_334B_0C10_0340C0);
-    // POP DX (334B_1834 / 0x34CE4)
-    DX = Stack.Pop();
-    // MOV BX,CX (334B_1835 / 0x34CE5)
-    BX = CX;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(spice86_generated_label_jump_target_334B_1837_034CE7, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-  }
-  
-  public virtual Action spice86_generated_label_jump_target_334B_1837_034CE7(int loadOffset) {
-    entrydispatcher:
-    if(loadOffset != 0) {
-      throw FailAsUntested("External goto not supported for this function.");
-    }
-    label_334B_1837_34CE7:
-    // SUB BP,DX (334B_1837 / 0x34CE7)
-    // BP -= DX;
-    BP = Alu.Sub16(BP, DX);
-    label_334B_1839_34CE9:
-    // MOV CX,DX (334B_1839 / 0x34CE9)
-    CX = DX;
-    label_334B_183B_34CEB:
-    // LODSB SI (334B_183B / 0x34CEB)
-    AL = UInt8[DS, SI];
-    SI = (ushort)(SI + Direction8);
-    // OR AL,AL (334B_183C / 0x34CEC)
-    // AL |= AL;
-    AL = Alu.Or8(AL, AL);
-    // JZ 0x3000:4cff (334B_183E / 0x34CEE)
-    if(ZeroFlag) {
-      goto label_334B_184F_34CFF;
-    }
-    // STOSB ES:DI (334B_1840 / 0x34CF0)
-    UInt8[ES, DI] = AL;
-    DI = (ushort)(DI + Direction8);
-    // LOOP 0x3000:4ceb (334B_1841 / 0x34CF1)
-    if(--CX != 0) {
-      goto label_334B_183B_34CEB;
-    }
-    label_334B_1843_34CF3:
-    // SUB DI,DX (334B_1843 / 0x34CF3)
-    DI -= DX;
-    // ADD SI,BP (334B_1845 / 0x34CF5)
-    SI += BP;
-    // ADD DI,0x140 (334B_1847 / 0x34CF7)
-    DI += 0x140;
-    // DEC BX (334B_184B / 0x34CFB)
-    BX = Alu.Dec16(BX);
-    // JNZ 0x3000:4ce9 (334B_184C / 0x34CFC)
-    if(!ZeroFlag) {
-      goto label_334B_1839_34CE9;
-    }
-    // RETF  (334B_184E / 0x34CFE)
-    return FarRet();
-    label_334B_184F_34CFF:
-    // INC DI (334B_184F / 0x34CFF)
-    DI = Alu.Inc16(DI);
-    // LOOP 0x3000:4ceb (334B_1850 / 0x34D00)
-    if(--CX != 0) {
-      goto label_334B_183B_34CEB;
-    }
-    // JMP 0x3000:4cf3 (334B_1852 / 0x34D02)
-    goto label_334B_1843_34CF3;
-  }
-  
-  public virtual Action spice86_generated_label_jump_target_334B_1854_034D04(int loadOffset) {
-    entrydispatcher:
-    if(loadOffset != 0) {
-      throw FailAsUntested("External goto not supported for this function.");
-    }
-    label_334B_1854_34D04:
-    // MOV word ptr CS:[0x158b],DI (334B_1854 / 0x34D04)
-    UInt16[cs2, 0x158B] = DI;
-    // SUB DI,AX (334B_1859 / 0x34D09)
-    // DI -= AX;
-    DI = Alu.Sub16(DI, AX);
-    // JLE 0x3000:4cd5 (334B_185B / 0x34D0B)
-    if(ZeroFlag || SignFlag != OverflowFlag) {
-      // JLE target is RETF, inlining.
-      // RETF  (334B_1825 / 0x34CD5)
-      return FarRet();
-    }
-    // MOV AX,word ptr [BP + 0x0] (334B_185D / 0x34D0D)
-    AX = UInt16[SS, BP];
-    // SUB AX,DX (334B_1860 / 0x34D10)
-    // AX -= DX;
-    AX = Alu.Sub16(AX, DX);
-    // JG 0x3000:4d22 (334B_1862 / 0x34D12)
-    if(!ZeroFlag && SignFlag == OverflowFlag) {
-      goto label_334B_1872_34D22;
-    }
-    // PUSH DI (334B_1864 / 0x34D14)
-    Stack.Push(DI);
-    // CALL 0x3000:40c0 (334B_1865 / 0x34D15)
-    NearCall(cs2, 0x1868, spice86_generated_label_call_target_334B_0C10_0340C0);
-    // POP DX (334B_1868 / 0x34D18)
-    DX = Stack.Pop();
-    // MOV BP,word ptr CS:[0x158b] (334B_1869 / 0x34D19)
-    BP = UInt16[cs2, 0x158B];
-    // MOV BX,CX (334B_186E / 0x34D1E)
-    BX = CX;
-    // JMP 0x3000:4ce7 (334B_1870 / 0x34D20)
-    // Jump converted to entry function call
-    if(JumpDispatcher.Jump(spice86_generated_label_jump_target_334B_1837_034CE7, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    label_334B_1872_34D22:
-    // SUB DI,AX (334B_1872 / 0x34D22)
-    // DI -= AX;
-    DI = Alu.Sub16(DI, AX);
-    // JLE 0x3000:4cd5 (334B_1874 / 0x34D24)
-    if(ZeroFlag || SignFlag != OverflowFlag) {
-      // JLE target is RETF, inlining.
-      // RETF  (334B_1825 / 0x34CD5)
-      return FarRet();
-    }
-    // ADD SI,AX (334B_1876 / 0x34D26)
-    SI += AX;
-    // ADD DX,AX (334B_1878 / 0x34D28)
-    // DX += AX;
-    DX = Alu.Add16(DX, AX);
-    // PUSH DI (334B_187A / 0x34D2A)
-    Stack.Push(DI);
-    // CALL 0x3000:40c0 (334B_187B / 0x34D2B)
-    NearCall(cs2, 0x187E, spice86_generated_label_call_target_334B_0C10_0340C0);
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(spice86_generated_label_ret_target_334B_187E_034D2E, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-  }
-  
-  public virtual Action spice86_generated_label_ret_target_334B_187E_034D2E(int loadOffset) {
-    entrydispatcher:
-    if(loadOffset != 0) {
-      throw FailAsUntested("External goto not supported for this function.");
-    }
-    label_334B_187E_34D2E:
-    // POP DX (334B_187E / 0x34D2E)
-    DX = Stack.Pop();
-    // MOV BP,word ptr CS:[0x158b] (334B_187F / 0x34D2F)
-    BP = UInt16[cs2, 0x158B];
-    // MOV BX,CX (334B_1884 / 0x34D34)
-    BX = CX;
-    // JMP 0x3000:4ce7 (334B_1886 / 0x34D36)
-    // Jump converted to entry function call
-    if(JumpDispatcher.Jump(spice86_generated_label_jump_target_334B_1837_034CE7, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-  }
-  
-  public virtual Action spice86_generated_label_jump_target_334B_1888_034D38(int loadOffset) {
-    entrydispatcher:
-    if(loadOffset != 0) {
-      throw FailAsUntested("External goto not supported for this function.");
-    }
-    label_334B_1888_34D38:
-    // LODSW SI (334B_1888 / 0x34D38)
-    AX = UInt16[DS, SI];
-    SI = (ushort)(SI + Direction16);
-    // SUB DX,AX (334B_1889 / 0x34D39)
-    // DX -= AX;
-    DX = Alu.Sub16(DX, AX);
-    // JNC 0x3000:4d3f (334B_188B / 0x34D3B)
-    if(!CarryFlag) {
-      goto label_334B_188F_34D3F;
-    }
-    // XOR DX,DX (334B_188D / 0x34D3D)
-    DX = 0;
-    label_334B_188F_34D3F:
-    // LODSW SI (334B_188F / 0x34D3F)
-    AX = UInt16[DS, SI];
-    SI = (ushort)(SI + Direction16);
-    // SUB BX,AX (334B_1890 / 0x34D40)
-    // BX -= AX;
-    BX = Alu.Sub16(BX, AX);
-    // JNC 0x3000:4d46 (334B_1892 / 0x34D42)
-    if(!CarryFlag) {
-      goto label_334B_1896_34D46;
-    }
-    // XOR BX,BX (334B_1894 / 0x34D44)
-    BX = 0;
-    label_334B_1896_34D46:
-    // MOV CX,0x10 (334B_1896 / 0x34D46)
-    CX = 0x10;
-    // CMP BX,0xb8 (334B_1899 / 0x34D49)
-    Alu.Sub16(BX, 0xB8);
-    // JBE 0x3000:4d54 (334B_189D / 0x34D4D)
-    if(CarryFlag || ZeroFlag) {
-      goto label_334B_18A4_34D54;
-    }
-    // MOV CX,0xc8 (334B_189F / 0x34D4F)
-    CX = 0xC8;
-    // SUB CX,BX (334B_18A2 / 0x34D52)
-    // CX -= BX;
-    CX = Alu.Sub16(CX, BX);
-    label_334B_18A4_34D54:
-    // CALL 0x3000:40c0 (334B_18A4 / 0x34D54)
-    NearCall(cs2, 0x18A7, spice86_generated_label_call_target_334B_0C10_0340C0);
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(spice86_generated_label_ret_target_334B_18A7_034D57, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-  }
-  
-  public virtual Action spice86_generated_label_ret_target_334B_18A7_034D57(int loadOffset) {
-    entrydispatcher:
-    if(loadOffset != 0) {
-      throw FailAsUntested("External goto not supported for this function.");
-    }
-    label_334B_18A7_34D57:
-    // MOV AX,0xa000 (334B_18A7 / 0x34D57)
-    AX = 0xA000;
-    // MOV ES,AX (334B_18AA / 0x34D5A)
-    ES = AX;
-    // SUB DX,0x140 (334B_18AC / 0x34D5C)
-    DX -= 0x140;
-    // NEG DX (334B_18B0 / 0x34D60)
-    DX = Alu.Sub16(0, DX);
-    // CMP DX,0x10 (334B_18B2 / 0x34D62)
-    Alu.Sub16(DX, 0x10);
-    // JBE 0x3000:4d6a (334B_18B5 / 0x34D65)
-    if(CarryFlag || ZeroFlag) {
-      goto label_334B_18BA_34D6A;
-    }
-    // MOV DX,0x10 (334B_18B7 / 0x34D67)
-    DX = 0x10;
-    label_334B_18BA_34D6A:
-    // MOV word ptr CS:[0x18c],DX (334B_18BA / 0x34D6A)
-    UInt16[cs2, 0x18C] = DX;
-    // MOV word ptr CS:[0x18e],CX (334B_18BF / 0x34D6F)
-    UInt16[cs2, 0x18E] = CX;
-    // MOV word ptr CS:[0x18a],DI (334B_18C4 / 0x34D74)
-    UInt16[cs2, 0x18A] = DI;
-    // MOV BX,0xfa00 (334B_18C9 / 0x34D79)
-    BX = 0xFA00;
-    // SHR DX,1 (334B_18CC / 0x34D7C)
-    // DX >>= 0x1;
-    DX = Alu.Shr16(DX, 0x1);
-    // MOV word ptr CS:[0x190],DX (334B_18CE / 0x34D7E)
-    UInt16[cs2, 0x190] = DX;
-    // MOV word ptr CS:[0x192],CX (334B_18D3 / 0x34D83)
-    UInt16[cs2, 0x192] = CX;
-    label_334B_18D8_34D88:
-    // MOV CX,word ptr CS:[0x190] (334B_18D8 / 0x34D88)
-    CX = UInt16[cs2, 0x190];
-    // MOV BP,word ptr [SI + 0x20] (334B_18DD / 0x34D8D)
-    BP = UInt16[DS, (ushort)(SI + 0x20)];
-    // LODSW SI (334B_18E0 / 0x34D90)
-    AX = UInt16[DS, SI];
-    SI = (ushort)(SI + Direction16);
-    // MOV DX,AX (334B_18E1 / 0x34D91)
-    DX = AX;
-    // JCXZ 0x3000:4dc1 (334B_18E3 / 0x34D93)
-    if(CX == 0) {
-      goto label_334B_1911_34DC1;
-    }
-    label_334B_18E5_34D95:
-    // MOV AX,word ptr ES:[DI] (334B_18E5 / 0x34D95)
-    AX = UInt16[ES, DI];
-    // MOV word ptr ES:[BX],AX (334B_18E8 / 0x34D98)
-    UInt16[ES, BX] = AX;
-    // ADD BX,0x2 (334B_18EB / 0x34D9B)
-    BX += 0x2;
-    // ROL BP,1 (334B_18EE / 0x34D9E)
-    BP = Alu.Rol16(BP, 0x1);
-    // ADD DX,DX (334B_18F0 / 0x34DA0)
-    // DX += DX;
-    DX = Alu.Add16(DX, DX);
-    // JC 0x3000:4dae (334B_18F2 / 0x34DA2)
-    if(CarryFlag) {
-      goto label_334B_18FE_34DAE;
-    }
-    // XOR AL,AL (334B_18F4 / 0x34DA4)
-    AL = 0;
-    // TEST BP,0x1 (334B_18F6 / 0x34DA6)
-    Alu.And16(BP, 0x1);
-    // JZ 0x3000:4dae (334B_18FA / 0x34DAA)
-    if(ZeroFlag) {
-      goto label_334B_18FE_34DAE;
-    }
-    // MOV AL,0xf (334B_18FC / 0x34DAC)
-    AL = 0xF;
-    label_334B_18FE_34DAE:
-    // ROL BP,1 (334B_18FE / 0x34DAE)
-    BP = Alu.Rol16(BP, 0x1);
-    // ADD DX,DX (334B_1900 / 0x34DB0)
-    // DX += DX;
-    DX = Alu.Add16(DX, DX);
-    // JC 0x3000:4dbe (334B_1902 / 0x34DB2)
-    if(CarryFlag) {
-      goto label_334B_190E_34DBE;
-    }
-    // XOR AH,AH (334B_1904 / 0x34DB4)
-    AH = 0;
-    // TEST BP,0x1 (334B_1906 / 0x34DB6)
-    Alu.And16(BP, 0x1);
-    // JZ 0x3000:4dbe (334B_190A / 0x34DBA)
-    if(ZeroFlag) {
-      goto label_334B_190E_34DBE;
-    }
-    // MOV AH,0xf (334B_190C / 0x34DBC)
-    AH = 0xF;
-    label_334B_190E_34DBE:
-    // STOSW ES:DI (334B_190E / 0x34DBE)
-    UInt16[ES, DI] = AX;
-    DI = (ushort)(DI + Direction16);
-    // LOOP 0x3000:4d95 (334B_190F / 0x34DBF)
-    if(--CX != 0) {
-      goto label_334B_18E5_34D95;
-    }
-    label_334B_1911_34DC1:
-    // TEST byte ptr CS:[0x18c],0x1 (334B_1911 / 0x34DC1)
-    Alu.And8(UInt8[cs2, 0x18C], 0x1);
-    // JZ 0x3000:4ddf (334B_1917 / 0x34DC7)
-    if(ZeroFlag) {
-      goto label_334B_192F_34DDF;
-    }
-    // MOV AL,byte ptr ES:[DI] (334B_1919 / 0x34DC9)
-    AL = UInt8[ES, DI];
-    // MOV byte ptr ES:[BX],AL (334B_191C / 0x34DCC)
-    UInt8[ES, BX] = AL;
-    // INC BX (334B_191F / 0x34DCF)
-    BX++;
-    // INC DI (334B_1920 / 0x34DD0)
-    DI++;
-    // ADD DX,DX (334B_1921 / 0x34DD1)
-    // DX += DX;
-    DX = Alu.Add16(DX, DX);
-    // JC 0x3000:4ddf (334B_1923 / 0x34DD3)
-    if(CarryFlag) {
-      goto label_334B_192F_34DDF;
-    }
-    // XOR AL,AL (334B_1925 / 0x34DD5)
-    AL = 0;
-    // ADD BP,BP (334B_1927 / 0x34DD7)
-    // BP += BP;
-    BP = Alu.Add16(BP, BP);
-    // JNC 0x3000:4ddd (334B_1929 / 0x34DD9)
-    if(!CarryFlag) {
-      goto label_334B_192D_34DDD;
-    }
-    // MOV AL,0xf (334B_192B / 0x34DDB)
-    AL = 0xF;
-    label_334B_192D_34DDD:
-    // DEC DI (334B_192D / 0x34DDD)
-    DI = Alu.Dec16(DI);
-    // STOSB ES:DI (334B_192E / 0x34DDE)
-    UInt8[ES, DI] = AL;
-    DI = (ushort)(DI + Direction8);
-    label_334B_192F_34DDF:
-    // SUB DI,word ptr CS:[0x18c] (334B_192F / 0x34DDF)
-    DI -= UInt16[cs2, 0x18C];
-    // ADD DI,0x140 (334B_1934 / 0x34DE4)
-    DI += 0x140;
-    // DEC word ptr CS:[0x192] (334B_1938 / 0x34DE8)
-    UInt16[cs2, 0x192] = Alu.Dec16(UInt16[cs2, 0x192]);
-    // JNZ 0x3000:4d88 (334B_193D / 0x34DED)
-    if(!ZeroFlag) {
-      goto label_334B_18D8_34D88;
-    }
-    // RETF  (334B_193F / 0x34DEF)
-    return FarRet();
-  }
-  
-  public virtual Action not_observed_334B_1940_034DF0(int loadOffset) {
-    entrydispatcher:
-    if(loadOffset != 0) {
-      throw FailAsUntested("External goto not supported for this function.");
-    }
-    label_334B_1940_34DF0:
-    // PUSH AX (334B_1940 / 0x34DF0)
-    Stack.Push(AX);
-    // PUSH BX (334B_1941 / 0x34DF1)
-    Stack.Push(BX);
-    // PUSH CX (334B_1942 / 0x34DF2)
-    Stack.Push(CX);
-    // PUSH DX (334B_1943 / 0x34DF3)
-    Stack.Push(DX);
-    // PUSH SI (334B_1944 / 0x34DF4)
-    Stack.Push(SI);
-    // PUSH DI (334B_1945 / 0x34DF5)
-    Stack.Push(DI);
-    // PUSH BP (334B_1946 / 0x34DF6)
-    Stack.Push(BP);
-    // PUSH DS (334B_1947 / 0x34DF7)
-    Stack.Push(DS);
-    // PUSH ES (334B_1948 / 0x34DF8)
-    Stack.Push(ES);
-    // MOV BP,word ptr CS:[0x18a] (334B_1949 / 0x34DF9)
-    BP = UInt16[cs2, 0x18A];
-    // MOV BX,word ptr CS:[0x18c] (334B_194E / 0x34DFE)
-    BX = UInt16[cs2, 0x18C];
-    // MOV DX,word ptr CS:[0x18e] (334B_1953 / 0x34E03)
-    DX = UInt16[cs2, 0x18E];
-    // MOV AX,0xa000 (334B_1958 / 0x34E08)
-    AX = 0xA000;
-    // MOV ES,AX (334B_195B / 0x34E0B)
-    ES = AX;
-    // MOV DS,AX (334B_195D / 0x34E0D)
-    DS = AX;
-    // MOV SI,0xfa00 (334B_195F / 0x34E0F)
-    SI = 0xFA00;
-    label_334B_1962_34E12:
-    // MOV DI,BP (334B_1962 / 0x34E12)
-    DI = BP;
-    // MOV CX,BX (334B_1964 / 0x34E14)
-    CX = BX;
-    // REP
-    while (CX != 0) {
-      CX--;
-      // MOVSB ES:DI,SI (334B_1966 / 0x34E16)
-      UInt8[ES, DI] = UInt8[DS, SI];
-      SI = (ushort)(SI + Direction8);
-      DI = (ushort)(DI + Direction8);
-    }
-    // ADD BP,0x140 (334B_1968 / 0x34E18)
-    BP += 0x140;
-    // DEC DX (334B_196C / 0x34E1C)
-    DX = Alu.Dec16(DX);
-    // JNZ 0x3000:4e12 (334B_196D / 0x34E1D)
-    if(!ZeroFlag) {
-      goto label_334B_1962_34E12;
-    }
-    // POP ES (334B_196F / 0x34E1F)
-    ES = Stack.Pop();
-    // POP DS (334B_1970 / 0x34E20)
-    DS = Stack.Pop();
-    // POP BP (334B_1971 / 0x34E21)
-    BP = Stack.Pop();
-    // POP DI (334B_1972 / 0x34E22)
-    DI = Stack.Pop();
-    // POP SI (334B_1973 / 0x34E23)
-    SI = Stack.Pop();
-    // POP DX (334B_1974 / 0x34E24)
-    DX = Stack.Pop();
-    // POP CX (334B_1975 / 0x34E25)
-    CX = Stack.Pop();
-    // POP BX (334B_1976 / 0x34E26)
-    BX = Stack.Pop();
-    // POP AX (334B_1977 / 0x34E27)
-    AX = Stack.Pop();
-    // RETF  (334B_1978 / 0x34E28)
-    return FarRet();
-  }
-  
-  public virtual Action spice86_generated_label_jump_target_334B_1979_034E29(int loadOffset) {
-    entrydispatcher:
-    if(loadOffset != 0) {
-      throw FailAsUntested("External goto not supported for this function.");
-    }
-    label_334B_1979_34E29:
-    // XOR AX,AX (334B_1979 / 0x34E29)
-    AX = 0;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(spice86_generated_label_jump_target_334B_197B_034E2B, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-  }
-  
-  public virtual Action spice86_generated_label_jump_target_334B_197B_034E2B(int loadOffset) {
-    entrydispatcher:
-    if(loadOffset != 0) {
-      throw FailAsUntested("External goto not supported for this function.");
-    }
-    label_334B_197B_34E2B:
-    // MOV AH,AL (334B_197B / 0x34E2B)
-    AH = AL;
-    // PUSH AX (334B_197D / 0x34E2D)
-    Stack.Push(AX);
-    // LODSW SI (334B_197E / 0x34E2E)
-    AX = UInt16[DS, SI];
-    SI = (ushort)(SI + Direction16);
-    // MOV DX,AX (334B_197F / 0x34E2F)
-    DX = AX;
-    // LODSW SI (334B_1981 / 0x34E31)
-    AX = UInt16[DS, SI];
-    SI = (ushort)(SI + Direction16);
-    // MOV BX,AX (334B_1982 / 0x34E32)
-    BX = AX;
-    // CALL 0x3000:40c0 (334B_1984 / 0x34E34)
-    NearCall(cs2, 0x1987, spice86_generated_label_call_target_334B_0C10_0340C0);
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(spice86_generated_label_ret_target_334B_1987_034E37, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-  }
-  
-  public virtual Action spice86_generated_label_ret_target_334B_1987_034E37(int loadOffset) {
-    entrydispatcher:
-    if(loadOffset != 0) {
-      throw FailAsUntested("External goto not supported for this function.");
-    }
-    label_334B_1987_34E37:
-    // LODSW SI (334B_1987 / 0x34E37)
-    AX = UInt16[DS, SI];
-    SI = (ushort)(SI + Direction16);
-    // MOV BP,AX (334B_1988 / 0x34E38)
-    BP = AX;
-    // SUB BP,DX (334B_198A / 0x34E3A)
-    // BP -= DX;
-    BP = Alu.Sub16(BP, DX);
-    // JBE 0x3000:4e77 (334B_198C / 0x34E3C)
-    if(CarryFlag || ZeroFlag) {
-      goto label_334B_19C7_34E77;
-    }
-    // LODSW SI (334B_198E / 0x34E3E)
-    AX = UInt16[DS, SI];
-    SI = (ushort)(SI + Direction16);
-    // SUB BX,AX (334B_198F / 0x34E3F)
-    // BX -= AX;
-    BX = Alu.Sub16(BX, AX);
-    // JNC 0x3000:4e77 (334B_1991 / 0x34E41)
-    if(!CarryFlag) {
-      goto label_334B_19C7_34E77;
-    }
-    // NEG BX (334B_1993 / 0x34E43)
-    BX = Alu.Sub16(0, BX);
-    // POP AX (334B_1995 / 0x34E45)
-    AX = Stack.Pop();
-    // MOV SI,DI (334B_1996 / 0x34E46)
-    SI = DI;
-    // SHR BP,1 (334B_1998 / 0x34E48)
-    // BP >>= 0x1;
-    BP = Alu.Shr16(BP, 0x1);
-    // JC 0x3000:4e5c (334B_199A / 0x34E4A)
-    if(CarryFlag) {
-      goto label_334B_19AC_34E5C;
-    }
-    // JZ 0x3000:4e76 (334B_199C / 0x34E4C)
-    if(ZeroFlag) {
-      // JZ target is RETF, inlining.
-      // RETF  (334B_19C6 / 0x34E76)
-      return FarRet();
-    }
-    label_334B_199E_34E4E:
-    // MOV DI,SI (334B_199E / 0x34E4E)
-    DI = SI;
-    // MOV CX,BP (334B_19A0 / 0x34E50)
-    CX = BP;
-    // REP
-    while (CX != 0) {
-      CX--;
-      // STOSW ES:DI (334B_19A2 / 0x34E52)
-      UInt16[ES, DI] = AX;
-      DI = (ushort)(DI + Direction16);
-    }
-    // ADD SI,0x140 (334B_19A4 / 0x34E54)
-    SI += 0x140;
-    // DEC BX (334B_19A8 / 0x34E58)
-    BX = Alu.Dec16(BX);
-    // JNZ 0x3000:4e4e (334B_19A9 / 0x34E59)
-    if(!ZeroFlag) {
-      goto label_334B_199E_34E4E;
-    }
-    // RETF  (334B_19AB / 0x34E5B)
-    return FarRet();
-    label_334B_19AC_34E5C:
-    // JZ 0x3000:4e6d (334B_19AC / 0x34E5C)
-    if(ZeroFlag) {
-      goto label_334B_19BD_34E6D;
-    }
-    label_334B_19AE_34E5E:
-    // MOV DI,SI (334B_19AE / 0x34E5E)
-    DI = SI;
-    // MOV CX,BP (334B_19B0 / 0x34E60)
-    CX = BP;
-    // REP
-    while (CX != 0) {
-      CX--;
-      // STOSW ES:DI (334B_19B2 / 0x34E62)
-      UInt16[ES, DI] = AX;
-      DI = (ushort)(DI + Direction16);
-    }
-    // STOSB ES:DI (334B_19B4 / 0x34E64)
-    UInt8[ES, DI] = AL;
-    DI = (ushort)(DI + Direction8);
-    // ADD SI,0x140 (334B_19B5 / 0x34E65)
-    SI += 0x140;
-    // DEC BX (334B_19B9 / 0x34E69)
-    BX = Alu.Dec16(BX);
-    // JNZ 0x3000:4e5e (334B_19BA / 0x34E6A)
-    if(!ZeroFlag) {
-      goto label_334B_19AE_34E5E;
-    }
-    // RETF  (334B_19BC / 0x34E6C)
-    return FarRet();
-    label_334B_19BD_34E6D:
-    // MOV CX,BX (334B_19BD / 0x34E6D)
-    CX = BX;
-    label_334B_19BF_34E6F:
-    // STOSB ES:DI (334B_19BF / 0x34E6F)
-    UInt8[ES, DI] = AL;
-    DI = (ushort)(DI + Direction8);
-    // ADD DI,0x13f (334B_19C0 / 0x34E70)
-    // DI += 0x13F;
-    DI = Alu.Add16(DI, 0x13F);
-    // LOOP 0x3000:4e6f (334B_19C4 / 0x34E74)
-    if(--CX != 0) {
-      goto label_334B_19BF_34E6F;
-    }
-    label_334B_19C6_34E76:
-    // RETF  (334B_19C6 / 0x34E76)
-    return FarRet();
-    label_334B_19C7_34E77:
-    // POP AX (334B_19C7 / 0x34E77)
-    AX = Stack.Pop();
-    // RETF  (334B_19C8 / 0x34E78)
-    return FarRet();
-  }
-  
-  public virtual Action spice86_generated_label_jump_target_334B_19C9_034E79(int loadOffset) {
-    entrydispatcher:
-    if(loadOffset != 0) {
-      throw FailAsUntested("External goto not supported for this function.");
-    }
-    label_334B_19C9_34E79:
-    // MOV DX,word ptr [BP + 0x0] (334B_19C9 / 0x34E79)
-    DX = UInt16[SS, BP];
-    // MOV BX,word ptr [BP + 0x2] (334B_19CC / 0x34E7C)
-    BX = UInt16[SS, (ushort)(BP + 0x2)];
-    // CALL 0x3000:40c0 (334B_19CF / 0x34E7F)
-    NearCall(cs2, 0x19D2, spice86_generated_label_call_target_334B_0C10_0340C0);
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(spice86_generated_label_ret_target_334B_19D2_034E82, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-  }
-  
-  public virtual Action spice86_generated_label_ret_target_334B_19D2_034E82(int loadOffset) {
-    entrydispatcher:
-    if(loadOffset != 0) {
-      throw FailAsUntested("External goto not supported for this function.");
-    }
-    label_334B_19D2_34E82:
-    // MOV SI,DI (334B_19D2 / 0x34E82)
-    SI = DI;
-    // MOV DX,word ptr [BP + 0x8] (334B_19D4 / 0x34E84)
-    DX = UInt16[SS, (ushort)(BP + 0x8)];
-    // MOV BX,word ptr [BP + 0xa] (334B_19D7 / 0x34E87)
-    BX = UInt16[SS, (ushort)(BP + 0xA)];
-    // CALL 0x3000:40c0 (334B_19DA / 0x34E8A)
-    NearCall(cs2, 0x19DD, spice86_generated_label_call_target_334B_0C10_0340C0);
-    label_334B_19DD_34E8D:
-    // MOV DX,word ptr [BP + 0x4] (334B_19DD / 0x34E8D)
-    DX = UInt16[SS, (ushort)(BP + 0x4)];
-    // MOV BX,word ptr [BP + 0x6] (334B_19E0 / 0x34E90)
-    BX = UInt16[SS, (ushort)(BP + 0x6)];
-    label_334B_19E3_34E93:
-    // MOV CX,DX (334B_19E3 / 0x34E93)
-    CX = DX;
-    // REP
-    while (CX != 0) {
-      CX--;
-      // MOVSB ES:DI,SI (334B_19E5 / 0x34E95)
-      UInt8[ES, DI] = UInt8[DS, SI];
-      SI = (ushort)(SI + Direction8);
-      DI = (ushort)(DI + Direction8);
-    }
-    // SUB SI,DX (334B_19E7 / 0x34E97)
-    SI -= DX;
-    // SUB DI,DX (334B_19E9 / 0x34E99)
-    DI -= DX;
-    // ADD SI,0x140 (334B_19EB / 0x34E9B)
-    SI += 0x140;
-    // ADD DI,0x140 (334B_19EF / 0x34E9F)
-    DI += 0x140;
-    // DEC BX (334B_19F3 / 0x34EA3)
-    BX = Alu.Dec16(BX);
-    // JNZ 0x3000:4e93 (334B_19F4 / 0x34EA4)
-    if(!ZeroFlag) {
-      goto label_334B_19E3_34E93;
-    }
-    // RETF  (334B_19F6 / 0x34EA6)
-    return FarRet();
-  }
-  
-  public virtual Action not_observed_334B_19F7_034EA7(int loadOffset) {
-    entrydispatcher:
-    if(loadOffset != 0) {
-      throw FailAsUntested("External goto not supported for this function.");
-    }
-    label_334B_19F7_34EA7:
-    // PUSH AX (334B_19F7 / 0x34EA7)
-    Stack.Push(AX);
-    // PUSH CX (334B_19F8 / 0x34EA8)
-    Stack.Push(CX);
-    // PUSH DI (334B_19F9 / 0x34EA9)
-    Stack.Push(DI);
-    // XOR DI,DI (334B_19FA / 0x34EAA)
-    DI = 0;
-    // XOR AX,AX (334B_19FC / 0x34EAC)
-    AX = 0;
-    // MOV CX,0x7d00 (334B_19FE / 0x34EAE)
-    CX = 0x7D00;
-    // REP
-    while (CX != 0) {
-      CX--;
-      // STOSW ES:DI (334B_1A01 / 0x34EB1)
-      UInt16[ES, DI] = AX;
-      DI = (ushort)(DI + Direction16);
-    }
-    // POP DI (334B_1A03 / 0x34EB3)
-    DI = Stack.Pop();
-    // POP CX (334B_1A04 / 0x34EB4)
-    CX = Stack.Pop();
-    // POP AX (334B_1A05 / 0x34EB5)
-    AX = Stack.Pop();
-    // RETF  (334B_1A06 / 0x34EB6)
-    return FarRet();
-  }
-  
-  public virtual Action spice86_generated_label_jump_target_334B_1A07_034EB7(int loadOffset) {
-    entrydispatcher:
-    if(loadOffset != 0) {
-      throw FailAsUntested("External goto not supported for this function.");
-    }
-    label_334B_1A07_34EB7:
-    // MOV word ptr CS:[0x19a],BP (334B_1A07 / 0x34EB7)
-    UInt16[cs2, 0x19A] = BP;
-    // MOV word ptr CS:[0x198],SI (334B_1A0C / 0x34EBC)
-    UInt16[cs2, 0x198] = SI;
-    // MOV CS:[0x19c],AL (334B_1A11 / 0x34EC1)
-    UInt8[cs2, 0x19C] = AL;
-    // PUSH AX (334B_1A15 / 0x34EC5)
-    Stack.Push(AX);
-    // PUSH BX (334B_1A16 / 0x34EC6)
-    Stack.Push(BX);
-    // PUSH CX (334B_1A17 / 0x34EC7)
-    Stack.Push(CX);
-    // PUSH DX (334B_1A18 / 0x34EC8)
-    Stack.Push(DX);
-    // PUSH DI (334B_1A19 / 0x34EC9)
-    Stack.Push(DI);
-    // MOV word ptr CS:[0x194],DX (334B_1A1A / 0x34ECA)
-    UInt16[cs2, 0x194] = DX;
-    // MOV word ptr CS:[0x196],BX (334B_1A1F / 0x34ECF)
-    UInt16[cs2, 0x196] = BX;
-    // SUB BX,CX (334B_1A24 / 0x34ED4)
-    BX -= CX;
-    // SUB DX,DI (334B_1A26 / 0x34ED6)
-    DX -= DI;
-    // NEG BX (334B_1A28 / 0x34ED8)
-    BX = Alu.Sub16(0, BX);
-    // NEG DX (334B_1A2A / 0x34EDA)
-    DX = Alu.Sub16(0, DX);
-    // CALL 0x3000:4f8c (334B_1A2C / 0x34EDC)
-    NearCall(cs2, 0x1A2F, spice86_generated_label_call_target_334B_1ADC_034F8C);
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(spice86_generated_label_ret_target_334B_1A2F_034EDF, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-  }
-  
-  public virtual Action spice86_generated_label_ret_target_334B_1A2F_034EDF(int loadOffset) {
-    entrydispatcher:
-    if(loadOffset != 0) {
-      throw FailAsUntested("External goto not supported for this function.");
-    }
-    label_334B_1A2F_34EDF:
-    // MOV BP,word ptr CS:[0x19a] (334B_1A2F / 0x34EDF)
-    BP = UInt16[cs2, 0x19A];
-    // POP DI (334B_1A34 / 0x34EE4)
-    DI = Stack.Pop();
-    // POP DX (334B_1A35 / 0x34EE5)
-    DX = Stack.Pop();
-    // POP CX (334B_1A36 / 0x34EE6)
-    CX = Stack.Pop();
-    // POP BX (334B_1A37 / 0x34EE7)
-    BX = Stack.Pop();
-    // POP AX (334B_1A38 / 0x34EE8)
-    AX = Stack.Pop();
-    // RETF  (334B_1A39 / 0x34EE9)
-    return FarRet();
-  }
-  
-  public virtual Action spice86_generated_label_jump_target_334B_1A3A_034EEA(int loadOffset) {
-    entrydispatcher:
-    if(loadOffset != 0) {
-      throw FailAsUntested("External goto not supported for this function.");
-    }
-    label_334B_1A3A_34EEA:
-    // MOV BX,word ptr CS:[0x196] (334B_1A3A / 0x34EEA)
-    BX = UInt16[cs2, 0x196];
-    // MOV CX,DX (334B_1A3F / 0x34EEF)
-    CX = DX;
-    // MOV AX,CS:[0x194] (334B_1A41 / 0x34EF1)
-    AX = UInt16[cs2, 0x194];
-    // MOV DX,AX (334B_1A45 / 0x34EF5)
-    DX = AX;
-    // ADD AX,CX (334B_1A47 / 0x34EF7)
-    AX += CX;
-    // CMP AX,DX (334B_1A49 / 0x34EF9)
-    Alu.Sub16(AX, DX);
-    // JG 0x3000:4f01 (334B_1A4B / 0x34EFB)
-    if(!ZeroFlag && SignFlag == OverflowFlag) {
-      goto label_334B_1A51_34F01;
-    }
-    // MOV DX,AX (334B_1A4D / 0x34EFD)
-    DX = AX;
-    // NEG CX (334B_1A4F / 0x34EFF)
-    CX = Alu.Sub16(0, CX);
-    label_334B_1A51_34F01:
-    // MOV DI,word ptr CS:[0x198] (334B_1A51 / 0x34F01)
-    DI = UInt16[cs2, 0x198];
-    // CMP BX,word ptr [DI + 0x2] (334B_1A56 / 0x34F06)
-    Alu.Sub16(BX, UInt16[DS, (ushort)(DI + 0x2)]);
-    // JL 0x3000:4f33 (334B_1A59 / 0x34F09)
-    if(SignFlag != OverflowFlag) {
-      // Jump converted to non entry function call
-      if(JumpDispatcher.Jump(spice86_generated_label_ret_target_334B_1A63_034F13, 0x34F33 - cs1 * 0x10)) {
-        loadOffset = JumpDispatcher.NextEntryAddress;
-        goto entrydispatcher;
-      }
-      return JumpDispatcher.JumpAsmReturn!;
-    }
-    // CMP BX,word ptr [DI + 0x6] (334B_1A5B / 0x34F0B)
-    Alu.Sub16(BX, UInt16[DS, (ushort)(DI + 0x6)]);
-    // JGE 0x3000:4f33 (334B_1A5E / 0x34F0E)
-    if(SignFlag == OverflowFlag) {
-      // Jump converted to non entry function call
-      if(JumpDispatcher.Jump(spice86_generated_label_ret_target_334B_1A63_034F13, 0x34F33 - cs1 * 0x10)) {
-        loadOffset = JumpDispatcher.NextEntryAddress;
-        goto entrydispatcher;
-      }
-      return JumpDispatcher.JumpAsmReturn!;
-    }
-    // CALL 0x3000:40c0 (334B_1A60 / 0x34F10)
-    NearCall(cs2, 0x1A63, spice86_generated_label_call_target_334B_0C10_0340C0);
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(spice86_generated_label_ret_target_334B_1A63_034F13, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-  }
-  
-  public virtual Action spice86_generated_label_ret_target_334B_1A63_034F13(int loadOffset) {
-    entrydispatcher:
-    if(loadOffset != 0) {
-      throw FailAsUntested("External goto not supported for this function.");
-    }
-    label_334B_1A63_34F13:
-    // INC CX (334B_1A63 / 0x34F13)
-    CX = Alu.Inc16(CX);
-    // MOV AL,CS:[0x19c] (334B_1A64 / 0x34F14)
-    AL = UInt8[cs2, 0x19C];
-    // MOV SI,word ptr CS:[0x198] (334B_1A68 / 0x34F18)
-    SI = UInt16[cs2, 0x198];
-    label_334B_1A6D_34F1D:
-    // ROL word ptr CS:[0x19a],1 (334B_1A6D / 0x34F1D)
-    UInt16[cs2, 0x19A] = Alu.Rol16(UInt16[cs2, 0x19A], 0x1);
-    // JNC 0x3000:4f2f (334B_1A72 / 0x34F22)
-    if(!CarryFlag) {
-      goto label_334B_1A7F_34F2F;
-    }
-    // CMP DX,word ptr [SI] (334B_1A74 / 0x34F24)
-    Alu.Sub16(DX, UInt16[DS, SI]);
-    // JL 0x3000:4f2f (334B_1A76 / 0x34F26)
-    if(SignFlag != OverflowFlag) {
-      goto label_334B_1A7F_34F2F;
-    }
-    // CMP DX,word ptr [SI + 0x4] (334B_1A78 / 0x34F28)
-    Alu.Sub16(DX, UInt16[DS, (ushort)(SI + 0x4)]);
-    // JGE 0x3000:4f2f (334B_1A7B / 0x34F2B)
-    if(SignFlag == OverflowFlag) {
-      goto label_334B_1A7F_34F2F;
-    }
-    // STOSB ES:DI (334B_1A7D / 0x34F2D)
-    UInt8[ES, DI] = AL;
-    DI = (ushort)(DI + Direction8);
-    // DEC DI (334B_1A7E / 0x34F2E)
-    DI--;
-    label_334B_1A7F_34F2F:
-    // INC DI (334B_1A7F / 0x34F2F)
-    DI++;
-    // INC DX (334B_1A80 / 0x34F30)
-    DX = Alu.Inc16(DX);
-    // LOOP 0x3000:4f1d (334B_1A81 / 0x34F31)
-    if(--CX != 0) {
-      goto label_334B_1A6D_34F1D;
-    }
-    label_334B_1A83_34F33:
-    // POP SI (334B_1A83 / 0x34F33)
-    SI = Stack.Pop();
-    // POP DI (334B_1A84 / 0x34F34)
-    DI = Stack.Pop();
-    // RET  (334B_1A85 / 0x34F35)
-    return NearRet();
-  }
-  
-  public virtual Action spice86_generated_label_jump_target_334B_1A86_034F36(int loadOffset) {
-    entrydispatcher:
-    if(loadOffset != 0) {
-      throw FailAsUntested("External goto not supported for this function.");
-    }
-    label_334B_1A86_34F36:
-    // MOV CX,BX (334B_1A86 / 0x34F36)
-    CX = BX;
-    // MOV BX,word ptr CS:[0x196] (334B_1A88 / 0x34F38)
-    BX = UInt16[cs2, 0x196];
-    // MOV DX,word ptr CS:[0x194] (334B_1A8D / 0x34F3D)
-    DX = UInt16[cs2, 0x194];
-    // OR AX,AX (334B_1A92 / 0x34F42)
-    // AX |= AX;
-    AX = Alu.Or16(AX, AX);
-    // JNS 0x3000:4f48 (334B_1A94 / 0x34F44)
+    State.IncCycles();
+    label_1000_E0A2_1E0A2:
+    // CMP byte ptr [0x46eb],0x0 (1000_E0A2 / 0x1E0A2)
+    Alu.Sub8(UInt8[DS, 0x46EB], 0x0);
+    State.IncCycles();
+    // JNS 0x1000:e0da (1000_E0A7 / 0x1E0A7)
     if(!SignFlag) {
-      goto label_334B_1A98_34F48;
-    }
-    // SUB BX,CX (334B_1A96 / 0x34F46)
-    BX -= CX;
-    label_334B_1A98_34F48:
-    // CMP BX,0xc8 (334B_1A98 / 0x34F48)
-    Alu.Sub16(BX, 0xC8);
-    // JC 0x3000:4f54 (334B_1A9C / 0x34F4C)
-    if(CarryFlag) {
-      goto label_334B_1AA4_34F54;
-    }
-    // JGE 0x3000:4f89 (334B_1A9E / 0x34F4E)
-    if(SignFlag == OverflowFlag) {
-      // Jump converted to non entry function call
-      if(JumpDispatcher.Jump(spice86_generated_label_ret_target_334B_1AB5_034F65, 0x34F89 - cs1 * 0x10)) {
-        loadOffset = JumpDispatcher.NextEntryAddress;
-        goto entrydispatcher;
-      }
-      return JumpDispatcher.JumpAsmReturn!;
-    }
-    // ADD CX,BX (334B_1AA0 / 0x34F50)
-    CX += BX;
-    // XOR BX,BX (334B_1AA2 / 0x34F52)
-    BX = 0;
-    label_334B_1AA4_34F54:
-    // MOV DI,word ptr CS:[0x198] (334B_1AA4 / 0x34F54)
-    DI = UInt16[cs2, 0x198];
-    // CMP DX,word ptr [DI] (334B_1AA9 / 0x34F59)
-    Alu.Sub16(DX, UInt16[DS, DI]);
-    // JL 0x3000:4f89 (334B_1AAB / 0x34F5B)
-    if(SignFlag != OverflowFlag) {
-      // Jump converted to non entry function call
-      if(JumpDispatcher.Jump(spice86_generated_label_ret_target_334B_1AB5_034F65, 0x34F89 - cs1 * 0x10)) {
-        loadOffset = JumpDispatcher.NextEntryAddress;
-        goto entrydispatcher;
-      }
-      return JumpDispatcher.JumpAsmReturn!;
-    }
-    // CMP DX,word ptr [DI + 0x4] (334B_1AAD / 0x34F5D)
-    Alu.Sub16(DX, UInt16[DS, (ushort)(DI + 0x4)]);
-    // JGE 0x3000:4f89 (334B_1AB0 / 0x34F60)
-    if(SignFlag == OverflowFlag) {
-      // Jump converted to non entry function call
-      if(JumpDispatcher.Jump(spice86_generated_label_ret_target_334B_1AB5_034F65, 0x34F89 - cs1 * 0x10)) {
-        loadOffset = JumpDispatcher.NextEntryAddress;
-        goto entrydispatcher;
-      }
-      return JumpDispatcher.JumpAsmReturn!;
-    }
-    // CALL 0x3000:40c0 (334B_1AB2 / 0x34F62)
-    NearCall(cs2, 0x1AB5, spice86_generated_label_call_target_334B_0C10_0340C0);
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(spice86_generated_label_ret_target_334B_1AB5_034F65, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-  }
-  
-  public virtual Action spice86_generated_label_ret_target_334B_1AB5_034F65(int loadOffset) {
-    entrydispatcher:
-    if(loadOffset != 0) {
-      throw FailAsUntested("External goto not supported for this function.");
-    }
-    label_334B_1AB5_34F65:
-    // INC CX (334B_1AB5 / 0x34F65)
-    CX = Alu.Inc16(CX);
-    // MOV AL,CS:[0x19c] (334B_1AB6 / 0x34F66)
-    AL = UInt8[cs2, 0x19C];
-    // MOV SI,word ptr CS:[0x198] (334B_1ABA / 0x34F6A)
-    SI = UInt16[cs2, 0x198];
-    label_334B_1ABF_34F6F:
-    // ROL word ptr CS:[0x19a],1 (334B_1ABF / 0x34F6F)
-    UInt16[cs2, 0x19A] = Alu.Rol16(UInt16[cs2, 0x19A], 0x1);
-    // JNC 0x3000:4f82 (334B_1AC4 / 0x34F74)
-    if(!CarryFlag) {
-      goto label_334B_1AD2_34F82;
-    }
-    // CMP BX,word ptr [SI + 0x2] (334B_1AC6 / 0x34F76)
-    Alu.Sub16(BX, UInt16[DS, (ushort)(SI + 0x2)]);
-    // JL 0x3000:4f82 (334B_1AC9 / 0x34F79)
-    if(SignFlag != OverflowFlag) {
-      goto label_334B_1AD2_34F82;
-    }
-    // CMP BX,word ptr [SI + 0x6] (334B_1ACB / 0x34F7B)
-    Alu.Sub16(BX, UInt16[DS, (ushort)(SI + 0x6)]);
-    // JGE 0x3000:4f82 (334B_1ACE / 0x34F7E)
-    if(SignFlag == OverflowFlag) {
-      goto label_334B_1AD2_34F82;
-    }
-    // STOSB ES:DI (334B_1AD0 / 0x34F80)
-    UInt8[ES, DI] = AL;
-    DI = (ushort)(DI + Direction8);
-    // DEC DI (334B_1AD1 / 0x34F81)
-    DI--;
-    label_334B_1AD2_34F82:
-    // INC BX (334B_1AD2 / 0x34F82)
-    BX++;
-    // ADD DI,0x140 (334B_1AD3 / 0x34F83)
-    // DI += 0x140;
-    DI = Alu.Add16(DI, 0x140);
-    // LOOP 0x3000:4f6f (334B_1AD7 / 0x34F87)
-    if(--CX != 0) {
-      goto label_334B_1ABF_34F6F;
-    }
-    label_334B_1AD9_34F89:
-    // POP SI (334B_1AD9 / 0x34F89)
-    SI = Stack.Pop();
-    // POP DI (334B_1ADA / 0x34F8A)
-    DI = Stack.Pop();
-    // RET  (334B_1ADB / 0x34F8B)
-    return NearRet();
-  }
-  
-  public virtual Action spice86_generated_label_call_target_334B_1ADC_034F8C(int loadOffset) {
-    entrydispatcher:
-    if(loadOffset != 0) {
-      throw FailAsUntested("External goto not supported for this function.");
-    }
-    label_334B_1ADC_34F8C:
-    // PUSH DI (334B_1ADC / 0x34F8C)
-    Stack.Push(DI);
-    // PUSH SI (334B_1ADD / 0x34F8D)
-    Stack.Push(SI);
-    // OR BX,BX (334B_1ADE / 0x34F8E)
-    // BX |= BX;
-    BX = Alu.Or16(BX, BX);
-    // JNZ 0x3000:4f95 (334B_1AE0 / 0x34F90)
-    if(!ZeroFlag) {
-      goto label_334B_1AE5_34F95;
-    }
-    // JMP 0x3000:4eea (334B_1AE2 / 0x34F92)
-    // Jump converted to entry function call
-    if(JumpDispatcher.Jump(spice86_generated_label_jump_target_334B_1A3A_034EEA, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    label_334B_1AE5_34F95:
-    // MOV AX,0x1 (334B_1AE5 / 0x34F95)
-    AX = 0x1;
-    // JNS 0x3000:4f9e (334B_1AE8 / 0x34F98)
-    if(!SignFlag) {
-      goto label_334B_1AEE_34F9E;
-    }
-    // NEG BX (334B_1AEA / 0x34F9A)
-    BX = Alu.Sub16(0, BX);
-    // NEG AX (334B_1AEC / 0x34F9C)
-    AX = Alu.Sub16(0, AX);
-    label_334B_1AEE_34F9E:
-    // OR DX,DX (334B_1AEE / 0x34F9E)
-    // DX |= DX;
-    DX = Alu.Or16(DX, DX);
-    // JZ 0x3000:4f36 (334B_1AF0 / 0x34FA0)
-    if(ZeroFlag) {
-      // Jump converted to entry function call
-      if(JumpDispatcher.Jump(spice86_generated_label_jump_target_334B_1A86_034F36, 0)) {
-        loadOffset = JumpDispatcher.NextEntryAddress;
-        goto entrydispatcher;
-      }
-      return JumpDispatcher.JumpAsmReturn!;
-    }
-    // MOV CX,0x1 (334B_1AF2 / 0x34FA2)
-    CX = 0x1;
-    // JNS 0x3000:4fab (334B_1AF5 / 0x34FA5)
-    if(!SignFlag) {
-      goto label_334B_1AFB_34FAB;
-    }
-    // NEG CX (334B_1AF7 / 0x34FA7)
-    CX = Alu.Sub16(0, CX);
-    // NEG DX (334B_1AF9 / 0x34FA9)
-    DX = Alu.Sub16(0, DX);
-    label_334B_1AFB_34FAB:
-    // PUSH AX (334B_1AFB / 0x34FAB)
-    Stack.Push(AX);
-    // PUSH CX (334B_1AFC / 0x34FAC)
-    Stack.Push(CX);
-    // PUSH AX (334B_1AFD / 0x34FAD)
-    Stack.Push(AX);
-    // PUSH CX (334B_1AFE / 0x34FAE)
-    Stack.Push(CX);
-    // MOV BP,SP (334B_1AFF / 0x34FAF)
-    BP = SP;
-    // MOV SI,BX (334B_1B01 / 0x34FB1)
-    SI = BX;
-    // MOV DI,DX (334B_1B03 / 0x34FB3)
-    DI = DX;
-    // XOR AX,AX (334B_1B05 / 0x34FB5)
-    AX = 0;
-    // CMP DX,BX (334B_1B07 / 0x34FB7)
-    Alu.Sub16(DX, BX);
-    // JBE 0x3000:4fc0 (334B_1B09 / 0x34FB9)
-    if(CarryFlag || ZeroFlag) {
-      goto label_334B_1B10_34FC0;
-    }
-    // MOV word ptr [BP + 0x2],AX (334B_1B0B / 0x34FBB)
-    UInt16[SS, (ushort)(BP + 0x2)] = AX;
-    // JMP 0x3000:4fc9 (334B_1B0E / 0x34FBE)
-    goto label_334B_1B19_34FC9;
-    label_334B_1B10_34FC0:
-    // OR BX,BX (334B_1B10 / 0x34FC0)
-    // BX |= BX;
-    BX = Alu.Or16(BX, BX);
-    // JZ 0x3000:5026 (334B_1B12 / 0x34FC2)
-    if(ZeroFlag) {
-      // Jump converted to non entry function call
-      if(JumpDispatcher.Jump(spice86_generated_label_jump_target_334B_1B1F_034FCF, 0x35026 - cs1 * 0x10)) {
-        loadOffset = JumpDispatcher.NextEntryAddress;
-        goto entrydispatcher;
-      }
-      return JumpDispatcher.JumpAsmReturn!;
-    }
-    // XCHG SI,DI (334B_1B14 / 0x34FC4)
-    ushort tmp_334B_1B14 = SI;
-    SI = DI;
-    DI = tmp_334B_1B14;
-    // MOV word ptr [BP + 0x0],AX (334B_1B16 / 0x34FC6)
-    UInt16[SS, BP] = AX;
-    label_334B_1B19_34FC9:
-    // MOV AX,DI (334B_1B19 / 0x34FC9)
-    AX = DI;
-    // MOV CX,DI (334B_1B1B / 0x34FCB)
-    CX = DI;
-    // SHR AX,1 (334B_1B1D / 0x34FCD)
-    AX >>= 0x1;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(spice86_generated_label_jump_target_334B_1B1F_034FCF, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-  }
-  
-  public virtual Action spice86_generated_label_jump_target_334B_1B1F_034FCF(int loadOffset) {
-    entrydispatcher:
-    if(loadOffset != 0) {
-      throw FailAsUntested("External goto not supported for this function.");
-    }
-    label_334B_1B1F_34FCF:
-    // ADD AX,SI (334B_1B1F / 0x34FCF)
-    AX += SI;
-    // CMP AX,DI (334B_1B21 / 0x34FD1)
-    Alu.Sub16(AX, DI);
-    // JC 0x3000:4fdf (334B_1B23 / 0x34FD3)
-    if(CarryFlag) {
-      goto label_334B_1B2F_34FDF;
-    }
-    // SUB AX,DI (334B_1B25 / 0x34FD5)
-    // AX -= DI;
-    AX = Alu.Sub16(AX, DI);
-    // MOV DX,word ptr [BP + 0x4] (334B_1B27 / 0x34FD7)
-    DX = UInt16[SS, (ushort)(BP + 0x4)];
-    // MOV BX,word ptr [BP + 0x6] (334B_1B2A / 0x34FDA)
-    BX = UInt16[SS, (ushort)(BP + 0x6)];
-    // JMP 0x3000:4fe5 (334B_1B2D / 0x34FDD)
-    goto label_334B_1B35_34FE5;
-    label_334B_1B2F_34FDF:
-    // MOV DX,word ptr [BP + 0x0] (334B_1B2F / 0x34FDF)
-    DX = UInt16[SS, BP];
-    // MOV BX,word ptr [BP + 0x2] (334B_1B32 / 0x34FE2)
-    BX = UInt16[SS, (ushort)(BP + 0x2)];
-    label_334B_1B35_34FE5:
-    // ADD DX,word ptr CS:[0x194] (334B_1B35 / 0x34FE5)
-    DX += UInt16[cs2, 0x194];
-    // ADD BX,word ptr CS:[0x196] (334B_1B3A / 0x34FEA)
-    // BX += UInt16[cs2, 0x196];
-    BX = Alu.Add16(BX, UInt16[cs2, 0x196]);
-    // MOV word ptr CS:[0x194],DX (334B_1B3F / 0x34FEF)
-    UInt16[cs2, 0x194] = DX;
-    // MOV word ptr CS:[0x196],BX (334B_1B44 / 0x34FF4)
-    UInt16[cs2, 0x196] = BX;
-    // PUSH AX (334B_1B49 / 0x34FF9)
-    Stack.Push(AX);
-    // PUSH DI (334B_1B4A / 0x34FFA)
-    Stack.Push(DI);
-    // ROL word ptr CS:[0x19a],1 (334B_1B4B / 0x34FFB)
-    UInt16[cs2, 0x19A] = Alu.Rol16(UInt16[cs2, 0x19A], 0x1);
-    // JNC 0x3000:5022 (334B_1B50 / 0x35000)
-    if(!CarryFlag) {
-      goto label_334B_1B72_35022;
-    }
-    // MOV DI,word ptr CS:[0x198] (334B_1B52 / 0x35002)
-    DI = UInt16[cs2, 0x198];
-    // CMP DX,word ptr [DI] (334B_1B57 / 0x35007)
-    Alu.Sub16(DX, UInt16[DS, DI]);
-    // JL 0x3000:5022 (334B_1B59 / 0x35009)
-    if(SignFlag != OverflowFlag) {
-      goto label_334B_1B72_35022;
-    }
-    // CMP BX,word ptr [DI + 0x2] (334B_1B5B / 0x3500B)
-    Alu.Sub16(BX, UInt16[DS, (ushort)(DI + 0x2)]);
-    // JL 0x3000:5022 (334B_1B5E / 0x3500E)
-    if(SignFlag != OverflowFlag) {
-      goto label_334B_1B72_35022;
-    }
-    // CMP DX,word ptr [DI + 0x4] (334B_1B60 / 0x35010)
-    Alu.Sub16(DX, UInt16[DS, (ushort)(DI + 0x4)]);
-    // JGE 0x3000:5022 (334B_1B63 / 0x35013)
-    if(SignFlag == OverflowFlag) {
-      goto label_334B_1B72_35022;
-    }
-    // CMP BX,word ptr [DI + 0x6] (334B_1B65 / 0x35015)
-    Alu.Sub16(BX, UInt16[DS, (ushort)(DI + 0x6)]);
-    // JGE 0x3000:5022 (334B_1B68 / 0x35018)
-    if(SignFlag == OverflowFlag) {
-      goto label_334B_1B72_35022;
-    }
-    // CALL 0x3000:40c0 (334B_1B6A / 0x3501A)
-    NearCall(cs2, 0x1B6D, spice86_generated_label_call_target_334B_0C10_0340C0);
-    label_334B_1B6D_3501D:
-    // MOV AL,CS:[0x19c] (334B_1B6D / 0x3501D)
-    AL = UInt8[cs2, 0x19C];
-    // STOSB ES:DI (334B_1B71 / 0x35021)
-    UInt8[ES, DI] = AL;
-    DI = (ushort)(DI + Direction8);
-    label_334B_1B72_35022:
-    // POP DI (334B_1B72 / 0x35022)
-    DI = Stack.Pop();
-    // POP AX (334B_1B73 / 0x35023)
-    AX = Stack.Pop();
-    // LOOP 0x3000:4fcf (334B_1B74 / 0x35024)
-    if(--CX != 0) {
-      goto label_334B_1B1F_34FCF;
-    }
-    label_334B_1B76_35026:
-    // ADD SP,0x8 (334B_1B76 / 0x35026)
-    // SP += 0x8;
-    SP = Alu.Add16(SP, 0x8);
-    // POP SI (334B_1B79 / 0x35029)
-    SI = Stack.Pop();
-    // POP DI (334B_1B7A / 0x3502A)
-    DI = Stack.Pop();
-    // RET  (334B_1B7B / 0x3502B)
-    return NearRet();
-  }
-  
-  public virtual Action spice86_generated_label_call_target_334B_1B7C_03502C(int loadOffset) {
-    entrydispatcher:
-    if(loadOffset != 0) {
-      throw FailAsUntested("External goto not supported for this function.");
-    }
-    label_334B_1B7C_3502C:
-    // PUSH CX (334B_1B7C / 0x3502C)
-    Stack.Push(CX);
-    // PUSH SI (334B_1B7D / 0x3502D)
-    Stack.Push(SI);
-    // PUSH DI (334B_1B7E / 0x3502E)
-    Stack.Push(DI);
-    // XOR SI,SI (334B_1B7F / 0x3502F)
-    SI = 0;
-    // MOV DI,SI (334B_1B81 / 0x35031)
-    DI = SI;
-    // MOV CX,0x7d00 (334B_1B83 / 0x35033)
-    CX = 0x7D00;
-    // REP
-    while (CX != 0) {
-      CX--;
-      // MOVSW ES:DI,SI (334B_1B86 / 0x35036)
-      UInt16[ES, DI] = UInt16[DS, SI];
-      SI = (ushort)(SI + Direction16);
-      DI = (ushort)(DI + Direction16);
-    }
-    // POP DI (334B_1B88 / 0x35038)
-    DI = Stack.Pop();
-    // POP SI (334B_1B89 / 0x35039)
-    SI = Stack.Pop();
-    // POP CX (334B_1B8A / 0x3503A)
-    CX = Stack.Pop();
-    // RETF  (334B_1B8B / 0x3503B)
-    return FarRet();
-  }
-  
-  public virtual Action not_observed_334B_1B8C_03503C(int loadOffset) {
-    entrydispatcher:
-    if(loadOffset != 0) {
-      throw FailAsUntested("External goto not supported for this function.");
-    }
-    label_334B_1B8C_3503C:
-    // MOV DS,SI (334B_1B8C / 0x3503C)
-    DS = SI;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(spice86_generated_label_call_target_334B_1B8E_03503E, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-  }
-  
-  public virtual Action spice86_generated_label_call_target_334B_1B8E_03503E(int loadOffset) {
-    entrydispatcher:
-    if(loadOffset != 0) {
-      throw FailAsUntested("External goto not supported for this function.");
-    }
-    label_334B_1B8E_3503E:
-    // CALL 0x3000:40c0 (334B_1B8E / 0x3503E)
-    NearCall(cs2, 0x1B91, spice86_generated_label_call_target_334B_0C10_0340C0);
-    label_334B_1B91_35041:
-    // SHR BP,1 (334B_1B91 / 0x35041)
-    // BP >>= 0x1;
-    BP = Alu.Shr16(BP, 0x1);
-    // JC 0x3000:5059 (334B_1B93 / 0x35043)
-    if(CarryFlag) {
-      goto label_334B_1BA9_35059;
-    }
-    // JZ 0x3000:506d (334B_1B95 / 0x35045)
-    if(ZeroFlag) {
-      // JZ target is RETF, inlining.
-      // RETF  (334B_1BBD / 0x3506D)
-      return FarRet();
-    }
-    // MOV DX,DI (334B_1B97 / 0x35047)
-    DX = DI;
-    label_334B_1B99_35049:
-    // MOV SI,DX (334B_1B99 / 0x35049)
-    SI = DX;
-    // MOV DI,SI (334B_1B9B / 0x3504B)
-    DI = SI;
-    // MOV CX,BP (334B_1B9D / 0x3504D)
-    CX = BP;
-    // REP
-    while (CX != 0) {
-      CX--;
-      // MOVSW ES:DI,SI (334B_1B9F / 0x3504F)
-      UInt16[ES, DI] = UInt16[DS, SI];
-      SI = (ushort)(SI + Direction16);
-      DI = (ushort)(DI + Direction16);
-    }
-    // ADD DX,0x140 (334B_1BA1 / 0x35051)
-    DX += 0x140;
-    // DEC AX (334B_1BA5 / 0x35055)
-    AX = Alu.Dec16(AX);
-    // JNZ 0x3000:5049 (334B_1BA6 / 0x35056)
-    if(!ZeroFlag) {
-      goto label_334B_1B99_35049;
-    }
-    // RETF  (334B_1BA8 / 0x35058)
-    return FarRet();
-    label_334B_1BA9_35059:
-    // JZ 0x3000:506e (334B_1BA9 / 0x35059)
-    if(ZeroFlag) {
-      goto label_334B_1BBE_3506E;
-    }
-    // MOV DX,DI (334B_1BAB / 0x3505B)
-    DX = DI;
-    label_334B_1BAD_3505D:
-    // MOV SI,DX (334B_1BAD / 0x3505D)
-    SI = DX;
-    // MOV DI,SI (334B_1BAF / 0x3505F)
-    DI = SI;
-    // MOV CX,BP (334B_1BB1 / 0x35061)
-    CX = BP;
-    // REP
-    while (CX != 0) {
-      CX--;
-      // MOVSW ES:DI,SI (334B_1BB3 / 0x35063)
-      UInt16[ES, DI] = UInt16[DS, SI];
-      SI = (ushort)(SI + Direction16);
-      DI = (ushort)(DI + Direction16);
-    }
-    // MOVSB ES:DI,SI (334B_1BB5 / 0x35065)
-    UInt8[ES, DI] = UInt8[DS, SI];
-    SI = (ushort)(SI + Direction8);
-    DI = (ushort)(DI + Direction8);
-    // ADD DX,0x140 (334B_1BB6 / 0x35066)
-    DX += 0x140;
-    // DEC AX (334B_1BBA / 0x3506A)
-    AX = Alu.Dec16(AX);
-    // JNZ 0x3000:505d (334B_1BBB / 0x3506B)
-    if(!ZeroFlag) {
-      goto label_334B_1BAD_3505D;
-    }
-    label_334B_1BBD_3506D:
-    // RETF  (334B_1BBD / 0x3506D)
-    return FarRet();
-    label_334B_1BBE_3506E:
-    // MOV CX,AX (334B_1BBE / 0x3506E)
-    CX = AX;
-    label_334B_1BC0_35070:
-    // MOV SI,DI (334B_1BC0 / 0x35070)
-    SI = DI;
-    // MOVSB ES:DI,SI (334B_1BC2 / 0x35072)
-    UInt8[ES, DI] = UInt8[DS, SI];
-    SI = (ushort)(SI + Direction8);
-    DI = (ushort)(DI + Direction8);
-    // ADD DI,0x13f (334B_1BC3 / 0x35073)
-    // DI += 0x13F;
-    DI = Alu.Add16(DI, 0x13F);
-    // LOOP 0x3000:5070 (334B_1BC7 / 0x35077)
-    if(--CX != 0) {
-      goto label_334B_1BC0_35070;
-    }
-    // RETF  (334B_1BC9 / 0x35079)
-    return FarRet();
-  }
-  
-  public virtual Action spice86_generated_label_jump_target_334B_1BCA_03507A(int loadOffset) {
-    entrydispatcher:
-    if(loadOffset != 0) {
-      throw FailAsUntested("External goto not supported for this function.");
-    }
-    label_334B_1BCA_3507A:
-    // MOV BP,DI (334B_1BCA / 0x3507A)
-    BP = DI;
-    // AND BP,0x1ff (334B_1BCC / 0x3507C)
-    // BP &= 0x1FF;
-    BP = Alu.And16(BP, 0x1FF);
-    // CALL 0x3000:40c0 (334B_1BD0 / 0x35080)
-    NearCall(cs2, 0x1BD3, spice86_generated_label_call_target_334B_0C10_0340C0);
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(spice86_generated_label_ret_target_334B_1BD3_035083, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-  }
-  
-  public virtual Action spice86_generated_label_ret_target_334B_1BD3_035083(int loadOffset) {
-    entrydispatcher:
-    if(loadOffset != 0) {
-      throw FailAsUntested("External goto not supported for this function.");
-    }
-    label_334B_1BD3_35083:
-    // MOV DX,CX (334B_1BD3 / 0x35083)
-    DX = CX;
-    // XOR DH,DH (334B_1BD5 / 0x35085)
-    DH = 0;
-    label_334B_1BD7_35087:
-    // MOV CX,BP (334B_1BD7 / 0x35087)
-    CX = BP;
-    // PUSH DI (334B_1BD9 / 0x35089)
-    Stack.Push(DI);
-    label_334B_1BDA_3508A:
-    // MOVSB ES:DI,SI (334B_1BDA / 0x3508A)
-    UInt8[ES, DI] = UInt8[DS, SI];
-    SI = (ushort)(SI + Direction8);
-    DI = (ushort)(DI + Direction8);
-    // INC DI (334B_1BDB / 0x3508B)
-    DI = Alu.Inc16(DI);
-    // LOOP 0x3000:508a (334B_1BDC / 0x3508C)
-    if(--CX != 0) {
-      goto label_334B_1BDA_3508A;
-    }
-    // POP DI (334B_1BDE / 0x3508E)
-    DI = Stack.Pop();
-    // ADD DI,0x280 (334B_1BDF / 0x3508F)
-    DI += 0x280;
-    // DEC DX (334B_1BE3 / 0x35093)
-    DX = Alu.Dec16(DX);
-    // JNZ 0x3000:5087 (334B_1BE4 / 0x35094)
-    if(!ZeroFlag) {
-      goto label_334B_1BD7_35087;
-    }
-    // RETF  (334B_1BE6 / 0x35096)
-    return FarRet();
-  }
-  
-  public virtual Action spice86_generated_label_jump_target_334B_1BE7_035097(int loadOffset) {
-    entrydispatcher:
-    if(loadOffset != 0) {
-      throw FailAsUntested("External goto not supported for this function.");
-    }
-    label_334B_1BE7_35097:
-    // PUSH DS (334B_1BE7 / 0x35097)
-    Stack.Push(DS);
-    // MOV DS,SI (334B_1BE8 / 0x35098)
-    DS = SI;
-    // XOR SI,SI (334B_1BEA / 0x3509A)
-    SI = 0;
-    // MOV DI,SI (334B_1BEC / 0x3509C)
-    DI = SI;
-    // MOV CX,0x5f00 (334B_1BEE / 0x3509E)
-    CX = 0x5F00;
-    // REP
-    while (CX != 0) {
-      CX--;
-      // MOVSW ES:DI,SI (334B_1BF1 / 0x350A1)
-      UInt16[ES, DI] = UInt16[DS, SI];
-      SI = (ushort)(SI + Direction16);
-      DI = (ushort)(DI + Direction16);
-    }
-    // POP DS (334B_1BF3 / 0x350A3)
-    DS = Stack.Pop();
-    // RETF  (334B_1BF4 / 0x350A4)
-    return FarRet();
-  }
-  
-  public virtual Action spice86_generated_label_jump_target_334B_1BF5_0350A5(int loadOffset) {
-    entrydispatcher:
-    if(loadOffset != 0) {
-      throw FailAsUntested("External goto not supported for this function.");
-    }
-    label_334B_1BF5_350A5:
-    // CALL 0x3000:40c0 (334B_1BF5 / 0x350A5)
-    NearCall(cs2, 0x1BF8, spice86_generated_label_call_target_334B_0C10_0340C0);
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(spice86_generated_label_ret_target_334B_1BF8_0350A8, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-  }
-  
-  public virtual Action spice86_generated_label_ret_target_334B_1BF8_0350A8(int loadOffset) {
-    entrydispatcher:
-    if(loadOffset != 0) {
-      throw FailAsUntested("External goto not supported for this function.");
-    }
-    label_334B_1BF8_350A8:
-    // MOV BX,AX (334B_1BF8 / 0x350A8)
-    BX = AX;
-    // MOV DX,CX (334B_1BFA / 0x350AA)
-    DX = CX;
-    // XOR CX,CX (334B_1BFC / 0x350AC)
-    CX = 0;
-    // MOV BP,DI (334B_1BFE / 0x350AE)
-    BP = DI;
-    // OR BH,BH (334B_1C00 / 0x350B0)
-    // BH |= BH;
-    BH = Alu.Or8(BH, BH);
-    // JZ 0x3000:50cf (334B_1C02 / 0x350B2)
-    if(ZeroFlag) {
-      goto label_334B_1C1F_350CF;
-    }
-    label_334B_1C04_350B4:
-    // MOV CL,DL (334B_1C04 / 0x350B4)
-    CL = DL;
-    // LODSB SI (334B_1C06 / 0x350B6)
-    AL = UInt8[DS, SI];
-    SI = (ushort)(SI + Direction8);
-    // MOV AH,AL (334B_1C07 / 0x350B7)
-    AH = AL;
-    label_334B_1C09_350B9:
-    // MOV AL,BL (334B_1C09 / 0x350B9)
-    AL = BL;
-    // SHL AH,1 (334B_1C0B / 0x350BB)
-    // AH <<= 0x1;
-    AH = Alu.Shl8(AH, 0x1);
-    // JC 0x3000:50c1 (334B_1C0D / 0x350BD)
-    if(CarryFlag) {
-      goto label_334B_1C11_350C1;
-    }
-    // MOV AL,BH (334B_1C0F / 0x350BF)
-    AL = BH;
-    label_334B_1C11_350C1:
-    // STOSB ES:DI (334B_1C11 / 0x350C1)
-    UInt8[ES, DI] = AL;
-    DI = (ushort)(DI + Direction8);
-    // LOOP 0x3000:50b9 (334B_1C12 / 0x350C2)
-    if(--CX != 0) {
-      goto label_334B_1C09_350B9;
-    }
-    // ADD BP,0x140 (334B_1C14 / 0x350C4)
-    // BP += 0x140;
-    BP = Alu.Add16(BP, 0x140);
-    // MOV DI,BP (334B_1C18 / 0x350C8)
-    DI = BP;
-    // DEC DH (334B_1C1A / 0x350CA)
-    DH = Alu.Dec8(DH);
-    // JNZ 0x3000:50b4 (334B_1C1C / 0x350CC)
-    if(!ZeroFlag) {
-      goto label_334B_1C04_350B4;
-    }
-    // RETF  (334B_1C1E / 0x350CE)
-    return FarRet();
-    label_334B_1C1F_350CF:
-    // MOV CL,DL (334B_1C1F / 0x350CF)
-    CL = DL;
-    // LODSB SI (334B_1C21 / 0x350D1)
-    AL = UInt8[DS, SI];
-    SI = (ushort)(SI + Direction8);
-    // MOV AH,AL (334B_1C22 / 0x350D2)
-    AH = AL;
-    // MOV AL,BL (334B_1C24 / 0x350D4)
-    AL = BL;
-    label_334B_1C26_350D6:
-    // SHL AH,1 (334B_1C26 / 0x350D6)
-    // AH <<= 0x1;
-    AH = Alu.Shl8(AH, 0x1);
-    // JC 0x3000:50e8 (334B_1C28 / 0x350D8)
-    if(CarryFlag) {
-      goto label_334B_1C38_350E8;
-    }
-    // INC DI (334B_1C2A / 0x350DA)
-    DI = Alu.Inc16(DI);
-    // LOOP 0x3000:50d6 (334B_1C2B / 0x350DB)
-    if(--CX != 0) {
-      goto label_334B_1C26_350D6;
-    }
-    // ADD BP,0x140 (334B_1C2D / 0x350DD)
-    // BP += 0x140;
-    BP = Alu.Add16(BP, 0x140);
-    // MOV DI,BP (334B_1C31 / 0x350E1)
-    DI = BP;
-    // DEC DH (334B_1C33 / 0x350E3)
-    DH = Alu.Dec8(DH);
-    // JNZ 0x3000:50cf (334B_1C35 / 0x350E5)
-    if(!ZeroFlag) {
-      goto label_334B_1C1F_350CF;
-    }
-    // RETF  (334B_1C37 / 0x350E7)
-    return FarRet();
-    label_334B_1C38_350E8:
-    // STOSB ES:DI (334B_1C38 / 0x350E8)
-    UInt8[ES, DI] = AL;
-    DI = (ushort)(DI + Direction8);
-    // LOOP 0x3000:50d6 (334B_1C39 / 0x350E9)
-    if(--CX != 0) {
-      goto label_334B_1C26_350D6;
-    }
-    // ADD BP,0x140 (334B_1C3B / 0x350EB)
-    // BP += 0x140;
-    BP = Alu.Add16(BP, 0x140);
-    // MOV DI,BP (334B_1C3F / 0x350EF)
-    DI = BP;
-    // DEC DH (334B_1C41 / 0x350F1)
-    DH = Alu.Dec8(DH);
-    // JNZ 0x3000:50cf (334B_1C43 / 0x350F3)
-    if(!ZeroFlag) {
-      goto label_334B_1C1F_350CF;
-    }
-    // RETF  (334B_1C45 / 0x350F5)
-    return FarRet();
-  }
-  
-  public virtual Action spice86_generated_label_jump_target_334B_1C46_0350F6(int loadOffset) {
-    entrydispatcher:
-    if(loadOffset != 0) {
-      throw FailAsUntested("External goto not supported for this function.");
-    }
-    label_334B_1C46_350F6:
-    // MOV DX,word ptr [BP + 0x0] (334B_1C46 / 0x350F6)
-    DX = UInt16[SS, BP];
-    // MOV BX,word ptr [BP + 0x2] (334B_1C49 / 0x350F9)
-    BX = UInt16[SS, (ushort)(BP + 0x2)];
-    // CALL 0x3000:40c0 (334B_1C4C / 0x350FC)
-    NearCall(cs2, 0x1C4F, spice86_generated_label_call_target_334B_0C10_0340C0);
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(spice86_generated_label_ret_target_334B_1C4F_0350FF, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-  }
-  
-  public virtual Action spice86_generated_label_ret_target_334B_1C4F_0350FF(int loadOffset) {
-    entrydispatcher:
-    if(loadOffset != 0) {
-      throw FailAsUntested("External goto not supported for this function.");
-    }
-    label_334B_1C4F_350FF:
-    // MOV CX,word ptr [BP + 0x4] (334B_1C4F / 0x350FF)
-    CX = UInt16[SS, (ushort)(BP + 0x4)];
-    // MOV AX,word ptr [BP + 0x6] (334B_1C52 / 0x35102)
-    AX = UInt16[SS, (ushort)(BP + 0x6)];
-    // SUB CX,DX (334B_1C55 / 0x35105)
-    CX -= DX;
-    // SUB AX,BX (334B_1C57 / 0x35107)
-    // AX -= BX;
-    AX = Alu.Sub16(AX, BX);
-    // XCHG SI,DI (334B_1C59 / 0x35109)
-    ushort tmp_334B_1C59 = SI;
-    SI = DI;
-    DI = tmp_334B_1C59;
-    // MOV DX,0x140 (334B_1C5B / 0x3510B)
-    DX = 0x140;
-    // SUB DX,CX (334B_1C5E / 0x3510E)
-    // DX -= CX;
-    DX = Alu.Sub16(DX, CX);
-    // PUSH DS (334B_1C60 / 0x35110)
-    Stack.Push(DS);
-    // PUSH ES (334B_1C61 / 0x35111)
-    Stack.Push(ES);
-    // POP DS (334B_1C62 / 0x35112)
-    DS = Stack.Pop();
-    // POP ES (334B_1C63 / 0x35113)
-    ES = Stack.Pop();
-    label_334B_1C64_35114:
-    // PUSH CX (334B_1C64 / 0x35114)
-    Stack.Push(CX);
-    // SHR CX,1 (334B_1C65 / 0x35115)
-    // CX >>= 0x1;
-    CX = Alu.Shr16(CX, 0x1);
-    // REP
-    while (CX != 0) {
-      CX--;
-      // MOVSW ES:DI,SI (334B_1C67 / 0x35117)
-      UInt16[ES, DI] = UInt16[DS, SI];
-      SI = (ushort)(SI + Direction16);
-      DI = (ushort)(DI + Direction16);
-    }
-    // ADC CX,CX (334B_1C69 / 0x35119)
-    CX = Alu.Adc16(CX, CX);
-    // REP
-    while (CX != 0) {
-      CX--;
-      // MOVSB ES:DI,SI (334B_1C6B / 0x3511B)
-      UInt8[ES, DI] = UInt8[DS, SI];
-      SI = (ushort)(SI + Direction8);
-      DI = (ushort)(DI + Direction8);
-    }
-    // POP CX (334B_1C6D / 0x3511D)
-    CX = Stack.Pop();
-    // ADD SI,DX (334B_1C6E / 0x3511E)
-    SI += DX;
-    // DEC AX (334B_1C70 / 0x35120)
-    AX = Alu.Dec16(AX);
-    // JNZ 0x3000:5114 (334B_1C71 / 0x35121)
-    if(!ZeroFlag) {
-      goto label_334B_1C64_35114;
-    }
-    // PUSH SS (334B_1C73 / 0x35123)
-    Stack.Push(SS);
-    // POP DS (334B_1C74 / 0x35124)
-    DS = Stack.Pop();
-    // RETF  (334B_1C75 / 0x35125)
-    return FarRet();
-  }
-  
-  public virtual Action spice86_generated_label_jump_target_334B_1C76_035126(int loadOffset) {
-    entrydispatcher:
-    if(loadOffset != 0) {
-      throw FailAsUntested("External goto not supported for this function.");
-    }
-    label_334B_1C76_35126:
-    // MOV DX,word ptr [BP + 0x0] (334B_1C76 / 0x35126)
-    DX = UInt16[SS, BP];
-    // MOV BX,word ptr [BP + 0x2] (334B_1C79 / 0x35129)
-    BX = UInt16[SS, (ushort)(BP + 0x2)];
-    // CALL 0x3000:40c0 (334B_1C7C / 0x3512C)
-    NearCall(cs2, 0x1C7F, spice86_generated_label_call_target_334B_0C10_0340C0);
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(spice86_generated_label_ret_target_334B_1C7F_03512F, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-  }
-  
-  public virtual Action spice86_generated_label_ret_target_334B_1C7F_03512F(int loadOffset) {
-    entrydispatcher:
-    if(loadOffset != 0) {
-      throw FailAsUntested("External goto not supported for this function.");
-    }
-    label_334B_1C7F_3512F:
-    // MOV CX,word ptr [BP + 0x4] (334B_1C7F / 0x3512F)
-    CX = UInt16[SS, (ushort)(BP + 0x4)];
-    // MOV AX,word ptr [BP + 0x6] (334B_1C82 / 0x35132)
-    AX = UInt16[SS, (ushort)(BP + 0x6)];
-    // SUB CX,DX (334B_1C85 / 0x35135)
-    CX -= DX;
-    // SUB AX,BX (334B_1C87 / 0x35137)
-    // AX -= BX;
-    AX = Alu.Sub16(AX, BX);
-    // MOV DX,0x140 (334B_1C89 / 0x35139)
-    DX = 0x140;
-    // SUB DX,CX (334B_1C8C / 0x3513C)
-    // DX -= CX;
-    DX = Alu.Sub16(DX, CX);
-    label_334B_1C8E_3513E:
-    // PUSH CX (334B_1C8E / 0x3513E)
-    Stack.Push(CX);
-    // SHR CX,1 (334B_1C8F / 0x3513F)
-    // CX >>= 0x1;
-    CX = Alu.Shr16(CX, 0x1);
-    // REP
-    while (CX != 0) {
-      CX--;
-      // MOVSW ES:DI,SI (334B_1C91 / 0x35141)
-      UInt16[ES, DI] = UInt16[DS, SI];
-      SI = (ushort)(SI + Direction16);
-      DI = (ushort)(DI + Direction16);
-    }
-    // ADC CX,CX (334B_1C93 / 0x35143)
-    CX = Alu.Adc16(CX, CX);
-    // REP
-    while (CX != 0) {
-      CX--;
-      // MOVSB ES:DI,SI (334B_1C95 / 0x35145)
-      UInt8[ES, DI] = UInt8[DS, SI];
-      SI = (ushort)(SI + Direction8);
-      DI = (ushort)(DI + Direction8);
-    }
-    // POP CX (334B_1C97 / 0x35147)
-    CX = Stack.Pop();
-    // ADD DI,DX (334B_1C98 / 0x35148)
-    DI += DX;
-    // DEC AX (334B_1C9A / 0x3514A)
-    AX = Alu.Dec16(AX);
-    // JNZ 0x3000:513e (334B_1C9B / 0x3514B)
-    if(!ZeroFlag) {
-      goto label_334B_1C8E_3513E;
-    }
-    // PUSH SS (334B_1C9D / 0x3514D)
-    Stack.Push(SS);
-    // POP DS (334B_1C9E / 0x3514E)
-    DS = Stack.Pop();
-    // RETF  (334B_1C9F / 0x3514F)
-    return FarRet();
-  }
-  
-  public virtual Action spice86_generated_label_jump_target_334B_1CB6_035166(int loadOffset) {
-    entrydispatcher:
-    if(loadOffset != 0) {
-      throw FailAsUntested("External goto not supported for this function.");
-    }
-    label_334B_1CB6_35166:
-    // OR AL,AL (334B_1CB6 / 0x35166)
-    // AL |= AL;
-    AL = Alu.Or8(AL, AL);
-    // MOV AX,0x9090 (334B_1CB8 / 0x35168)
-    AX = 0x9090;
-    // JZ 0x3000:5170 (334B_1CBB / 0x3516B)
-    if(ZeroFlag) {
-      goto label_334B_1CC0_35170;
-    }
-    // MOV AX,0x7deb (334B_1CBD / 0x3516D)
-    AX = 0x7DEB;
-    label_334B_1CC0_35170:
-    // MOV CS:[0x1e4a],AX (334B_1CC0 / 0x35170)
-    UInt16[cs2, 0x1E4A] = AX;
-    // MOV word ptr CS:[0x1ca0],SI (334B_1CC4 / 0x35174)
-    UInt16[cs2, 0x1CA0] = SI;
-    // MOV word ptr CS:[0x1ca2],DS (334B_1CC9 / 0x35179)
-    UInt16[cs2, 0x1CA2] = DS;
-    // MOV word ptr CS:[0x1ca4],BP (334B_1CCE / 0x3517E)
-    UInt16[cs2, 0x1CA4] = BP;
-    // ADD BP,0x319 (334B_1CD3 / 0x35183)
-    // BP += 0x319;
-    BP = Alu.Add16(BP, 0x319);
-    // MOV word ptr CS:[0x1ca8],BP (334B_1CD7 / 0x35187)
-    UInt16[cs2, 0x1CA8] = BP;
-    // MOV DI,BP (334B_1CDC / 0x3518C)
-    DI = BP;
-    // MOV word ptr CS:[0x1ca6],BP (334B_1CDE / 0x3518E)
-    UInt16[cs2, 0x1CA6] = BP;
-    // ADD BP,0xcd9 (334B_1CE3 / 0x35193)
-    // BP += 0xCD9;
-    BP = Alu.Add16(BP, 0xCD9);
-    // MOV word ptr CS:[0x1caa],BP (334B_1CE7 / 0x35197)
-    UInt16[cs2, 0x1CAA] = BP;
-    // ADD BP,0x3301 (334B_1CEC / 0x3519C)
-    // BP += 0x3301;
-    BP = Alu.Add16(BP, 0x3301);
-    // MOV word ptr CS:[0x1cac],BP (334B_1CF0 / 0x351A0)
-    UInt16[cs2, 0x1CAC] = BP;
-    // MOV word ptr CS:[0x1cb4],0xfec0 (334B_1CF5 / 0x351A5)
-    UInt16[cs2, 0x1CB4] = 0xFEC0;
-    // PUSH CS (334B_1CFC / 0x351AC)
-    Stack.Push(cs2);
-    // CALL 0x3000:520a (334B_1CFD / 0x351AD)
-    NearCall(cs2, 0x1D00, spice86_generated_label_call_target_334B_1D5A_03520A);
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(spice86_generated_label_ret_target_334B_1D00_0351B0, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-  }
-  
-  public virtual Action spice86_generated_label_ret_target_334B_1D00_0351B0(int loadOffset) {
-    entrydispatcher:
-    if(loadOffset != 0) {
-      throw FailAsUntested("External goto not supported for this function.");
-    }
-    label_334B_1D00_351B0:
-    // PUSH CS (334B_1D00 / 0x351B0)
-    Stack.Push(cs2);
-    // CALL 0x3000:51b7 (334B_1D01 / 0x351B1)
-    NearCall(cs2, 0x1D04, spice86_generated_label_call_target_334B_1D07_0351B7);
-    label_334B_1D04_351B4:
-    // JNC 0x3000:51b0 (334B_1D04 / 0x351B4)
-    if(!CarryFlag) {
-      goto label_334B_1D00_351B0;
-    }
-    // RETF  (334B_1D06 / 0x351B6)
-    return FarRet();
-  }
-  
-  public virtual Action spice86_generated_label_call_target_334B_1D07_0351B7(int loadOffset) {
-    entrydispatcher:
-    if(loadOffset != 0) {
-      throw FailAsUntested("External goto not supported for this function.");
-    }
-    label_334B_1D07_351B7:
-    // MOV DS,word ptr CS:[0x1ca2] (334B_1D07 / 0x351B7)
-    DS = UInt16[cs2, 0x1CA2];
-    // MOV DI,word ptr CS:[0x1ca6] (334B_1D0C / 0x351BC)
-    DI = UInt16[cs2, 0x1CA6];
-    // MOV AL,byte ptr SS:[DI] (334B_1D11 / 0x351C1)
-    AL = UInt8[SS, DI];
-    // XOR AH,AH (334B_1D14 / 0x351C4)
-    AH = 0;
-    // INC DI (334B_1D16 / 0x351C6)
-    DI = Alu.Inc16(DI);
-    // OR AL,AL (334B_1D17 / 0x351C7)
-    // AL |= AL;
-    AL = Alu.Or8(AL, AL);
-    // JNS 0x3000:5202 (334B_1D19 / 0x351C9)
-    if(!SignFlag) {
-      goto label_334B_1D52_35202;
-    }
-    // MOV DI,word ptr CS:[0x1ca8] (334B_1D1B / 0x351CB)
-    DI = UInt16[cs2, 0x1CA8];
-    // NEG word ptr CS:[0x1cb4] (334B_1D20 / 0x351D0)
-    UInt16[cs2, 0x1CB4] = Alu.Sub16(0, UInt16[cs2, 0x1CB4]);
-    // JS 0x3000:520a (334B_1D25 / 0x351D5)
-    if(SignFlag) {
-      // Jump converted to entry function call
-      if(JumpDispatcher.Jump(spice86_generated_label_call_target_334B_1D5A_03520A, 0)) {
-        loadOffset = JumpDispatcher.NextEntryAddress;
-        goto entrydispatcher;
-      }
-      return JumpDispatcher.JumpAsmReturn!;
-    }
-    // MOV word ptr CS:[0x1ea6],0xfedb (334B_1D27 / 0x351D7)
-    UInt16[cs2, 0x1EA6] = 0xFEDB;
-    // MOV word ptr CS:[0x1f29],0xfe58 (334B_1D2E / 0x351DE)
-    UInt16[cs2, 0x1F29] = 0xFE58;
-    // MOV AX,0x64a0 (334B_1D35 / 0x351E5)
-    AX = 0x64A0;
-    // MOV CS:[0x1cb0],AX (334B_1D38 / 0x351E8)
-    UInt16[cs2, 0x1CB0] = AX;
-    // MOV CS:[0x1cb2],AX (334B_1D3C / 0x351EC)
-    UInt16[cs2, 0x1CB2] = AX;
-    // DEC AX (334B_1D40 / 0x351F0)
-    AX = Alu.Dec16(AX);
-    // MOV CS:[0x1cae],AX (334B_1D41 / 0x351F1)
-    UInt16[cs2, 0x1CAE] = AX;
-    // MOV AL,byte ptr SS:[DI + -0x1] (334B_1D45 / 0x351F5)
-    AL = UInt8[SS, (ushort)(DI - 0x1)];
-    // CBW  (334B_1D49 / 0x351F9)
-    AX = (ushort)((short)((sbyte)AL));
-    // SUB DI,AX (334B_1D4A / 0x351FA)
-    // DI -= AX;
-    DI = Alu.Sub16(DI, AX);
-    // MOV AL,byte ptr SS:[DI] (334B_1D4C / 0x351FC)
-    AL = UInt8[SS, DI];
-    // XOR AH,AH (334B_1D4F / 0x351FF)
-    AH = 0;
-    // INC DI (334B_1D51 / 0x35201)
-    DI = Alu.Inc16(DI);
-    label_334B_1D52_35202:
-    // MOV SI,word ptr CS:[0x1caa] (334B_1D52 / 0x35202)
-    SI = UInt16[cs2, 0x1CAA];
-    // JMP 0x3000:5355 (334B_1D57 / 0x35207)
-    // JMP target is JMP, inlining.
-    // Instruction bytes at index 1 modified by those instruction(s): 351D7, 3520F, 3520A
-    // Instruction is modified by code, generator handled: First value group is modified
-    // JMP 0x3000:5235 (334B_1EA5 / 0x35355)
-    // Indirect jump to 0x3000:5235, generating possible targets from emulator records
-    uint targetAddress_334B_1EA5 = (uint)(cs2 * 0x10 + 0x1EA8 + (short)(UInt16[cs2, 0x1EA6]) - cs1 * 0x10);
-    switch(targetAddress_334B_1EA5) {
-      case 0x25235 : {
-        // Jump converted to entry function call
-        if(JumpDispatcher.Jump(spice86_generated_label_jump_target_334B_1D85_035235, 0)) {
-          loadOffset = JumpDispatcher.NextEntryAddress;
-          goto entrydispatcher;
-        }
-        return JumpDispatcher.JumpAsmReturn!;
-      }
-      case 0x25233 : {
-        // Jump converted to entry function call
-        if(JumpDispatcher.Jump(spice86_generated_label_jump_target_334B_1D83_035233, 0)) {
-          loadOffset = JumpDispatcher.NextEntryAddress;
-          goto entrydispatcher;
-        }
-        return JumpDispatcher.JumpAsmReturn!;
-      }
-      default: throw FailAsUntested("Error: Jump not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_334B_1EA5));
-        break;
-    }
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(spice86_generated_label_call_target_334B_1D5A_03520A, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-  }
-  
-  public virtual Action spice86_generated_label_call_target_334B_1D5A_03520A(int loadOffset) {
-    entrydispatcher:
-    if(loadOffset != 0) {
-      throw FailAsUntested("External goto not supported for this function.");
-    }
-    label_334B_1D5A_3520A:
-    // MOV word ptr CS:[0x1ca6],DI (334B_1D5A / 0x3520A)
-    UInt16[cs2, 0x1CA6] = DI;
-    // MOV word ptr CS:[0x1ea6],0xfedd (334B_1D5F / 0x3520F)
-    UInt16[cs2, 0x1EA6] = 0xFEDD;
-    // MOV word ptr CS:[0x1f29],0xfe5a (334B_1D66 / 0x35216)
-    UInt16[cs2, 0x1F29] = 0xFE5A;
-    // MOV AX,0x6360 (334B_1D6D / 0x3521D)
-    AX = 0x6360;
-    // MOV CS:[0x1cb0],AX (334B_1D70 / 0x35220)
-    UInt16[cs2, 0x1CB0] = AX;
-    // MOV CS:[0x1cb2],AX (334B_1D74 / 0x35224)
-    UInt16[cs2, 0x1CB2] = AX;
-    // DEC AX (334B_1D78 / 0x35228)
-    AX = Alu.Dec16(AX);
-    // MOV CS:[0x1cae],AX (334B_1D79 / 0x35229)
-    UInt16[cs2, 0x1CAE] = AX;
-    // MOV AX,SS (334B_1D7D / 0x3522D)
-    AX = SS;
-    // MOV DS,AX (334B_1D7F / 0x3522F)
-    DS = AX;
-    // STC  (334B_1D81 / 0x35231)
-    CarryFlag = true;
-    // RETF  (334B_1D82 / 0x35232)
-    return FarRet();
-  }
-  
-  public virtual Action spice86_generated_label_jump_target_334B_1D83_035233(int loadOffset) {
-    entrydispatcher:
-    if(loadOffset != 0) {
-      throw FailAsUntested("External goto not supported for this function.");
-    }
-    label_334B_1D83_35233:
-    // NEG AX (334B_1D83 / 0x35233)
-    AX = Alu.Sub16(0, AX);
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(spice86_generated_label_jump_target_334B_1D85_035235, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-  }
-  
-  public virtual Action spice86_generated_label_jump_target_334B_1D85_035235(int loadOffset) {
-    entrydispatcher:
-    if(loadOffset != 0) {
-      throw FailAsUntested("External goto not supported for this function.");
-    }
-    label_334B_1D85_35235:
-    // ADD AX,AX (334B_1D85 / 0x35235)
-    // AX += AX;
-    AX = Alu.Add16(AX, AX);
-    // MOV BP,word ptr CS:[0x1cac] (334B_1D87 / 0x35237)
-    BP = UInt16[cs2, 0x1CAC];
-    // ADD BP,AX (334B_1D8C / 0x3523C)
-    // BP += AX;
-    BP = Alu.Add16(BP, AX);
-    // MOV AX,word ptr [BP + 0x0] (334B_1D8E / 0x3523E)
-    AX = UInt16[SS, BP];
-    // OR AX,AX (334B_1D91 / 0x35241)
-    // AX |= AX;
-    AX = Alu.Or16(AX, AX);
-    // JS 0x3000:5293 (334B_1D93 / 0x35243)
-    if(SignFlag) {
-      throw FailAsUntested("Would have been a goto but label label_334B_1DE3_35293 does not exist because no instruction was found there that belongs to a function.");
-    }
-    // CBW  (334B_1D95 / 0x35245)
-    AX = (ushort)((short)((sbyte)AL));
-    // OR AX,AX (334B_1D96 / 0x35246)
-    // AX |= AX;
-    AX = Alu.Or16(AX, AX);
-    // JNS 0x3000:5272 (334B_1D98 / 0x35248)
-    if(!SignFlag) {
-      // Jump converted to entry function call
-      if(JumpDispatcher.Jump(spice86_generated_label_jump_target_334B_1DC2_035272, 0)) {
-        loadOffset = JumpDispatcher.NextEntryAddress;
-        goto entrydispatcher;
-      }
-      return JumpDispatcher.JumpAsmReturn!;
-    }
-    // NEG AX (334B_1D9A / 0x3524A)
-    AX = Alu.Sub16(0, AX);
-    // MOV BP,AX (334B_1D9C / 0x3524C)
-    BP = AX;
-    // MOV BL,byte ptr [BP + SI] (334B_1D9E / 0x3524E)
-    BL = UInt8[SS, (ushort)(BP + SI)];
-    // MOV AL,byte ptr [BP + SI + 0x64] (334B_1DA0 / 0x35250)
-    AL = UInt8[SS, (ushort)(BP + SI + 0x64)];
-    // XOR AH,AH (334B_1DA3 / 0x35253)
-    AH = 0;
-    // MOV BH,AH (334B_1DA5 / 0x35255)
-    BH = AH;
-    // SHL BX,1 (334B_1DA7 / 0x35257)
-    BX <<= 0x1;
-    // SHL BX,1 (334B_1DA9 / 0x35259)
-    // BX <<= 0x1;
-    BX = Alu.Shl16(BX, 0x1);
-    // MOV BP,word ptr CS:[0x1ca4] (334B_1DAB / 0x3525B)
-    BP = UInt16[cs2, 0x1CA4];
-    // ADD BP,BX (334B_1DB0 / 0x35260)
-    // BP += BX;
-    BP = Alu.Add16(BP, BX);
-    // MOV BX,word ptr [BP + 0x0] (334B_1DB2 / 0x35262)
-    BX = UInt16[SS, BP];
-    // MOV CX,word ptr [BP + 0x2] (334B_1DB5 / 0x35265)
-    CX = UInt16[SS, (ushort)(BP + 0x2)];
-    // MOV DX,word ptr [BP + 0x4] (334B_1DB8 / 0x35268)
-    DX = UInt16[SS, (ushort)(BP + 0x4)];
-    // NEG AX (334B_1DBB / 0x3526B)
-    AX = Alu.Sub16(0, AX);
-    // ADD AX,CX (334B_1DBD / 0x3526D)
-    // AX += CX;
-    AX = Alu.Add16(AX, CX);
-    // JMP 0x3000:52e2 (334B_1DBF / 0x3526F)
-    // Jump converted to entry function call
-    if(JumpDispatcher.Jump(split_334B_1E32_0352E2, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-  }
-  
-  public virtual Action spice86_generated_label_jump_target_334B_1DC2_035272(int loadOffset) {
-    entrydispatcher:
-    if(loadOffset != 0) {
-      throw FailAsUntested("External goto not supported for this function.");
-    }
-    label_334B_1DC2_35272:
-    // MOV BP,AX (334B_1DC2 / 0x35272)
-    BP = AX;
-    // MOV BL,byte ptr [BP + SI] (334B_1DC4 / 0x35274)
-    BL = UInt8[SS, (ushort)(BP + SI)];
-    // MOV AL,byte ptr [BP + SI + 0x64] (334B_1DC6 / 0x35276)
-    AL = UInt8[SS, (ushort)(BP + SI + 0x64)];
-    // XOR AH,AH (334B_1DC9 / 0x35279)
-    AH = 0;
-    // MOV BH,AH (334B_1DCB / 0x3527B)
-    BH = AH;
-    // SHL BX,1 (334B_1DCD / 0x3527D)
-    BX <<= 0x1;
-    // SHL BX,1 (334B_1DCF / 0x3527F)
-    // BX <<= 0x1;
-    BX = Alu.Shl16(BX, 0x1);
-    // MOV BP,word ptr CS:[0x1ca4] (334B_1DD1 / 0x35281)
-    BP = UInt16[cs2, 0x1CA4];
-    // ADD BP,BX (334B_1DD6 / 0x35286)
-    // BP += BX;
-    BP = Alu.Add16(BP, BX);
-    // MOV BX,word ptr [BP + 0x0] (334B_1DD8 / 0x35288)
-    BX = UInt16[SS, BP];
-    // MOV CX,word ptr [BP + 0x2] (334B_1DDB / 0x3528B)
-    CX = UInt16[SS, (ushort)(BP + 0x2)];
-    // MOV DX,word ptr [BP + 0x4] (334B_1DDE / 0x3528E)
-    DX = UInt16[SS, (ushort)(BP + 0x4)];
-    // JMP 0x3000:52e2 (334B_1DE1 / 0x35291)
-    // Jump converted to entry function call
-    if(JumpDispatcher.Jump(split_334B_1E32_0352E2, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-  }
-  
-  public virtual Action split_334B_1E32_0352E2(int loadOffset) {
-    entrydispatcher:
-    switch(loadOffset) {
-      case 0x25355: goto label_334B_1EA5_35355;break; // Target of external jump from 0x35207
-      case 0: break; // 0 is the entry point ghidra detected, just after this switch
-      default: throw FailAsUntested("Could not find any label from outside with address " + loadOffset);
-    }
-    label_334B_1E32_352E2:
-    // ADD CX,CX (334B_1E32 / 0x352E2)
-    // CX += CX;
-    CX = Alu.Add16(CX, CX);
-    // MOV BP,DX (334B_1E34 / 0x352E4)
-    BP = DX;
-    // SUB BP,AX (334B_1E36 / 0x352E6)
-    // BP -= AX;
-    BP = Alu.Sub16(BP, AX);
-    // JNS 0x3000:52ec (334B_1E38 / 0x352E8)
-    if(!SignFlag) {
-      goto label_334B_1E3C_352EC;
-    }
-    // ADD BP,CX (334B_1E3A / 0x352EA)
-    BP += CX;
-    label_334B_1E3C_352EC:
-    // ADD BP,BX (334B_1E3C / 0x352EC)
-    BP += BX;
-    // ADD DX,AX (334B_1E3E / 0x352EE)
-    // DX += AX;
-    DX = Alu.Add16(DX, AX);
-    // PUSH SI (334B_1E40 / 0x352F0)
-    Stack.Push(SI);
-    // PUSH DI (334B_1E41 / 0x352F1)
-    Stack.Push(DI);
-    // MOV SI,word ptr CS:[0x1ca0] (334B_1E42 / 0x352F2)
-    SI = UInt16[cs2, 0x1CA0];
-    // MOV AL,byte ptr DS:[BP + SI] (334B_1E47 / 0x352F7)
-    AL = UInt8[DS, (ushort)(BP + SI)];
-    // NOP  (334B_1E4A / 0x352FA)
-    
-    // NOP  (334B_1E4B / 0x352FB)
-    
-    // MOV AH,AL (334B_1E4C / 0x352FC)
-    AH = AL;
-    // AND AX,0x300f (334B_1E4E / 0x352FE)
-    AX &= 0x300F;
-    // CMP AH,0x10 (334B_1E51 / 0x35301)
-    Alu.Sub8(AH, 0x10);
-    // JNZ 0x3000:530c (334B_1E54 / 0x35304)
-    if(!ZeroFlag) {
-      goto label_334B_1E5C_3530C;
-    }
-    // CMP AL,0x8 (334B_1E56 / 0x35306)
-    Alu.Sub8(AL, 0x8);
-    // JNC 0x3000:530c (334B_1E58 / 0x35308)
-    if(!CarryFlag) {
-      goto label_334B_1E5C_3530C;
-    }
-    // ADD AL,0xc (334B_1E5A / 0x3530A)
-    AL += 0xC;
-    label_334B_1E5C_3530C:
-    // ADD AL,0x10 (334B_1E5C / 0x3530C)
-    // AL += 0x10;
-    AL = Alu.Add8(AL, 0x10);
-    // MOV DI,word ptr CS:[0x1cae] (334B_1E5E / 0x3530E)
-    DI = UInt16[cs2, 0x1CAE];
-    // STD  (334B_1E63 / 0x35313)
-    DirectionFlag = true;
-    // STOSB ES:DI (334B_1E64 / 0x35314)
-    UInt8[ES, DI] = AL;
-    DI = (ushort)(DI + Direction8);
-    // CLD  (334B_1E65 / 0x35315)
-    DirectionFlag = false;
-    // MOV word ptr CS:[0x1cae],DI (334B_1E66 / 0x35316)
-    UInt16[cs2, 0x1CAE] = DI;
-    // MOV BP,DX (334B_1E6B / 0x3531B)
-    BP = DX;
-    // SUB BP,CX (334B_1E6D / 0x3531D)
-    // BP -= CX;
-    BP = Alu.Sub16(BP, CX);
-    // JNS 0x3000:5323 (334B_1E6F / 0x3531F)
-    if(!SignFlag) {
-      goto label_334B_1E73_35323;
-    }
-    // ADD BP,CX (334B_1E71 / 0x35321)
-    BP += CX;
-    label_334B_1E73_35323:
-    // ADD BP,BX (334B_1E73 / 0x35323)
-    // BP += BX;
-    BP = Alu.Add16(BP, BX);
-    // MOV AL,byte ptr DS:[BP + SI] (334B_1E75 / 0x35325)
-    AL = UInt8[DS, (ushort)(BP + SI)];
-    // MOV AH,AL (334B_1E78 / 0x35328)
-    AH = AL;
-    // AND AX,0x300f (334B_1E7A / 0x3532A)
-    AX &= 0x300F;
-    // CMP AH,0x10 (334B_1E7D / 0x3532D)
-    Alu.Sub8(AH, 0x10);
-    // JNZ 0x3000:5338 (334B_1E80 / 0x35330)
-    if(!ZeroFlag) {
-      goto label_334B_1E88_35338;
-    }
-    // CMP AL,0x8 (334B_1E82 / 0x35332)
-    Alu.Sub8(AL, 0x8);
-    // JNC 0x3000:5338 (334B_1E84 / 0x35334)
-    if(!CarryFlag) {
-      goto label_334B_1E88_35338;
-    }
-    // ADD AL,0xc (334B_1E86 / 0x35336)
-    AL += 0xC;
-    label_334B_1E88_35338:
-    // ADD AL,0x10 (334B_1E88 / 0x35338)
-    // AL += 0x10;
-    AL = Alu.Add8(AL, 0x10);
-    // MOV DI,word ptr CS:[0x1cb0] (334B_1E8A / 0x3533A)
-    DI = UInt16[cs2, 0x1CB0];
-    // STOSB ES:DI (334B_1E8F / 0x3533F)
-    UInt8[ES, DI] = AL;
-    DI = (ushort)(DI + Direction8);
-    // MOV word ptr CS:[0x1cb0],DI (334B_1E90 / 0x35340)
-    UInt16[cs2, 0x1CB0] = DI;
-    // POP DI (334B_1E95 / 0x35345)
-    DI = Stack.Pop();
-    // POP SI (334B_1E96 / 0x35346)
-    SI = Stack.Pop();
-    // ADD SI,0xc8 (334B_1E97 / 0x35347)
-    // SI += 0xC8;
-    SI = Alu.Add16(SI, 0xC8);
-    // MOV AL,byte ptr SS:[DI] (334B_1E9B / 0x3534B)
-    AL = UInt8[SS, DI];
-    // XOR AH,AH (334B_1E9E / 0x3534E)
-    AH = 0;
-    // INC DI (334B_1EA0 / 0x35350)
-    DI = Alu.Inc16(DI);
-    // OR AL,AL (334B_1EA1 / 0x35351)
-    // AL |= AL;
-    AL = Alu.Or8(AL, AL);
-    // JS 0x3000:5358 (334B_1EA3 / 0x35353)
-    if(SignFlag) {
-      goto label_334B_1EA8_35358;
-    }
-    label_334B_1EA5_35355:
-    // Instruction bytes at index 1 modified by those instruction(s): 351D7, 3520F, 3520A
-    // Instruction is modified by code, generator handled: First value group is modified
-    // JMP 0x3000:5235 (334B_1EA5 / 0x35355)
-    // Indirect jump to 0x3000:5235, generating possible targets from emulator records
-    uint targetAddress_334B_1EA5 = (uint)(cs2 * 0x10 + 0x1EA8 + (short)(UInt16[cs2, 0x1EA6]) - cs1 * 0x10);
-    switch(targetAddress_334B_1EA5) {
-      case 0x25235 : {
-        // Jump converted to entry function call
-        if(JumpDispatcher.Jump(spice86_generated_label_jump_target_334B_1D85_035235, 0)) {
-          loadOffset = JumpDispatcher.NextEntryAddress;
-          goto entrydispatcher;
-        }
-        return JumpDispatcher.JumpAsmReturn!;
-      }
-      case 0x25233 : {
-        // Jump converted to entry function call
-        if(JumpDispatcher.Jump(spice86_generated_label_jump_target_334B_1D83_035233, 0)) {
-          loadOffset = JumpDispatcher.NextEntryAddress;
-          goto entrydispatcher;
-        }
-        return JumpDispatcher.JumpAsmReturn!;
-      }
-      default: throw FailAsUntested("Error: Jump not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_334B_1EA5));
-        break;
-    }
-    label_334B_1EA8_35358:
-    // MOV word ptr CS:[0x1ca6],DI (334B_1EA8 / 0x35358)
-    UInt16[cs2, 0x1CA6] = DI;
-    // MOV AX,CS:[0x1cb4] (334B_1EAD / 0x3535D)
-    AX = UInt16[cs2, 0x1CB4];
-    // ADD AX,word ptr CS:[0x1cb2] (334B_1EB1 / 0x35361)
-    // AX += UInt16[cs2, 0x1CB2];
-    AX = Alu.Add16(AX, UInt16[cs2, 0x1CB2]);
-    // MOV CS:[0x1cb2],AX (334B_1EB6 / 0x35366)
-    UInt16[cs2, 0x1CB2] = AX;
-    // MOV CS:[0x1cb0],AX (334B_1EBA / 0x3536A)
-    UInt16[cs2, 0x1CB0] = AX;
-    // DEC AX (334B_1EBE / 0x3536E)
-    AX = Alu.Dec16(AX);
-    // MOV CS:[0x1cae],AX (334B_1EBF / 0x3536F)
-    UInt16[cs2, 0x1CAE] = AX;
-    // CLC  (334B_1EC3 / 0x35373)
-    CarryFlag = false;
-    // MOV AX,SS (334B_1EC4 / 0x35374)
-    AX = SS;
-    // MOV DS,AX (334B_1EC6 / 0x35376)
-    DS = AX;
-    // RETF  (334B_1EC8 / 0x35378)
-    return FarRet();
-    label_334B_1EC9_35379:
-    // MOV AH,AL (334B_1EC9 / 0x35379)
-    AH = AL;
-    // AND AX,0x300f (334B_1ECB / 0x3537B)
-    // AX &= 0x300F;
-    AX = Alu.And16(AX, 0x300F);
-    // OR AL,0x10 (334B_1ECE / 0x3537E)
-    AL |= 0x10;
-    // SUB AH,0x10 (334B_1ED0 / 0x35380)
-    // AH -= 0x10;
-    AH = Alu.Sub8(AH, 0x10);
-    // JC 0x3000:538e (334B_1ED3 / 0x35383)
-    if(CarryFlag) {
-      goto label_334B_1EDE_3538E;
-    }
-    // SHR AH,1 (334B_1ED5 / 0x35385)
-    AH >>= 0x1;
-    // AND AH,0x10 (334B_1ED7 / 0x35387)
-    AH &= 0x10;
-    // ADD AL,0x10 (334B_1EDA / 0x3538A)
-    AL += 0x10;
-    // ADD AL,AH (334B_1EDC / 0x3538C)
-    // AL += AH;
-    AL = Alu.Add8(AL, AH);
-    label_334B_1EDE_3538E:
-    // MOV DI,word ptr CS:[0x1cae] (334B_1EDE / 0x3538E)
-    DI = UInt16[cs2, 0x1CAE];
-    // STD  (334B_1EE3 / 0x35393)
-    DirectionFlag = true;
-    // STOSB ES:DI (334B_1EE4 / 0x35394)
-    UInt8[ES, DI] = AL;
-    DI = (ushort)(DI + Direction8);
-    // CLD  (334B_1EE5 / 0x35395)
-    DirectionFlag = false;
-    // MOV word ptr CS:[0x1cae],DI (334B_1EE6 / 0x35396)
-    UInt16[cs2, 0x1CAE] = DI;
-    // MOV BP,DX (334B_1EEB / 0x3539B)
-    BP = DX;
-    // SUB BP,CX (334B_1EED / 0x3539D)
-    // BP -= CX;
-    BP = Alu.Sub16(BP, CX);
-    // JNS 0x3000:53a3 (334B_1EEF / 0x3539F)
-    if(!SignFlag) {
-      goto label_334B_1EF3_353A3;
-    }
-    // ADD BP,CX (334B_1EF1 / 0x353A1)
-    BP += CX;
-    label_334B_1EF3_353A3:
-    // ADD BP,BX (334B_1EF3 / 0x353A3)
-    // BP += BX;
-    BP = Alu.Add16(BP, BX);
-    // MOV AL,byte ptr DS:[BP + SI] (334B_1EF5 / 0x353A5)
-    AL = UInt8[DS, (ushort)(BP + SI)];
-    // MOV AH,AL (334B_1EF8 / 0x353A8)
-    AH = AL;
-    // AND AX,0x300f (334B_1EFA / 0x353AA)
-    // AX &= 0x300F;
-    AX = Alu.And16(AX, 0x300F);
-    // OR AL,0x10 (334B_1EFD / 0x353AD)
-    AL |= 0x10;
-    // SUB AH,0x10 (334B_1EFF / 0x353AF)
-    // AH -= 0x10;
-    AH = Alu.Sub8(AH, 0x10);
-    // JC 0x3000:53bd (334B_1F02 / 0x353B2)
-    if(CarryFlag) {
-      goto label_334B_1F0D_353BD;
-    }
-    // SHR AH,1 (334B_1F04 / 0x353B4)
-    AH >>= 0x1;
-    // AND AH,0x10 (334B_1F06 / 0x353B6)
-    AH &= 0x10;
-    // ADD AL,0x10 (334B_1F09 / 0x353B9)
-    AL += 0x10;
-    // ADD AL,AH (334B_1F0B / 0x353BB)
-    // AL += AH;
-    AL = Alu.Add8(AL, AH);
-    label_334B_1F0D_353BD:
-    // MOV DI,word ptr CS:[0x1cb0] (334B_1F0D / 0x353BD)
-    DI = UInt16[cs2, 0x1CB0];
-    // STOSB ES:DI (334B_1F12 / 0x353C2)
-    UInt8[ES, DI] = AL;
-    DI = (ushort)(DI + Direction8);
-    // MOV word ptr CS:[0x1cb0],DI (334B_1F13 / 0x353C3)
-    UInt16[cs2, 0x1CB0] = DI;
-    // POP DI (334B_1F18 / 0x353C8)
-    DI = Stack.Pop();
-    // POP SI (334B_1F19 / 0x353C9)
-    SI = Stack.Pop();
-    // ADD SI,0xc8 (334B_1F1A / 0x353CA)
-    // SI += 0xC8;
-    SI = Alu.Add16(SI, 0xC8);
-    // MOV AL,byte ptr SS:[DI] (334B_1F1E / 0x353CE)
-    AL = UInt8[SS, DI];
-    // XOR AH,AH (334B_1F21 / 0x353D1)
-    AH = 0;
-    // INC DI (334B_1F23 / 0x353D3)
-    DI = Alu.Inc16(DI);
-    // OR AL,AL (334B_1F24 / 0x353D4)
-    // AL |= AL;
-    AL = Alu.Or8(AL, AL);
-    // JS 0x3000:53db (334B_1F26 / 0x353D6)
-    if(SignFlag) {
-      goto label_334B_1F2B_353DB;
-    }
-    // JMP 0x3000:5235 (334B_1F28 / 0x353D8)
-    // Jump converted to entry function call
-    if(JumpDispatcher.Jump(spice86_generated_label_jump_target_334B_1D85_035235, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-    label_334B_1F2B_353DB:
-    // MOV word ptr CS:[0x1ca6],DI (334B_1F2B / 0x353DB)
-    UInt16[cs2, 0x1CA6] = DI;
-    // MOV AX,CS:[0x1cb4] (334B_1F30 / 0x353E0)
-    AX = UInt16[cs2, 0x1CB4];
-    // ADD AX,word ptr CS:[0x1cb2] (334B_1F34 / 0x353E4)
-    // AX += UInt16[cs2, 0x1CB2];
-    AX = Alu.Add16(AX, UInt16[cs2, 0x1CB2]);
-    // MOV CS:[0x1cb2],AX (334B_1F39 / 0x353E9)
-    UInt16[cs2, 0x1CB2] = AX;
-    // MOV CS:[0x1cb0],AX (334B_1F3D / 0x353ED)
-    UInt16[cs2, 0x1CB0] = AX;
-    // DEC AX (334B_1F41 / 0x353F1)
-    AX = Alu.Dec16(AX);
-    // MOV CS:[0x1cae],AX (334B_1F42 / 0x353F2)
-    UInt16[cs2, 0x1CAE] = AX;
-    // CLC  (334B_1F46 / 0x353F6)
-    CarryFlag = false;
-    // MOV AX,SS (334B_1F47 / 0x353F7)
-    AX = SS;
-    // MOV DS,AX (334B_1F49 / 0x353F9)
-    DS = AX;
-    // RETF  (334B_1F4B / 0x353FB)
-    return FarRet();
-  }
-  
-  public virtual Action spice86_generated_label_jump_target_334B_1F4C_0353FC(int loadOffset) {
-    entrydispatcher:
-    if(loadOffset != 0) {
-      throw FailAsUntested("External goto not supported for this function.");
-    }
-    label_334B_1F4C_353FC:
-    // MOV word ptr CS:[0x1a7],DI (334B_1F4C / 0x353FC)
-    UInt16[cs2, 0x1A7] = DI;
-    // MOV word ptr CS:[0x1a9],ES (334B_1F51 / 0x35401)
-    UInt16[cs2, 0x1A9] = ES;
-    // MOV word ptr CS:[0x1bb],BP (334B_1F56 / 0x35406)
-    UInt16[cs2, 0x1BB] = BP;
-    // MOV word ptr CS:[0x1a5],SI (334B_1F5B / 0x3540B)
-    UInt16[cs2, 0x1A5] = SI;
-    // MOV word ptr CS:[0x1b7],0x24 (334B_1F60 / 0x35410)
-    UInt16[cs2, 0x1B7] = 0x24;
-    // MOV word ptr CS:[0x1ab],BX (334B_1F67 / 0x35417)
-    UInt16[cs2, 0x1AB] = BX;
-    // MOV word ptr CS:[0x1cb2],0x504 (334B_1F6C / 0x3541C)
-    UInt16[cs2, 0x1CB2] = 0x504;
-    // SHL AX,1 (334B_1F73 / 0x35423)
-    AX <<= 0x1;
-    // SHL AX,1 (334B_1F75 / 0x35425)
-    AX <<= 0x1;
-    // SHL AX,1 (334B_1F77 / 0x35427)
-    // AX <<= 0x1;
-    AX = Alu.Shl16(AX, 0x1);
-    // JNS 0x3000:5493 (334B_1F79 / 0x35429)
-    if(!SignFlag) {
-      // Jump converted to entry function call
-      if(JumpDispatcher.Jump(spice86_generated_label_jump_target_334B_1FE3_035493, 0)) {
-        loadOffset = JumpDispatcher.NextEntryAddress;
-        goto entrydispatcher;
-      }
-      return JumpDispatcher.JumpAsmReturn!;
-    }
-    // NEG AX (334B_1F7B / 0x3542B)
-    AX = Alu.Sub16(0, AX);
-    // ADD BP,AX (334B_1F7D / 0x3542D)
-    // BP += AX;
-    BP = Alu.Add16(BP, AX);
-    // MOV CX,word ptr [BP + 0x0] (334B_1F7F / 0x3542F)
-    CX = UInt16[SS, BP];
-    // MOV BX,word ptr [BP + 0x2] (334B_1F82 / 0x35432)
-    BX = UInt16[SS, (ushort)(BP + 0x2)];
-    // NEG CX (334B_1F85 / 0x35435)
-    CX = Alu.Sub16(0, CX);
-    // MOV DI,word ptr CS:[0x1a5] (334B_1F87 / 0x35437)
-    DI = UInt16[cs2, 0x1A5];
-    // MOV word ptr CS:[0x1b9],0x8f7 (334B_1F8C / 0x3543C)
-    UInt16[cs2, 0x1B9] = 0x8F7;
-    // ADD word ptr CS:[0x1bb],0x2b0 (334B_1F93 / 0x35443)
-    UInt16[cs2, 0x1BB] += 0x2B0;
-    // ADD DI,0x8c (334B_1F9A / 0x3544A)
-    // DI += 0x8C;
-    DI = Alu.Add16(DI, 0x8C);
-    // CALL 0x3000:54d5 (334B_1F9E / 0x3544E)
-    NearCall(cs2, 0x1FA1, spice86_generated_label_call_target_334B_2025_0354D5);
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(spice86_generated_label_ret_target_334B_1FA1_035451, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-  }
-  
-  public virtual Action spice86_generated_label_ret_target_334B_1FA1_035451(int loadOffset) {
-    entrydispatcher:
-    if(loadOffset != 0) {
-      throw FailAsUntested("External goto not supported for this function.");
-    }
-    label_334B_1FA1_35451:
-    // SUB BP,0x8 (334B_1FA1 / 0x35451)
-    // BP -= 0x8;
-    BP = Alu.Sub16(BP, 0x8);
-    // MOV CX,word ptr [BP + 0x0] (334B_1FA4 / 0x35454)
-    CX = UInt16[SS, BP];
-    // MOV BX,word ptr [BP + 0x2] (334B_1FA7 / 0x35457)
-    BX = UInt16[SS, (ushort)(BP + 0x2)];
-    // NEG CX (334B_1FAA / 0x3545A)
-    CX = Alu.Sub16(0, CX);
-    // JZ 0x3000:5475 (334B_1FAC / 0x3545C)
-    if(ZeroFlag) {
-      goto label_334B_1FC5_35475;
-    }
-    // MOV DI,word ptr CS:[0x1a5] (334B_1FAE / 0x3545E)
-    DI = UInt16[cs2, 0x1A5];
-    // ADD DI,0x6cc (334B_1FB3 / 0x35463)
-    // DI += 0x6CC;
-    DI = Alu.Add16(DI, 0x6CC);
-    // CALL 0x3000:54d5 (334B_1FB7 / 0x35467)
-    NearCall(cs2, 0x1FBA, spice86_generated_label_call_target_334B_2025_0354D5);
-    label_334B_1FBA_3546A:
-    // CALL 0x3000:55d3 (334B_1FBA / 0x3546A)
-    NearCall(cs2, 0x1FBD, spice86_generated_label_call_target_334B_2123_0355D3);
-    label_334B_1FBD_3546D:
-    // DEC word ptr CS:[0x1b7] (334B_1FBD / 0x3546D)
-    UInt16[cs2, 0x1B7] = Alu.Dec16(UInt16[cs2, 0x1B7]);
-    // JNZ 0x3000:5451 (334B_1FC2 / 0x35472)
-    if(!ZeroFlag) {
-      goto label_334B_1FA1_35451;
-    }
-    // RETF  (334B_1FC4 / 0x35474)
-    return FarRet();
-    label_334B_1FC5_35475:
-    // MOV DI,word ptr CS:[0x1a5] (334B_1FC5 / 0x35475)
-    DI = UInt16[cs2, 0x1A5];
-    // MOV word ptr CS:[0x1b9],0x92f (334B_1FCA / 0x3547A)
-    UInt16[cs2, 0x1B9] = 0x92F;
-    // ADD word ptr CS:[0x1bb],0x8 (334B_1FD1 / 0x35481)
-    UInt16[cs2, 0x1BB] += 0x8;
-    // ADD DI,0x6cc (334B_1FD7 / 0x35487)
-    // DI += 0x6CC;
-    DI = Alu.Add16(DI, 0x6CC);
-    // CALL 0x3000:54d5 (334B_1FDB / 0x3548B)
-    NearCall(cs2, 0x1FDE, spice86_generated_label_call_target_334B_2025_0354D5);
-    label_334B_1FDE_3548E:
-    // CALL 0x3000:55d3 (334B_1FDE / 0x3548E)
-    NearCall(cs2, 0x1FE1, spice86_generated_label_call_target_334B_2123_0355D3);
-    label_334B_1FE1_35491:
-    // JMP 0x3000:54cd (334B_1FE1 / 0x35491)
-    // Jump converted to non entry function call
-    if(JumpDispatcher.Jump(spice86_generated_label_call_target_334B_2025_0354D5, 0x354CD - cs1 * 0x10)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-  }
-  
-  public virtual Action spice86_generated_label_jump_target_334B_1FE3_035493(int loadOffset) {
-    entrydispatcher:
-    if(loadOffset != 0) {
-      throw FailAsUntested("External goto not supported for this function.");
-    }
-    label_334B_1FE3_35493:
-    // ADD BP,AX (334B_1FE3 / 0x35493)
-    // BP += AX;
-    BP = Alu.Add16(BP, AX);
-    // MOV CX,word ptr [BP + 0x0] (334B_1FE5 / 0x35495)
-    CX = UInt16[SS, BP];
-    // MOV BX,word ptr [BP + 0x2] (334B_1FE8 / 0x35498)
-    BX = UInt16[SS, (ushort)(BP + 0x2)];
-    // MOV DI,word ptr CS:[0x1a5] (334B_1FEB / 0x3549B)
-    DI = UInt16[cs2, 0x1A5];
-    // MOV word ptr CS:[0x1b9],0x92f (334B_1FF0 / 0x354A0)
-    UInt16[cs2, 0x1B9] = 0x92F;
-    // ADD word ptr CS:[0x1bb],0x2b8 (334B_1FF7 / 0x354A7)
-    UInt16[cs2, 0x1BB] += 0x2B8;
-    // ADD DI,0x8c (334B_1FFE / 0x354AE)
-    // DI += 0x8C;
-    DI = Alu.Add16(DI, 0x8C);
-    // CALL 0x3000:54d5 (334B_2002 / 0x354B2)
-    NearCall(cs2, 0x2005, spice86_generated_label_call_target_334B_2025_0354D5);
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(spice86_generated_label_ret_target_334B_2005_0354B5, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-  }
-  
-  public virtual Action spice86_generated_label_ret_target_334B_2005_0354B5(int loadOffset) {
-    entrydispatcher:
-    if(loadOffset != 0) {
-      throw FailAsUntested("External goto not supported for this function.");
-    }
-    label_334B_2005_354B5:
-    // ADD BP,0x8 (334B_2005 / 0x354B5)
-    // BP += 0x8;
-    BP = Alu.Add16(BP, 0x8);
-    // MOV CX,word ptr [BP + 0x0] (334B_2008 / 0x354B8)
-    CX = UInt16[SS, BP];
-    // MOV BX,word ptr [BP + 0x2] (334B_200B / 0x354BB)
-    BX = UInt16[SS, (ushort)(BP + 0x2)];
-    // MOV DI,word ptr CS:[0x1a5] (334B_200E / 0x354BE)
-    DI = UInt16[cs2, 0x1A5];
-    // ADD DI,0x6cc (334B_2013 / 0x354C3)
-    // DI += 0x6CC;
-    DI = Alu.Add16(DI, 0x6CC);
-    // CALL 0x3000:54d5 (334B_2017 / 0x354C7)
-    NearCall(cs2, 0x201A, spice86_generated_label_call_target_334B_2025_0354D5);
-    // Function call generated as ASM continues to next function body without return
-    if(JumpDispatcher.Jump(spice86_generated_label_call_target_334B_2025_0354D5, 0x354CA - cs1 * 0x10)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-  }
-  
-  public virtual Action spice86_generated_label_call_target_334B_2025_0354D5(int loadOffset) {
-    entrydispatcher:
-    switch(loadOffset) {
-      case 0x254CD: goto label_334B_201D_354CD;break; // Target of external jump from 0x35491
-      case 0x254CA: break; // Instructions before entry targeted by 
-      case 0: goto entry; break; // 0 is the entry point ghidra detected, but in this case function start is not entry point
-      default: throw FailAsUntested("Could not find any label from outside with address " + loadOffset);
-    }
-    label_334B_201A_354CA:
-    // CALL 0x3000:5603 (334B_201A / 0x354CA)
-    NearCall(cs2, 0x201D, spice86_generated_label_call_target_334B_2153_035603);
-    label_334B_201D_354CD:
-    // DEC word ptr CS:[0x1b7] (334B_201D / 0x354CD)
-    UInt16[cs2, 0x1B7] = Alu.Dec16(UInt16[cs2, 0x1B7]);
-    // JNZ 0x3000:54b5 (334B_2022 / 0x354D2)
-    if(!ZeroFlag) {
-      // Jump converted to entry function call
-      if(JumpDispatcher.Jump(spice86_generated_label_ret_target_334B_2005_0354B5, 0)) {
-        loadOffset = JumpDispatcher.NextEntryAddress;
-        goto entrydispatcher;
-      }
-      return JumpDispatcher.JumpAsmReturn!;
-    }
-    // RETF  (334B_2024 / 0x354D4)
-    return FarRet();
-    entry:
-    label_334B_2025_354D5:
-    // PUSH DX (334B_2025 / 0x354D5)
-    Stack.Push(DX);
-    // PUSH DS (334B_2026 / 0x354D6)
-    Stack.Push(DS);
-    // LDS SI,CS:[0x1a7] (334B_2027 / 0x354D7)
-    DS = UInt16[cs2, 0x1A9];
-    SI = UInt16[cs2, 0x1A7];
-    // MOV AX,SS (334B_202C / 0x354DC)
-    AX = SS;
-    // MOV ES,AX (334B_202E / 0x354DE)
-    ES = AX;
-    // ADD SI,CX (334B_2030 / 0x354E0)
-    SI += CX;
-    // ADD BX,BX (334B_2032 / 0x354E2)
-    // BX += BX;
-    BX = Alu.Add16(BX, BX);
-    // MOV AX,DX (334B_2034 / 0x354E4)
-    AX = DX;
-    // MUL BX (334B_2036 / 0x354E6)
-    Cpu.Mul16(BX);
-    // MOV word ptr [BP + 0x4],DX (334B_2038 / 0x354E8)
-    UInt16[SS, (ushort)(BP + 0x4)] = DX;
-    // ROL AX,1 (334B_203B / 0x354EB)
-    AX = Alu.Rol16(AX, 0x1);
-    // ROL AX,1 (334B_203D / 0x354ED)
-    AX = Alu.Rol16(AX, 0x1);
-    // AND AX,0x3 (334B_203F / 0x354EF)
-    AX &= 0x3;
-    // SUB DI,AX (334B_2042 / 0x354F2)
-    // DI -= AX;
-    DI = Alu.Sub16(DI, AX);
-    // MOV AX,DX (334B_2044 / 0x354F4)
-    AX = DX;
-    // MOV CX,0x58 (334B_2046 / 0x354F6)
-    CX = 0x58;
-    // CMP BX,CX (334B_2049 / 0x354F9)
-    Alu.Sub16(BX, CX);
-    // JNC 0x3000:5529 (334B_204B / 0x354FB)
-    if(!CarryFlag) {
-      // Jump converted to entry function call
-      if(JumpDispatcher.Jump(spice86_generated_label_jump_target_334B_2079_035529, 0)) {
-        loadOffset = JumpDispatcher.NextEntryAddress;
-        goto entrydispatcher;
-      }
-      return JumpDispatcher.JumpAsmReturn!;
-    }
-    // SUB CX,BX (334B_204D / 0x354FD)
-    CX -= BX;
-    // SHL CX,1 (334B_204F / 0x354FF)
-    CX <<= 0x1;
-    // ADD DI,CX (334B_2051 / 0x35501)
-    // DI += CX;
-    DI = Alu.Add16(DI, CX);
-    // MOV CX,BX (334B_2053 / 0x35503)
-    CX = BX;
-    // SHR CX,1 (334B_2055 / 0x35505)
-    CX >>= 0x1;
-    // SUB AX,CX (334B_2057 / 0x35507)
-    // AX -= CX;
-    AX = Alu.Sub16(AX, CX);
-    // JNS 0x3000:550d (334B_2059 / 0x35509)
-    if(!SignFlag) {
-      goto label_334B_205D_3550D;
-    }
-    // ADD AX,BX (334B_205B / 0x3550B)
-    // AX += BX;
-    AX = Alu.Add16(AX, BX);
-    label_334B_205D_3550D:
-    // MOV CX,BX (334B_205D / 0x3550D)
-    CX = BX;
-    // SUB BX,AX (334B_205F / 0x3550F)
-    BX -= AX;
-    // INC CX (334B_2061 / 0x35511)
-    CX++;
-    // SUB CX,BX (334B_2062 / 0x35512)
-    // CX -= BX;
-    CX = Alu.Sub16(CX, BX);
-    // JNS 0x3000:554e (334B_2064 / 0x35514)
-    if(!SignFlag) {
-      // Jump converted to entry function call
-      if(JumpDispatcher.Jump(spice86_generated_label_jump_target_334B_209E_03554E, 0)) {
-        loadOffset = JumpDispatcher.NextEntryAddress;
-        goto entrydispatcher;
-      }
-      return JumpDispatcher.JumpAsmReturn!;
-    }
-    // ADD CX,BX (334B_2066 / 0x35516)
-    CX += BX;
-    // ADD SI,AX (334B_2068 / 0x35518)
-    // SI += AX;
-    SI = Alu.Add16(SI, AX);
-    // MOV AL,byte ptr [SI + -0x1] (334B_206A / 0x3551A)
-    AL = UInt8[DS, (ushort)(SI - 0x1)];
-    // STC  (334B_206D / 0x3551D)
-    CarryFlag = true;
-    // ADC AL,AL (334B_206E / 0x3551E)
-    AL = Alu.Adc8(AL, AL);
-    // ADD AL,AL (334B_2070 / 0x35520)
-    AL += AL;
-    // SHL AL,1 (334B_2072 / 0x35522)
-    AL <<= 0x1;
-    // SHL AL,1 (334B_2074 / 0x35524)
-    // AL <<= 0x1;
-    AL = Alu.Shl8(AL, 0x1);
-    // JMP 0x3000:559b (334B_2076 / 0x35526)
-    // Jump converted to non entry function call
-    if(JumpDispatcher.Jump(spice86_generated_label_jump_target_334B_209E_03554E, 0x3559B - cs1 * 0x10)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-  }
-  
-  public virtual Action spice86_generated_label_jump_target_334B_2079_035529(int loadOffset) {
-    entrydispatcher:
-    if(loadOffset != 0) {
-      throw FailAsUntested("External goto not supported for this function.");
-    }
-    label_334B_2079_35529:
-    // SHR CX,1 (334B_2079 / 0x35529)
-    CX >>= 0x1;
-    // SUB AX,CX (334B_207B / 0x3552B)
-    // AX -= CX;
-    AX = Alu.Sub16(AX, CX);
-    // JNS 0x3000:5531 (334B_207D / 0x3552D)
-    if(!SignFlag) {
-      goto label_334B_2081_35531;
-    }
-    // ADD AX,BX (334B_207F / 0x3552F)
-    AX += BX;
-    label_334B_2081_35531:
-    // SUB BX,AX (334B_2081 / 0x35531)
-    // BX -= AX;
-    BX = Alu.Sub16(BX, AX);
-    // MOV CX,0x58 (334B_2083 / 0x35533)
-    CX = 0x58;
-    // INC CX (334B_2086 / 0x35536)
-    CX++;
-    // SUB CX,BX (334B_2087 / 0x35537)
-    // CX -= BX;
-    CX = Alu.Sub16(CX, BX);
-    // JNS 0x3000:554e (334B_2089 / 0x35539)
-    if(!SignFlag) {
-      // Jump converted to entry function call
-      if(JumpDispatcher.Jump(spice86_generated_label_jump_target_334B_209E_03554E, 0)) {
-        loadOffset = JumpDispatcher.NextEntryAddress;
-        goto entrydispatcher;
-      }
-      return JumpDispatcher.JumpAsmReturn!;
-    }
-    // ADD CX,BX (334B_208B / 0x3553B)
-    CX += BX;
-    // ADD SI,AX (334B_208D / 0x3553D)
-    // SI += AX;
-    SI = Alu.Add16(SI, AX);
-    // MOV AL,byte ptr [SI + -0x1] (334B_208F / 0x3553F)
-    AL = UInt8[DS, (ushort)(SI - 0x1)];
-    // STC  (334B_2092 / 0x35542)
-    CarryFlag = true;
-    // ADC AL,AL (334B_2093 / 0x35543)
-    AL = Alu.Adc8(AL, AL);
-    // ADD AL,AL (334B_2095 / 0x35545)
-    AL += AL;
-    // SHL AL,1 (334B_2097 / 0x35547)
-    AL <<= 0x1;
-    // SHL AL,1 (334B_2099 / 0x35549)
-    // AL <<= 0x1;
-    AL = Alu.Shl8(AL, 0x1);
-    // JMP 0x3000:559b (334B_209B / 0x3554B)
-    // Jump converted to non entry function call
-    if(JumpDispatcher.Jump(spice86_generated_label_jump_target_334B_209E_03554E, 0x3559B - cs1 * 0x10)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-  }
-  
-  public virtual Action spice86_generated_label_jump_target_334B_209E_03554E(int loadOffset) {
-    entrydispatcher:
-    switch(loadOffset) {
-      case 0x2559B: goto label_334B_20EB_3559B;break; // Target of external jump from 0x3554B, 0x3558E
-      case 0: break; // 0 is the entry point ghidra detected, just after this switch
-      default: throw FailAsUntested("Could not find any label from outside with address " + loadOffset);
-    }
-    label_334B_209E_3554E:
-    // OR BX,BX (334B_209E / 0x3554E)
-    // BX |= BX;
-    BX = Alu.Or16(BX, BX);
-    // JZ 0x3000:559b (334B_20A0 / 0x35550)
-    if(ZeroFlag) {
-      goto label_334B_20EB_3559B;
-    }
-    // XCHG BX,CX (334B_20A2 / 0x35552)
-    ushort tmp_334B_20A2 = BX;
-    BX = CX;
-    CX = tmp_334B_20A2;
-    // PUSH SI (334B_20A4 / 0x35554)
-    Stack.Push(SI);
-    // ADD SI,AX (334B_20A5 / 0x35555)
-    // SI += AX;
-    SI = Alu.Add16(SI, AX);
-    // MOV AL,byte ptr [SI + -0x1] (334B_20A7 / 0x35557)
-    AL = UInt8[DS, (ushort)(SI - 0x1)];
-    // STC  (334B_20AA / 0x3555A)
-    CarryFlag = true;
-    // ADC AL,AL (334B_20AB / 0x3555B)
-    AL = Alu.Adc8(AL, AL);
-    // ADD AL,AL (334B_20AD / 0x3555D)
-    AL += AL;
-    // SHL AL,1 (334B_20AF / 0x3555F)
-    AL <<= 0x1;
-    // SHL AL,1 (334B_20B1 / 0x35561)
-    // AL <<= 0x1;
-    AL = Alu.Shl8(AL, 0x1);
-    label_334B_20B3_35563:
-    // MOV DH,byte ptr [SI] (334B_20B3 / 0x35563)
-    DH = UInt8[DS, SI];
-    // INC SI (334B_20B5 / 0x35565)
-    SI = Alu.Inc16(SI);
-    // STC  (334B_20B6 / 0x35566)
-    CarryFlag = true;
-    // ADC DH,DH (334B_20B7 / 0x35567)
-    DH = Alu.Adc8(DH, DH);
-    // ADD DH,DH (334B_20B9 / 0x35569)
-    DH += DH;
-    // SHL DH,1 (334B_20BB / 0x3556B)
-    DH <<= 0x1;
-    // SHL DH,1 (334B_20BD / 0x3556D)
-    // DH <<= 0x1;
-    DH = Alu.Shl8(DH, 0x1);
-    // MOV DL,DH (334B_20BF / 0x3556F)
-    DL = DH;
-    // SUB DL,AL (334B_20C1 / 0x35571)
-    DL -= AL;
-    // SAR DL,1 (334B_20C3 / 0x35573)
-    DL = Alu.Sar8(DL, 0x1);
-    // SAR DL,1 (334B_20C5 / 0x35575)
-    DL = Alu.Sar8(DL, 0x1);
-    // OR DL,DL (334B_20C7 / 0x35577)
-    // DL |= DL;
-    DL = Alu.Or8(DL, DL);
-    // JZ 0x3000:5590 (334B_20C9 / 0x35579)
-    if(ZeroFlag) {
-      goto label_334B_20E0_35590;
-    }
-    // MOV AH,AL (334B_20CB / 0x3557B)
-    AH = AL;
-    // ADD AH,DL (334B_20CD / 0x3557D)
-    // AH += DL;
-    AH = Alu.Add8(AH, DL);
-    // STOSW ES:DI (334B_20CF / 0x3557F)
-    UInt16[ES, DI] = AX;
-    DI = (ushort)(DI + Direction16);
-    // ADD AH,DL (334B_20D0 / 0x35580)
-    // AH += DL;
-    AH = Alu.Add8(AH, DL);
-    // MOV AL,AH (334B_20D2 / 0x35582)
-    AL = AH;
-    // ADD AH,DL (334B_20D4 / 0x35584)
-    // AH += DL;
-    AH = Alu.Add8(AH, DL);
-    // STOSW ES:DI (334B_20D6 / 0x35586)
-    UInt16[ES, DI] = AX;
-    DI = (ushort)(DI + Direction16);
-    // MOV AL,DH (334B_20D7 / 0x35587)
-    AL = DH;
-    // LOOP 0x3000:5563 (334B_20D9 / 0x35589)
-    if(--CX != 0) {
-      goto label_334B_20B3_35563;
-    }
-    // MOV CX,BX (334B_20DB / 0x3558B)
-    CX = BX;
-    // POP SI (334B_20DD / 0x3558D)
-    SI = Stack.Pop();
-    // JMP 0x3000:559b (334B_20DE / 0x3558E)
-    goto label_334B_20EB_3559B;
-    label_334B_20E0_35590:
-    // MOV AH,AL (334B_20E0 / 0x35590)
-    AH = AL;
-    // STOSW ES:DI (334B_20E2 / 0x35592)
-    UInt16[ES, DI] = AX;
-    DI = (ushort)(DI + Direction16);
-    // STOSW ES:DI (334B_20E3 / 0x35593)
-    UInt16[ES, DI] = AX;
-    DI = (ushort)(DI + Direction16);
-    // MOV AL,DH (334B_20E4 / 0x35594)
-    AL = DH;
-    // LOOP 0x3000:5563 (334B_20E6 / 0x35596)
-    if(--CX != 0) {
-      goto label_334B_20B3_35563;
-    }
-    // MOV CX,BX (334B_20E8 / 0x35598)
-    CX = BX;
-    // POP SI (334B_20EA / 0x3559A)
-    SI = Stack.Pop();
-    label_334B_20EB_3559B:
-    // JCXZ 0x3000:55c5 (334B_20EB / 0x3559B)
-    if(CX == 0) {
-      goto label_334B_2115_355C5;
-    }
-    label_334B_20ED_3559D:
-    // MOV DH,byte ptr [SI] (334B_20ED / 0x3559D)
-    DH = UInt8[DS, SI];
-    // INC SI (334B_20EF / 0x3559F)
-    SI = Alu.Inc16(SI);
-    // STC  (334B_20F0 / 0x355A0)
-    CarryFlag = true;
-    // ADC DH,DH (334B_20F1 / 0x355A1)
-    DH = Alu.Adc8(DH, DH);
-    // ADD DH,DH (334B_20F3 / 0x355A3)
-    DH += DH;
-    // SHL DH,1 (334B_20F5 / 0x355A5)
-    DH <<= 0x1;
-    // SHL DH,1 (334B_20F7 / 0x355A7)
-    // DH <<= 0x1;
-    DH = Alu.Shl8(DH, 0x1);
-    // MOV DL,DH (334B_20F9 / 0x355A9)
-    DL = DH;
-    // SUB DL,AL (334B_20FB / 0x355AB)
-    DL -= AL;
-    // SAR DL,1 (334B_20FD / 0x355AD)
-    DL = Alu.Sar8(DL, 0x1);
-    // SAR DL,1 (334B_20FF / 0x355AF)
-    DL = Alu.Sar8(DL, 0x1);
-    // OR DL,DL (334B_2101 / 0x355B1)
-    // DL |= DL;
-    DL = Alu.Or8(DL, DL);
-    // JZ 0x3000:55c8 (334B_2103 / 0x355B3)
-    if(ZeroFlag) {
-      goto label_334B_2118_355C8;
-    }
-    // MOV AH,AL (334B_2105 / 0x355B5)
-    AH = AL;
-    // ADD AH,DL (334B_2107 / 0x355B7)
-    // AH += DL;
-    AH = Alu.Add8(AH, DL);
-    // STOSW ES:DI (334B_2109 / 0x355B9)
-    UInt16[ES, DI] = AX;
-    DI = (ushort)(DI + Direction16);
-    // ADD AH,DL (334B_210A / 0x355BA)
-    // AH += DL;
-    AH = Alu.Add8(AH, DL);
-    // MOV AL,AH (334B_210C / 0x355BC)
-    AL = AH;
-    // ADD AH,DL (334B_210E / 0x355BE)
-    // AH += DL;
-    AH = Alu.Add8(AH, DL);
-    // STOSW ES:DI (334B_2110 / 0x355C0)
-    UInt16[ES, DI] = AX;
-    DI = (ushort)(DI + Direction16);
-    // MOV AL,DH (334B_2111 / 0x355C1)
-    AL = DH;
-    // LOOP 0x3000:559d (334B_2113 / 0x355C3)
-    if(--CX != 0) {
-      goto label_334B_20ED_3559D;
-    }
-    label_334B_2115_355C5:
-    // POP DS (334B_2115 / 0x355C5)
-    DS = Stack.Pop();
-    // POP DX (334B_2116 / 0x355C6)
-    DX = Stack.Pop();
-    // RET  (334B_2117 / 0x355C7)
-    return NearRet();
-    label_334B_2118_355C8:
-    // MOV AH,AL (334B_2118 / 0x355C8)
-    AH = AL;
-    // STOSW ES:DI (334B_211A / 0x355CA)
-    UInt16[ES, DI] = AX;
-    DI = (ushort)(DI + Direction16);
-    // STOSW ES:DI (334B_211B / 0x355CB)
-    UInt16[ES, DI] = AX;
-    DI = (ushort)(DI + Direction16);
-    // MOV AL,DH (334B_211C / 0x355CC)
-    AL = DH;
-    // LOOP 0x3000:559d (334B_211E / 0x355CE)
-    if(--CX != 0) {
-      goto label_334B_20ED_3559D;
-    }
-    // POP DS (334B_2120 / 0x355D0)
-    DS = Stack.Pop();
-    // POP DX (334B_2121 / 0x355D1)
-    DX = Stack.Pop();
-    // RET  (334B_2122 / 0x355D2)
-    return NearRet();
-  }
-  
-  public virtual Action spice86_generated_label_call_target_334B_2123_0355D3(int loadOffset) {
-    entrydispatcher:
-    if(loadOffset != 0) {
-      throw FailAsUntested("External goto not supported for this function.");
-    }
-    label_334B_2123_355D3:
-    // PUSH DX (334B_2123 / 0x355D3)
-    Stack.Push(DX);
-    // PUSH BP (334B_2124 / 0x355D4)
-    Stack.Push(BP);
-    // MOV CX,word ptr [BP + 0xa] (334B_2125 / 0x355D5)
-    CX = UInt16[SS, (ushort)(BP + 0xA)];
-    // MOV DX,word ptr [BP + 0x2] (334B_2128 / 0x355D8)
-    DX = UInt16[SS, (ushort)(BP + 0x2)];
-    // MOV DI,word ptr CS:[0x1a5] (334B_212B / 0x355DB)
-    DI = UInt16[cs2, 0x1A5];
-    // ADD DI,0x13c (334B_2130 / 0x355E0)
-    // DI += 0x13C;
-    DI = Alu.Add16(DI, 0x13C);
-    // MOV word ptr CS:[0x1b3],0xb0 (334B_2134 / 0x355E4)
-    UInt16[cs2, 0x1B3] = 0xB0;
-    // MOV SI,DI (334B_213B / 0x355EB)
-    SI = DI;
-    // MOV AX,0x190 (334B_213D / 0x355ED)
-    AX = 0x190;
-    // ADD DI,AX (334B_2140 / 0x355F0)
-    // DI += AX;
-    DI = Alu.Add16(DI, AX);
-    // MOV BP,DI (334B_2142 / 0x355F2)
-    BP = DI;
-    // ADD DI,AX (334B_2144 / 0x355F4)
-    // DI += AX;
-    DI = Alu.Add16(DI, AX);
-    // MOV BX,DI (334B_2146 / 0x355F6)
-    BX = DI;
-    // ADD DI,AX (334B_2148 / 0x355F8)
-    // DI += AX;
-    DI = Alu.Add16(DI, AX);
-    // MOV word ptr CS:[0x1b5],DI (334B_214A / 0x355FA)
-    UInt16[cs2, 0x1B5] = DI;
-    // ADD DI,AX (334B_214F / 0x355FF)
-    // DI += AX;
-    DI = Alu.Add16(DI, AX);
-    // JMP 0x3000:5633 (334B_2151 / 0x35601)
-    // Jump converted to entry function call
-    if(JumpDispatcher.Jump(spice86_generated_label_jump_target_334B_2183_035633, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-  }
-  
-  public virtual Action spice86_generated_label_call_target_334B_2153_035603(int loadOffset) {
-    entrydispatcher:
-    if(loadOffset != 0) {
-      throw FailAsUntested("External goto not supported for this function.");
-    }
-    label_334B_2153_35603:
-    // PUSH DX (334B_2153 / 0x35603)
-    Stack.Push(DX);
-    // PUSH BP (334B_2154 / 0x35604)
-    Stack.Push(BP);
-    // MOV CX,word ptr [BP + 0x2] (334B_2155 / 0x35605)
-    CX = UInt16[SS, (ushort)(BP + 0x2)];
-    // MOV DX,word ptr [BP + -0x6] (334B_2158 / 0x35608)
-    DX = UInt16[SS, (ushort)(BP - 0x6)];
-    // MOV DI,word ptr CS:[0x1a5] (334B_215B / 0x3560B)
-    DI = UInt16[cs2, 0x1A5];
-    // ADD DI,0x13c (334B_2160 / 0x35610)
-    // DI += 0x13C;
-    DI = Alu.Add16(DI, 0x13C);
-    // MOV word ptr CS:[0x1b3],0xb0 (334B_2164 / 0x35614)
-    UInt16[cs2, 0x1B3] = 0xB0;
-    // PUSH DI (334B_216B / 0x3561B)
-    Stack.Push(DI);
-    // MOV AX,0x190 (334B_216C / 0x3561C)
-    AX = 0x190;
-    // ADD DI,AX (334B_216F / 0x3561F)
-    // DI += AX;
-    DI = Alu.Add16(DI, AX);
-    // MOV word ptr CS:[0x1b5],DI (334B_2171 / 0x35621)
-    UInt16[cs2, 0x1B5] = DI;
-    // ADD DI,AX (334B_2176 / 0x35626)
-    // DI += AX;
-    DI = Alu.Add16(DI, AX);
-    // MOV BX,DI (334B_2178 / 0x35628)
-    BX = DI;
-    // ADD DI,AX (334B_217A / 0x3562A)
-    // DI += AX;
-    DI = Alu.Add16(DI, AX);
-    // MOV BP,DI (334B_217C / 0x3562C)
-    BP = DI;
-    // ADD DI,AX (334B_217E / 0x3562E)
-    // DI += AX;
-    DI = Alu.Add16(DI, AX);
-    // MOV SI,DI (334B_2180 / 0x35630)
-    SI = DI;
-    // POP DI (334B_2182 / 0x35632)
-    DI = Stack.Pop();
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(spice86_generated_label_jump_target_334B_2183_035633, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-  }
-  
-  public virtual Action spice86_generated_label_jump_target_334B_2183_035633(int loadOffset) {
-    entrydispatcher:
-    if(loadOffset != 0) {
-      throw FailAsUntested("External goto not supported for this function.");
-    }
-    label_334B_2183_35633:
-    // PUSH word ptr CS:[0x1b3] (334B_2183 / 0x35633)
-    Stack.Push(UInt16[cs2, 0x1B3]);
-    // PUSH DI (334B_2188 / 0x35638)
-    Stack.Push(DI);
-    // PUSH word ptr CS:[0x1b5] (334B_2189 / 0x35639)
-    Stack.Push(UInt16[cs2, 0x1B5]);
-    // PUSH BX (334B_218E / 0x3563E)
-    Stack.Push(BX);
-    // PUSH BP (334B_218F / 0x3563F)
-    Stack.Push(BP);
-    // PUSH SI (334B_2190 / 0x35640)
-    Stack.Push(SI);
-    // SUB DX,CX (334B_2191 / 0x35641)
-    // DX -= CX;
-    DX = Alu.Sub16(DX, CX);
-    // MOV AX,DS (334B_2193 / 0x35643)
-    AX = DS;
-    // MOV ES,AX (334B_2195 / 0x35645)
-    ES = AX;
-    // XOR AX,AX (334B_2197 / 0x35647)
-    AX = 0;
-    // DIV CX (334B_2199 / 0x35649)
-    Cpu.Div16(CX);
-    // MOV CS:[0x1ad],AX (334B_219B / 0x3564B)
-    UInt16[cs2, 0x1AD] = AX;
-    // MOV CS:[0x1af],AX (334B_219F / 0x3564F)
-    UInt16[cs2, 0x1AF] = AX;
-    // SHR AX,1 (334B_21A3 / 0x35653)
-    // AX >>= 0x1;
-    AX = Alu.Shr16(AX, 0x1);
-    // MOV DX,AX (334B_21A5 / 0x35655)
-    DX = AX;
-    // SHR AX,1 (334B_21A7 / 0x35657)
-    // AX >>= 0x1;
-    AX = Alu.Shr16(AX, 0x1);
-    // MOV CX,DX (334B_21A9 / 0x35659)
-    CX = DX;
-    // ADD CX,AX (334B_21AB / 0x3565B)
-    CX += AX;
-    // ADD AX,0x80 (334B_21AD / 0x3565D)
-    AX += 0x80;
-    // ADD CX,0x80 (334B_21B0 / 0x35660)
-    CX += 0x80;
-    // ADD DX,0x80 (334B_21B4 / 0x35664)
-    // DX += 0x80;
-    DX = Alu.Add16(DX, 0x80);
-    // MOV CL,CH (334B_21B8 / 0x35668)
-    CL = CH;
-    // MOV CH,AH (334B_21BA / 0x3566A)
-    CH = AH;
-    // MOV DL,DH (334B_21BC / 0x3566C)
-    DL = DH;
-    // MOV word ptr CS:[0x1b1],CX (334B_21BE / 0x3566E)
-    UInt16[cs2, 0x1B1] = CX;
-    label_334B_21C3_35673:
-    // LODSB SI (334B_21C3 / 0x35673)
-    AL = UInt8[DS, SI];
-    SI = (ushort)(SI + Direction8);
-    // MOV AH,byte ptr [DI] (334B_21C4 / 0x35674)
-    AH = UInt8[DS, DI];
-    // INC DI (334B_21C6 / 0x35676)
-    DI++;
-    // SUB AH,AL (334B_21C7 / 0x35677)
-    AH -= AL;
-    // SAR AH,1 (334B_21C9 / 0x35679)
-    AH = Alu.Sar8(AH, 0x1);
-    // SAR AH,1 (334B_21CB / 0x3567B)
-    AH = Alu.Sar8(AH, 0x1);
-    // ADD AL,AH (334B_21CD / 0x3567D)
-    // AL += AH;
-    AL = Alu.Add8(AL, AH);
-    // MOV byte ptr [BP + 0x0],AL (334B_21CF / 0x3567F)
-    UInt8[SS, BP] = AL;
-    // INC BP (334B_21D2 / 0x35682)
-    BP++;
-    // ADD CH,byte ptr CS:[0x1b2] (334B_21D3 / 0x35683)
-    // CH += UInt8[cs2, 0x1B2];
-    CH = Alu.Add8(CH, UInt8[cs2, 0x1B2]);
-    // JC 0x3000:56bb (334B_21D8 / 0x35688)
-    if(CarryFlag) {
-      goto label_334B_220B_356BB;
-    }
-    label_334B_21DA_3568A:
-    // ADD AL,AH (334B_21DA / 0x3568A)
-    // AL += AH;
-    AL = Alu.Add8(AL, AH);
-    // MOV byte ptr [BX],AL (334B_21DC / 0x3568C)
-    UInt8[DS, BX] = AL;
-    // INC BX (334B_21DE / 0x3568E)
-    BX++;
-    // ADD DL,DH (334B_21DF / 0x3568F)
-    // DL += DH;
-    DL = Alu.Add8(DL, DH);
-    // JC 0x3000:56c1 (334B_21E1 / 0x35691)
-    if(CarryFlag) {
-      goto label_334B_2211_356C1;
-    }
-    label_334B_21E3_35693:
-    // ADD AL,AH (334B_21E3 / 0x35693)
-    // AL += AH;
-    AL = Alu.Add8(AL, AH);
-    // XCHG word ptr CS:[0x1b5],DI (334B_21E5 / 0x35695)
-    ushort tmp_334B_21E5 = UInt16[cs2, 0x1B5];
-    UInt16[cs2, 0x1B5] = DI;
-    DI = tmp_334B_21E5;
-    // STOSB ES:DI (334B_21EA / 0x3569A)
-    UInt8[ES, DI] = AL;
-    DI = (ushort)(DI + Direction8);
-    // ADD CL,byte ptr CS:[0x1b1] (334B_21EB / 0x3569B)
-    // CL += UInt8[cs2, 0x1B1];
-    CL = Alu.Add8(CL, UInt8[cs2, 0x1B1]);
-    // JC 0x3000:56c6 (334B_21F0 / 0x356A0)
-    if(CarryFlag) {
-      goto label_334B_2216_356C6;
-    }
-    label_334B_21F2_356A2:
-    // XCHG word ptr CS:[0x1b5],DI (334B_21F2 / 0x356A2)
-    ushort tmp_334B_21F2 = UInt16[cs2, 0x1B5];
-    UInt16[cs2, 0x1B5] = DI;
-    DI = tmp_334B_21F2;
-    // MOV AX,CS:[0x1ad] (334B_21F7 / 0x356A7)
-    AX = UInt16[cs2, 0x1AD];
-    // ADD word ptr CS:[0x1af],AX (334B_21FB / 0x356AB)
-    // UInt16[cs2, 0x1AF] += AX;
-    UInt16[cs2, 0x1AF] = Alu.Add16(UInt16[cs2, 0x1AF], AX);
-    // JC 0x3000:56c9 (334B_2200 / 0x356B0)
-    if(CarryFlag) {
-      goto label_334B_2219_356C9;
-    }
-    // DEC word ptr CS:[0x1b3] (334B_2202 / 0x356B2)
-    UInt16[cs2, 0x1B3] = Alu.Dec16(UInt16[cs2, 0x1B3]);
-    // JNZ 0x3000:5673 (334B_2207 / 0x356B7)
-    if(!ZeroFlag) {
-      goto label_334B_21C3_35673;
-    }
-    // JMP 0x3000:56d1 (334B_2209 / 0x356B9)
-    goto label_334B_2221_356D1;
-    label_334B_220B_356BB:
-    // MOV byte ptr [BP + 0x0],AL (334B_220B / 0x356BB)
-    UInt8[SS, BP] = AL;
-    // INC BP (334B_220E / 0x356BE)
-    BP = Alu.Inc16(BP);
-    // JMP 0x3000:568a (334B_220F / 0x356BF)
-    goto label_334B_21DA_3568A;
-    label_334B_2211_356C1:
-    // MOV byte ptr [BX],AL (334B_2211 / 0x356C1)
-    UInt8[DS, BX] = AL;
-    // INC BX (334B_2213 / 0x356C3)
-    BX = Alu.Inc16(BX);
-    // JMP 0x3000:5693 (334B_2214 / 0x356C4)
-    goto label_334B_21E3_35693;
-    label_334B_2216_356C6:
-    // STOSB ES:DI (334B_2216 / 0x356C6)
-    UInt8[ES, DI] = AL;
-    DI = (ushort)(DI + Direction8);
-    // JMP 0x3000:56a2 (334B_2217 / 0x356C7)
-    goto label_334B_21F2_356A2;
-    label_334B_2219_356C9:
-    // INC DI (334B_2219 / 0x356C9)
-    DI++;
-    // DEC word ptr CS:[0x1b3] (334B_221A / 0x356CA)
-    UInt16[cs2, 0x1B3] = Alu.Dec16(UInt16[cs2, 0x1B3]);
-    // JNZ 0x3000:5673 (334B_221F / 0x356CF)
-    if(!ZeroFlag) {
-      goto label_334B_21C3_35673;
-    }
-    label_334B_2221_356D1:
-    // POP SI (334B_2221 / 0x356D1)
-    SI = Stack.Pop();
-    // POP BP (334B_2222 / 0x356D2)
-    BP = Stack.Pop();
-    // POP BX (334B_2223 / 0x356D3)
-    BX = Stack.Pop();
-    // POP word ptr CS:[0x1b5] (334B_2224 / 0x356D4)
-    UInt16[cs2, 0x1B5] = Stack.Pop();
-    // POP DI (334B_2229 / 0x356D9)
-    DI = Stack.Pop();
-    // POP word ptr CS:[0x1b3] (334B_222A / 0x356DA)
-    UInt16[cs2, 0x1B3] = Stack.Pop();
-    // MOV CX,word ptr CS:[0x1b1] (334B_222F / 0x356DF)
-    CX = UInt16[cs2, 0x1B1];
-    // MOV DL,DH (334B_2234 / 0x356E4)
-    DL = DH;
-    // MOV AX,CS:[0x1ad] (334B_2236 / 0x356E6)
-    AX = UInt16[cs2, 0x1AD];
-    // MOV CS:[0x1af],AX (334B_223A / 0x356EA)
-    UInt16[cs2, 0x1AF] = AX;
-    // DEC SI (334B_223E / 0x356EE)
-    SI--;
-    // DEC DI (334B_223F / 0x356EF)
-    DI--;
-    // DEC word ptr CS:[0x1b5] (334B_2240 / 0x356F0)
-    UInt16[cs2, 0x1B5] = Alu.Dec16(UInt16[cs2, 0x1B5]);
-    // STD  (334B_2245 / 0x356F5)
-    DirectionFlag = true;
-    label_334B_2246_356F6:
-    // LODSB SI (334B_2246 / 0x356F6)
-    AL = UInt8[DS, SI];
-    SI = (ushort)(SI + Direction8);
-    // MOV AH,byte ptr [DI] (334B_2247 / 0x356F7)
-    AH = UInt8[DS, DI];
-    // DEC DI (334B_2249 / 0x356F9)
-    DI--;
-    // SUB AH,AL (334B_224A / 0x356FA)
-    AH -= AL;
-    // SAR AH,1 (334B_224C / 0x356FC)
-    AH = Alu.Sar8(AH, 0x1);
-    // SAR AH,1 (334B_224E / 0x356FE)
-    AH = Alu.Sar8(AH, 0x1);
-    // ADD AL,AH (334B_2250 / 0x35700)
-    AL += AH;
-    // DEC BP (334B_2252 / 0x35702)
-    BP = Alu.Dec16(BP);
-    // MOV byte ptr [BP + 0x0],AL (334B_2253 / 0x35703)
-    UInt8[SS, BP] = AL;
-    // ADD CH,byte ptr CS:[0x1b2] (334B_2256 / 0x35706)
-    // CH += UInt8[cs2, 0x1B2];
-    CH = Alu.Add8(CH, UInt8[cs2, 0x1B2]);
-    // JC 0x3000:573f (334B_225B / 0x3570B)
-    if(CarryFlag) {
-      goto label_334B_228F_3573F;
-    }
-    label_334B_225D_3570D:
-    // ADD AL,AH (334B_225D / 0x3570D)
-    AL += AH;
-    // DEC BX (334B_225F / 0x3570F)
-    BX = Alu.Dec16(BX);
-    // MOV byte ptr [BX],AL (334B_2260 / 0x35710)
-    UInt8[DS, BX] = AL;
-    // ADD DL,DH (334B_2262 / 0x35712)
-    // DL += DH;
-    DL = Alu.Add8(DL, DH);
-    // JC 0x3000:5745 (334B_2264 / 0x35714)
-    if(CarryFlag) {
-      goto label_334B_2295_35745;
-    }
-    label_334B_2266_35716:
-    // ADD AL,AH (334B_2266 / 0x35716)
-    // AL += AH;
-    AL = Alu.Add8(AL, AH);
-    // XCHG word ptr CS:[0x1b5],DI (334B_2268 / 0x35718)
-    ushort tmp_334B_2268 = UInt16[cs2, 0x1B5];
-    UInt16[cs2, 0x1B5] = DI;
-    DI = tmp_334B_2268;
-    // STOSB ES:DI (334B_226D / 0x3571D)
-    UInt8[ES, DI] = AL;
-    DI = (ushort)(DI + Direction8);
-    // ADD CL,byte ptr CS:[0x1b1] (334B_226E / 0x3571E)
-    // CL += UInt8[cs2, 0x1B1];
-    CL = Alu.Add8(CL, UInt8[cs2, 0x1B1]);
-    // JC 0x3000:574a (334B_2273 / 0x35723)
-    if(CarryFlag) {
-      goto label_334B_229A_3574A;
-    }
-    label_334B_2275_35725:
-    // XCHG word ptr CS:[0x1b5],DI (334B_2275 / 0x35725)
-    ushort tmp_334B_2275 = UInt16[cs2, 0x1B5];
-    UInt16[cs2, 0x1B5] = DI;
-    DI = tmp_334B_2275;
-    // MOV AX,CS:[0x1ad] (334B_227A / 0x3572A)
-    AX = UInt16[cs2, 0x1AD];
-    // ADD word ptr CS:[0x1af],AX (334B_227E / 0x3572E)
-    // UInt16[cs2, 0x1AF] += AX;
-    UInt16[cs2, 0x1AF] = Alu.Add16(UInt16[cs2, 0x1AF], AX);
-    // JC 0x3000:574d (334B_2283 / 0x35733)
-    if(CarryFlag) {
-      goto label_334B_229D_3574D;
-    }
-    label_334B_2285_35735:
-    // DEC word ptr CS:[0x1b3] (334B_2285 / 0x35735)
-    UInt16[cs2, 0x1B3] = Alu.Dec16(UInt16[cs2, 0x1B3]);
-    // JNZ 0x3000:56f6 (334B_228A / 0x3573A)
-    if(!ZeroFlag) {
-      goto label_334B_2246_356F6;
-    }
-    // CLD  (334B_228C / 0x3573C)
-    DirectionFlag = false;
-    // JMP 0x3000:5750 (334B_228D / 0x3573D)
-    goto label_334B_22A0_35750;
-    label_334B_228F_3573F:
-    // DEC BP (334B_228F / 0x3573F)
-    BP = Alu.Dec16(BP);
-    // MOV byte ptr [BP + 0x0],AL (334B_2290 / 0x35740)
-    UInt8[SS, BP] = AL;
-    // JMP 0x3000:570d (334B_2293 / 0x35743)
-    goto label_334B_225D_3570D;
-    label_334B_2295_35745:
-    // DEC BX (334B_2295 / 0x35745)
-    BX = Alu.Dec16(BX);
-    // MOV byte ptr [BX],AL (334B_2296 / 0x35746)
-    UInt8[DS, BX] = AL;
-    // JMP 0x3000:5716 (334B_2298 / 0x35748)
-    goto label_334B_2266_35716;
-    label_334B_229A_3574A:
-    // STOSB ES:DI (334B_229A / 0x3574A)
-    UInt8[ES, DI] = AL;
-    DI = (ushort)(DI + Direction8);
-    // JMP 0x3000:5725 (334B_229B / 0x3574B)
-    goto label_334B_2275_35725;
-    label_334B_229D_3574D:
-    // DEC DI (334B_229D / 0x3574D)
-    DI = Alu.Dec16(DI);
-    // JMP 0x3000:5735 (334B_229E / 0x3574E)
-    goto label_334B_2285_35735;
-    label_334B_22A0_35750:
-    // POP BP (334B_22A0 / 0x35750)
-    BP = Stack.Pop();
-    // PUSH BP (334B_22A1 / 0x35751)
-    Stack.Push(BP);
-    // SUB BP,word ptr CS:[0x1bb] (334B_22A2 / 0x35752)
-    // BP -= UInt16[cs2, 0x1BB];
-    BP = Alu.Sub16(BP, UInt16[cs2, 0x1BB]);
-    // JC 0x3000:57ba (334B_22A7 / 0x35757)
-    if(CarryFlag) {
-      goto label_334B_230A_357BA;
-    }
-    // MOV AX,CS (334B_22A9 / 0x35759)
-    AX = cs2;
-    // MOV DS,AX (334B_22AB / 0x3575B)
-    DS = AX;
-    // ADD BP,word ptr CS:[0x1b9] (334B_22AD / 0x3575D)
-    // BP += UInt16[cs2, 0x1B9];
-    BP = Alu.Add16(BP, UInt16[cs2, 0x1B9]);
-    // MOV DI,word ptr CS:[0x1a5] (334B_22B2 / 0x35762)
-    DI = UInt16[cs2, 0x1A5];
-    // ADD DI,0xa0 (334B_22B7 / 0x35767)
-    DI += 0xA0;
-    // XOR CH,CH (334B_22BB / 0x3576B)
-    CH = 0;
-    // XOR AL,AL (334B_22BD / 0x3576D)
-    AL = 0;
-    // MOV BL,0x4 (334B_22BF / 0x3576F)
-    BL = 0x4;
-    label_334B_22C1_35771:
-    // MOV SI,0x8ef (334B_22C1 / 0x35771)
-    SI = 0x8EF;
-    // MOV CL,byte ptr CS:[BP + 0x0] (334B_22C4 / 0x35774)
-    CL = UInt8[cs2, BP];
-    // MOV BH,CL (334B_22C8 / 0x35778)
-    BH = CL;
-    // SUB CX,0x4 (334B_22CA / 0x3577A)
-    // CX -= 0x4;
-    CX = Alu.Sub16(CX, 0x4);
-    // JA 0x3000:5789 (334B_22CD / 0x3577D)
-    if(!CarryFlag && !ZeroFlag) {
-      goto label_334B_22D9_35789;
-    }
-    // NEG CX (334B_22CF / 0x3577F)
-    CX = Alu.Sub16(0, CX);
-    // ADD SI,CX (334B_22D1 / 0x35781)
-    // SI += CX;
-    SI = Alu.Add16(SI, CX);
-    // MOV CL,BH (334B_22D3 / 0x35783)
-    CL = BH;
-    // REP
-    while (CX != 0) {
-      CX--;
-      // MOVSB ES:DI,SI (334B_22D5 / 0x35785)
-      UInt8[ES, DI] = UInt8[DS, SI];
-      SI = (ushort)(SI + Direction8);
-      DI = (ushort)(DI + Direction8);
-    }
-    // JMP 0x3000:578f (334B_22D7 / 0x35787)
-    goto label_334B_22DF_3578F;
-    label_334B_22D9_35789:
-    // XOR AL,AL (334B_22D9 / 0x35789)
-    AL = 0;
-    // REP
-    while (CX != 0) {
-      CX--;
-      // STOSB ES:DI (334B_22DB / 0x3578B)
-      UInt8[ES, DI] = AL;
-      DI = (ushort)(DI + Direction8);
-    }
-    // MOVSW ES:DI,SI (334B_22DD / 0x3578D)
-    UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + Direction16);
-    DI = (ushort)(DI + Direction16);
-    // MOVSW ES:DI,SI (334B_22DE / 0x3578E)
-    UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + Direction16);
-    DI = (ushort)(DI + Direction16);
-    label_334B_22DF_3578F:
-    // MOV CL,byte ptr CS:[BP + 0x1] (334B_22DF / 0x3578F)
-    CL = UInt8[cs2, (ushort)(BP + 0x1)];
-    // ADD DI,CX (334B_22E3 / 0x35793)
-    DI += CX;
-    // ADD DI,CX (334B_22E5 / 0x35795)
-    // DI += CX;
-    DI = Alu.Add16(DI, CX);
-    // MOV CL,BH (334B_22E7 / 0x35797)
-    CL = BH;
-    // SUB CX,0x4 (334B_22E9 / 0x35799)
-    // CX -= 0x4;
-    CX = Alu.Sub16(CX, 0x4);
-    // JA 0x3000:57a6 (334B_22EC / 0x3579C)
-    if(!CarryFlag && !ZeroFlag) {
-      goto label_334B_22F6_357A6;
-    }
-    // MOV CL,BH (334B_22EE / 0x3579E)
-    CL = BH;
-    // XOR CH,CH (334B_22F0 / 0x357A0)
-    CH = 0;
-    // REP
-    while (CX != 0) {
-      CX--;
-      // MOVSB ES:DI,SI (334B_22F2 / 0x357A2)
-      UInt8[ES, DI] = UInt8[DS, SI];
-      SI = (ushort)(SI + Direction8);
-      DI = (ushort)(DI + Direction8);
-    }
-    // JMP 0x3000:57ac (334B_22F4 / 0x357A4)
-    goto label_334B_22FC_357AC;
-    label_334B_22F6_357A6:
-    // MOVSW ES:DI,SI (334B_22F6 / 0x357A6)
-    UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + Direction16);
-    DI = (ushort)(DI + Direction16);
-    // MOVSW ES:DI,SI (334B_22F7 / 0x357A7)
-    UInt16[ES, DI] = UInt16[DS, SI];
-    SI = (ushort)(SI + Direction16);
-    DI = (ushort)(DI + Direction16);
-    // XOR AL,AL (334B_22F8 / 0x357A8)
-    AL = 0;
-    // REP
-    while (CX != 0) {
-      CX--;
-      // STOSB ES:DI (334B_22FA / 0x357AA)
-      UInt8[ES, DI] = AL;
-      DI = (ushort)(DI + Direction8);
-    }
-    label_334B_22FC_357AC:
-    // ADD DI,0x58 (334B_22FC / 0x357AC)
-    DI += 0x58;
-    // ADD BP,0x2 (334B_22FF / 0x357AF)
-    BP += 0x2;
-    // DEC BL (334B_2302 / 0x357B2)
-    BL = Alu.Dec8(BL);
-    // JNZ 0x3000:5771 (334B_2304 / 0x357B4)
-    if(!ZeroFlag) {
-      goto label_334B_22C1_35771;
-    }
-    // MOV AX,SS (334B_2306 / 0x357B6)
-    AX = SS;
-    // MOV DS,AX (334B_2308 / 0x357B8)
-    DS = AX;
-    label_334B_230A_357BA:
-    // MOV ES,word ptr CS:[0x1ab] (334B_230A / 0x357BA)
-    ES = UInt16[cs2, 0x1AB];
-    // MOV CX,0x138 (334B_230F / 0x357BF)
-    CX = 0x138;
-    // MOV DI,word ptr CS:[0x1cb2] (334B_2312 / 0x357C2)
-    DI = UInt16[cs2, 0x1CB2];
-    // MOV SI,word ptr CS:[0x1a5] (334B_2317 / 0x357C7)
-    SI = UInt16[cs2, 0x1A5];
-    // ADD SI,0xa0 (334B_231C / 0x357CC)
-    // SI += 0xA0;
-    SI = Alu.Add16(SI, 0xA0);
-    // CALL 0x3000:57f3 (334B_2320 / 0x357D0)
-    NearCall(cs2, 0x2323, spice86_generated_label_call_target_334B_2343_0357F3);
-    label_334B_2323_357D3:
-    // MOV word ptr CS:[0x1cb2],DI (334B_2323 / 0x357D3)
-    UInt16[cs2, 0x1CB2] = DI;
-    // MOV AX,DS (334B_2328 / 0x357D8)
-    AX = DS;
-    // MOV ES,AX (334B_232A / 0x357DA)
-    ES = AX;
-    // MOV DI,word ptr CS:[0x1a5] (334B_232C / 0x357DC)
-    DI = UInt16[cs2, 0x1A5];
-    // ADD DI,0x8c (334B_2331 / 0x357E1)
-    // DI += 0x8C;
-    DI = Alu.Add16(DI, 0x8C);
-    // MOV SI,DI (334B_2335 / 0x357E5)
-    SI = DI;
-    // ADD SI,0x640 (334B_2337 / 0x357E7)
-    // SI += 0x640;
-    SI = Alu.Add16(SI, 0x640);
-    // MOV CX,0x15e (334B_233B / 0x357EB)
-    CX = 0x15E;
-    // REP
-    while (CX != 0) {
-      CX--;
-      // MOVSW ES:DI,SI (334B_233E / 0x357EE)
-      UInt16[ES, DI] = UInt16[DS, SI];
-      SI = (ushort)(SI + Direction16);
-      DI = (ushort)(DI + Direction16);
-    }
-    // POP BP (334B_2340 / 0x357F0)
-    BP = Stack.Pop();
-    // POP DX (334B_2341 / 0x357F1)
-    DX = Stack.Pop();
-    // RET  (334B_2342 / 0x357F2)
-    return NearRet();
-  }
-  
-  public virtual Action spice86_generated_label_call_target_334B_2343_0357F3(int loadOffset) {
-    entrydispatcher:
-    if(loadOffset != 0) {
-      throw FailAsUntested("External goto not supported for this function.");
-    }
-    label_334B_2343_357F3:
-    // PUSH DX (334B_2343 / 0x357F3)
-    Stack.Push(DX);
-    // PUSH BP (334B_2344 / 0x357F4)
-    Stack.Push(BP);
-    // MOV BH,0x4 (334B_2345 / 0x357F5)
-    BH = 0x4;
-    // MOV BP,0xf0f (334B_2347 / 0x357F7)
-    BP = 0xF0F;
-    // MOV DX,0x1010 (334B_234A / 0x357FA)
-    DX = 0x1010;
-    label_334B_234D_357FD:
-    // PUSH CX (334B_234D / 0x357FD)
-    Stack.Push(CX);
-    // SHR CX,1 (334B_234E / 0x357FE)
-    // CX >>= 0x1;
-    CX = Alu.Shr16(CX, 0x1);
-    // JNC 0x3000:5810 (334B_2350 / 0x35800)
-    if(!CarryFlag) {
-      goto label_334B_2360_35810;
-    }
-    // LODSB SI (334B_2352 / 0x35802)
-    AL = UInt8[DS, SI];
-    SI = (ushort)(SI + Direction8);
-    // SHR AL,1 (334B_2353 / 0x35803)
-    AL >>= 0x1;
-    // SHR AL,1 (334B_2355 / 0x35805)
-    AL >>= 0x1;
-    // SHR AL,1 (334B_2357 / 0x35807)
-    AL >>= 0x1;
-    // SHR AL,1 (334B_2359 / 0x35809)
-    AL >>= 0x1;
-    // AND AX,BP (334B_235B / 0x3580B)
-    AX &= BP;
-    // ADD AL,DL (334B_235D / 0x3580D)
-    // AL += DL;
-    AL = Alu.Add8(AL, DL);
-    // STOSB ES:DI (334B_235F / 0x3580F)
-    UInt8[ES, DI] = AL;
-    DI = (ushort)(DI + Direction8);
-    label_334B_2360_35810:
-    // LODSW SI (334B_2360 / 0x35810)
-    AX = UInt16[DS, SI];
-    SI = (ushort)(SI + Direction16);
-    // SHR AX,1 (334B_2361 / 0x35811)
-    AX >>= 0x1;
-    // SHR AX,1 (334B_2363 / 0x35813)
-    AX >>= 0x1;
-    // SHR AX,1 (334B_2365 / 0x35815)
-    AX >>= 0x1;
-    // SHR AX,1 (334B_2367 / 0x35817)
-    AX >>= 0x1;
-    // AND AX,BP (334B_2369 / 0x35819)
-    AX &= BP;
-    // ADD AX,DX (334B_236B / 0x3581B)
-    // AX += DX;
-    AX = Alu.Add16(AX, DX);
-    // STOSW ES:DI (334B_236D / 0x3581D)
-    UInt16[ES, DI] = AX;
-    DI = (ushort)(DI + Direction16);
-    // LOOP 0x3000:5810 (334B_236E / 0x3581E)
-    if(--CX != 0) {
-      goto label_334B_2360_35810;
-    }
-    // POP CX (334B_2370 / 0x35820)
-    CX = Stack.Pop();
-    // SUB DI,CX (334B_2371 / 0x35821)
-    DI -= CX;
-    // SUB SI,CX (334B_2373 / 0x35823)
-    SI -= CX;
-    // ADD DI,0x140 (334B_2375 / 0x35825)
-    DI += 0x140;
-    // ADD SI,0x190 (334B_2379 / 0x35829)
-    SI += 0x190;
-    // DEC BH (334B_237D / 0x3582D)
-    BH = Alu.Dec8(BH);
-    // JNZ 0x3000:57fd (334B_237F / 0x3582F)
-    if(!ZeroFlag) {
-      goto label_334B_234D_357FD;
-    }
-    // POP BP (334B_2381 / 0x35831)
-    BP = Stack.Pop();
-    // POP DX (334B_2382 / 0x35832)
-    DX = Stack.Pop();
-    // RET  (334B_2383 / 0x35833)
-    return NearRet();
-  }
-  
-  public virtual Action spice86_generated_label_call_target_334B_2396_035846(int loadOffset) {
-    entrydispatcher:
-    if(loadOffset != 0) {
-      throw FailAsUntested("External goto not supported for this function.");
-    }
-    label_334B_2396_35846:
-    // XOR DX,DX (334B_2396 / 0x35846)
-    DX = 0;
-    // OR AX,AX (334B_2398 / 0x35848)
-    // AX |= AX;
-    AX = Alu.Or16(AX, AX);
-    // JNS 0x3000:584e (334B_239A / 0x3584A)
-    if(!SignFlag) {
-      goto label_334B_239E_3584E;
-    }
-    // NEG AX (334B_239C / 0x3584C)
-    AX = Alu.Sub16(0, AX);
-    label_334B_239E_3584E:
-    // SUB AX,0x46 (334B_239E / 0x3584E)
-    // AX -= 0x46;
-    AX = Alu.Sub16(AX, 0x46);
-    // JC 0x3000:587b (334B_23A1 / 0x35851)
-    if(CarryFlag) {
-      // JC target is RET, inlining.
-      // RET  (334B_23CB / 0x3587B)
+      // JNS target is RET, inlining.
+      State.IncCycles();
+      // RET  (1000_E0DA / 0x1E0DA)
       return NearRet();
     }
-    // MOV BX,0x2384 (334B_23A3 / 0x35853)
-    BX = 0x2384;
-    // XLAT CS:BX (334B_23A6 / 0x35856)
-    AL = UInt8[cs2, (ushort)(BX + AL)];
-    // XOR AH,AH (334B_23A8 / 0x35858)
-    AH = 0;
-    // MOV DX,AX (334B_23AA / 0x3585A)
-    DX = AX;
-    // XOR AL,AL (334B_23AC / 0x3585C)
-    AL = 0;
-    // ADD SI,DX (334B_23AE / 0x3585E)
-    SI += DX;
-    // SUB CX,DX (334B_23B0 / 0x35860)
-    CX -= DX;
-    // SUB CX,DX (334B_23B2 / 0x35862)
-    // CX -= DX;
-    CX = Alu.Sub16(CX, DX);
-    // JC 0x3000:587c (334B_23B4 / 0x35864)
-    if(CarryFlag) {
-      goto label_334B_23CC_3587C;
-    }
-    // PUSH DX (334B_23B6 / 0x35866)
-    Stack.Push(DX);
-    // XCHG DX,CX (334B_23B7 / 0x35867)
-    ushort tmp_334B_23B7 = DX;
-    DX = CX;
-    CX = tmp_334B_23B7;
-    // SUB CX,0x4 (334B_23B9 / 0x35869)
-    // CX -= 0x4;
-    CX = Alu.Sub16(CX, 0x4);
-    // JC 0x3000:5874 (334B_23BC / 0x3586C)
-    if(CarryFlag) {
-      goto label_334B_23C4_35874;
-    }
-    // REP
-    while (CX != 0) {
-      CX--;
-      // STOSB ES:DI (334B_23BE / 0x3586E)
-      UInt8[ES, DI] = AL;
-      DI = (ushort)(DI + Direction8);
-    }
-    // MOV AX,0x191c (334B_23C0 / 0x35870)
-    AX = 0x191C;
-    // STOSW ES:DI (334B_23C3 / 0x35873)
-    UInt16[ES, DI] = AX;
-    DI = (ushort)(DI + Direction16);
-    label_334B_23C4_35874:
-    // MOV AX,0x1718 (334B_23C4 / 0x35874)
-    AX = 0x1718;
-    // STOSW ES:DI (334B_23C7 / 0x35877)
-    UInt16[ES, DI] = AX;
-    DI = (ushort)(DI + Direction16);
-    // MOV CX,DX (334B_23C8 / 0x35878)
-    CX = DX;
-    // POP DX (334B_23CA / 0x3587A)
-    DX = Stack.Pop();
-    label_334B_23CB_3587B:
-    // RET  (334B_23CB / 0x3587B)
-    return NearRet();
-    label_334B_23CC_3587C:
-    // ADD CX,DX (334B_23CC / 0x3587C)
-    CX += DX;
-    // ADD CX,DX (334B_23CE / 0x3587E)
-    // CX += DX;
-    CX = Alu.Add16(CX, DX);
-    // REP
-    while (CX != 0) {
-      CX--;
-      // STOSB ES:DI (334B_23D0 / 0x35880)
-      UInt8[ES, DI] = AL;
-      DI = (ushort)(DI + Direction8);
-    }
-    // XOR CX,CX (334B_23D2 / 0x35882)
-    CX = 0;
-    // XOR DX,DX (334B_23D4 / 0x35884)
-    DX = 0;
-    // RET  (334B_23D6 / 0x35886)
-    return NearRet();
-  }
-  
-  public virtual Action spice86_generated_label_call_target_334B_23D7_035887(int loadOffset) {
-    entrydispatcher:
-    if(loadOffset != 0) {
-      throw FailAsUntested("External goto not supported for this function.");
-    }
-    label_334B_23D7_35887:
-    // JCXZ 0x3000:589a (334B_23D7 / 0x35887)
+    State.IncCycles();
+    // MOV DI,0x3cbe (1000_E0A9 / 0x1E0A9)
+    DI = 0x3CBE;
+    State.IncCycles();
+    // MOV CX,word ptr [DI] (1000_E0AC / 0x1E0AC)
+    CX = UInt16[DS, DI];
+    State.IncCycles();
+    // JCXZ 0x1000:e0da (1000_E0AE / 0x1E0AE)
     if(CX == 0) {
       // JCXZ target is RET, inlining.
-      // RET  (334B_23EA / 0x3589A)
+      State.IncCycles();
+      // RET  (1000_E0DA / 0x1E0DA)
       return NearRet();
     }
-    // MOV AX,0x1817 (334B_23D9 / 0x35889)
-    AX = 0x1817;
-    // STOSW ES:DI (334B_23DC / 0x3588C)
-    UInt16[ES, DI] = AX;
-    DI = (ushort)(DI + Direction16);
-    // SUB CX,0x4 (334B_23DD / 0x3588D)
-    // CX -= 0x4;
-    CX = Alu.Sub16(CX, 0x4);
-    // JC 0x3000:589a (334B_23E0 / 0x35890)
-    if(CarryFlag) {
-      // JC target is RET, inlining.
-      // RET  (334B_23EA / 0x3589A)
-      return NearRet();
-    }
-    // MOV AX,0x1c19 (334B_23E2 / 0x35892)
-    AX = 0x1C19;
-    // STOSW ES:DI (334B_23E5 / 0x35895)
-    UInt16[ES, DI] = AX;
-    DI = (ushort)(DI + Direction16);
-    // XOR AL,AL (334B_23E6 / 0x35896)
-    AL = 0;
-    // REP
-    while (CX != 0) {
-      CX--;
-      // STOSB ES:DI (334B_23E8 / 0x35898)
-      UInt8[ES, DI] = AL;
-      DI = (ushort)(DI + Direction8);
-    }
-    label_334B_23EA_3589A:
-    // RET  (334B_23EA / 0x3589A)
-    return NearRet();
-  }
-  
-  public virtual Action spice86_generated_label_jump_target_334B_23EB_03589B(int loadOffset) {
-    entrydispatcher:
-    if(loadOffset != 0) {
-      throw FailAsUntested("External goto not supported for this function.");
-    }
-    label_334B_23EB_3589B:
-    // PUSH DI (334B_23EB / 0x3589B)
-    Stack.Push(DI);
-    // MOV DI,CX (334B_23EC / 0x3589C)
-    DI = CX;
-    // DEC DI (334B_23EE / 0x3589E)
-    DI--;
-    // ADD BX,DI (334B_23EF / 0x3589F)
-    BX += DI;
-    // ADD AX,DI (334B_23F1 / 0x358A1)
-    // AX += DI;
-    AX = Alu.Add16(AX, DI);
-    // PUSH AX (334B_23F3 / 0x358A3)
-    Stack.Push(AX);
-    // PUSH DX (334B_23F4 / 0x358A4)
-    Stack.Push(DX);
-    // MOV AX,0xc8 (334B_23F5 / 0x358A5)
-    AX = 0xC8;
-    // MUL DI (334B_23F8 / 0x358A8)
-    Cpu.Mul16(DI);
-    // ADD SI,AX (334B_23FA / 0x358AA)
-    // SI += AX;
-    SI = Alu.Add16(SI, AX);
-    // POP DX (334B_23FC / 0x358AC)
-    DX = Stack.Pop();
-    // POP AX (334B_23FD / 0x358AD)
-    AX = Stack.Pop();
-    // CALL 0x3000:40c0 (334B_23FE / 0x358AE)
-    NearCall(cs2, 0x2401, spice86_generated_label_call_target_334B_0C10_0340C0);
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(spice86_generated_label_ret_target_334B_2401_0358B1, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-  }
-  
-  public virtual Action spice86_generated_label_ret_target_334B_2401_0358B1(int loadOffset) {
-    entrydispatcher:
-    if(loadOffset != 0) {
-      throw FailAsUntested("External goto not supported for this function.");
-    }
-    label_334B_2401_358B1:
-    // POP DX (334B_2401 / 0x358B1)
-    DX = Stack.Pop();
-    // XCHG DX,CX (334B_2402 / 0x358B2)
-    ushort tmp_334B_2402 = DX;
-    DX = CX;
-    CX = tmp_334B_2402;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(spice86_generated_label_jump_target_334B_2404_0358B4, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-  }
-  
-  public virtual Action spice86_generated_label_jump_target_334B_2404_0358B4(int loadOffset) {
-    entrydispatcher:
-    if(loadOffset != 0) {
-      throw FailAsUntested("External goto not supported for this function.");
-    }
-    label_334B_2404_358B4:
-    // CALL 0x3000:58c3 (334B_2404 / 0x358B4)
-    NearCall(cs2, 0x2407, spice86_generated_label_call_target_334B_2413_0358C3);
-    label_334B_2407_358B7:
-    // SUB SI,0xc8 (334B_2407 / 0x358B7)
-    SI -= 0xC8;
-    // SUB DI,0x140 (334B_240B / 0x358BB)
-    DI -= 0x140;
-    // DEC DX (334B_240F / 0x358BF)
-    DX = Alu.Dec16(DX);
-    // JNZ 0x3000:58b4 (334B_2410 / 0x358C0)
+    State.IncCycles();
+    // ADD DI,0x2 (1000_E0B0 / 0x1E0B0)
+    DI += 0x2;
+    State.IncCycles();
+    label_1000_E0B3_1E0B3:
+    // TEST byte ptr [DI + 0xc],0xc0 (1000_E0B3 / 0x1E0B3)
+    Alu.And8(UInt8[DS, (ushort)(DI + 0xC)], 0xC0);
+    State.IncCycles();
+    // JNZ 0x1000:e0d5 (1000_E0B7 / 0x1E0B7)
     if(!ZeroFlag) {
-      goto label_334B_2404_358B4;
+      goto label_1000_E0D5_1E0D5;
     }
-    // RETF  (334B_2412 / 0x358C2)
-    return FarRet();
-  }
-  
-  public virtual Action spice86_generated_label_call_target_334B_2413_0358C3(int loadOffset) {
-    entrydispatcher:
-    if(loadOffset != 0) {
-      throw FailAsUntested("External goto not supported for this function.");
-    }
-    label_334B_2413_358C3:
-    // PUSH AX (334B_2413 / 0x358C3)
-    Stack.Push(AX);
-    // PUSH CX (334B_2414 / 0x358C4)
-    Stack.Push(CX);
-    // PUSH DX (334B_2415 / 0x358C5)
-    Stack.Push(DX);
-    // PUSH SI (334B_2416 / 0x358C6)
-    Stack.Push(SI);
-    // PUSH DI (334B_2417 / 0x358C7)
-    Stack.Push(DI);
-    // CALL 0x3000:5846 (334B_2418 / 0x358C8)
-    NearCall(cs2, 0x241B, spice86_generated_label_call_target_334B_2396_035846);
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(spice86_generated_label_ret_target_334B_241B_0358CB, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-  }
-  
-  public virtual Action spice86_generated_label_ret_target_334B_241B_0358CB(int loadOffset) {
-    entrydispatcher:
-    if(loadOffset != 0) {
-      throw FailAsUntested("External goto not supported for this function.");
-    }
-    label_334B_241B_358CB:
-    // PUSH DX (334B_241B / 0x358CB)
-    Stack.Push(DX);
-    // MOV BP,0xf0f (334B_241C / 0x358CC)
-    BP = 0xF0F;
-    // MOV DX,0x1010 (334B_241F / 0x358CF)
-    DX = 0x1010;
-    // SHR CX,1 (334B_2422 / 0x358D2)
-    // CX >>= 0x1;
-    CX = Alu.Shr16(CX, 0x1);
-    // JNC 0x3000:58dc (334B_2424 / 0x358D4)
-    if(!CarryFlag) {
-      goto label_334B_242C_358DC;
-    }
-    // LODSB SI (334B_2426 / 0x358D6)
-    AL = UInt8[DS, SI];
-    SI = (ushort)(SI + Direction8);
-    // AND AX,BP (334B_2427 / 0x358D7)
-    AX &= BP;
-    // ADD AL,DL (334B_2429 / 0x358D9)
-    // AL += DL;
-    AL = Alu.Add8(AL, DL);
-    // STOSB ES:DI (334B_242B / 0x358DB)
-    UInt8[ES, DI] = AL;
-    DI = (ushort)(DI + Direction8);
-    label_334B_242C_358DC:
-    // JCXZ 0x3000:58e6 (334B_242C / 0x358DC)
-    if(CX == 0) {
-      goto label_334B_2436_358E6;
-    }
-    label_334B_242E_358DE:
-    // LODSW SI (334B_242E / 0x358DE)
-    AX = UInt16[DS, SI];
-    SI = (ushort)(SI + Direction16);
-    // AND AX,BP (334B_242F / 0x358DF)
-    AX &= BP;
-    // ADD AX,DX (334B_2431 / 0x358E1)
-    // AX += DX;
-    AX = Alu.Add16(AX, DX);
-    // STOSW ES:DI (334B_2433 / 0x358E3)
-    UInt16[ES, DI] = AX;
-    DI = (ushort)(DI + Direction16);
-    // LOOP 0x3000:58de (334B_2434 / 0x358E4)
-    if(--CX != 0) {
-      goto label_334B_242E_358DE;
-    }
-    label_334B_2436_358E6:
-    // POP CX (334B_2436 / 0x358E6)
-    CX = Stack.Pop();
-    // CALL 0x3000:5887 (334B_2437 / 0x358E7)
-    NearCall(cs2, 0x243A, spice86_generated_label_call_target_334B_23D7_035887);
-    label_334B_243A_358EA:
-    // POP DI (334B_243A / 0x358EA)
-    DI = Stack.Pop();
-    // POP SI (334B_243B / 0x358EB)
-    SI = Stack.Pop();
-    // POP DX (334B_243C / 0x358EC)
-    DX = Stack.Pop();
-    // POP CX (334B_243D / 0x358ED)
-    CX = Stack.Pop();
-    // POP AX (334B_243E / 0x358EE)
-    AX = Stack.Pop();
-    // DEC AX (334B_243F / 0x358EF)
-    AX = Alu.Dec16(AX);
-    // RET  (334B_2440 / 0x358F0)
-    return NearRet();
-  }
-  
-  public virtual Action spice86_generated_label_call_target_334B_253D_0359ED(int loadOffset) {
-    entrydispatcher:
-    if(loadOffset != 0) {
-      throw FailAsUntested("External goto not supported for this function.");
-    }
-    label_334B_253D_359ED:
-    // CMP byte ptr CS:[0x1a1],0x0 (334B_253D / 0x359ED)
-    Alu.Sub8(UInt8[cs2, 0x1A1], 0x0);
-    // JZ 0x3000:5a14 (334B_2543 / 0x359F3)
-    if(ZeroFlag) {
-      goto label_334B_2564_35A14;
-    }
-    label_334B_2545_359F5:
-    // MOV AX,word ptr [BP + 0x0] (334B_2545 / 0x359F5)
-    AX = UInt16[SS, BP];
-    // SUB AX,BX (334B_2548 / 0x359F8)
-    AX -= BX;
-    // CMP AX,0x5 (334B_254A / 0x359FA)
-    Alu.Sub16(AX, 0x5);
-    // JC 0x3000:59f5 (334B_254D / 0x359FD)
+    State.IncCycles();
+    // CALL 0x1000:d6fe (1000_E0B9 / 0x1E0B9)
+    NearCall(cs1, 0xE0BC, spice86_generated_label_call_target_1000_D6FE_01D6FE);
+    State.IncCycles();
+    // JC 0x1000:e0d5 (1000_E0BC / 0x1E0BC)
     if(CarryFlag) {
-      goto label_334B_2545_359F5;
+      goto label_1000_E0D5_1E0D5;
     }
-    label_334B_254F_359FF:
-    // PUSH DX (334B_254F / 0x359FF)
-    Stack.Push(DX);
-    // MOV DX,word ptr CS:[0x19f] (334B_2550 / 0x35A00)
-    DX = UInt16[cs2, 0x19F];
-    label_334B_2555_35A05:
-    // IN AL,DX (334B_2555 / 0x35A05)
-    AL = Cpu.In8(DX);
-    // AND AL,0x8 (334B_2556 / 0x35A06)
-    AL &= 0x8;
-    // CMP AL,byte ptr CS:[0x1a2] (334B_2558 / 0x35A08)
-    Alu.Sub8(AL, UInt8[cs2, 0x1A2]);
-    // JNZ 0x3000:5a05 (334B_255D / 0x35A0D)
-    if(!ZeroFlag) {
-      goto label_334B_2555_35A05;
-    }
-    // POP DX (334B_255F / 0x35A0F)
-    DX = Stack.Pop();
-    // MOV BX,word ptr [BP + 0x0] (334B_2560 / 0x35A10)
-    BX = UInt16[SS, BP];
-    // RET  (334B_2563 / 0x35A13)
-    return NearRet();
-    label_334B_2564_35A14:
-    // MOV AX,word ptr [BP + 0x0] (334B_2564 / 0x35A14)
-    AX = UInt16[SS, BP];
-    // SUB AX,BX (334B_2567 / 0x35A17)
-    AX -= BX;
-    // CMP AX,0x6 (334B_2569 / 0x35A19)
-    Alu.Sub16(AX, 0x6);
-    // JC 0x3000:5a14 (334B_256C / 0x35A1C)
-    if(CarryFlag) {
-      goto label_334B_2564_35A14;
-    }
-    // MOV BX,word ptr [BP + 0x0] (334B_256E / 0x35A1E)
-    BX = UInt16[SS, BP];
-    // RET  (334B_2571 / 0x35A21)
-    return NearRet();
-  }
-  
-  public virtual Action spice86_generated_label_call_target_334B_2572_035A22(int loadOffset) {
-    entrydispatcher:
-    if(loadOffset != 0) {
-      throw FailAsUntested("External goto not supported for this function.");
-    }
-    label_334B_2572_35A22:
-    // CMP byte ptr CS:[0x1a1],0x0 (334B_2572 / 0x35A22)
-    Alu.Sub8(UInt8[cs2, 0x1A1], 0x0);
-    // JNZ 0x3000:59ff (334B_2578 / 0x35A28)
-    if(!ZeroFlag) {
-      // Jump converted to non entry function call
-      if(JumpDispatcher.Jump(spice86_generated_label_call_target_334B_253D_0359ED, 0x359FF - cs1 * 0x10)) {
-        loadOffset = JumpDispatcher.NextEntryAddress;
-        goto entrydispatcher;
-      }
-      return JumpDispatcher.JumpAsmReturn!;
-    }
-    label_334B_257A_35A2A:
-    // MOV AX,word ptr [BP + 0x0] (334B_257A / 0x35A2A)
-    AX = UInt16[SS, BP];
-    // SUB AX,BX (334B_257D / 0x35A2D)
-    AX -= BX;
-    // CMP AX,0x3 (334B_257F / 0x35A2F)
-    Alu.Sub16(AX, 0x3);
-    // JC 0x3000:5a2a (334B_2582 / 0x35A32)
-    if(CarryFlag) {
-      goto label_334B_257A_35A2A;
-    }
-    // MOV BX,word ptr [BP + 0x0] (334B_2584 / 0x35A34)
-    BX = UInt16[SS, BP];
-    // RET  (334B_2587 / 0x35A37)
-    return NearRet();
-  }
-  
-  public virtual Action spice86_generated_label_call_target_334B_2596_035A46(int loadOffset) {
-    entrydispatcher:
-    if(loadOffset != 0) {
-      throw FailAsUntested("External goto not supported for this function.");
-    }
-    label_334B_2596_35A46:
-    // PUSH DS (334B_2596 / 0x35A46)
-    Stack.Push(DS);
-    // PUSH ES (334B_2597 / 0x35A47)
-    Stack.Push(ES);
-    // MOV DS,word ptr CS:[0x2539] (334B_2598 / 0x35A48)
-    DS = UInt16[cs2, 0x2539];
-    // MOV ES,word ptr CS:[0x2535] (334B_259D / 0x35A4D)
-    ES = UInt16[cs2, 0x2535];
-    // PUSH CS (334B_25A2 / 0x35A52)
-    Stack.Push(cs2);
-    // CALL 0x3000:502c (334B_25A3 / 0x35A53)
-    NearCall(cs2, 0x25A6, spice86_generated_label_call_target_334B_1B7C_03502C);
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(spice86_generated_label_ret_target_334B_25A6_035A56, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
-  }
-  
-  public virtual Action spice86_generated_label_ret_target_334B_25A6_035A56(int loadOffset) {
-    entrydispatcher:
-    if(loadOffset != 0) {
-      throw FailAsUntested("External goto not supported for this function.");
-    }
-    label_334B_25A6_35A56:
-    // POP ES (334B_25A6 / 0x35A56)
-    ES = Stack.Pop();
-    // POP DS (334B_25A7 / 0x35A57)
-    DS = Stack.Pop();
-    // RET  (334B_25A8 / 0x35A58)
-    return NearRet();
-  }
-  
-  public virtual Action spice86_generated_label_jump_target_334B_25E7_035A97(int loadOffset) {
-    entrydispatcher:
-    if(loadOffset != 0) {
-      throw FailAsUntested("External goto not supported for this function.");
-    }
-    label_334B_25E7_35A97:
-    // MOV word ptr CS:[0x2768],0x8 (334B_25E7 / 0x35A97)
-    UInt16[cs2, 0x2768] = 0x8;
-    // MOV word ptr CS:[0x276a],0x1 (334B_25EE / 0x35A9E)
-    UInt16[cs2, 0x276A] = 0x1;
-    // MOV word ptr CS:[0x2535],SI (334B_25F5 / 0x35AA5)
-    UInt16[cs2, 0x2535] = SI;
-    // MOV word ptr CS:[0x2537],DS (334B_25FA / 0x35AAA)
-    UInt16[cs2, 0x2537] = DS;
-    // MOV word ptr CS:[0x2539],ES (334B_25FF / 0x35AAF)
-    UInt16[cs2, 0x2539] = ES;
-    // MOV CX,0x98 (334B_2604 / 0x35AB4)
-    CX = 0x98;
-    // AND AX,0xfe (334B_2607 / 0x35AB7)
-    AX &= 0xFE;
-    label_334B_260A_35ABA:
-    // CMP AX,0x3e (334B_260A / 0x35ABA)
-    Alu.Sub16(AX, 0x3E);
-    // JC 0x3000:5ac4 (334B_260D / 0x35ABD)
-    if(CarryFlag) {
-      goto label_334B_2614_35AC4;
-    }
-    // SUB AX,0x3e (334B_260F / 0x35ABF)
-    // AX -= 0x3E;
-    AX = Alu.Sub16(AX, 0x3E);
-    // JMP 0x3000:5aba (334B_2612 / 0x35AC2)
-    goto label_334B_260A_35ABA;
-    label_334B_2614_35AC4:
-    // MOV BX,AX (334B_2614 / 0x35AC4)
-    BX = AX;
-    // JMP word ptr CS:[BX + 0x25a9] (334B_2616 / 0x35AC6)
-    // Indirect jump to word ptr CS:[BX + 0x25a9], generating possible targets from emulator records
-    uint targetAddress_334B_2616 = (uint)(cs2 * 0x10 + UInt16[cs2, (ushort)(BX + 0x25A9)] - cs1 * 0x10);
-    switch(targetAddress_334B_2616) {
-      case 0x25BDE : {
-        // Jump converted to entry function call
-        if(JumpDispatcher.Jump(spice86_generated_label_jump_target_334B_272E_035BDE, 0)) {
-          loadOffset = JumpDispatcher.NextEntryAddress;
-          goto entrydispatcher;
-        }
-        return JumpDispatcher.JumpAsmReturn!;
-      }
-      case 0x26270 : {
-        // Jump converted to entry function call
-        if(JumpDispatcher.Jump(spice86_generated_label_jump_target_334B_2DC0_036270, 0)) {
-          loadOffset = JumpDispatcher.NextEntryAddress;
-          goto entrydispatcher;
-        }
-        return JumpDispatcher.JumpAsmReturn!;
-      }
-      case 0x25C07 : {
-        // Jump converted to entry function call
-        if(JumpDispatcher.Jump(spice86_generated_label_jump_target_334B_2757_035C07, 0)) {
-          loadOffset = JumpDispatcher.NextEntryAddress;
-          goto entrydispatcher;
-        }
-        return JumpDispatcher.JumpAsmReturn!;
-      }
-      case 0x26273 : {
-        // Jump converted to entry function call
-        if(JumpDispatcher.Jump(spice86_generated_label_jump_target_334B_2DC3_036273, 0)) {
-          loadOffset = JumpDispatcher.NextEntryAddress;
-          goto entrydispatcher;
-        }
-        return JumpDispatcher.JumpAsmReturn!;
-      }
-      case 0x265E0 : {
-        // Jump converted to entry function call
-        if(JumpDispatcher.Jump(spice86_generated_label_jump_target_334B_3130_0365E0, 0)) {
-          loadOffset = JumpDispatcher.NextEntryAddress;
-          goto entrydispatcher;
-        }
-        return JumpDispatcher.JumpAsmReturn!;
-      }
-      case 0x25F81 : {
-        // Jump converted to entry function call
-        if(JumpDispatcher.Jump(spice86_generated_label_jump_target_334B_2AD1_035F81, 0)) {
-          loadOffset = JumpDispatcher.NextEntryAddress;
-          goto entrydispatcher;
-        }
-        return JumpDispatcher.JumpAsmReturn!;
-      }
-      case 0x2617A : {
-        // Jump converted to entry function call
-        if(JumpDispatcher.Jump(spice86_generated_label_jump_target_334B_2CCA_03617A, 0)) {
-          loadOffset = JumpDispatcher.NextEntryAddress;
-          goto entrydispatcher;
-        }
-        return JumpDispatcher.JumpAsmReturn!;
-      }
-      case 0x25F18 : {
-        // Jump converted to entry function call
-        if(JumpDispatcher.Jump(spice86_generated_label_jump_target_334B_2A68_035F18, 0)) {
-          loadOffset = JumpDispatcher.NextEntryAddress;
-          goto entrydispatcher;
-        }
-        return JumpDispatcher.JumpAsmReturn!;
-      }
-      default: throw FailAsUntested("Error: Jump not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_334B_2616));
+    State.IncCycles();
+    // CALL 0x1000:e159 (1000_E0BE / 0x1E0BE)
+    NearCall(cs1, 0xE0C1, not_observed_1000_E159_01E159);
+    State.IncCycles();
+    // CALL word ptr [BP + 0x0] (1000_E0C1 / 0x1E0C1)
+    // Indirect call to word ptr [BP + 0x0], generating possible targets from emulator records
+    uint targetAddress_1000_E0C1 = (uint)(UInt16[SS, BP]);
+    switch(targetAddress_1000_E0C1) {
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_E0C1));
         break;
     }
-    throw FailAsUntested("Function does not end with return and no instruction after the body ...");
-  }
-  
-  public virtual Action spice86_generated_label_call_target_334B_261D_035ACD(int loadOffset) {
-    entrydispatcher:
-    if(loadOffset != 0) {
-      throw FailAsUntested("External goto not supported for this function.");
+    State.IncCycles();
+    // CMP AX,word ptr [BP + 0x2] (1000_E0C4 / 0x1E0C4)
+    Alu.Sub16(AX, UInt16[SS, (ushort)(BP + 0x2)]);
+    State.IncCycles();
+    // JNC 0x1000:e0d5 (1000_E0C7 / 0x1E0C7)
+    if(!CarryFlag) {
+      goto label_1000_E0D5_1E0D5;
     }
-    label_334B_261D_35ACD:
-    // CMP byte ptr [0x1a1],0x0 (334B_261D / 0x35ACD)
-    Alu.Sub8(UInt8[DS, 0x1A1], 0x0);
-    // JNZ 0x3000:5ad7 (334B_2622 / 0x35AD2)
-    if(!ZeroFlag) {
-      // JNZ target is RET, inlining.
-      // RET  (334B_2627 / 0x35AD7)
-      return NearRet();
+    State.IncCycles();
+    // MOV word ptr [BP + 0x2],AX (1000_E0C9 / 0x1E0C9)
+    UInt16[SS, (ushort)(BP + 0x2)] = AX;
+    State.IncCycles();
+    // CALL 0x1000:e159 (1000_E0CC / 0x1E0CC)
+    NearCall(cs1, 0xE0CF, not_observed_1000_E159_01E159);
+    State.IncCycles();
+    // MOV word ptr [BP + 0x4],AX (1000_E0CF / 0x1E0CF)
+    UInt16[SS, (ushort)(BP + 0x4)] = AX;
+    State.IncCycles();
+    // MOV word ptr [BP + 0x6],SI (1000_E0D2 / 0x1E0D2)
+    UInt16[SS, (ushort)(BP + 0x6)] = SI;
+    State.IncCycles();
+    label_1000_E0D5_1E0D5:
+    // ADD DI,0x11 (1000_E0D5 / 0x1E0D5)
+    // DI += 0x11;
+    DI = Alu.Add16(DI, 0x11);
+    State.IncCycles();
+    // LOOP 0x1000:e0b3 (1000_E0D8 / 0x1E0D8)
+    if(--CX != 0) {
+      goto label_1000_E0B3_1E0B3;
     }
-    // CALL 0x3000:5a22 (334B_2624 / 0x35AD4)
-    NearCall(cs2, 0x2627, spice86_generated_label_call_target_334B_2572_035A22);
-    label_334B_2627_35AD7:
-    // RET  (334B_2627 / 0x35AD7)
+    State.IncCycles();
+    label_1000_E0DA_1E0DA:
+    // RET  (1000_E0DA / 0x1E0DA)
     return NearRet();
   }
   
-  public virtual Action split_334B_264D_035AFD(int loadOffset) {
+  public virtual Action not_observed_1000_E0DB_01E0DB(int loadOffset) {
     entrydispatcher:
     if(loadOffset != 0) {
       throw FailAsUntested("External goto not supported for this function.");
     }
-    label_334B_264D_35AFD:
-    // MOV DS,word ptr CS:[0x2537] (334B_264D / 0x35AFD)
-    DS = UInt16[cs2, 0x2537];
-    // MOV ES,word ptr CS:[0x2539] (334B_2652 / 0x35B02)
-    ES = UInt16[cs2, 0x2539];
-    // PUSH CS (334B_2657 / 0x35B07)
-    Stack.Push(cs2);
-    // CALL 0x3000:502c (334B_2658 / 0x35B08)
-    NearCall(cs2, 0x265B, spice86_generated_label_call_target_334B_1B7C_03502C);
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(spice86_generated_label_ret_target_334B_265B_035B0B, 0)) {
+    State.IncCycles();
+    label_1000_E0DB_1E0DB:
+    // CMP byte ptr [0x46eb],0x0 (1000_E0DB / 0x1E0DB)
+    Alu.Sub8(UInt8[DS, 0x46EB], 0x0);
+    State.IncCycles();
+    // JZ 0x1000:e0da (1000_E0E0 / 0x1E0E0)
+    if(ZeroFlag) {
+      // JZ target is RET, inlining.
+      State.IncCycles();
+      // RET  (1000_E0DA / 0x1E0DA)
+      return NearRet();
+    }
+    State.IncCycles();
+    // MOV DI,0xa5c0 (1000_E0E2 / 0x1E0E2)
+    DI = 0xA5C0;
+    State.IncCycles();
+    label_1000_E0E5_1E0E5:
+    // CMP word ptr [DI],0x0 (1000_E0E5 / 0x1E0E5)
+    Alu.Sub16(UInt16[DS, DI], 0x0);
+    State.IncCycles();
+    // JZ 0x1000:e0da (1000_E0E8 / 0x1E0E8)
+    if(ZeroFlag) {
+      // JZ target is RET, inlining.
+      State.IncCycles();
+      // RET  (1000_E0DA / 0x1E0DA)
+      return NearRet();
+    }
+    State.IncCycles();
+    // MOV SI,word ptr [DI + 0x4] (1000_E0EA / 0x1E0EA)
+    SI = UInt16[DS, (ushort)(DI + 0x4)];
+    State.IncCycles();
+    // AND SI,0xff (1000_E0ED / 0x1E0ED)
+    // SI &= 0xFF;
+    SI = Alu.And16(SI, 0xFF);
+    State.IncCycles();
+    // MOV AX,word ptr [DI + 0x2] (1000_E0F1 / 0x1E0F1)
+    AX = UInt16[DS, (ushort)(DI + 0x2)];
+    State.IncCycles();
+    // CMP AX,DX (1000_E0F4 / 0x1E0F4)
+    Alu.Sub16(AX, DX);
+    State.IncCycles();
+    // JNZ 0x1000:e0fc (1000_E0F6 / 0x1E0F6)
+    if(!ZeroFlag) {
+      goto label_1000_E0FC_1E0FC;
+    }
+    State.IncCycles();
+    // CMP SI,BX (1000_E0F8 / 0x1E0F8)
+    Alu.Sub16(SI, BX);
+    State.IncCycles();
+    // JZ 0x1000:e117 (1000_E0FA / 0x1E0FA)
+    if(ZeroFlag) {
+      goto label_1000_E117_1E117;
+    }
+    State.IncCycles();
+    label_1000_E0FC_1E0FC:
+    // CALL word ptr [BP + 0x0] (1000_E0FC / 0x1E0FC)
+    // Indirect call to word ptr [BP + 0x0], generating possible targets from emulator records
+    uint targetAddress_1000_E0FC = (uint)(UInt16[SS, BP]);
+    switch(targetAddress_1000_E0FC) {
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_E0FC));
+        break;
+    }
+    State.IncCycles();
+    // CMP AX,word ptr [BP + 0x2] (1000_E0FF / 0x1E0FF)
+    Alu.Sub16(AX, UInt16[SS, (ushort)(BP + 0x2)]);
+    State.IncCycles();
+    // JNC 0x1000:e117 (1000_E102 / 0x1E102)
+    if(!CarryFlag) {
+      goto label_1000_E117_1E117;
+    }
+    State.IncCycles();
+    // MOV word ptr [BP + 0x2],AX (1000_E104 / 0x1E104)
+    UInt16[SS, (ushort)(BP + 0x2)] = AX;
+    State.IncCycles();
+    // MOV AX,word ptr [DI + 0x2] (1000_E107 / 0x1E107)
+    AX = UInt16[DS, (ushort)(DI + 0x2)];
+    State.IncCycles();
+    // MOV word ptr [BP + 0x4],AX (1000_E10A / 0x1E10A)
+    UInt16[SS, (ushort)(BP + 0x4)] = AX;
+    State.IncCycles();
+    // MOV SI,word ptr [DI + 0x4] (1000_E10D / 0x1E10D)
+    SI = UInt16[DS, (ushort)(DI + 0x4)];
+    State.IncCycles();
+    // AND SI,0xff (1000_E110 / 0x1E110)
+    // SI &= 0xFF;
+    SI = Alu.And16(SI, 0xFF);
+    State.IncCycles();
+    // MOV word ptr [BP + 0x6],SI (1000_E114 / 0x1E114)
+    UInt16[SS, (ushort)(BP + 0x6)] = SI;
+    State.IncCycles();
+    label_1000_E117_1E117:
+    // ADD DI,0x6 (1000_E117 / 0x1E117)
+    // DI += 0x6;
+    DI = Alu.Add16(DI, 0x6);
+    State.IncCycles();
+    // JMP 0x1000:e0e5 (1000_E11A / 0x1E11A)
+    goto label_1000_E0E5_1E0E5;
+  }
+  
+  public virtual Action not_observed_1000_E11C_01E11C(int loadOffset) {
+    entrydispatcher:
+    if(loadOffset != 0) {
+      throw FailAsUntested("External goto not supported for this function.");
+    }
+    State.IncCycles();
+    label_1000_E11C_1E11C:
+    // TEST byte ptr [0x46eb],0x1 (1000_E11C / 0x1E11C)
+    Alu.And8(UInt8[DS, 0x46EB], 0x1);
+    State.IncCycles();
+    // JZ 0x1000:e0da (1000_E121 / 0x1E121)
+    if(ZeroFlag) {
+      // JZ target is RET, inlining.
+      State.IncCycles();
+      // RET  (1000_E0DA / 0x1E0DA)
+      return NearRet();
+    }
+    State.IncCycles();
+    // CMP word ptr [0x4749],0x0 (1000_E123 / 0x1E123)
+    Alu.Sub16(UInt16[DS, 0x4749], 0x0);
+    State.IncCycles();
+    // JZ 0x1000:e0da (1000_E128 / 0x1E128)
+    if(ZeroFlag) {
+      // JZ target is RET, inlining.
+      State.IncCycles();
+      // RET  (1000_E0DA / 0x1E0DA)
+      return NearRet();
+    }
+    State.IncCycles();
+    // MOV DI,0x2462 (1000_E12A / 0x1E12A)
+    DI = 0x2462;
+    State.IncCycles();
+    // MOV CX,0x8 (1000_E12D / 0x1E12D)
+    CX = 0x8;
+    State.IncCycles();
+    label_1000_E130_1E130:
+    // MOV AX,word ptr [DI] (1000_E130 / 0x1E130)
+    AX = UInt16[DS, DI];
+    State.IncCycles();
+    // MOV SI,word ptr [DI + 0x2] (1000_E132 / 0x1E132)
+    SI = UInt16[DS, (ushort)(DI + 0x2)];
+    State.IncCycles();
+    // CMP AX,DX (1000_E135 / 0x1E135)
+    Alu.Sub16(AX, DX);
+    State.IncCycles();
+    // JNZ 0x1000:e13d (1000_E137 / 0x1E137)
+    if(!ZeroFlag) {
+      goto label_1000_E13D_1E13D;
+    }
+    State.IncCycles();
+    // CMP SI,BX (1000_E139 / 0x1E139)
+    Alu.Sub16(SI, BX);
+    State.IncCycles();
+    // JZ 0x1000:e153 (1000_E13B / 0x1E13B)
+    if(ZeroFlag) {
+      goto label_1000_E153_1E153;
+    }
+    State.IncCycles();
+    label_1000_E13D_1E13D:
+    // CALL word ptr [BP + 0x0] (1000_E13D / 0x1E13D)
+    // Indirect call to word ptr [BP + 0x0], generating possible targets from emulator records
+    uint targetAddress_1000_E13D = (uint)(UInt16[SS, BP]);
+    switch(targetAddress_1000_E13D) {
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_E13D));
+        break;
+    }
+    State.IncCycles();
+    // CMP AX,word ptr [BP + 0x2] (1000_E140 / 0x1E140)
+    Alu.Sub16(AX, UInt16[SS, (ushort)(BP + 0x2)]);
+    State.IncCycles();
+    // JNC 0x1000:e153 (1000_E143 / 0x1E143)
+    if(!CarryFlag) {
+      goto label_1000_E153_1E153;
+    }
+    State.IncCycles();
+    // MOV word ptr [BP + 0x2],AX (1000_E145 / 0x1E145)
+    UInt16[SS, (ushort)(BP + 0x2)] = AX;
+    State.IncCycles();
+    // MOV AX,word ptr [DI] (1000_E148 / 0x1E148)
+    AX = UInt16[DS, DI];
+    State.IncCycles();
+    // MOV SI,word ptr [DI + 0x2] (1000_E14A / 0x1E14A)
+    SI = UInt16[DS, (ushort)(DI + 0x2)];
+    State.IncCycles();
+    // MOV word ptr [BP + 0x4],AX (1000_E14D / 0x1E14D)
+    UInt16[SS, (ushort)(BP + 0x4)] = AX;
+    State.IncCycles();
+    // MOV word ptr [BP + 0x6],SI (1000_E150 / 0x1E150)
+    UInt16[SS, (ushort)(BP + 0x6)] = SI;
+    State.IncCycles();
+    label_1000_E153_1E153:
+    // ADD DI,0x4 (1000_E153 / 0x1E153)
+    // DI += 0x4;
+    DI = Alu.Add16(DI, 0x4);
+    State.IncCycles();
+    // LOOP 0x1000:e130 (1000_E156 / 0x1E156)
+    if(--CX != 0) {
+      goto label_1000_E130_1E130;
+    }
+    State.IncCycles();
+    // RET  (1000_E158 / 0x1E158)
+    return NearRet();
+  }
+  
+  public virtual Action not_observed_1000_E159_01E159(int loadOffset) {
+    entrydispatcher:
+    if(loadOffset != 0) {
+      throw FailAsUntested("External goto not supported for this function.");
+    }
+    State.IncCycles();
+    label_1000_E159_1E159:
+    // MOV SI,word ptr [DI + 0x6] (1000_E159 / 0x1E159)
+    SI = UInt16[DS, (ushort)(DI + 0x6)];
+    State.IncCycles();
+    // MOV AX,SI (1000_E15C / 0x1E15C)
+    AX = SI;
+    State.IncCycles();
+    // SUB AX,word ptr [DI + 0x2] (1000_E15E / 0x1E15E)
+    AX -= UInt16[DS, (ushort)(DI + 0x2)];
+    State.IncCycles();
+    // SHR AX,1 (1000_E161 / 0x1E161)
+    AX >>= 0x1;
+    State.IncCycles();
+    // SHR AX,1 (1000_E163 / 0x1E163)
+    AX >>= 0x1;
+    State.IncCycles();
+    // SUB SI,AX (1000_E165 / 0x1E165)
+    // SI -= AX;
+    SI = Alu.Sub16(SI, AX);
+    State.IncCycles();
+    // MOV AX,word ptr [DI] (1000_E167 / 0x1E167)
+    AX = UInt16[DS, DI];
+    State.IncCycles();
+    // ADD AX,word ptr [DI + 0x4] (1000_E169 / 0x1E169)
+    AX += UInt16[DS, (ushort)(DI + 0x4)];
+    State.IncCycles();
+    // SHR AX,1 (1000_E16C / 0x1E16C)
+    // AX >>= 0x1;
+    AX = Alu.Shr16(AX, 0x1);
+    State.IncCycles();
+    // RET  (1000_E16E / 0x1E16E)
+    return NearRet();
+  }
+  
+  public virtual Action not_observed_1000_E1D1_01E1D1(int loadOffset) {
+    entrydispatcher:
+    if(loadOffset != 0) {
+      throw FailAsUntested("External goto not supported for this function.");
+    }
+    State.IncCycles();
+    label_1000_E1D1_1E1D1:
+    // OR DL,DL (1000_E1D1 / 0x1E1D1)
+    // DL |= DL;
+    DL = Alu.Or8(DL, DL);
+    State.IncCycles();
+    // JZ 0x1000:e1f3 (1000_E1D3 / 0x1E1D3)
+    if(ZeroFlag) {
+      goto label_1000_E1F3_1E1F3;
+    }
+    State.IncCycles();
+    // MOV AX,[0xdc51] (1000_E1D5 / 0x1E1D5)
+    AX = UInt16[DS, 0xDC51];
+    State.IncCycles();
+    // OR AX,AX (1000_E1D8 / 0x1E1D8)
+    // AX |= AX;
+    AX = Alu.Or16(AX, AX);
+    State.IncCycles();
+    // JNS 0x1000:e1de (1000_E1DA / 0x1E1DA)
+    if(!SignFlag) {
+      goto label_1000_E1DE_1E1DE;
+    }
+    State.IncCycles();
+    // NEG AX (1000_E1DC / 0x1E1DC)
+    AX = Alu.Sub16(0, AX);
+    State.IncCycles();
+    label_1000_E1DE_1E1DE:
+    // CMP AX,0x4 (1000_E1DE / 0x1E1DE)
+    Alu.Sub16(AX, 0x4);
+    State.IncCycles();
+    // JC 0x1000:e1f3 (1000_E1E1 / 0x1E1E1)
+    if(CarryFlag) {
+      goto label_1000_E1F3_1E1F3;
+    }
+    State.IncCycles();
+    // ADD DL,DL (1000_E1E3 / 0x1E1E3)
+    DL += DL;
+    State.IncCycles();
+    // CMP AX,0xc (1000_E1E5 / 0x1E1E5)
+    Alu.Sub16(AX, 0xC);
+    State.IncCycles();
+    // JC 0x1000:e1f3 (1000_E1E8 / 0x1E1E8)
+    if(CarryFlag) {
+      goto label_1000_E1F3_1E1F3;
+    }
+    State.IncCycles();
+    // ADD DL,DL (1000_E1EA / 0x1E1EA)
+    DL += DL;
+    State.IncCycles();
+    // CMP AX,0x24 (1000_E1EC / 0x1E1EC)
+    Alu.Sub16(AX, 0x24);
+    State.IncCycles();
+    // JC 0x1000:e1f3 (1000_E1EF / 0x1E1EF)
+    if(CarryFlag) {
+      goto label_1000_E1F3_1E1F3;
+    }
+    State.IncCycles();
+    // ADD DL,DL (1000_E1F1 / 0x1E1F1)
+    // DL += DL;
+    DL = Alu.Add8(DL, DL);
+    State.IncCycles();
+    label_1000_E1F3_1E1F3:
+    // OR BL,BL (1000_E1F3 / 0x1E1F3)
+    // BL |= BL;
+    BL = Alu.Or8(BL, BL);
+    State.IncCycles();
+    // JZ 0x1000:e213 (1000_E1F5 / 0x1E1F5)
+    if(ZeroFlag) {
+      goto label_1000_E213_1E213;
+    }
+    State.IncCycles();
+    // MOV AX,[0xdc53] (1000_E1F7 / 0x1E1F7)
+    AX = UInt16[DS, 0xDC53];
+    State.IncCycles();
+    // JNS 0x1000:e1fe (1000_E1FA / 0x1E1FA)
+    if(!SignFlag) {
+      goto label_1000_E1FE_1E1FE;
+    }
+    State.IncCycles();
+    // NEG AX (1000_E1FC / 0x1E1FC)
+    AX = Alu.Sub16(0, AX);
+    State.IncCycles();
+    label_1000_E1FE_1E1FE:
+    // CMP AX,0x3 (1000_E1FE / 0x1E1FE)
+    Alu.Sub16(AX, 0x3);
+    State.IncCycles();
+    // JC 0x1000:e213 (1000_E201 / 0x1E201)
+    if(CarryFlag) {
+      goto label_1000_E213_1E213;
+    }
+    State.IncCycles();
+    // ADD BL,BL (1000_E203 / 0x1E203)
+    BL += BL;
+    State.IncCycles();
+    // CMP AX,0xa (1000_E205 / 0x1E205)
+    Alu.Sub16(AX, 0xA);
+    State.IncCycles();
+    // JC 0x1000:e213 (1000_E208 / 0x1E208)
+    if(CarryFlag) {
+      goto label_1000_E213_1E213;
+    }
+    State.IncCycles();
+    // ADD BL,BL (1000_E20A / 0x1E20A)
+    BL += BL;
+    State.IncCycles();
+    // CMP AX,0x1c (1000_E20C / 0x1E20C)
+    Alu.Sub16(AX, 0x1C);
+    State.IncCycles();
+    // JC 0x1000:e213 (1000_E20F / 0x1E20F)
+    if(CarryFlag) {
+      goto label_1000_E213_1E213;
+    }
+    State.IncCycles();
+    // ADD BL,BL (1000_E211 / 0x1E211)
+    // BL += BL;
+    BL = Alu.Add8(BL, BL);
+    State.IncCycles();
+    label_1000_E213_1E213:
+    // MOV AL,[0xce7a] (1000_E213 / 0x1E213)
+    AL = UInt8[DS, 0xCE7A];
+    State.IncCycles();
+    // MOV AH,AL (1000_E216 / 0x1E216)
+    AH = AL;
+    State.IncCycles();
+    // XCHG byte ptr [0xdc50],AH (1000_E218 / 0x1E218)
+    byte tmp_1000_E218 = UInt8[DS, 0xDC50];
+    UInt8[DS, 0xDC50] = AH;
+    AH = tmp_1000_E218;
+    State.IncCycles();
+    // SUB AL,AH (1000_E21C / 0x1E21C)
+    AL -= AH;
+    State.IncCycles();
+    // CMP AL,0x8 (1000_E21E / 0x1E21E)
+    Alu.Sub8(AL, 0x8);
+    State.IncCycles();
+    // JC 0x1000:e224 (1000_E220 / 0x1E220)
+    if(CarryFlag) {
+      goto label_1000_E224_1E224;
+    }
+    State.IncCycles();
+    // MOV AL,0x8 (1000_E222 / 0x1E222)
+    AL = 0x8;
+    State.IncCycles();
+    label_1000_E224_1E224:
+    // MOV CL,AL (1000_E224 / 0x1E224)
+    CL = AL;
+    State.IncCycles();
+    // MOV SI,0xdc55 (1000_E226 / 0x1E226)
+    SI = 0xDC55;
+    State.IncCycles();
+    // MOV AL,DL (1000_E229 / 0x1E229)
+    AL = DL;
+    State.IncCycles();
+    // CALL 0x1000:e243 (1000_E22B / 0x1E22B)
+    NearCall(cs1, 0xE22E, not_observed_1000_E243_01E243);
+    State.IncCycles();
+    // MOV DX,AX (1000_E22E / 0x1E22E)
+    DX = AX;
+    State.IncCycles();
+    // ADD word ptr [0xdc51],AX (1000_E230 / 0x1E230)
+    UInt16[DS, 0xDC51] += AX;
+    State.IncCycles();
+    // INC SI (1000_E234 / 0x1E234)
+    SI = Alu.Inc16(SI);
+    State.IncCycles();
+    // MOV AL,BL (1000_E235 / 0x1E235)
+    AL = BL;
+    State.IncCycles();
+    // CALL 0x1000:e243 (1000_E237 / 0x1E237)
+    NearCall(cs1, 0xE23A, not_observed_1000_E243_01E243);
+    State.IncCycles();
+    // MOV BX,AX (1000_E23A / 0x1E23A)
+    BX = AX;
+    State.IncCycles();
+    // ADD word ptr [0xdc53],AX (1000_E23C / 0x1E23C)
+    // UInt16[DS, 0xDC53] += AX;
+    UInt16[DS, 0xDC53] = Alu.Add16(UInt16[DS, 0xDC53], AX);
+    State.IncCycles();
+    // JMP 0x1000:daaf (1000_E240 / 0x1E240)
+    // Jump converted to entry function call
+    if(JumpDispatcher.Jump(not_observed_1000_DAAF_01DAAF, 0)) {
       loadOffset = JumpDispatcher.NextEntryAddress;
       goto entrydispatcher;
     }
     return JumpDispatcher.JumpAsmReturn!;
   }
   
-  public virtual Action spice86_generated_label_ret_target_334B_265B_035B0B(int loadOffset) {
+  public virtual Action not_observed_1000_E243_01E243(int loadOffset) {
+    entrydispatcher:
+    if(loadOffset != 0) {
+      throw FailAsUntested("External goto not supported for this function.");
+    }
+    State.IncCycles();
+    label_1000_E243_1E243:
+    // IMUL CL (1000_E243 / 0x1E243)
+    Cpu.IMul8(CL);
+    State.IncCycles();
+    // OR AX,AX (1000_E245 / 0x1E245)
+    // AX |= AX;
+    AX = Alu.Or16(AX, AX);
+    State.IncCycles();
+    // JS 0x1000:e25a (1000_E247 / 0x1E247)
+    if(SignFlag) {
+      goto label_1000_E25A_1E25A;
+    }
+    State.IncCycles();
+    // ADD AL,byte ptr [SI] (1000_E249 / 0x1E249)
+    // AL += UInt8[DS, SI];
+    AL = Alu.Add8(AL, UInt8[DS, SI]);
+    State.IncCycles();
+    // MOV CH,AL (1000_E24B / 0x1E24B)
+    CH = AL;
+    State.IncCycles();
+    // AND CH,0x7 (1000_E24D / 0x1E24D)
+    // CH &= 0x7;
+    CH = Alu.And8(CH, 0x7);
+    State.IncCycles();
+    // MOV byte ptr [SI],CH (1000_E250 / 0x1E250)
+    UInt8[DS, SI] = CH;
+    State.IncCycles();
+    // CBW  (1000_E252 / 0x1E252)
+    AX = (ushort)((short)((sbyte)AL));
+    State.IncCycles();
+    // SHR AX,1 (1000_E253 / 0x1E253)
+    AX >>= 0x1;
+    State.IncCycles();
+    // SHR AX,1 (1000_E255 / 0x1E255)
+    AX >>= 0x1;
+    State.IncCycles();
+    // SHR AX,1 (1000_E257 / 0x1E257)
+    // AX >>= 0x1;
+    AX = Alu.Shr16(AX, 0x1);
+    State.IncCycles();
+    // RET  (1000_E259 / 0x1E259)
+    return NearRet();
+    State.IncCycles();
+    label_1000_E25A_1E25A:
+    // NEG AX (1000_E25A / 0x1E25A)
+    AX = Alu.Sub16(0, AX);
+    State.IncCycles();
+    // ADD AL,byte ptr [SI] (1000_E25C / 0x1E25C)
+    // AL += UInt8[DS, SI];
+    AL = Alu.Add8(AL, UInt8[DS, SI]);
+    State.IncCycles();
+    // MOV CH,AL (1000_E25E / 0x1E25E)
+    CH = AL;
+    State.IncCycles();
+    // AND CH,0x7 (1000_E260 / 0x1E260)
+    // CH &= 0x7;
+    CH = Alu.And8(CH, 0x7);
+    State.IncCycles();
+    // MOV byte ptr [SI],CH (1000_E263 / 0x1E263)
+    UInt8[DS, SI] = CH;
+    State.IncCycles();
+    // CBW  (1000_E265 / 0x1E265)
+    AX = (ushort)((short)((sbyte)AL));
+    State.IncCycles();
+    // SHR AX,1 (1000_E266 / 0x1E266)
+    AX >>= 0x1;
+    State.IncCycles();
+    // SHR AX,1 (1000_E268 / 0x1E268)
+    AX >>= 0x1;
+    State.IncCycles();
+    // SHR AX,1 (1000_E26A / 0x1E26A)
+    AX >>= 0x1;
+    State.IncCycles();
+    // NEG AX (1000_E26C / 0x1E26C)
+    AX = Alu.Sub16(0, AX);
+    State.IncCycles();
+    // RET  (1000_E26E / 0x1E26E)
+    return NearRet();
+  }
+  
+  public virtual Action spice86_generated_label_call_target_1000_E26F_01E26F(int loadOffset) {
+    entrydispatcher:
+    if(loadOffset != 0) {
+      throw FailAsUntested("External goto not supported for this function.");
+    }
+    State.IncCycles();
+    label_1000_E26F_1E26F:
+    // RET  (1000_E26F / 0x1E26F)
+    return NearRet();
+  }
+  
+  public virtual Action spice86_generated_label_call_target_1000_E270_01E270(int loadOffset) {
+    entrydispatcher:
+    if(loadOffset != 0) {
+      throw FailAsUntested("External goto not supported for this function.");
+    }
+    State.IncCycles();
+    label_1000_E270_1E270:
+    // PUSH BX (1000_E270 / 0x1E270)
+    Stack.Push(BX);
+    State.IncCycles();
+    // PUSH CX (1000_E271 / 0x1E271)
+    Stack.Push(CX);
+    State.IncCycles();
+    // PUSH DX (1000_E272 / 0x1E272)
+    Stack.Push(DX);
+    State.IncCycles();
+    // PUSH SI (1000_E273 / 0x1E273)
+    Stack.Push(SI);
+    State.IncCycles();
+    // PUSH DI (1000_E274 / 0x1E274)
+    Stack.Push(DI);
+    State.IncCycles();
+    // PUSH BP (1000_E275 / 0x1E275)
+    Stack.Push(BP);
+    State.IncCycles();
+    // MOV BP,SP (1000_E276 / 0x1E276)
+    BP = SP;
+    State.IncCycles();
+    // XCHG word ptr [BP + 0xc],AX (1000_E278 / 0x1E278)
+    ushort tmp_1000_E278 = UInt16[SS, (ushort)(BP + 0xC)];
+    UInt16[SS, (ushort)(BP + 0xC)] = AX;
+    AX = tmp_1000_E278;
+    State.IncCycles();
+    // PUSH AX (1000_E27B / 0x1E27B)
+    Stack.Push(AX);
+    State.IncCycles();
+    // MOV AX,word ptr [BP + 0xc] (1000_E27C / 0x1E27C)
+    AX = UInt16[SS, (ushort)(BP + 0xC)];
+    State.IncCycles();
+    // MOV BP,word ptr [BP + 0x0] (1000_E27F / 0x1E27F)
+    BP = UInt16[SS, BP];
+    State.IncCycles();
+    // RET  (1000_E282 / 0x1E282)
+    return NearRet();
+  }
+  
+  public virtual Action spice86_generated_label_call_target_1000_E283_01E283(int loadOffset) {
+    entrydispatcher:
+    if(loadOffset != 0) {
+      throw FailAsUntested("External goto not supported for this function.");
+    }
+    State.IncCycles();
+    label_1000_E283_1E283:
+    // POP AX (1000_E283 / 0x1E283)
+    AX = Stack.Pop();
+    State.IncCycles();
+    // MOV BP,SP (1000_E284 / 0x1E284)
+    BP = SP;
+    State.IncCycles();
+    // XCHG word ptr [BP + 0xc],AX (1000_E286 / 0x1E286)
+    ushort tmp_1000_E286 = UInt16[SS, (ushort)(BP + 0xC)];
+    UInt16[SS, (ushort)(BP + 0xC)] = AX;
+    AX = tmp_1000_E286;
+    State.IncCycles();
+    // POP BP (1000_E289 / 0x1E289)
+    BP = Stack.Pop();
+    State.IncCycles();
+    // POP DI (1000_E28A / 0x1E28A)
+    DI = Stack.Pop();
+    State.IncCycles();
+    // POP SI (1000_E28B / 0x1E28B)
+    SI = Stack.Pop();
+    State.IncCycles();
+    // POP DX (1000_E28C / 0x1E28C)
+    DX = Stack.Pop();
+    State.IncCycles();
+    // POP CX (1000_E28D / 0x1E28D)
+    CX = Stack.Pop();
+    State.IncCycles();
+    // POP BX (1000_E28E / 0x1E28E)
+    BX = Stack.Pop();
+    State.IncCycles();
+    // RET  (1000_E28F / 0x1E28F)
+    return NearRet();
+  }
+  
+  public virtual Action spice86_generated_label_call_target_1000_E290_01E290(int loadOffset) {
+    entrydispatcher:
+    if(loadOffset != 0) {
+      throw FailAsUntested("External goto not supported for this function.");
+    }
+    State.IncCycles();
+    label_1000_E290_1E290:
+    // CALL 0x1000:d04e (1000_E290 / 0x1E290)
+    NearCall(cs1, 0xE293, spice86_generated_label_call_target_1000_D04E_01D04E);
+    // Function call generated as ASM continues to next function entry point without return
+    if(JumpDispatcher.Jump(spice86_generated_label_ret_target_1000_E293_01E293, 0)) {
+      loadOffset = JumpDispatcher.NextEntryAddress;
+      goto entrydispatcher;
+    }
+    return JumpDispatcher.JumpAsmReturn!;
+  }
+  
+  public virtual Action spice86_generated_label_ret_target_1000_E293_01E293(int loadOffset) {
+    entrydispatcher:
+    if(loadOffset != 0) {
+      throw FailAsUntested("External goto not supported for this function.");
+    }
+    State.IncCycles();
+    label_1000_E293_1E293:
+    // JMP 0x1000:e297 (1000_E293 / 0x1E293)
+    // Jump converted to entry function call
+    if(JumpDispatcher.Jump(spice86_generated_label_jump_target_1000_E297_01E297, 0)) {
+      loadOffset = JumpDispatcher.NextEntryAddress;
+      goto entrydispatcher;
+    }
+    return JumpDispatcher.JumpAsmReturn!;
+  }
+  
+  public virtual Action not_observed_1000_E295_01E295(int loadOffset) {
+    entrydispatcher:
+    if(loadOffset != 0) {
+      throw FailAsUntested("External goto not supported for this function.");
+    }
+    State.IncCycles();
+    label_1000_E295_1E295:
+    // XOR AH,AH (1000_E295 / 0x1E295)
+    AH = 0;
+    // Function call generated as ASM continues to next function entry point without return
+    if(JumpDispatcher.Jump(spice86_generated_label_jump_target_1000_E297_01E297, 0)) {
+      loadOffset = JumpDispatcher.NextEntryAddress;
+      goto entrydispatcher;
+    }
+    return JumpDispatcher.JumpAsmReturn!;
+  }
+  
+  public virtual Action spice86_generated_label_jump_target_1000_E297_01E297(int loadOffset) {
+    entrydispatcher:
+    if(loadOffset != 0) {
+      throw FailAsUntested("External goto not supported for this function.");
+    }
+    State.IncCycles();
+    label_1000_E297_1E297:
+    // PUSH CX (1000_E297 / 0x1E297)
+    Stack.Push(CX);
+    State.IncCycles();
+    // MOV CX,0x64 (1000_E298 / 0x1E298)
+    CX = 0x64;
+    State.IncCycles();
+    // DIV CL (1000_E29B / 0x1E29B)
+    Cpu.Div8(CL);
+    State.IncCycles();
+    // ADD AL,0x30 (1000_E29D / 0x1E29D)
+    AL += 0x30;
+    State.IncCycles();
+    // CMP AL,0x30 (1000_E29F / 0x1E29F)
+    Alu.Sub8(AL, 0x30);
+    State.IncCycles();
+    // JNZ 0x1000:e2a7 (1000_E2A1 / 0x1E2A1)
+    if(!ZeroFlag) {
+      goto label_1000_E2A7_1E2A7;
+    }
+    State.IncCycles();
+    // MOV AL,0x20 (1000_E2A3 / 0x1E2A3)
+    AL = 0x20;
+    State.IncCycles();
+    // DEC CH (1000_E2A5 / 0x1E2A5)
+    CH = Alu.Dec8(CH);
+    State.IncCycles();
+    label_1000_E2A7_1E2A7:
+    // CALL word ptr [0x2518] (1000_E2A7 / 0x1E2A7)
+    // Indirect call to word ptr [0x2518], generating possible targets from emulator records
+    uint targetAddress_1000_E2A7 = (uint)(UInt16[DS, 0x2518]);
+    switch(targetAddress_1000_E2A7) {
+      case 0xD12F : NearCall(cs1, 0xE2AB, spice86_generated_label_call_target_1000_D12F_01D12F); break;
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_E2A7));
+        break;
+    }
+    // Function call generated as ASM continues to next function entry point without return
+    if(JumpDispatcher.Jump(spice86_generated_label_ret_target_1000_E2AB_01E2AB, 0)) {
+      loadOffset = JumpDispatcher.NextEntryAddress;
+      goto entrydispatcher;
+    }
+    return JumpDispatcher.JumpAsmReturn!;
+  }
+  
+  public virtual Action spice86_generated_label_ret_target_1000_E2AB_01E2AB(int loadOffset) {
+    entrydispatcher:
+    if(loadOffset != 0) {
+      throw FailAsUntested("External goto not supported for this function.");
+    }
+    State.IncCycles();
+    label_1000_E2AB_1E2AB:
+    // MOV AL,AH (1000_E2AB / 0x1E2AB)
+    AL = AH;
+    State.IncCycles();
+    // AAM 0xa (1000_E2AD / 0x1E2AD)
+    Cpu.Aam(0xA);
+    State.IncCycles();
+    // XCHG AH,AL (1000_E2AF / 0x1E2AF)
+    byte tmp_1000_E2AF = AH;
+    AH = AL;
+    AL = tmp_1000_E2AF;
+    State.IncCycles();
+    // ADD AX,0x3030 (1000_E2B1 / 0x1E2B1)
+    // AX += 0x3030;
+    AX = Alu.Add16(AX, 0x3030);
+    State.IncCycles();
+    // OR CH,CH (1000_E2B4 / 0x1E2B4)
+    // CH |= CH;
+    CH = Alu.Or8(CH, CH);
+    State.IncCycles();
+    // JZ 0x1000:e2be (1000_E2B6 / 0x1E2B6)
+    if(ZeroFlag) {
+      goto label_1000_E2BE_1E2BE;
+    }
+    State.IncCycles();
+    // CMP AL,0x30 (1000_E2B8 / 0x1E2B8)
+    Alu.Sub8(AL, 0x30);
+    State.IncCycles();
+    // JNZ 0x1000:e2be (1000_E2BA / 0x1E2BA)
+    if(!ZeroFlag) {
+      goto label_1000_E2BE_1E2BE;
+    }
+    State.IncCycles();
+    // MOV AL,0x20 (1000_E2BC / 0x1E2BC)
+    AL = 0x20;
+    State.IncCycles();
+    label_1000_E2BE_1E2BE:
+    // CALL word ptr [0x2518] (1000_E2BE / 0x1E2BE)
+    // Indirect call to word ptr [0x2518], generating possible targets from emulator records
+    uint targetAddress_1000_E2BE = (uint)(UInt16[DS, 0x2518]);
+    switch(targetAddress_1000_E2BE) {
+      case 0xD12F : NearCall(cs1, 0xE2C2, spice86_generated_label_call_target_1000_D12F_01D12F); break;
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_E2BE));
+        break;
+    }
+    State.IncCycles();
+    label_1000_E2C2_1E2C2:
+    // MOV AL,AH (1000_E2C2 / 0x1E2C2)
+    AL = AH;
+    State.IncCycles();
+    // CALL word ptr [0x2518] (1000_E2C4 / 0x1E2C4)
+    // Indirect call to word ptr [0x2518], generating possible targets from emulator records
+    uint targetAddress_1000_E2C4 = (uint)(UInt16[DS, 0x2518]);
+    switch(targetAddress_1000_E2C4) {
+      case 0xD12F : NearCall(cs1, 0xE2C8, spice86_generated_label_call_target_1000_D12F_01D12F); break;
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_E2C4));
+        break;
+    }
+    State.IncCycles();
+    label_1000_E2C8_1E2C8:
+    // POP CX (1000_E2C8 / 0x1E2C8)
+    CX = Stack.Pop();
+    State.IncCycles();
+    // RET  (1000_E2C9 / 0x1E2C9)
+    return NearRet();
+  }
+  
+  public virtual Action spice86_generated_label_call_target_1000_E2DB_01E2DB(int loadOffset) {
+    entrydispatcher:
+    if(loadOffset != 0) {
+      throw FailAsUntested("External goto not supported for this function.");
+    }
+    State.IncCycles();
+    label_1000_E2DB_1E2DB:
+    // PUSH AX (1000_E2DB / 0x1E2DB)
+    Stack.Push(AX);
+    State.IncCycles();
+    // CALL 0x1000:cf70 (1000_E2DC / 0x1E2DC)
+    NearCall(cs1, 0xE2DF, spice86_generated_label_call_target_1000_CF70_01CF70);
+    State.IncCycles();
+    label_1000_E2DF_1E2DF:
+    // CALL 0x1000:d03c (1000_E2DF / 0x1E2DF)
+    NearCall(cs1, 0xE2E2, spice86_generated_label_call_target_1000_D03C_01D03C);
+    // Function call generated as ASM continues to next function entry point without return
+    if(JumpDispatcher.Jump(spice86_generated_label_ret_target_1000_E2E2_01E2E2, 0)) {
+      loadOffset = JumpDispatcher.NextEntryAddress;
+      goto entrydispatcher;
+    }
+    return JumpDispatcher.JumpAsmReturn!;
+  }
+  
+  public virtual Action spice86_generated_label_ret_target_1000_E2E2_01E2E2(int loadOffset) {
+    entrydispatcher:
+    if(loadOffset != 0) {
+      throw FailAsUntested("External goto not supported for this function.");
+    }
+    State.IncCycles();
+    label_1000_E2E2_1E2E2:
+    // POP AX (1000_E2E2 / 0x1E2E2)
+    AX = Stack.Pop();
+    // Function call generated as ASM continues to next function entry point without return
+    if(JumpDispatcher.Jump(spice86_generated_label_call_target_1000_E2E3_01E2E3, 0)) {
+      loadOffset = JumpDispatcher.NextEntryAddress;
+      goto entrydispatcher;
+    }
+    return JumpDispatcher.JumpAsmReturn!;
+  }
+  
+  public virtual Action spice86_generated_label_call_target_1000_E2E3_01E2E3(int loadOffset) {
     entrydispatcher:
     switch(loadOffset) {
-      case 0x25B11: goto label_334B_2661_35B11;break; // Target of external jump from 0x35B59
-      case 0x25B0F: goto label_334B_265F_35B0F;break; // Target of external jump from 0x35B5D
+      case 0xE2F6: goto label_1000_E2F6_1E2F6;break; // Target of external jump from 0x1E351
+      case 0xE2FE: goto label_1000_E2FE_1E2FE;break; // Target of external jump from 0x1E2F8, 0x1E34E
       case 0: break; // 0 is the entry point ghidra detected, just after this switch
       default: throw FailAsUntested("Could not find any label from outside with address " + loadOffset);
     }
-    label_334B_265B_35B0B:
-    // PUSH CS (334B_265B / 0x35B0B)
-    Stack.Push(cs2);
-    // PUSH CS (334B_265C / 0x35B0C)
-    Stack.Push(cs2);
-    // POP DS (334B_265D / 0x35B0D)
-    DS = Stack.Pop();
-    // POP ES (334B_265E / 0x35B0E)
-    ES = Stack.Pop();
-    label_334B_265F_35B0F:
-    // XOR BX,BX (334B_265F / 0x35B0F)
+    State.IncCycles();
+    label_1000_E2E3_1E2E3:
+    // PUSH BX (1000_E2E3 / 0x1E2E3)
+    Stack.Push(BX);
+    State.IncCycles();
+    // PUSH CX (1000_E2E4 / 0x1E2E4)
+    Stack.Push(CX);
+    State.IncCycles();
+    // MOV CX,0x64 (1000_E2E5 / 0x1E2E5)
+    CX = 0x64;
+    State.IncCycles();
+    // MOV BX,CX (1000_E2E8 / 0x1E2E8)
+    BX = CX;
+    State.IncCycles();
+    // CMP AX,0x3e8 (1000_E2EA / 0x1E2EA)
+    Alu.Sub16(AX, 0x3E8);
+    State.IncCycles();
+    // JC 0x1000:e2f2 (1000_E2ED / 0x1E2ED)
+    if(CarryFlag) {
+      goto label_1000_E2F2_1E2F2;
+    }
+    State.IncCycles();
+    // MOV AX,0x3e7 (1000_E2EF / 0x1E2EF)
+    AX = 0x3E7;
+    State.IncCycles();
+    label_1000_E2F2_1E2F2:
+    // DIV CL (1000_E2F2 / 0x1E2F2)
+    Cpu.Div8(CL);
+    State.IncCycles();
+    // ADD AL,0x30 (1000_E2F4 / 0x1E2F4)
+    AL += 0x30;
+    State.IncCycles();
+    label_1000_E2F6_1E2F6:
+    // CMP AL,0x30 (1000_E2F6 / 0x1E2F6)
+    Alu.Sub8(AL, 0x30);
+    State.IncCycles();
+    // JNZ 0x1000:e2fe (1000_E2F8 / 0x1E2F8)
+    if(!ZeroFlag) {
+      goto label_1000_E2FE_1E2FE;
+    }
+    State.IncCycles();
+    // MOV AL,0x20 (1000_E2FA / 0x1E2FA)
+    AL = 0x20;
+    State.IncCycles();
+    // XOR BX,BX (1000_E2FC / 0x1E2FC)
     BX = 0;
-    label_334B_2661_35B11:
-    // PUSH BX (334B_2661 / 0x35B11)
+    State.IncCycles();
+    label_1000_E2FE_1E2FE:
+    // MOV byte ptr ES:[SI + -0x3],AL (1000_E2FE / 0x1E2FE)
+    UInt8[ES, (ushort)(SI - 0x3)] = AL;
+    State.IncCycles();
+    // MOV AL,AH (1000_E302 / 0x1E302)
+    AL = AH;
+    State.IncCycles();
+    // AAM 0xa (1000_E304 / 0x1E304)
+    Cpu.Aam(0xA);
+    State.IncCycles();
+    // XCHG AH,AL (1000_E306 / 0x1E306)
+    byte tmp_1000_E306 = AH;
+    AH = AL;
+    AL = tmp_1000_E306;
+    State.IncCycles();
+    // ADD AX,0x3030 (1000_E308 / 0x1E308)
+    // AX += 0x3030;
+    AX = Alu.Add16(AX, 0x3030);
+    State.IncCycles();
+    // OR BX,BX (1000_E30B / 0x1E30B)
+    // BX |= BX;
+    BX = Alu.Or16(BX, BX);
+    State.IncCycles();
+    // JNZ 0x1000:e315 (1000_E30D / 0x1E30D)
+    if(!ZeroFlag) {
+      goto label_1000_E315_1E315;
+    }
+    State.IncCycles();
+    // CMP AL,0x30 (1000_E30F / 0x1E30F)
+    Alu.Sub8(AL, 0x30);
+    State.IncCycles();
+    // JNZ 0x1000:e315 (1000_E311 / 0x1E311)
+    if(!ZeroFlag) {
+      goto label_1000_E315_1E315;
+    }
+    State.IncCycles();
+    // MOV AL,0x20 (1000_E313 / 0x1E313)
+    AL = 0x20;
+    State.IncCycles();
+    label_1000_E315_1E315:
+    // MOV word ptr ES:[SI + -0x2],AX (1000_E315 / 0x1E315)
+    UInt16[ES, (ushort)(SI - 0x2)] = AX;
+    State.IncCycles();
+    // POP CX (1000_E319 / 0x1E319)
+    CX = Stack.Pop();
+    State.IncCycles();
+    // POP BX (1000_E31A / 0x1E31A)
+    BX = Stack.Pop();
+    State.IncCycles();
+    // RET  (1000_E31B / 0x1E31B)
+    return NearRet();
+  }
+  
+  public virtual Action spice86_generated_label_call_target_1000_E31C_01E31C(int loadOffset) {
+    entrydispatcher:
+    if(loadOffset != 0) {
+      throw FailAsUntested("External goto not supported for this function.");
+    }
+    State.IncCycles();
+    label_1000_E31C_1E31C:
+    // PUSH BX (1000_E31C / 0x1E31C)
     Stack.Push(BX);
-    // PUSH CX (334B_2662 / 0x35B12)
+    State.IncCycles();
+    // PUSH CX (1000_E31D / 0x1E31D)
     Stack.Push(CX);
-    // PUSH DX (334B_2663 / 0x35B13)
+    State.IncCycles();
+    // MOV CX,0x3e8 (1000_E31E / 0x1E31E)
+    CX = 0x3E8;
+    State.IncCycles();
+    // MOV BX,CX (1000_E321 / 0x1E321)
+    BX = CX;
+    State.IncCycles();
+    // XOR DX,DX (1000_E323 / 0x1E323)
+    DX = 0;
+    State.IncCycles();
+    // DIV CX (1000_E325 / 0x1E325)
+    Cpu.Div16(CX);
+    State.IncCycles();
+    // AAM 0xa (1000_E327 / 0x1E327)
+    Cpu.Aam(0xA);
+    State.IncCycles();
+    // XCHG AH,AL (1000_E329 / 0x1E329)
+    byte tmp_1000_E329 = AH;
+    AH = AL;
+    AL = tmp_1000_E329;
+    State.IncCycles();
+    // ADD AX,0x3030 (1000_E32B / 0x1E32B)
+    AX += 0x3030;
+    State.IncCycles();
+    // CMP AL,0x30 (1000_E32E / 0x1E32E)
+    Alu.Sub8(AL, 0x30);
+    State.IncCycles();
+    // JNZ 0x1000:e33d (1000_E330 / 0x1E330)
+    if(!ZeroFlag) {
+      goto label_1000_E33D_1E33D;
+    }
+    State.IncCycles();
+    // MOV AL,0x20 (1000_E332 / 0x1E332)
+    AL = 0x20;
+    State.IncCycles();
+    // CMP AH,0x30 (1000_E334 / 0x1E334)
+    Alu.Sub8(AH, 0x30);
+    State.IncCycles();
+    // JNZ 0x1000:e33d (1000_E337 / 0x1E337)
+    if(!ZeroFlag) {
+      goto label_1000_E33D_1E33D;
+    }
+    State.IncCycles();
+    // MOV AH,AL (1000_E339 / 0x1E339)
+    AH = AL;
+    State.IncCycles();
+    // XOR BX,BX (1000_E33B / 0x1E33B)
+    BX = 0;
+    State.IncCycles();
+    label_1000_E33D_1E33D:
+    // MOV word ptr ES:[SI + -0x5],AX (1000_E33D / 0x1E33D)
+    UInt16[ES, (ushort)(SI - 0x5)] = AX;
+    State.IncCycles();
+    // MOV AX,DX (1000_E341 / 0x1E341)
+    AX = DX;
+    State.IncCycles();
+    // XOR DX,DX (1000_E343 / 0x1E343)
+    DX = 0;
+    State.IncCycles();
+    // MOV CX,0x64 (1000_E345 / 0x1E345)
+    CX = 0x64;
+    State.IncCycles();
+    // DIV CL (1000_E348 / 0x1E348)
+    Cpu.Div8(CL);
+    State.IncCycles();
+    // ADD AL,0x30 (1000_E34A / 0x1E34A)
+    // AL += 0x30;
+    AL = Alu.Add8(AL, 0x30);
+    State.IncCycles();
+    // OR BX,BX (1000_E34C / 0x1E34C)
+    // BX |= BX;
+    BX = Alu.Or16(BX, BX);
+    State.IncCycles();
+    // JNZ 0x1000:e2fe (1000_E34E / 0x1E34E)
+    if(!ZeroFlag) {
+      // Jump converted to non entry function call
+      if(JumpDispatcher.Jump(spice86_generated_label_call_target_1000_E2E3_01E2E3, 0x1E2FE - cs1 * 0x10)) {
+        loadOffset = JumpDispatcher.NextEntryAddress;
+        goto entrydispatcher;
+      }
+      return JumpDispatcher.JumpAsmReturn!;
+    }
+    State.IncCycles();
+    // INC BX (1000_E350 / 0x1E350)
+    BX = Alu.Inc16(BX);
+    State.IncCycles();
+    // JMP 0x1000:e2f6 (1000_E351 / 0x1E351)
+    // Jump converted to non entry function call
+    if(JumpDispatcher.Jump(spice86_generated_label_call_target_1000_E2E3_01E2E3, 0x1E2F6 - cs1 * 0x10)) {
+      loadOffset = JumpDispatcher.NextEntryAddress;
+      goto entrydispatcher;
+    }
+    return JumpDispatcher.JumpAsmReturn!;
+  }
+  
+  public virtual Action spice86_generated_label_call_target_1000_E353_01E353(int loadOffset) {
+    entrydispatcher:
+    if(loadOffset != 0) {
+      throw FailAsUntested("External goto not supported for this function.");
+    }
+    State.IncCycles();
+    label_1000_E353_1E353:
+    // PUSH AX (1000_E353 / 0x1E353)
+    Stack.Push(AX);
+    State.IncCycles();
+    // PUSH word ptr [0xce7a] (1000_E354 / 0x1E354)
+    Stack.Push(UInt16[DS, 0xCE7A]);
+    State.IncCycles();
+    // CALL BP (1000_E358 / 0x1E358)
+    // Indirect call to BP, generating possible targets from emulator records
+    uint targetAddress_1000_E358 = (uint)(BP);
+    switch(targetAddress_1000_E358) {
+      case 0x4821 : NearCall(cs1, 0xE35A, spice86_generated_label_call_target_1000_4821_014821); break;
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_E358));
+        break;
+    }
+    // Function call generated as ASM continues to next function entry point without return
+    if(JumpDispatcher.Jump(spice86_generated_label_ret_target_1000_E35A_01E35A, 0)) {
+      loadOffset = JumpDispatcher.NextEntryAddress;
+      goto entrydispatcher;
+    }
+    return JumpDispatcher.JumpAsmReturn!;
+  }
+  
+  public virtual Action spice86_generated_label_ret_target_1000_E35A_01E35A(int loadOffset) {
+    entrydispatcher:
+    if(loadOffset != 0) {
+      throw FailAsUntested("External goto not supported for this function.");
+    }
+    State.IncCycles();
+    label_1000_E35A_1E35A:
+    // POP BX (1000_E35A / 0x1E35A)
+    BX = Stack.Pop();
+    State.IncCycles();
+    // POP BP (1000_E35B / 0x1E35B)
+    BP = Stack.Pop();
+    State.IncCycles();
+    label_1000_E35C_1E35C:
+    // CMP byte ptr [0x227d],0x0 (1000_E35C / 0x1E35C)
+    Alu.Sub8(UInt8[DS, 0x227D], 0x0);
+    State.IncCycles();
+    // JZ 0x1000:e378 (1000_E361 / 0x1E361)
+    if(ZeroFlag) {
+      goto label_1000_E378_1E378;
+    }
+    State.IncCycles();
+    // PUSH BX (1000_E363 / 0x1E363)
+    Stack.Push(BX);
+    State.IncCycles();
+    // PUSH CX (1000_E364 / 0x1E364)
+    Stack.Push(CX);
+    State.IncCycles();
+    // PUSH DX (1000_E365 / 0x1E365)
     Stack.Push(DX);
-    // PUSH word ptr [BP + 0x0] (334B_2664 / 0x35B14)
-    Stack.Push(UInt16[SS, BP]);
-    // MOV DI,0x5bf (334B_2667 / 0x35B17)
-    DI = 0x5BF;
-    // ADD DI,BX (334B_266A / 0x35B1A)
-    // DI += BX;
-    DI = Alu.Add16(DI, BX);
-    // LEA SI,[DI + 0xfd00] (334B_266C / 0x35B1C)
-    SI = (ushort)(DI + 0xFD00);
-    // PUSH BX (334B_2670 / 0x35B20)
-    Stack.Push(BX);
-    // PUSH CX (334B_2671 / 0x35B21)
-    Stack.Push(CX);
-    // PUSH DI (334B_2672 / 0x35B22)
+    State.IncCycles();
+    // PUSH SI (1000_E366 / 0x1E366)
+    Stack.Push(SI);
+    State.IncCycles();
+    // PUSH DI (1000_E367 / 0x1E367)
     Stack.Push(DI);
-    label_334B_2673_35B23:
-    // LODSB SI (334B_2673 / 0x35B23)
+    State.IncCycles();
+    // PUSH BP (1000_E368 / 0x1E368)
+    Stack.Push(BP);
+    State.IncCycles();
+    // PUSH ES (1000_E369 / 0x1E369)
+    Stack.Push(ES);
+    State.IncCycles();
+    // CALL 0x1000:dd63 (1000_E36A / 0x1E36A)
+    NearCall(cs1, 0xE36D, spice86_generated_label_call_target_1000_DD63_01DD63);
+    State.IncCycles();
+    // POP ES (1000_E36D / 0x1E36D)
+    ES = Stack.Pop();
+    State.IncCycles();
+    // POP BP (1000_E36E / 0x1E36E)
+    BP = Stack.Pop();
+    State.IncCycles();
+    // POP DI (1000_E36F / 0x1E36F)
+    DI = Stack.Pop();
+    State.IncCycles();
+    // POP SI (1000_E370 / 0x1E370)
+    SI = Stack.Pop();
+    State.IncCycles();
+    // POP DX (1000_E371 / 0x1E371)
+    DX = Stack.Pop();
+    State.IncCycles();
+    // POP CX (1000_E372 / 0x1E372)
+    CX = Stack.Pop();
+    State.IncCycles();
+    // POP BX (1000_E373 / 0x1E373)
+    BX = Stack.Pop();
+    State.IncCycles();
+    // JC 0x1000:e386 (1000_E374 / 0x1E374)
+    if(CarryFlag) {
+      // JC target is RET, inlining.
+      State.IncCycles();
+      // RET  (1000_E386 / 0x1E386)
+      return NearRet();
+    }
+    State.IncCycles();
+    // JMP 0x1000:e37b (1000_E376 / 0x1E376)
+    goto label_1000_E37B_1E37B;
+    State.IncCycles();
+    label_1000_E378_1E378:
+    // CALL 0x1000:de7b (1000_E378 / 0x1E378)
+    NearCall(cs1, 0xE37B, spice86_generated_label_call_target_1000_DE7B_01DE7B);
+    State.IncCycles();
+    label_1000_E37B_1E37B:
+    // MOV AX,[0xce7a] (1000_E37B / 0x1E37B)
+    AX = UInt16[DS, 0xCE7A];
+    State.IncCycles();
+    // SUB AX,BX (1000_E37E / 0x1E37E)
+    AX -= BX;
+    State.IncCycles();
+    // CMP AX,BP (1000_E380 / 0x1E380)
+    Alu.Sub16(AX, BP);
+    State.IncCycles();
+    // JC 0x1000:e35c (1000_E382 / 0x1E382)
+    if(CarryFlag) {
+      goto label_1000_E35C_1E35C;
+    }
+    State.IncCycles();
+    // OR AL,0x1 (1000_E384 / 0x1E384)
+    // AL |= 0x1;
+    AL = Alu.Or8(AL, 0x1);
+    State.IncCycles();
+    label_1000_E386_1E386:
+    // RET  (1000_E386 / 0x1E386)
+    return NearRet();
+  }
+  
+  public virtual Action spice86_generated_label_call_target_1000_E387_01E387(int loadOffset) {
+    entrydispatcher:
+    if(loadOffset != 0) {
+      throw FailAsUntested("External goto not supported for this function.");
+    }
+    State.IncCycles();
+    label_1000_E387_1E387:
+    // PUSH AX (1000_E387 / 0x1E387)
+    Stack.Push(AX);
+    State.IncCycles();
+    // PUSH CX (1000_E388 / 0x1E388)
+    Stack.Push(CX);
+    State.IncCycles();
+    // MOV CX,AX (1000_E389 / 0x1E389)
+    CX = AX;
+    State.IncCycles();
+    // JCXZ 0x1000:e39d (1000_E38B / 0x1E38B)
+    if(CX == 0) {
+      goto label_1000_E39D_1E39D;
+    }
+    State.IncCycles();
+    // PUSHF  (1000_E38D / 0x1E38D)
+    Stack.Push(FlagRegister);
+    State.IncCycles();
+    // STI  (1000_E38E / 0x1E38E)
+    InterruptFlag = true;
+    State.IncCycles();
+    label_1000_E38F_1E38F:
+    // MOV AX,SS:[0xce7a] (1000_E38F / 0x1E38F)
+    AX = UInt16[SS, 0xCE7A];
+    State.IncCycles();
+    label_1000_E393_1E393:
+    // CMP AX,word ptr SS:[0xce7a] (1000_E393 / 0x1E393)
+    Alu.Sub16(AX, UInt16[SS, 0xCE7A]);
+    State.IncCycles();
+    // JZ 0x1000:e393 (1000_E398 / 0x1E398)
+    if(ZeroFlag) {
+      goto label_1000_E393_1E393;
+    }
+    State.IncCycles();
+    // LOOP 0x1000:e38f (1000_E39A / 0x1E39A)
+    if(--CX != 0) {
+      goto label_1000_E38F_1E38F;
+    }
+    State.IncCycles();
+    // POPF  (1000_E39C / 0x1E39C)
+    FlagRegister = Stack.Pop();
+    State.IncCycles();
+    label_1000_E39D_1E39D:
+    // POP CX (1000_E39D / 0x1E39D)
+    CX = Stack.Pop();
+    State.IncCycles();
+    // POP AX (1000_E39E / 0x1E39E)
+    AX = Stack.Pop();
+    State.IncCycles();
+    // RET  (1000_E39F / 0x1E39F)
+    return NearRet();
+  }
+  
+  public virtual Action spice86_generated_label_call_target_1000_E3A0_01E3A0(int loadOffset) {
+    entrydispatcher:
+    if(loadOffset != 0) {
+      throw FailAsUntested("External goto not supported for this function.");
+    }
+    State.IncCycles();
+    label_1000_E3A0_1E3A0:
+    // MOV CX,AX (1000_E3A0 / 0x1E3A0)
+    CX = AX;
+    // Function call generated as ASM continues to next function entry point without return
+    if(JumpDispatcher.Jump(spice86_generated_label_jump_target_1000_E3A2_01E3A2, 0)) {
+      loadOffset = JumpDispatcher.NextEntryAddress;
+      goto entrydispatcher;
+    }
+    return JumpDispatcher.JumpAsmReturn!;
+  }
+  
+  public virtual Action spice86_generated_label_jump_target_1000_E3A2_01E3A2(int loadOffset) {
+    entrydispatcher:
+    if(loadOffset != 0) {
+      throw FailAsUntested("External goto not supported for this function.");
+    }
+    State.IncCycles();
+    label_1000_E3A2_1E3A2:
+    // MOV AX,[0xce7a] (1000_E3A2 / 0x1E3A2)
+    AX = UInt16[DS, 0xCE7A];
+    State.IncCycles();
+    label_1000_E3A5_1E3A5:
+    // CMP AX,word ptr [0xce7a] (1000_E3A5 / 0x1E3A5)
+    Alu.Sub16(AX, UInt16[DS, 0xCE7A]);
+    State.IncCycles();
+    // JZ 0x1000:e3a5 (1000_E3A9 / 0x1E3A9)
+    if(ZeroFlag) {
+      goto label_1000_E3A5_1E3A5;
+    }
+    State.IncCycles();
+    // CALL 0x1000:e270 (1000_E3AB / 0x1E3AB)
+    NearCall(cs1, 0xE3AE, spice86_generated_label_call_target_1000_E270_01E270);
+    State.IncCycles();
+    label_1000_E3AE_1E3AE:
+    // CALL 0x1000:d9d2 (1000_E3AE / 0x1E3AE)
+    NearCall(cs1, 0xE3B1, spice86_generated_label_call_target_1000_D9D2_01D9D2);
+    State.IncCycles();
+    label_1000_E3B1_1E3B1:
+    // CALL 0x1000:e283 (1000_E3B1 / 0x1E3B1)
+    NearCall(cs1, 0xE3B4, spice86_generated_label_call_target_1000_E283_01E283);
+    State.IncCycles();
+    label_1000_E3B4_1E3B4:
+    // LOOP 0x1000:e3a2 (1000_E3B4 / 0x1E3B4)
+    if(--CX != 0) {
+      goto label_1000_E3A2_1E3A2;
+    }
+    State.IncCycles();
+    // RET  (1000_E3B6 / 0x1E3B6)
+    return NearRet();
+  }
+  
+  public virtual Action spice86_generated_label_call_target_1000_E3B7_01E3B7(int loadOffset) {
+    entrydispatcher:
+    if(loadOffset != 0) {
+      throw FailAsUntested("External goto not supported for this function.");
+    }
+    State.IncCycles();
+    label_1000_E3B7_1E3B7:
+    // PUSH DX (1000_E3B7 / 0x1E3B7)
+    Stack.Push(DX);
+    State.IncCycles();
+    // MOV AX,[0xd824] (1000_E3B8 / 0x1E3B8)
+    AX = UInt16[DS, 0xD824];
+    State.IncCycles();
+    // MOV DX,0xe56d (1000_E3BB / 0x1E3BB)
+    DX = 0xE56D;
+    State.IncCycles();
+    // MUL DX (1000_E3BE / 0x1E3BE)
+    Cpu.Mul16(DX);
+    State.IncCycles();
+    // INC AX (1000_E3C0 / 0x1E3C0)
+    AX = Alu.Inc16(AX);
+    State.IncCycles();
+    // MOV [0xd824],AX (1000_E3C1 / 0x1E3C1)
+    UInt16[DS, 0xD824] = AX;
+    State.IncCycles();
+    // MOV AL,AH (1000_E3C4 / 0x1E3C4)
+    AL = AH;
+    State.IncCycles();
+    // MOV AH,DL (1000_E3C6 / 0x1E3C6)
+    AH = DL;
+    State.IncCycles();
+    // AND AX,BX (1000_E3C8 / 0x1E3C8)
+    // AX &= BX;
+    AX = Alu.And16(AX, BX);
+    State.IncCycles();
+    // POP DX (1000_E3CA / 0x1E3CA)
+    DX = Stack.Pop();
+    State.IncCycles();
+    // RET  (1000_E3CB / 0x1E3CB)
+    return NearRet();
+  }
+  
+  public virtual Action spice86_generated_label_call_target_1000_E3CC_01E3CC(int loadOffset) {
+    entrydispatcher:
+    if(loadOffset != 0) {
+      throw FailAsUntested("External goto not supported for this function.");
+    }
+    State.IncCycles();
+    label_1000_E3CC_1E3CC:
+    // PUSH DX (1000_E3CC / 0x1E3CC)
+    Stack.Push(DX);
+    State.IncCycles();
+    // MOV AX,[0xd826] (1000_E3CD / 0x1E3CD)
+    AX = UInt16[DS, 0xD826];
+    State.IncCycles();
+    // MOV DX,0xcbd1 (1000_E3D0 / 0x1E3D0)
+    DX = 0xCBD1;
+    State.IncCycles();
+    // MUL DX (1000_E3D3 / 0x1E3D3)
+    Cpu.Mul16(DX);
+    State.IncCycles();
+    // INC AX (1000_E3D5 / 0x1E3D5)
+    AX = Alu.Inc16(AX);
+    State.IncCycles();
+    // MOV [0xd826],AX (1000_E3D6 / 0x1E3D6)
+    UInt16[DS, 0xD826] = AX;
+    State.IncCycles();
+    // MOV AL,AH (1000_E3D9 / 0x1E3D9)
+    AL = AH;
+    State.IncCycles();
+    // MOV AH,DL (1000_E3DB / 0x1E3DB)
+    AH = DL;
+    State.IncCycles();
+    // POP DX (1000_E3DD / 0x1E3DD)
+    DX = Stack.Pop();
+    State.IncCycles();
+    // RET  (1000_E3DE / 0x1E3DE)
+    return NearRet();
+  }
+  
+  public virtual Action spice86_generated_label_call_target_1000_E3DF_01E3DF(int loadOffset) {
+    entrydispatcher:
+    if(loadOffset != 0) {
+      throw FailAsUntested("External goto not supported for this function.");
+    }
+    State.IncCycles();
+    label_1000_E3DF_1E3DF:
+    // PUSH CX (1000_E3DF / 0x1E3DF)
+    Stack.Push(CX);
+    State.IncCycles();
+    // PUSH DX (1000_E3E0 / 0x1E3E0)
+    Stack.Push(DX);
+    State.IncCycles();
+    // MOV AX,BX (1000_E3E1 / 0x1E3E1)
+    AX = BX;
+    State.IncCycles();
+    // OR AX,AX (1000_E3E3 / 0x1E3E3)
+    // AX |= AX;
+    AX = Alu.Or16(AX, AX);
+    State.IncCycles();
+    // JZ 0x1000:e408 (1000_E3E5 / 0x1E3E5)
+    if(ZeroFlag) {
+      goto label_1000_E408_1E408;
+    }
+    State.IncCycles();
+    // MOV CX,0xffff (1000_E3E7 / 0x1E3E7)
+    CX = 0xFFFF;
+    State.IncCycles();
+    label_1000_E3EA_1E3EA:
+    // SHL CX,1 (1000_E3EA / 0x1E3EA)
+    CX <<= 0x1;
+    State.IncCycles();
+    // SHR AX,1 (1000_E3EC / 0x1E3EC)
+    // AX >>= 0x1;
+    AX = Alu.Shr16(AX, 0x1);
+    State.IncCycles();
+    // JNZ 0x1000:e3ea (1000_E3EE / 0x1E3EE)
+    if(!ZeroFlag) {
+      goto label_1000_E3EA_1E3EA;
+    }
+    State.IncCycles();
+    // NOT CX (1000_E3F0 / 0x1E3F0)
+    CX = (ushort)~CX;
+    State.IncCycles();
+    label_1000_E3F2_1E3F2:
+    // MOV AX,[0xd828] (1000_E3F2 / 0x1E3F2)
+    AX = UInt16[DS, 0xD828];
+    State.IncCycles();
+    // MOV DX,0xcbd1 (1000_E3F5 / 0x1E3F5)
+    DX = 0xCBD1;
+    State.IncCycles();
+    // MUL DX (1000_E3F8 / 0x1E3F8)
+    Cpu.Mul16(DX);
+    State.IncCycles();
+    // INC AX (1000_E3FA / 0x1E3FA)
+    AX = Alu.Inc16(AX);
+    State.IncCycles();
+    // MOV [0xd828],AX (1000_E3FB / 0x1E3FB)
+    UInt16[DS, 0xD828] = AX;
+    State.IncCycles();
+    // MOV AL,AH (1000_E3FE / 0x1E3FE)
+    AL = AH;
+    State.IncCycles();
+    // MOV AH,DL (1000_E400 / 0x1E400)
+    AH = DL;
+    State.IncCycles();
+    // AND AX,CX (1000_E402 / 0x1E402)
+    AX &= CX;
+    State.IncCycles();
+    // CMP AX,BX (1000_E404 / 0x1E404)
+    Alu.Sub16(AX, BX);
+    State.IncCycles();
+    // JA 0x1000:e3f2 (1000_E406 / 0x1E406)
+    if(!CarryFlag && !ZeroFlag) {
+      goto label_1000_E3F2_1E3F2;
+    }
+    State.IncCycles();
+    label_1000_E408_1E408:
+    // POP DX (1000_E408 / 0x1E408)
+    DX = Stack.Pop();
+    State.IncCycles();
+    // POP CX (1000_E409 / 0x1E409)
+    CX = Stack.Pop();
+    State.IncCycles();
+    // RET  (1000_E40A / 0x1E40A)
+    return NearRet();
+  }
+  
+  public virtual Action spice86_generated_label_call_target_1000_E4AD_01E4AD(int loadOffset) {
+    entrydispatcher:
+    if(loadOffset != 0) {
+      throw FailAsUntested("External goto not supported for this function.");
+    }
+    State.IncCycles();
+    label_1000_E4AD_1E4AD:
+    // MOV SI,0x80 (1000_E4AD / 0x1E4AD)
+    SI = 0x80;
+    State.IncCycles();
+    // LODSB SI (1000_E4B0 / 0x1E4B0)
     AL = UInt8[DS, SI];
     SI = (ushort)(SI + Direction8);
-    // SUB AL,byte ptr [DI] (334B_2674 / 0x35B24)
-    // AL -= UInt8[DS, DI];
-    AL = Alu.Sub8(AL, UInt8[DS, DI]);
-    // JZ 0x3000:5b40 (334B_2676 / 0x35B26)
-    if(ZeroFlag) {
-      goto label_334B_2690_35B40;
-    }
-    // MOV BL,AL (334B_2678 / 0x35B28)
-    BL = AL;
-    // XOR AH,AH (334B_267A / 0x35B2A)
+    State.IncCycles();
+    // XOR AH,AH (1000_E4B1 / 0x1E4B1)
     AH = 0;
-    // DIV DH (334B_267C / 0x35B2C)
-    Cpu.Div8(DH);
-    // XCHG AH,AL (334B_267E / 0x35B2E)
-    byte tmp_334B_267E = AH;
+    State.IncCycles();
+    // MOV BP,AX (1000_E4B3 / 0x1E4B3)
+    BP = AX;
+    State.IncCycles();
+    // ADD BP,SI (1000_E4B5 / 0x1E4B5)
+    // BP += SI;
+    BP = Alu.Add16(BP, SI);
+    State.IncCycles();
+    label_1000_E4B7_1E4B7:
+    // PUSH CS (1000_E4B7 / 0x1E4B7)
+    Stack.Push(cs1);
+    State.IncCycles();
+    // POP ES (1000_E4B8 / 0x1E4B8)
+    ES = Stack.Pop();
+    State.IncCycles();
+    label_1000_E4B9_1E4B9:
+    // CALL 0x1000:e56b (1000_E4B9 / 0x1E4B9)
+    NearCall(cs1, 0xE4BC, spice86_generated_label_call_target_1000_E56B_01E56B);
+    State.IncCycles();
+    label_1000_E4BC_1E4BC:
+    // JC 0x1000:e4e5 (1000_E4BC / 0x1E4BC)
+    if(CarryFlag) {
+      // JC target is RET, inlining.
+      State.IncCycles();
+      // RET  (1000_E4E5 / 0x1E4E5)
+      return NearRet();
+    }
+    State.IncCycles();
+    // JZ 0x1000:e4b9 (1000_E4BE / 0x1E4BE)
+    if(ZeroFlag) {
+      goto label_1000_E4B9_1E4B9;
+    }
+    State.IncCycles();
+    // MOV DL,AL (1000_E4C0 / 0x1E4C0)
+    DL = AL;
+    State.IncCycles();
+    // CALL 0x1000:e56b (1000_E4C2 / 0x1E4C2)
+    NearCall(cs1, 0xE4C5, spice86_generated_label_call_target_1000_E56B_01E56B);
+    State.IncCycles();
+    label_1000_E4C5_1E4C5:
+    // JBE 0x1000:e542 (1000_E4C5 / 0x1E4C5)
+    if(CarryFlag || ZeroFlag) {
+      goto label_1000_E542_1E542;
+    }
+    State.IncCycles();
+    // MOV AH,AL (1000_E4C7 / 0x1E4C7)
     AH = AL;
-    AL = tmp_334B_267E;
-    // INC AH (334B_2680 / 0x35B30)
-    AH = Alu.Inc8(AH);
-    // OR AL,AL (334B_2682 / 0x35B32)
+    State.IncCycles();
+    // CALL 0x1000:e56b (1000_E4C9 / 0x1E4C9)
+    NearCall(cs1, 0xE4CC, spice86_generated_label_call_target_1000_E56B_01E56B);
+    State.IncCycles();
+    label_1000_E4CC_1E4CC:
+    // JBE 0x1000:e542 (1000_E4CC / 0x1E4CC)
+    if(CarryFlag || ZeroFlag) {
+      goto label_1000_E542_1E542;
+    }
+    State.IncCycles();
+    // XCHG DL,AL (1000_E4CE / 0x1E4CE)
+    byte tmp_1000_E4CE = DL;
+    DL = AL;
+    AL = tmp_1000_E4CE;
+    State.IncCycles();
+    // MOV DI,0xe40c (1000_E4D0 / 0x1E4D0)
+    DI = 0xE40C;
+    State.IncCycles();
+    // MOV CX,0x17 (1000_E4D3 / 0x1E4D3)
+    CX = 0x17;
+    State.IncCycles();
+    label_1000_E4D6_1E4D6:
+    // SCASW ES:DI (1000_E4D6 / 0x1E4D6)
+    Alu.Sub16(AX, UInt16[ES, DI]);
+    DI = (ushort)(DI + Direction16);
+    State.IncCycles();
+    // JNZ 0x1000:e4de (1000_E4D7 / 0x1E4D7)
+    if(!ZeroFlag) {
+      goto label_1000_E4DE_1E4DE;
+    }
+    State.IncCycles();
+    // CMP DL,byte ptr ES:[DI] (1000_E4D9 / 0x1E4D9)
+    Alu.Sub8(DL, UInt8[ES, DI]);
+    State.IncCycles();
+    // JZ 0x1000:e4e6 (1000_E4DC / 0x1E4DC)
+    if(ZeroFlag) {
+      goto label_1000_E4E6_1E4E6;
+    }
+    State.IncCycles();
+    label_1000_E4DE_1E4DE:
+    // ADD DI,0x5 (1000_E4DE / 0x1E4DE)
+    // DI += 0x5;
+    DI = Alu.Add16(DI, 0x5);
+    State.IncCycles();
+    // LOOP 0x1000:e4d6 (1000_E4E1 / 0x1E4E1)
+    if(--CX != 0) {
+      goto label_1000_E4D6_1E4D6;
+    }
+    State.IncCycles();
+    // JMP 0x1000:e542 (1000_E4E3 / 0x1E4E3)
+    goto label_1000_E542_1E542;
+    State.IncCycles();
+    label_1000_E4E5_1E4E5:
+    // RET  (1000_E4E5 / 0x1E4E5)
+    return NearRet();
+    State.IncCycles();
+    label_1000_E4E6_1E4E6:
+    // MOV AX,0x1f4b (1000_E4E6 / 0x1E4E6)
+    AX = 0x1F4B;
+    State.IncCycles();
+    // MOV ES,AX (1000_E4E9 / 0x1E4E9)
+    ES = AX;
+    State.IncCycles();
+    // MOV BL,byte ptr CS:[DI + 0x1] (1000_E4EB / 0x1E4EB)
+    BL = UInt8[cs1, (ushort)(DI + 0x1)];
+    State.IncCycles();
+    // XOR BH,BH (1000_E4EF / 0x1E4EF)
+    BH = 0;
+    State.IncCycles();
+    // ADD BX,0x2942 (1000_E4F1 / 0x1E4F1)
+    // BX += 0x2942;
+    BX = Alu.Add16(BX, 0x2942);
+    State.IncCycles();
+    // MOV AL,byte ptr CS:[DI + 0x2] (1000_E4F5 / 0x1E4F5)
+    AL = UInt8[cs1, (ushort)(DI + 0x2)];
+    State.IncCycles();
+    // OR byte ptr ES:[BX],AL (1000_E4F9 / 0x1E4F9)
+    // UInt8[ES, BX] |= AL;
+    UInt8[ES, BX] = Alu.Or8(UInt8[ES, BX], AL);
+    State.IncCycles();
+    // MOV BX,word ptr CS:[DI + 0x3] (1000_E4FC / 0x1E4FC)
+    BX = UInt16[cs1, (ushort)(DI + 0x3)];
+    State.IncCycles();
+    // OR BX,BX (1000_E500 / 0x1E500)
+    // BX |= BX;
+    BX = Alu.Or16(BX, BX);
+    State.IncCycles();
+    // JZ 0x1000:e542 (1000_E502 / 0x1E502)
+    if(ZeroFlag) {
+      goto label_1000_E542_1E542;
+    }
+    State.IncCycles();
+    // CALL 0x1000:e56b (1000_E504 / 0x1E504)
+    NearCall(cs1, 0xE507, spice86_generated_label_call_target_1000_E56B_01E56B);
+    State.IncCycles();
+    label_1000_E507_1E507:
+    // JC 0x1000:e4e5 (1000_E507 / 0x1E507)
+    if(CarryFlag) {
+      // JC target is RET, inlining.
+      State.IncCycles();
+      // RET  (1000_E4E5 / 0x1E4E5)
+      return NearRet();
+    }
+    State.IncCycles();
+    // JZ 0x1000:e542 (1000_E509 / 0x1E509)
+    if(ZeroFlag) {
+      goto label_1000_E542_1E542;
+    }
+    State.IncCycles();
+    // DEC SI (1000_E50B / 0x1E50B)
+    SI--;
+    State.IncCycles();
+    // CMP BX,0x3826 (1000_E50C / 0x1E50C)
+    Alu.Sub16(BX, 0x3826);
+    State.IncCycles();
+    // JZ 0x1000:e54d (1000_E510 / 0x1E510)
+    if(ZeroFlag) {
+      goto label_1000_E54D_1E54D;
+    }
+    State.IncCycles();
+    label_1000_E512_1E512:
+    // XOR DX,DX (1000_E512 / 0x1E512)
+    DX = 0;
+    State.IncCycles();
+    label_1000_E514_1E514:
+    // CALL 0x1000:e56b (1000_E514 / 0x1E514)
+    NearCall(cs1, 0xE517, spice86_generated_label_call_target_1000_E56B_01E56B);
+    State.IncCycles();
+    label_1000_E517_1E517:
+    // MOV AH,AL (1000_E517 / 0x1E517)
+    AH = AL;
+    State.IncCycles();
+    // JBE 0x1000:e537 (1000_E519 / 0x1E519)
+    if(CarryFlag || ZeroFlag) {
+      goto label_1000_E537_1E537;
+    }
+    State.IncCycles();
+    // SUB AL,0x30 (1000_E51B / 0x1E51B)
+    // AL -= 0x30;
+    AL = Alu.Sub8(AL, 0x30);
+    State.IncCycles();
+    // JC 0x1000:e537 (1000_E51D / 0x1E51D)
+    if(CarryFlag) {
+      goto label_1000_E537_1E537;
+    }
+    State.IncCycles();
+    // CMP AL,0x9 (1000_E51F / 0x1E51F)
+    Alu.Sub8(AL, 0x9);
+    State.IncCycles();
+    // JBE 0x1000:e52b (1000_E521 / 0x1E521)
+    if(CarryFlag || ZeroFlag) {
+      goto label_1000_E52B_1E52B;
+    }
+    State.IncCycles();
+    // SUB AL,0x7 (1000_E523 / 0x1E523)
+    // AL -= 0x7;
+    AL = Alu.Sub8(AL, 0x7);
+    State.IncCycles();
+    // JC 0x1000:e537 (1000_E525 / 0x1E525)
+    if(CarryFlag) {
+      goto label_1000_E537_1E537;
+    }
+    State.IncCycles();
+    // CMP AL,0xf (1000_E527 / 0x1E527)
+    Alu.Sub8(AL, 0xF);
+    State.IncCycles();
+    // JA 0x1000:e537 (1000_E529 / 0x1E529)
+    if(!CarryFlag && !ZeroFlag) {
+      goto label_1000_E537_1E537;
+    }
+    State.IncCycles();
+    label_1000_E52B_1E52B:
+    // SHL DX,1 (1000_E52B / 0x1E52B)
+    DX <<= 0x1;
+    State.IncCycles();
+    // SHL DX,1 (1000_E52D / 0x1E52D)
+    DX <<= 0x1;
+    State.IncCycles();
+    // SHL DX,1 (1000_E52F / 0x1E52F)
+    DX <<= 0x1;
+    State.IncCycles();
+    // SHL DX,1 (1000_E531 / 0x1E531)
+    // DX <<= 0x1;
+    DX = Alu.Shl16(DX, 0x1);
+    State.IncCycles();
+    // OR DL,AL (1000_E533 / 0x1E533)
+    // DL |= AL;
+    DL = Alu.Or8(DL, AL);
+    State.IncCycles();
+    // JMP 0x1000:e514 (1000_E535 / 0x1E535)
+    goto label_1000_E514_1E514;
+    State.IncCycles();
+    label_1000_E537_1E537:
+    // MOV word ptr ES:[BX],DX (1000_E537 / 0x1E537)
+    UInt16[ES, BX] = DX;
+    State.IncCycles();
+    // ADD BX,0x2 (1000_E53A / 0x1E53A)
+    BX += 0x2;
+    State.IncCycles();
+    // CMP AH,0x20 (1000_E53D / 0x1E53D)
+    Alu.Sub8(AH, 0x20);
+    State.IncCycles();
+    // JA 0x1000:e512 (1000_E540 / 0x1E540)
+    if(!CarryFlag && !ZeroFlag) {
+      goto label_1000_E512_1E512;
+    }
+    State.IncCycles();
+    label_1000_E542_1E542:
+    // DEC SI (1000_E542 / 0x1E542)
+    SI = Alu.Dec16(SI);
+    State.IncCycles();
+    label_1000_E543_1E543:
+    // CALL 0x1000:e56b (1000_E543 / 0x1E543)
+    NearCall(cs1, 0xE546, spice86_generated_label_call_target_1000_E56B_01E56B);
+    State.IncCycles();
+    label_1000_E546_1E546:
+    // JC 0x1000:e4e5 (1000_E546 / 0x1E546)
+    if(CarryFlag) {
+      // JC target is RET, inlining.
+      State.IncCycles();
+      // RET  (1000_E4E5 / 0x1E4E5)
+      return NearRet();
+    }
+    State.IncCycles();
+    // JNZ 0x1000:e543 (1000_E548 / 0x1E548)
+    if(!ZeroFlag) {
+      goto label_1000_E543_1E543;
+    }
+    State.IncCycles();
+    // JMP 0x1000:e4b7 (1000_E54A / 0x1E54A)
+    goto label_1000_E4B7_1E4B7;
+    State.IncCycles();
+    label_1000_E54D_1E54D:
+    // MOV DI,BX (1000_E54D / 0x1E54D)
+    DI = BX;
+    State.IncCycles();
+    label_1000_E54F_1E54F:
+    // CALL 0x1000:e56b (1000_E54F / 0x1E54F)
+    NearCall(cs1, 0xE552, spice86_generated_label_call_target_1000_E56B_01E56B);
+    State.IncCycles();
+    // JBE 0x1000:e55b (1000_E552 / 0x1E552)
+    if(CarryFlag || ZeroFlag) {
+      goto label_1000_E55B_1E55B;
+    }
+    State.IncCycles();
+    // STOSB ES:DI (1000_E554 / 0x1E554)
+    UInt8[ES, DI] = AL;
+    DI = (ushort)(DI + Direction8);
+    State.IncCycles();
+    // CMP DI,0x3898 (1000_E555 / 0x1E555)
+    Alu.Sub16(DI, 0x3898);
+    State.IncCycles();
+    // JC 0x1000:e54f (1000_E559 / 0x1E559)
+    if(CarryFlag) {
+      goto label_1000_E54F_1E54F;
+    }
+    State.IncCycles();
+    label_1000_E55B_1E55B:
+    // MOV AL,0x5c (1000_E55B / 0x1E55B)
+    AL = 0x5C;
+    State.IncCycles();
+    // CMP byte ptr ES:[DI + -0x1],AL (1000_E55D / 0x1E55D)
+    Alu.Sub8(UInt8[ES, (ushort)(DI - 0x1)], AL);
+    State.IncCycles();
+    // JZ 0x1000:e564 (1000_E561 / 0x1E561)
+    if(ZeroFlag) {
+      goto label_1000_E564_1E564;
+    }
+    State.IncCycles();
+    // STOSB ES:DI (1000_E563 / 0x1E563)
+    UInt8[ES, DI] = AL;
+    DI = (ushort)(DI + Direction8);
+    State.IncCycles();
+    label_1000_E564_1E564:
+    // MOV word ptr ES:[0x38a6],DI (1000_E564 / 0x1E564)
+    UInt16[ES, 0x38A6] = DI;
+    State.IncCycles();
+    // JMP 0x1000:e542 (1000_E569 / 0x1E569)
+    goto label_1000_E542_1E542;
+  }
+  
+  public virtual Action spice86_generated_label_call_target_1000_E56B_01E56B(int loadOffset) {
+    entrydispatcher:
+    if(loadOffset != 0) {
+      throw FailAsUntested("External goto not supported for this function.");
+    }
+    State.IncCycles();
+    label_1000_E56B_1E56B:
+    // MOV AL,0xd (1000_E56B / 0x1E56B)
+    AL = 0xD;
+    State.IncCycles();
+    // CMP SI,BP (1000_E56D / 0x1E56D)
+    Alu.Sub16(SI, BP);
+    State.IncCycles();
+    // JNC 0x1000:e578 (1000_E56F / 0x1E56F)
+    if(!CarryFlag) {
+      goto label_1000_E578_1E578;
+    }
+    State.IncCycles();
+    // LODSB SI (1000_E571 / 0x1E571)
+    AL = UInt8[DS, SI];
+    SI = (ushort)(SI + Direction8);
+    State.IncCycles();
+    // CMP AL,0x61 (1000_E572 / 0x1E572)
+    Alu.Sub8(AL, 0x61);
+    State.IncCycles();
+    // JC 0x1000:e578 (1000_E574 / 0x1E574)
+    if(CarryFlag) {
+      goto label_1000_E578_1E578;
+    }
+    State.IncCycles();
+    // AND AL,0xdf (1000_E576 / 0x1E576)
+    AL &= 0xDF;
+    State.IncCycles();
+    label_1000_E578_1E578:
+    // CMP AL,0x20 (1000_E578 / 0x1E578)
+    Alu.Sub8(AL, 0x20);
+    State.IncCycles();
+    // RET  (1000_E57A / 0x1E57A)
+    return NearRet();
+  }
+  
+  public virtual Action spice86_generated_label_call_target_1000_E57B_01E57B(int loadOffset) {
+    entrydispatcher:
+    if(loadOffset != 0) {
+      throw FailAsUntested("External goto not supported for this function.");
+    }
+    State.IncCycles();
+    label_1000_E57B_1E57B:
+    // PUSH CX (1000_E57B / 0x1E57B)
+    Stack.Push(CX);
+    State.IncCycles();
+    // PUSH SI (1000_E57C / 0x1E57C)
+    Stack.Push(SI);
+    State.IncCycles();
+    // ADD AX,0xc8 (1000_E57D / 0x1E57D)
+    // AX += 0xC8;
+    AX = Alu.Add16(AX, 0xC8);
+    State.IncCycles();
+    // MOV SI,AX (1000_E580 / 0x1E580)
+    SI = AX;
+    State.IncCycles();
+    // CALL 0x1000:f0b9 (1000_E582 / 0x1E582)
+    NearCall(cs1, 0xE585, spice86_generated_label_call_target_1000_F0B9_01F0B9);
+    // Function call generated as ASM continues to next function entry point without return
+    if(JumpDispatcher.Jump(spice86_generated_label_ret_target_1000_E585_01E585, 0)) {
+      loadOffset = JumpDispatcher.NextEntryAddress;
+      goto entrydispatcher;
+    }
+    return JumpDispatcher.JumpAsmReturn!;
+  }
+  
+  public virtual Action spice86_generated_label_ret_target_1000_E585_01E585(int loadOffset) {
+    entrydispatcher:
+    if(loadOffset != 0) {
+      throw FailAsUntested("External goto not supported for this function.");
+    }
+    State.IncCycles();
+    label_1000_E585_1E585:
+    // POP SI (1000_E585 / 0x1E585)
+    SI = Stack.Pop();
+    State.IncCycles();
+    // POP CX (1000_E586 / 0x1E586)
+    CX = Stack.Pop();
+    State.IncCycles();
+    // MOV AX,ES (1000_E587 / 0x1E587)
+    AX = ES;
+    State.IncCycles();
+    // SUB AX,0x10 (1000_E589 / 0x1E589)
+    // AX -= 0x10;
+    AX = Alu.Sub16(AX, 0x10);
+    State.IncCycles();
+    label_1000_E58C_1E58C:
+    // MOV word ptr [SI],AX (1000_E58C / 0x1E58C)
+    UInt16[DS, SI] = AX;
+    State.IncCycles();
+    // ADD SI,0x4 (1000_E58E / 0x1E58E)
+    // SI += 0x4;
+    SI = Alu.Add16(SI, 0x4);
+    State.IncCycles();
+    // LOOP 0x1000:e58c (1000_E591 / 0x1E591)
+    if(--CX != 0) {
+      goto label_1000_E58C_1E58C;
+    }
+    State.IncCycles();
+    // RET  (1000_E593 / 0x1E593)
+    return NearRet();
+  }
+  
+  public virtual Action spice86_generated_label_call_target_1000_E594_01E594(int loadOffset) {
+    entrydispatcher:
+    if(loadOffset != 0) {
+      throw FailAsUntested("External goto not supported for this function.");
+    }
+    State.IncCycles();
+    label_1000_E594_1E594:
+    // MOV AX,0x1f4b (1000_E594 / 0x1E594)
+    AX = 0x1F4B;
+    State.IncCycles();
+    // MOV ES,AX (1000_E597 / 0x1E597)
+    ES = AX;
+    State.IncCycles();
+    // MOV CX,0xdd1d (1000_E599 / 0x1E599)
+    CX = 0xDD1D;
+    State.IncCycles();
+    // MOV DI,0x3cbc (1000_E59C / 0x1E59C)
+    DI = 0x3CBC;
+    State.IncCycles();
+    // SUB CX,DI (1000_E59F / 0x1E59F)
+    // CX -= DI;
+    CX = Alu.Sub16(CX, DI);
+    State.IncCycles();
+    // CLD  (1000_E5A1 / 0x1E5A1)
+    DirectionFlag = false;
+    State.IncCycles();
+    // XOR AX,AX (1000_E5A2 / 0x1E5A2)
+    AX = 0;
+    State.IncCycles();
+    // REP
+    while (CX != 0) {
+      CX--;
+      // STOSB ES:DI (1000_E5A4 / 0x1E5A4)
+      UInt8[ES, DI] = AL;
+      DI = (ushort)(DI + Direction8);
+    }
+    State.IncCycles();
+    // MOV AX,[0x2] (1000_E5A6 / 0x1E5A6)
+    AX = UInt16[DS, 0x2];
+    State.IncCycles();
+    // PUSH ES (1000_E5A9 / 0x1E5A9)
+    Stack.Push(ES);
+    State.IncCycles();
+    // POP DS (1000_E5AA / 0x1E5AA)
+    DS = Stack.Pop();
+    State.IncCycles();
+    // MOV [0xce68],AX (1000_E5AB / 0x1E5AB)
+    UInt16[DS, 0xCE68] = AX;
+    State.IncCycles();
+    // MOV CX,0xdd1d (1000_E5AE / 0x1E5AE)
+    CX = 0xDD1D;
+    State.IncCycles();
+    // CALL 0x1000:f0ff (1000_E5B1 / 0x1E5B1)
+    NearCall(cs1, 0xE5B4, spice86_generated_label_call_target_1000_F0FF_01F0FF);
+    // Function call generated as ASM continues to next function entry point without return
+    if(JumpDispatcher.Jump(spice86_generated_label_ret_target_1000_E5B4_01E5B4, 0)) {
+      loadOffset = JumpDispatcher.NextEntryAddress;
+      goto entrydispatcher;
+    }
+    return JumpDispatcher.JumpAsmReturn!;
+  }
+  
+  public virtual Action spice86_generated_label_ret_target_1000_E5B4_01E5B4(int loadOffset) {
+    entrydispatcher:
+    if(loadOffset != 0) {
+      throw FailAsUntested("External goto not supported for this function.");
+    }
+    State.IncCycles();
+    label_1000_E5B4_1E5B4:
+    // MOV AX,0x4c6f (1000_E5B4 / 0x1E5B4)
+    AX = 0x4C6F;
+    State.IncCycles();
+    // MOV CL,0x4 (1000_E5B7 / 0x1E5B7)
+    CL = 0x4;
+    State.IncCycles();
+    // SHR AX,CL (1000_E5B9 / 0x1E5B9)
+    // AX >>= CL;
+    AX = Alu.Shr16(AX, CL);
+    State.IncCycles();
+    // MOV CX,DS (1000_E5BB / 0x1E5BB)
+    CX = DS;
+    State.IncCycles();
+    // ADD AX,CX (1000_E5BD / 0x1E5BD)
+    // AX += CX;
+    AX = Alu.Add16(AX, CX);
+    State.IncCycles();
+    // MOV [0xdc32],AX (1000_E5BF / 0x1E5BF)
+    UInt16[DS, 0xDC32] = AX;
+    State.IncCycles();
+    // MOV AH,0x19 (1000_E5C2 / 0x1E5C2)
+    AH = 0x19;
+    State.IncCycles();
+    // INT 0x21 (1000_E5C4 / 0x1E5C4)
+    Interrupt(0x21);
+    State.IncCycles();
+    // MOV [0xce76],AL (1000_E5C6 / 0x1E5C6)
+    UInt8[DS, 0xCE76] = AL;
+    State.IncCycles();
+    // MOV [0xce77],AL (1000_E5C9 / 0x1E5C9)
+    UInt8[DS, 0xCE77] = AL;
+    State.IncCycles();
+    // MOV AX,0x3301 (1000_E5CC / 0x1E5CC)
+    AX = 0x3301;
+    State.IncCycles();
+    // INT 0x21 (1000_E5CF / 0x1E5CF)
+    Interrupt(0x21);
+    State.IncCycles();
+    // MOV byte ptr [0x2941],DL (1000_E5D1 / 0x1E5D1)
+    UInt8[DS, 0x2941] = DL;
+    State.IncCycles();
+    // MOV AX,0x3301 (1000_E5D5 / 0x1E5D5)
+    AX = 0x3301;
+    State.IncCycles();
+    // XOR DX,DX (1000_E5D8 / 0x1E5D8)
+    DX = 0;
+    State.IncCycles();
+    // INT 0x21 (1000_E5DA / 0x1E5DA)
+    Interrupt(0x21);
+    State.IncCycles();
+    // CALL 0x1000:e675 (1000_E5DC / 0x1E5DC)
+    NearCall(cs1, 0xE5DF, spice86_generated_label_call_target_1000_E675_01E675);
+    State.IncCycles();
+    label_1000_E5DF_1E5DF:
+    // MOV AL,[0x2942] (1000_E5DF / 0x1E5DF)
+    AL = UInt8[DS, 0x2942];
+    State.IncCycles();
+    // AND AX,0x1 (1000_E5E2 / 0x1E5E2)
+    // AX &= 0x1;
+    AX = Alu.And16(AX, 0x1);
+    State.IncCycles();
+    // MOV SI,0x38b7 (1000_E5E5 / 0x1E5E5)
+    SI = 0x38B7;
+    State.IncCycles();
+    // MOV CX,0x2e (1000_E5E8 / 0x1E5E8)
+    CX = 0x2E;
+    State.IncCycles();
+    // CALL 0x1000:e57b (1000_E5EB / 0x1E5EB)
+    NearCall(cs1, 0xE5EE, spice86_generated_label_call_target_1000_E57B_01E57B);
+    State.IncCycles();
+    label_1000_E5EE_1E5EE:
+    // CALLF [0x38b9] (1000_E5EE / 0x1E5EE)
+    // Indirect call to [0x38b9], generating possible targets from emulator records
+    uint targetAddress_1000_E5EE = (uint)(UInt16[DS, 0x38BB] * 0x10 + UInt16[DS, 0x38B9] - cs1 * 0x10);
+    switch(targetAddress_1000_E5EE) {
+      case 0x235B3 : FarCall(cs1, 0xE5F2, spice86_generated_label_call_target_334B_0103_0335B3); break;
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_E5EE));
+        break;
+    }
+    State.IncCycles();
+    label_1000_E5F2_1E5F2:
+    // MOV [0xdbd8],AX (1000_E5F2 / 0x1E5F2)
+    UInt16[DS, 0xDBD8] = AX;
+    State.IncCycles();
+    // CALL 0x1000:c08e (1000_E5F5 / 0x1E5F5)
+    NearCall(cs1, 0xE5F8, spice86_generated_label_call_target_1000_C08E_01C08E);
+    // Function call generated as ASM continues to next function entry point without return
+    if(JumpDispatcher.Jump(spice86_generated_label_ret_target_1000_E5F8_01E5F8, 0)) {
+      loadOffset = JumpDispatcher.NextEntryAddress;
+      goto entrydispatcher;
+    }
+    return JumpDispatcher.JumpAsmReturn!;
+  }
+  
+  public virtual Action spice86_generated_label_ret_target_1000_E5F8_01E5F8(int loadOffset) {
+    entrydispatcher:
+    if(loadOffset != 0) {
+      throw FailAsUntested("External goto not supported for this function.");
+    }
+    State.IncCycles();
+    label_1000_E5F8_1E5F8:
+    // MOV word ptr [0xce74],CX (1000_E5F8 / 0x1E5F8)
+    UInt16[DS, 0xCE74] = CX;
+    State.IncCycles();
+    // MOV DI,0xdbdc (1000_E5FC / 0x1E5FC)
+    DI = 0xDBDC;
+    State.IncCycles();
+    // CALL 0x1000:f0f6 (1000_E5FF / 0x1E5FF)
+    NearCall(cs1, 0xE602, spice86_generated_label_call_target_1000_F0F6_01F0F6);
+    State.IncCycles();
+    label_1000_E602_1E602:
+    // MOV word ptr [0xdbd6],BP (1000_E602 / 0x1E602)
+    UInt16[DS, 0xDBD6] = BP;
+    State.IncCycles();
+    // OR BP,BP (1000_E606 / 0x1E606)
+    // BP |= BP;
+    BP = Alu.Or16(BP, BP);
+    State.IncCycles();
+    // JNZ 0x1000:e610 (1000_E608 / 0x1E608)
+    if(!ZeroFlag) {
+      goto label_1000_E610_1E610;
+    }
+    State.IncCycles();
+    // MOV DI,0xdbd4 (1000_E60A / 0x1E60A)
+    DI = 0xDBD4;
+    State.IncCycles();
+    // CALL 0x1000:f0f6 (1000_E60D / 0x1E60D)
+    NearCall(cs1, 0xE610, spice86_generated_label_call_target_1000_F0F6_01F0F6);
+    State.IncCycles();
+    label_1000_E610_1E610:
+    // CALLF [0x38b5] (1000_E610 / 0x1E610)
+    // Indirect call to [0x38b5], generating possible targets from emulator records
+    uint targetAddress_1000_E610 = (uint)(UInt16[DS, 0x38B7] * 0x10 + UInt16[DS, 0x38B5] - cs1 * 0x10);
+    switch(targetAddress_1000_E610) {
+      case 0x235B0 : FarCall(cs1, 0xE614, spice86_generated_label_call_target_334B_0100_0335B0); break;
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_E610));
+        break;
+    }
+    State.IncCycles();
+    label_1000_E614_1E614:
+    // MOV AL,[0x2942] (1000_E614 / 0x1E614)
+    AL = UInt8[DS, 0x2942];
+    State.IncCycles();
+    // PUSH AX (1000_E617 / 0x1E617)
+    Stack.Push(AX);
+    State.IncCycles();
+    // SHR AL,1 (1000_E618 / 0x1E618)
+    AL >>= 0x1;
+    State.IncCycles();
+    // SHR AL,1 (1000_E61A / 0x1E61A)
+    AL >>= 0x1;
+    State.IncCycles();
+    // AND AL,0x7 (1000_E61C / 0x1E61C)
+    // AL &= 0x7;
+    AL = Alu.And8(AL, 0x7);
+    State.IncCycles();
+    // MOV [0xceeb],AL (1000_E61E / 0x1E61E)
+    UInt8[DS, 0xCEEB] = AL;
+    State.IncCycles();
+    // POP AX (1000_E621 / 0x1E621)
+    AX = Stack.Pop();
+    State.IncCycles();
+    // OR AL,AL (1000_E622 / 0x1E622)
     // AL |= AL;
     AL = Alu.Or8(AL, AL);
-    // JNZ 0x3000:5b3a (334B_2684 / 0x35B34)
+    State.IncCycles();
+    // JNS 0x1000:e62b (1000_E624 / 0x1E624)
+    if(!SignFlag) {
+      goto label_1000_E62B_1E62B;
+    }
+    State.IncCycles();
+    // PUSH AX (1000_E626 / 0x1E626)
+    Stack.Push(AX);
+    State.IncCycles();
+    // CALL 0x1000:ea32 (1000_E627 / 0x1E627)
+    NearCall(cs1, 0xE62A, initialize_joystick_ida_1000_EA32_1EA32);
+    State.IncCycles();
+    // POP AX (1000_E62A / 0x1E62A)
+    AX = Stack.Pop();
+    State.IncCycles();
+    label_1000_E62B_1E62B:
+    // TEST AL,0x40 (1000_E62B / 0x1E62B)
+    Alu.And8(AL, 0x40);
+    State.IncCycles();
+    // JNZ 0x1000:e632 (1000_E62D / 0x1E62D)
     if(!ZeroFlag) {
-      goto label_334B_268A_35B3A;
+      goto label_1000_E632_1E632;
     }
-    // DEC AH (334B_2686 / 0x35B36)
-    AH = Alu.Dec8(AH);
-    // MOV AL,DH (334B_2688 / 0x35B38)
-    AL = DH;
-    label_334B_268A_35B3A:
-    // CMP AH,DL (334B_268A / 0x35B3A)
-    Alu.Sub8(AH, DL);
-    // JC 0x3000:5b40 (334B_268C / 0x35B3C)
+    State.IncCycles();
+    // CALL 0x1000:e97a (1000_E62F / 0x1E62F)
+    NearCall(cs1, 0xE632, spice86_generated_label_call_target_1000_E97A_01E97A);
+    State.IncCycles();
+    label_1000_E632_1E632:
+    // CALL 0x1000:e85c (1000_E632 / 0x1E632)
+    NearCall(cs1, 0xE635, spice86_generated_label_call_target_1000_E85C_01E85C);
+    State.IncCycles();
+    label_1000_E635_1E635:
+    // CALL 0x1000:ea7b (1000_E635 / 0x1E635)
+    NearCall(cs1, 0xE638, spice86_generated_label_call_target_1000_EA7B_01EA7B);
+    State.IncCycles();
+    label_1000_E638_1E638:
+    // MOV AL,[0x2942] (1000_E638 / 0x1E638)
+    AL = UInt8[DS, 0x2942];
+    State.IncCycles();
+    // AND AL,0x2 (1000_E63B / 0x1E63B)
+    // AL &= 0x2;
+    AL = Alu.And8(AL, 0x2);
+    State.IncCycles();
+    // MOV BP,0xce7a (1000_E63D / 0x1E63D)
+    BP = 0xCE7A;
+    State.IncCycles();
+    // CALLF [0x3925] (1000_E640 / 0x1E640)
+    // Indirect call to [0x3925], generating possible targets from emulator records
+    uint targetAddress_1000_E640 = (uint)(UInt16[DS, 0x3927] * 0x10 + UInt16[DS, 0x3925] - cs1 * 0x10);
+    switch(targetAddress_1000_E640) {
+      case 0x23604 : FarCall(cs1, 0xE644, spice86_generated_label_call_target_334B_0154_033604); break;
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_E640));
+        break;
+    }
+    // Function call generated as ASM continues to next function entry point without return
+    if(JumpDispatcher.Jump(spice86_generated_label_ret_target_1000_E644_01E644, 0)) {
+      loadOffset = JumpDispatcher.NextEntryAddress;
+      goto entrydispatcher;
+    }
+    return JumpDispatcher.JumpAsmReturn!;
+  }
+  
+  public virtual Action spice86_generated_label_ret_target_1000_E644_01E644(int loadOffset) {
+    entrydispatcher:
+    if(loadOffset != 0) {
+      throw FailAsUntested("External goto not supported for this function.");
+    }
+    State.IncCycles();
+    label_1000_E644_1E644:
+    // MOV word ptr [0xdc48],0x271c (1000_E644 / 0x1E644)
+    UInt16[DS, 0xDC48] = 0x271C;
+    State.IncCycles();
+    // MOV byte ptr [0xdc46],0xff (1000_E64A / 0x1E64A)
+    UInt8[DS, 0xDC46] = 0xFF;
+    State.IncCycles();
+    // XOR AX,AX (1000_E64F / 0x1E64F)
+    AX = 0;
+    State.IncCycles();
+    // MOV BX,0xc7 (1000_E651 / 0x1E651)
+    BX = 0xC7;
+    State.IncCycles();
+    // XOR CX,CX (1000_E654 / 0x1E654)
+    CX = 0;
+    State.IncCycles();
+    // MOV DX,0x13f (1000_E656 / 0x1E656)
+    DX = 0x13F;
+    State.IncCycles();
+    // CALL 0x1000:db14 (1000_E659 / 0x1E659)
+    NearCall(cs1, 0xE65C, spice86_generated_label_call_target_1000_DB14_01DB14);
+    State.IncCycles();
+    label_1000_E65C_1E65C:
+    // MOV BX,0xab (1000_E65C / 0x1E65C)
+    BX = 0xAB;
+    State.IncCycles();
+    // MOV DX,0xed (1000_E65F / 0x1E65F)
+    DX = 0xED;
+    State.IncCycles();
+    // CALL 0x1000:db03 (1000_E662 / 0x1E662)
+    NearCall(cs1, 0xE665, spice86_generated_label_call_target_1000_DB03_01DB03);
+    State.IncCycles();
+    label_1000_E665_1E665:
+    // CALL 0x1000:e76a (1000_E665 / 0x1E665)
+    NearCall(cs1, 0xE668, spice86_generated_label_call_target_1000_E76A_01E76A);
+    State.IncCycles();
+    label_1000_E668_1E668:
+    // CALL 0x1000:ce6c (1000_E668 / 0x1E668)
+    NearCall(cs1, 0xE66B, spice86_generated_label_call_target_1000_CE6C_01CE6C);
+    State.IncCycles();
+    label_1000_E66B_1E66B:
+    // CALL 0x1000:c07c (1000_E66B / 0x1E66B)
+    NearCall(cs1, 0xE66E, spice86_generated_label_call_target_1000_C07C_01C07C);
+    State.IncCycles();
+    label_1000_E66E_1E66E:
+    // CALL 0x1000:c0ad (1000_E66E / 0x1E66E)
+    NearCall(cs1, 0xE671, spice86_generated_label_call_target_1000_C0AD_01C0AD);
+    State.IncCycles();
+    label_1000_E671_1E671:
+    // JMP 0x1000:c412 (1000_E671 / 0x1E671)
+    // Jump converted to entry function call
+    if(JumpDispatcher.Jump(spice86_generated_label_call_target_1000_C412_01C412, 0)) {
+      loadOffset = JumpDispatcher.NextEntryAddress;
+      goto entrydispatcher;
+    }
+    return JumpDispatcher.JumpAsmReturn!;
+  }
+  
+  public virtual Action not_observed_1000_E674_01E674(int loadOffset) {
+    entrydispatcher:
+    if(loadOffset != 0) {
+      throw FailAsUntested("External goto not supported for this function.");
+    }
+    State.IncCycles();
+    label_1000_E674_1E674:
+    // RET  (1000_E674 / 0x1E674)
+    return NearRet();
+  }
+  
+  public virtual Action spice86_generated_label_call_target_1000_E675_01E675(int loadOffset) {
+    entrydispatcher:
+    if(loadOffset != 0) {
+      throw FailAsUntested("External goto not supported for this function.");
+    }
+    State.IncCycles();
+    label_1000_E675_1E675:
+    // MOV DX,0x37f2 (1000_E675 / 0x1E675)
+    DX = 0x37F2;
+    State.IncCycles();
+    // CALL 0x1000:f1fb (1000_E678 / 0x1E678)
+    NearCall(cs1, 0xE67B, spice86_generated_label_call_target_1000_F1FB_01F1FB);
+    // Function call generated as ASM continues to next function entry point without return
+    if(JumpDispatcher.Jump(spice86_generated_label_ret_target_1000_E67B_01E67B, 0)) {
+      loadOffset = JumpDispatcher.NextEntryAddress;
+      goto entrydispatcher;
+    }
+    return JumpDispatcher.JumpAsmReturn!;
+  }
+  
+  public virtual Action spice86_generated_label_ret_target_1000_E67B_01E67B(int loadOffset) {
+    entrydispatcher:
+    if(loadOffset != 0) {
+      throw FailAsUntested("External goto not supported for this function.");
+    }
+    State.IncCycles();
+    label_1000_E67B_1E67B:
+    // JC 0x1000:e692 (1000_E67B / 0x1E67B)
     if(CarryFlag) {
-      goto label_334B_2690_35B40;
+      goto label_1000_E692_1E692;
     }
-    // ADD byte ptr [DI],AL (334B_268E / 0x35B3E)
-    UInt8[DS, DI] += AL;
-    label_334B_2690_35B40:
-    // INC DI (334B_2690 / 0x35B40)
-    DI = Alu.Inc16(DI);
-    // LOOP 0x3000:5b23 (334B_2691 / 0x35B41)
+    State.IncCycles();
+    // LES DI,[0x39b7] (1000_E67D / 0x1E67D)
+    ES = UInt16[DS, 0x39B9];
+    DI = UInt16[DS, 0x39B7];
+    State.IncCycles();
+    // CALL 0x1000:f260 (1000_E681 / 0x1E681)
+    NearCall(cs1, 0xE684, read_ffff_to_esdi_and_close_ida_1000_F260_1F260);
+    State.IncCycles();
+    // CMP word ptr ES:[DI],0xc089 (1000_E684 / 0x1E684)
+    Alu.Sub16(UInt16[ES, DI], 0xC089);
+    State.IncCycles();
+    // JNZ 0x1000:e692 (1000_E689 / 0x1E689)
+    if(!ZeroFlag) {
+      goto label_1000_E692_1E692;
+    }
+    State.IncCycles();
+    // MOV DX,0x31ff (1000_E68B / 0x1E68B)
+    DX = 0x31FF;
+    State.IncCycles();
+    // CALLF [0x39b7] (1000_E68E / 0x1E68E)
+    // Indirect call to [0x39b7], generating possible targets from emulator records
+    uint targetAddress_1000_E68E = (uint)(UInt16[DS, 0x39B9] * 0x10 + UInt16[DS, 0x39B7] - cs1 * 0x10);
+    switch(targetAddress_1000_E68E) {
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_E68E));
+        break;
+    }
+    State.IncCycles();
+    label_1000_E692_1E692:
+    // MOV SI,0x37f7 (1000_E692 / 0x1E692)
+    SI = 0x37F7;
+    State.IncCycles();
+    // INC byte ptr [SI] (1000_E695 / 0x1E695)
+    UInt8[DS, SI]++;
+    State.IncCycles();
+    // CMP byte ptr [SI],0x39 (1000_E697 / 0x1E697)
+    Alu.Sub8(UInt8[DS, SI], 0x39);
+    State.IncCycles();
+    // JBE 0x1000:e675 (1000_E69A / 0x1E69A)
+    if(CarryFlag || ZeroFlag) {
+      // Jump converted to entry function call
+      if(JumpDispatcher.Jump(spice86_generated_label_call_target_1000_E675_01E675, 0)) {
+        loadOffset = JumpDispatcher.NextEntryAddress;
+        goto entrydispatcher;
+      }
+      return JumpDispatcher.JumpAsmReturn!;
+    }
+    State.IncCycles();
+    // MOV DX,0x37e9 (1000_E69C / 0x1E69C)
+    DX = 0x37E9;
+    State.IncCycles();
+    // MOV AX,0x3d00 (1000_E69F / 0x1E69F)
+    AX = 0x3D00;
+    State.IncCycles();
+    // INT 0x21 (1000_E6A2 / 0x1E6A2)
+    Interrupt(0x21);
+    State.IncCycles();
+    // JC 0x1000:e674 (1000_E6A4 / 0x1E6A4)
+    if(CarryFlag) {
+      // JC target is RET, inlining.
+      State.IncCycles();
+      // RET  (1000_E674 / 0x1E674)
+      return NearRet();
+    }
+    State.IncCycles();
+    // MOV [0xdbba],AX (1000_E6A6 / 0x1E6A6)
+    UInt16[DS, 0xDBBA] = AX;
+    State.IncCycles();
+    // CALL 0x1000:e741 (1000_E6A9 / 0x1E6A9)
+    NearCall(cs1, 0xE6AC, spice86_generated_label_call_target_1000_E741_01E741);
+    State.IncCycles();
+    label_1000_E6AC_1E6AC:
+    // MOV SI,DI (1000_E6AC / 0x1E6AC)
+    SI = DI;
+    State.IncCycles();
+    // MOV BP,ES (1000_E6AE / 0x1E6AE)
+    BP = ES;
+    State.IncCycles();
+    // LES DI,[0x39b7] (1000_E6B0 / 0x1E6B0)
+    ES = UInt16[DS, 0x39B9];
+    DI = UInt16[DS, 0x39B7];
+    State.IncCycles();
+    // MOV word ptr [0xdbbc],DI (1000_E6B4 / 0x1E6B4)
+    UInt16[DS, 0xDBBC] = DI;
+    State.IncCycles();
+    // MOV word ptr [0xdbbe],ES (1000_E6B8 / 0x1E6B8)
+    UInt16[DS, 0xDBBE] = ES;
+    State.IncCycles();
+    // MOV AX,0x145 (1000_E6BC / 0x1E6BC)
+    AX = 0x145;
+    State.IncCycles();
+    // STOSW ES:DI (1000_E6BF / 0x1E6BF)
+    UInt16[ES, DI] = AX;
+    DI = (ushort)(DI + Direction16);
+    State.IncCycles();
+    // MOV CX,0x14d (1000_E6C0 / 0x1E6C0)
+    CX = 0x14D;
+    State.IncCycles();
+    // MOV AL,0xff (1000_E6C3 / 0x1E6C3)
+    AL = 0xFF;
+    State.IncCycles();
+    // REP
+    while (CX != 0) {
+      CX--;
+      // STOSB ES:DI (1000_E6C5 / 0x1E6C5)
+      UInt8[ES, DI] = AL;
+      DI = (ushort)(DI + Direction8);
+    }
+    State.IncCycles();
+    // MOV word ptr [0xd820],DI (1000_E6C7 / 0x1E6C7)
+    UInt16[DS, 0xD820] = DI;
+    State.IncCycles();
+    // PUSH DS (1000_E6CB / 0x1E6CB)
+    Stack.Push(DS);
+    State.IncCycles();
+    // MOV DS,BP (1000_E6CC / 0x1E6CC)
+    DS = BP;
+    State.IncCycles();
+    // LODSW SI (1000_E6CE / 0x1E6CE)
+    AX = UInt16[DS, SI];
+    SI = (ushort)(SI + Direction16);
+    State.IncCycles();
+    label_1000_E6CF_1E6CF:
+    // PUSH SI (1000_E6CF / 0x1E6CF)
+    Stack.Push(SI);
+    State.IncCycles();
+    // CALL 0x1000:f314 (1000_E6D0 / 0x1E6D0)
+    NearCall(cs1, 0xE6D3, spice86_generated_label_call_target_1000_F314_01F314);
+    State.IncCycles();
+    label_1000_E6D3_1E6D3:
+    // POP SI (1000_E6D3 / 0x1E6D3)
+    SI = Stack.Pop();
+    State.IncCycles();
+    // JC 0x1000:e702 (1000_E6D4 / 0x1E6D4)
+    if(CarryFlag) {
+      goto label_1000_E702_1E702;
+    }
+    State.IncCycles();
+    // CALL 0x1000:f3a7 (1000_E6D6 / 0x1E6D6)
+    NearCall(cs1, 0xE6D9, spice86_generated_label_call_target_1000_F3A7_01F3A7);
+    State.IncCycles();
+    label_1000_E6D9_1E6D9:
+    // JZ 0x1000:e6f9 (1000_E6D9 / 0x1E6D9)
+    if(ZeroFlag) {
+      goto label_1000_E6F9_1E6F9;
+    }
+    State.IncCycles();
+    // PUSH AX (1000_E6DB / 0x1E6DB)
+    Stack.Push(AX);
+    State.IncCycles();
+    // PUSH DX (1000_E6DC / 0x1E6DC)
+    Stack.Push(DX);
+    State.IncCycles();
+    // PUSH SI (1000_E6DD / 0x1E6DD)
+    Stack.Push(SI);
+    State.IncCycles();
+    // PUSH DI (1000_E6DE / 0x1E6DE)
+    Stack.Push(DI);
+    State.IncCycles();
+    // MOV CX,word ptr SS:[0xd820] (1000_E6DF / 0x1E6DF)
+    CX = UInt16[SS, 0xD820];
+    State.IncCycles();
+    // MOV SI,CX (1000_E6E4 / 0x1E6E4)
+    SI = CX;
+    State.IncCycles();
+    // SUB CX,DI (1000_E6E6 / 0x1E6E6)
+    CX -= DI;
+    State.IncCycles();
+    // SUB SI,0x2 (1000_E6E8 / 0x1E6E8)
+    // SI -= 0x2;
+    SI = Alu.Sub16(SI, 0x2);
+    State.IncCycles();
+    // LEA DI,[SI + 0xa] (1000_E6EB / 0x1E6EB)
+    DI = (ushort)(SI + 0xA);
+    State.IncCycles();
+    // SHR CX,1 (1000_E6EE / 0x1E6EE)
+    // CX >>= 0x1;
+    CX = Alu.Shr16(CX, 0x1);
+    State.IncCycles();
+    // STD  (1000_E6F0 / 0x1E6F0)
+    DirectionFlag = true;
+    State.IncCycles();
+    // REP
+    while (CX != 0) {
+      CX--;
+      // MOVSW ES:DI,ES:SI (1000_E6F1 / 0x1E6F1)
+      UInt16[ES, DI] = UInt16[ES, SI];
+      SI = (ushort)(SI + Direction16);
+      DI = (ushort)(DI + Direction16);
+    }
+    State.IncCycles();
+    // CLD  (1000_E6F4 / 0x1E6F4)
+    DirectionFlag = false;
+    State.IncCycles();
+    // POP DI (1000_E6F5 / 0x1E6F5)
+    DI = Stack.Pop();
+    State.IncCycles();
+    // POP SI (1000_E6F6 / 0x1E6F6)
+    SI = Stack.Pop();
+    State.IncCycles();
+    // POP DX (1000_E6F7 / 0x1E6F7)
+    DX = Stack.Pop();
+    State.IncCycles();
+    // POP AX (1000_E6F8 / 0x1E6F8)
+    AX = Stack.Pop();
+    State.IncCycles();
+    label_1000_E6F9_1E6F9:
+    // CALL 0x1000:e75b (1000_E6F9 / 0x1E6F9)
+    NearCall(cs1, 0xE6FC, spice86_generated_label_call_target_1000_E75B_01E75B);
+    State.IncCycles();
+    label_1000_E6FC_1E6FC:
+    // ADD word ptr SS:[0xd820],0xa (1000_E6FC / 0x1E6FC)
+    UInt16[SS, 0xD820] += 0xA;
+    State.IncCycles();
+    label_1000_E702_1E702:
+    // ADD SI,0x19 (1000_E702 / 0x1E702)
+    SI += 0x19;
+    State.IncCycles();
+    // CMP byte ptr [SI],0x0 (1000_E705 / 0x1E705)
+    Alu.Sub8(UInt8[DS, SI], 0x0);
+    State.IncCycles();
+    // JNZ 0x1000:e6cf (1000_E708 / 0x1E708)
+    if(!ZeroFlag) {
+      goto label_1000_E6CF_1E6CF;
+    }
+    State.IncCycles();
+    // POP DS (1000_E70A / 0x1E70A)
+    DS = Stack.Pop();
+    State.IncCycles();
+    // MOV SI,0x145 (1000_E70B / 0x1E70B)
+    SI = 0x145;
+    State.IncCycles();
+    // MOV AX,[0xd820] (1000_E70E / 0x1E70E)
+    AX = UInt16[DS, 0xD820];
+    State.IncCycles();
+    // SUB AX,SI (1000_E711 / 0x1E711)
+    AX -= SI;
+    State.IncCycles();
+    // XOR DX,DX (1000_E713 / 0x1E713)
+    DX = 0;
+    State.IncCycles();
+    // MOV CX,0x280 (1000_E715 / 0x1E715)
+    CX = 0x280;
+    State.IncCycles();
+    // DIV CX (1000_E718 / 0x1E718)
+    Cpu.Div16(CX);
+    State.IncCycles();
+    // MOV DX,0xa (1000_E71A / 0x1E71A)
+    DX = 0xA;
+    State.IncCycles();
+    // MUL DX (1000_E71D / 0x1E71D)
+    Cpu.Mul16(DX);
+    State.IncCycles();
+    // MOV DX,AX (1000_E71F / 0x1E71F)
+    DX = AX;
+    State.IncCycles();
+    // LES DI,SS:[0xdbbc] (1000_E721 / 0x1E721)
+    ES = UInt16[SS, 0xDBBE];
+    DI = UInt16[SS, 0xDBBC];
+    State.IncCycles();
+    // ADD DI,0x2 (1000_E726 / 0x1E726)
+    DI += 0x2;
+    State.IncCycles();
+    label_1000_E729_1E729:
+    // ADD SI,DX (1000_E729 / 0x1E729)
+    // SI += DX;
+    SI = Alu.Add16(SI, DX);
+    State.IncCycles();
+    // PUSH SI (1000_E72B / 0x1E72B)
+    Stack.Push(SI);
+    State.IncCycles();
+    // MOVSW ES:DI,ES:SI (1000_E72C / 0x1E72C)
+    UInt16[ES, DI] = UInt16[ES, SI];
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
+    State.IncCycles();
+    // MOVSB ES:DI,ES:SI (1000_E72E / 0x1E72E)
+    UInt8[ES, DI] = UInt8[ES, SI];
+    SI = (ushort)(SI + Direction8);
+    DI = (ushort)(DI + Direction8);
+    State.IncCycles();
+    // POP SI (1000_E730 / 0x1E730)
+    SI = Stack.Pop();
+    State.IncCycles();
+    // MOV AX,SI (1000_E731 / 0x1E731)
+    AX = SI;
+    State.IncCycles();
+    // STOSW ES:DI (1000_E733 / 0x1E733)
+    UInt16[ES, DI] = AX;
+    DI = (ushort)(DI + Direction16);
+    State.IncCycles();
+    // CMP DI,0x140 (1000_E734 / 0x1E734)
+    Alu.Sub16(DI, 0x140);
+    State.IncCycles();
+    // JC 0x1000:e729 (1000_E738 / 0x1E738)
+    if(CarryFlag) {
+      goto label_1000_E729_1E729;
+    }
+    State.IncCycles();
+    // MOV CX,word ptr [0xd820] (1000_E73A / 0x1E73A)
+    CX = UInt16[DS, 0xD820];
+    State.IncCycles();
+    // JMP 0x1000:f0ff (1000_E73E / 0x1E73E)
+    // Jump converted to entry function call
+    if(JumpDispatcher.Jump(spice86_generated_label_call_target_1000_F0FF_01F0FF, 0)) {
+      loadOffset = JumpDispatcher.NextEntryAddress;
+      goto entrydispatcher;
+    }
+    return JumpDispatcher.JumpAsmReturn!;
+  }
+  
+  public virtual Action spice86_generated_label_call_target_1000_E741_01E741(int loadOffset) {
+    entrydispatcher:
+    if(loadOffset != 0) {
+      throw FailAsUntested("External goto not supported for this function.");
+    }
+    State.IncCycles();
+    label_1000_E741_1E741:
+    // XOR AX,AX (1000_E741 / 0x1E741)
+    AX = 0;
+    State.IncCycles();
+    // XOR DX,DX (1000_E743 / 0x1E743)
+    DX = 0;
+    State.IncCycles();
+    // CALL 0x1000:f2d6 (1000_E745 / 0x1E745)
+    NearCall(cs1, 0xE748, spice86_generated_label_call_target_1000_F2D6_01F2D6);
+    // Function call generated as ASM continues to next function entry point without return
+    if(JumpDispatcher.Jump(spice86_generated_label_ret_target_1000_E748_01E748, 0)) {
+      loadOffset = JumpDispatcher.NextEntryAddress;
+      goto entrydispatcher;
+    }
+    return JumpDispatcher.JumpAsmReturn!;
+  }
+  
+  public virtual Action spice86_generated_label_ret_target_1000_E748_01E748(int loadOffset) {
+    entrydispatcher:
+    if(loadOffset != 0) {
+      throw FailAsUntested("External goto not supported for this function.");
+    }
+    State.IncCycles();
+    label_1000_E748_1E748:
+    // MOV AX,[0x39b9] (1000_E748 / 0x1E748)
+    AX = UInt16[DS, 0x39B9];
+    State.IncCycles();
+    // ADD AX,0x800 (1000_E74B / 0x1E74B)
+    // AX += 0x800;
+    AX = Alu.Add16(AX, 0x800);
+    State.IncCycles();
+    // MOV ES,AX (1000_E74E / 0x1E74E)
+    ES = AX;
+    State.IncCycles();
+    // XOR DI,DI (1000_E750 / 0x1E750)
+    DI = 0;
+    State.IncCycles();
+    // MOV CX,0xffff (1000_E752 / 0x1E752)
+    CX = 0xFFFF;
+    State.IncCycles();
+    // CALL 0x1000:f2ea (1000_E755 / 0x1E755)
+    NearCall(cs1, 0xE758, spice86_generated_label_call_target_1000_F2EA_01F2EA);
+    State.IncCycles();
+    label_1000_E758_1E758:
+    // JC 0x1000:e741 (1000_E758 / 0x1E758)
+    if(CarryFlag) {
+      // Jump converted to entry function call
+      if(JumpDispatcher.Jump(spice86_generated_label_call_target_1000_E741_01E741, 0)) {
+        loadOffset = JumpDispatcher.NextEntryAddress;
+        goto entrydispatcher;
+      }
+      return JumpDispatcher.JumpAsmReturn!;
+    }
+    State.IncCycles();
+    // RET  (1000_E75A / 0x1E75A)
+    return NearRet();
+  }
+  
+  public virtual Action spice86_generated_label_call_target_1000_E75B_01E75B(int loadOffset) {
+    entrydispatcher:
+    if(loadOffset != 0) {
+      throw FailAsUntested("External goto not supported for this function.");
+    }
+    State.IncCycles();
+    label_1000_E75B_1E75B:
+    // PUSH SI (1000_E75B / 0x1E75B)
+    Stack.Push(SI);
+    State.IncCycles();
+    // STOSW ES:DI (1000_E75C / 0x1E75C)
+    UInt16[ES, DI] = AX;
+    DI = (ushort)(DI + Direction16);
+    State.IncCycles();
+    // MOV AL,DL (1000_E75D / 0x1E75D)
+    AL = DL;
+    State.IncCycles();
+    // STOSB ES:DI (1000_E75F / 0x1E75F)
+    UInt8[ES, DI] = AL;
+    DI = (ushort)(DI + Direction8);
+    State.IncCycles();
+    // ADD SI,0x10 (1000_E760 / 0x1E760)
+    // SI += 0x10;
+    SI = Alu.Add16(SI, 0x10);
+    State.IncCycles();
+    // MOVSW ES:DI,SI (1000_E763 / 0x1E763)
+    UInt16[ES, DI] = UInt16[DS, SI];
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
+    State.IncCycles();
+    // MOVSB ES:DI,SI (1000_E764 / 0x1E764)
+    UInt8[ES, DI] = UInt8[DS, SI];
+    SI = (ushort)(SI + Direction8);
+    DI = (ushort)(DI + Direction8);
+    State.IncCycles();
+    // INC SI (1000_E765 / 0x1E765)
+    SI = Alu.Inc16(SI);
+    State.IncCycles();
+    // MOVSW ES:DI,SI (1000_E766 / 0x1E766)
+    UInt16[ES, DI] = UInt16[DS, SI];
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
+    State.IncCycles();
+    // MOVSW ES:DI,SI (1000_E767 / 0x1E767)
+    UInt16[ES, DI] = UInt16[DS, SI];
+    SI = (ushort)(SI + Direction16);
+    DI = (ushort)(DI + Direction16);
+    State.IncCycles();
+    // POP SI (1000_E768 / 0x1E768)
+    SI = Stack.Pop();
+    State.IncCycles();
+    // RET  (1000_E769 / 0x1E769)
+    return NearRet();
+  }
+  
+  public virtual Action spice86_generated_label_call_target_1000_E76A_01E76A(int loadOffset) {
+    entrydispatcher:
+    if(loadOffset != 0) {
+      throw FailAsUntested("External goto not supported for this function.");
+    }
+    State.IncCycles();
+    label_1000_E76A_1E76A:
+    // MOV AL,[0x2944] (1000_E76A / 0x1E76A)
+    AL = UInt8[DS, 0x2944];
+    State.IncCycles();
+    // MOV CL,0x4 (1000_E76D / 0x1E76D)
+    CL = 0x4;
+    State.IncCycles();
+    // SHR AL,CL (1000_E76F / 0x1E76F)
+    AL >>= CL;
+    State.IncCycles();
+    // ADD AL,0x7 (1000_E771 / 0x1E771)
+    AL += 0x7;
+    State.IncCycles();
+    // XOR AH,AH (1000_E773 / 0x1E773)
+    AH = 0;
+    State.IncCycles();
+    // MOV SI,0x398b (1000_E775 / 0x1E775)
+    SI = 0x398B;
+    State.IncCycles();
+    // MOV CX,0x8 (1000_E778 / 0x1E778)
+    CX = 0x8;
+    State.IncCycles();
+    // CALL 0x1000:e57b (1000_E77B / 0x1E77B)
+    NearCall(cs1, 0xE77E, spice86_generated_label_call_target_1000_E57B_01E57B);
+    // Function call generated as ASM continues to next function entry point without return
+    if(JumpDispatcher.Jump(spice86_generated_label_ret_target_1000_E77E_01E77E, 0)) {
+      loadOffset = JumpDispatcher.NextEntryAddress;
+      goto entrydispatcher;
+    }
+    return JumpDispatcher.JumpAsmReturn!;
+  }
+  
+  public virtual Action spice86_generated_label_ret_target_1000_E77E_01E77E(int loadOffset) {
+    entrydispatcher:
+    if(loadOffset != 0) {
+      throw FailAsUntested("External goto not supported for this function.");
+    }
+    State.IncCycles();
+    label_1000_E77E_1E77E:
+    // MOV AX,[0x39b5] (1000_E77E / 0x1E77E)
+    AX = UInt16[DS, 0x39B5];
+    State.IncCycles();
+    // CALLF [0x3989] (1000_E781 / 0x1E781)
+    // Indirect call to [0x3989], generating possible targets from emulator records
+    uint targetAddress_1000_E781 = (uint)(UInt16[DS, 0x398B] * 0x10 + UInt16[DS, 0x3989] - cs1 * 0x10);
+    switch(targetAddress_1000_E781) {
+      case 0x46450 : FarCall(cs1, 0xE785, spice86_generated_label_call_target_5635_0100_056450); break;
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_E781));
+        break;
+    }
+    State.IncCycles();
+    label_1000_E785_1E785:
+    // MOV word ptr [0xdbc8],BX (1000_E785 / 0x1E785)
+    UInt16[DS, 0xDBC8] = BX;
+    State.IncCycles();
+    // CALL 0x1000:a637 (1000_E789 / 0x1E789)
+    NearCall(cs1, 0xE78C, spice86_generated_label_call_target_1000_A637_01A637);
+    State.IncCycles();
+    label_1000_E78C_1E78C:
+    // CALL 0x1000:ae54 (1000_E78C / 0x1E78C)
+    NearCall(cs1, 0xE78F, spice86_generated_label_call_target_1000_AE54_01AE54);
+    State.IncCycles();
+    label_1000_E78F_1E78F:
+    // CALL 0x1000:e851 (1000_E78F / 0x1E78F)
+    NearCall(cs1, 0xE792, spice86_generated_label_call_target_1000_E851_01E851);
+    // Function call generated as ASM continues to next function entry point without return
+    if(JumpDispatcher.Jump(spice86_generated_label_ret_target_1000_E792_01E792, 0)) {
+      loadOffset = JumpDispatcher.NextEntryAddress;
+      goto entrydispatcher;
+    }
+    return JumpDispatcher.JumpAsmReturn!;
+  }
+  
+  public virtual Action spice86_generated_label_ret_target_1000_E792_01E792(int loadOffset) {
+    entrydispatcher:
+    if(loadOffset != 0) {
+      throw FailAsUntested("External goto not supported for this function.");
+    }
+    State.IncCycles();
+    label_1000_E792_1E792:
+    // JC 0x1000:e7bc (1000_E792 / 0x1E792)
+    if(CarryFlag) {
+      goto label_1000_E7BC_1E7BC;
+    }
+    State.IncCycles();
+    // TEST byte ptr [0x2944],0xf0 (1000_E794 / 0x1E794)
+    Alu.And8(UInt8[DS, 0x2944], 0xF0);
+    State.IncCycles();
+    // JZ 0x1000:e7b9 (1000_E799 / 0x1E799)
+    if(ZeroFlag) {
+      // JZ target is JMP, inlining.
+      State.IncCycles();
+      // JMP 0x1000:f131 (1000_E7B9 / 0x1E7B9)
+      // Jump converted to entry function call
+      if(JumpDispatcher.Jump(not_observed_1000_F131_01F131, 0)) {
+        loadOffset = JumpDispatcher.NextEntryAddress;
+        goto entrydispatcher;
+      }
+      return JumpDispatcher.JumpAsmReturn!;
+    }
+    State.IncCycles();
+    // AND byte ptr [0x2944],0xf (1000_E79B / 0x1E79B)
+    UInt8[DS, 0x2944] &= 0xF;
+    State.IncCycles();
+    // XOR AX,AX (1000_E7A0 / 0x1E7A0)
+    AX = 0;
+    State.IncCycles();
+    // MOV [0x3813],AX (1000_E7A2 / 0x1E7A2)
+    UInt16[DS, 0x3813] = AX;
+    State.IncCycles();
+    // MOV [0xdbc8],AL (1000_E7A5 / 0x1E7A5)
+    UInt8[DS, 0xDBC8] = AL;
+    State.IncCycles();
+    // MOV AX,[0x398b] (1000_E7A8 / 0x1E7A8)
+    AX = UInt16[DS, 0x398B];
+    State.IncCycles();
+    // ADD AX,0x10 (1000_E7AB / 0x1E7AB)
+    // AX += 0x10;
+    AX = Alu.Add16(AX, 0x10);
+    State.IncCycles();
+    // MOV [0x39b9],AX (1000_E7AE / 0x1E7AE)
+    UInt16[DS, 0x39B9] = AX;
+    State.IncCycles();
+    // MOV word ptr [0x3cbc],0x3624 (1000_E7B1 / 0x1E7B1)
+    UInt16[DS, 0x3CBC] = 0x3624;
+    State.IncCycles();
+    // JMP 0x1000:e76a (1000_E7B7 / 0x1E7B7)
+    // Jump converted to entry function call
+    if(JumpDispatcher.Jump(spice86_generated_label_call_target_1000_E76A_01E76A, 0)) {
+      loadOffset = JumpDispatcher.NextEntryAddress;
+      goto entrydispatcher;
+    }
+    return JumpDispatcher.JumpAsmReturn!;
+    State.IncCycles();
+    label_1000_E7B9_1E7B9:
+    // JMP 0x1000:f131 (1000_E7B9 / 0x1E7B9)
+    // Jump converted to entry function call
+    if(JumpDispatcher.Jump(not_observed_1000_F131_01F131, 0)) {
+      loadOffset = JumpDispatcher.NextEntryAddress;
+      goto entrydispatcher;
+    }
+    return JumpDispatcher.JumpAsmReturn!;
+    State.IncCycles();
+    label_1000_E7BC_1E7BC:
+    // MOV AX,[0x3813] (1000_E7BC / 0x1E7BC)
+    AX = UInt16[DS, 0x3813];
+    State.IncCycles();
+    // MOV [0x381b],AX (1000_E7BF / 0x1E7BF)
+    UInt16[DS, 0x381B] = AX;
+    State.IncCycles();
+    // CALL 0x1000:a87e (1000_E7C2 / 0x1E7C2)
+    NearCall(cs1, 0xE7C5, spice86_generated_label_call_target_1000_A87E_01A87E);
+    State.IncCycles();
+    label_1000_E7C5_1E7C5:
+    // MOV AL,[0x2944] (1000_E7C5 / 0x1E7C5)
+    AL = UInt8[DS, 0x2944];
+    State.IncCycles();
+    // AND AX,0xf (1000_E7C8 / 0x1E7C8)
+    AX &= 0xF;
+    State.IncCycles();
+    // ADD AX,0x2 (1000_E7CB / 0x1E7CB)
+    // AX += 0x2;
+    AX = Alu.Add16(AX, 0x2);
+    State.IncCycles();
+    // MOV SI,0x396f (1000_E7CE / 0x1E7CE)
+    SI = 0x396F;
+    State.IncCycles();
+    // MOV CX,0x7 (1000_E7D1 / 0x1E7D1)
+    CX = 0x7;
+    State.IncCycles();
+    // CALL 0x1000:e57b (1000_E7D4 / 0x1E7D4)
+    NearCall(cs1, 0xE7D7, spice86_generated_label_call_target_1000_E57B_01E57B);
+    State.IncCycles();
+    label_1000_E7D7_1E7D7:
+    // MOV BP,0x3349 (1000_E7D7 / 0x1E7D7)
+    BP = 0x3349;
+    State.IncCycles();
+    // MOV CX,0xa (1000_E7DA / 0x1E7DA)
+    CX = 0xA;
+    State.IncCycles();
+    // MOV AX,[0x39b3] (1000_E7DD / 0x1E7DD)
+    AX = UInt16[DS, 0x39B3];
+    State.IncCycles();
+    // CALLF [0x396d] (1000_E7E0 / 0x1E7E0)
+    // Indirect call to [0x396d], generating possible targets from emulator records
+    uint targetAddress_1000_E7E0 = (uint)(UInt16[DS, 0x396F] * 0x10 + UInt16[DS, 0x396D] - cs1 * 0x10);
+    switch(targetAddress_1000_E7E0) {
+      case 0x464E0 : FarCall(cs1, 0xE7E4, spice86_generated_label_call_target_563E_0100_0564E0); break;
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_E7E0));
+        break;
+    }
+    State.IncCycles();
+    label_1000_E7E4_1E7E4:
+    // OR word ptr [0xdbc8],BX (1000_E7E4 / 0x1E7E4)
+    // UInt16[DS, 0xDBC8] |= BX;
+    UInt16[DS, 0xDBC8] = Alu.Or16(UInt16[DS, 0xDBC8], BX);
+    State.IncCycles();
+    // CALL 0x1000:a650 (1000_E7E8 / 0x1E7E8)
+    NearCall(cs1, 0xE7EB, spice86_generated_label_call_target_1000_A650_01A650);
+    State.IncCycles();
+    label_1000_E7EB_1E7EB:
+    // CALL 0x1000:ae3f (1000_E7EB / 0x1E7EB)
+    NearCall(cs1, 0xE7EE, spice86_generated_label_call_target_1000_AE3F_01AE3F);
+    State.IncCycles();
+    label_1000_E7EE_1E7EE:
+    // CALL 0x1000:e851 (1000_E7EE / 0x1E7EE)
+    NearCall(cs1, 0xE7F1, spice86_generated_label_call_target_1000_E851_01E851);
+    State.IncCycles();
+    label_1000_E7F1_1E7F1:
+    // JC 0x1000:e818 (1000_E7F1 / 0x1E7F1)
+    if(CarryFlag) {
+      goto label_1000_E818_1E818;
+    }
+    State.IncCycles();
+    // TEST byte ptr [0x2944],0xf (1000_E7F3 / 0x1E7F3)
+    Alu.And8(UInt8[DS, 0x2944], 0xF);
+    State.IncCycles();
+    // JZ 0x1000:e7b9 (1000_E7F8 / 0x1E7F8)
+    if(ZeroFlag) {
+      // JZ target is JMP, inlining.
+      State.IncCycles();
+      // JMP 0x1000:f131 (1000_E7B9 / 0x1E7B9)
+      // Jump converted to entry function call
+      if(JumpDispatcher.Jump(not_observed_1000_F131_01F131, 0)) {
+        loadOffset = JumpDispatcher.NextEntryAddress;
+        goto entrydispatcher;
+      }
+      return JumpDispatcher.JumpAsmReturn!;
+    }
+    State.IncCycles();
+    // AND byte ptr [0x2944],0xf0 (1000_E7FA / 0x1E7FA)
+    UInt8[DS, 0x2944] &= 0xF0;
+    State.IncCycles();
+    // XOR AX,AX (1000_E7FF / 0x1E7FF)
+    AX = 0;
+    State.IncCycles();
+    // MOV [0xdbb8],AX (1000_E801 / 0x1E801)
+    UInt16[DS, 0xDBB8] = AX;
+    State.IncCycles();
+    // MOV [0xdbc9],AL (1000_E804 / 0x1E804)
+    UInt8[DS, 0xDBC9] = AL;
+    State.IncCycles();
+    // MOV AX,[0x396f] (1000_E807 / 0x1E807)
+    AX = UInt16[DS, 0x396F];
+    State.IncCycles();
+    // ADD AX,0x10 (1000_E80A / 0x1E80A)
+    // AX += 0x10;
+    AX = Alu.Add16(AX, 0x10);
+    State.IncCycles();
+    // MOV [0x39b9],AX (1000_E80D / 0x1E80D)
+    UInt16[DS, 0x39B9] = AX;
+    State.IncCycles();
+    // MOV word ptr [0x3cbc],0x364b (1000_E810 / 0x1E810)
+    UInt16[DS, 0x3CBC] = 0x364B;
+    State.IncCycles();
+    // JMP 0x1000:e7c5 (1000_E816 / 0x1E816)
+    goto label_1000_E7C5_1E7C5;
+    State.IncCycles();
+    label_1000_E818_1E818:
+    // CALL 0x1000:ae28 (1000_E818 / 0x1E818)
+    NearCall(cs1, 0xE81B, spice86_generated_label_call_target_1000_AE28_01AE28);
+    State.IncCycles();
+    label_1000_E81B_1E81B:
+    // JZ 0x1000:e825 (1000_E81B / 0x1E81B)
+    if(ZeroFlag) {
+      // JZ target is RET, inlining.
+      State.IncCycles();
+      // RET  (1000_E825 / 0x1E825)
+      return NearRet();
+    }
+    State.IncCycles();
+    // CALL 0x1000:e826 (1000_E81D / 0x1E81D)
+    NearCall(cs1, 0xE820, spice86_generated_label_call_target_1000_E826_01E826);
+    // Function call generated as ASM continues to next function body without return
+    if(JumpDispatcher.Jump(spice86_generated_label_call_target_1000_E826_01E826, 0x1E820 - cs1 * 0x10)) {
+      loadOffset = JumpDispatcher.NextEntryAddress;
+      goto entrydispatcher;
+    }
+    return JumpDispatcher.JumpAsmReturn!;
+  }
+  
+  public virtual Action spice86_generated_label_call_target_1000_E826_01E826(int loadOffset) {
+    entrydispatcher:
+    switch(loadOffset) {
+      case 0xE820: break; // Instructions before entry targeted by 
+      case 0: goto entry; break; // 0 is the entry point ghidra detected, but in this case function start is not entry point
+    }
+    State.IncCycles();
+    label_1000_E820_1E820:
+    // AND byte ptr [0x2943],0xef (1000_E820 / 0x1E820)
+    // UInt8[DS, 0x2943] &= 0xEF;
+    UInt8[DS, 0x2943] = Alu.And8(UInt8[DS, 0x2943], 0xEF);
+    State.IncCycles();
+    label_1000_E825_1E825:
+    // RET  (1000_E825 / 0x1E825)
+    return NearRet();
+    entry:
+    State.IncCycles();
+    label_1000_E826_1E826:
+    // CMP word ptr [0xdbba],0x0 (1000_E826 / 0x1E826)
+    Alu.Sub16(UInt16[DS, 0xDBBA], 0x0);
+    State.IncCycles();
+    // JZ 0x1000:e850 (1000_E82B / 0x1E82B)
+    if(ZeroFlag) {
+      // JZ target is RET, inlining.
+      State.IncCycles();
+      // RET  (1000_E850 / 0x1E850)
+      return NearRet();
+    }
+    State.IncCycles();
+    // CALL 0x1000:e741 (1000_E82D / 0x1E82D)
+    NearCall(cs1, 0xE830, spice86_generated_label_call_target_1000_E741_01E741);
+    State.IncCycles();
+    label_1000_E830_1E830:
+    // PUSH DS (1000_E830 / 0x1E830)
+    Stack.Push(DS);
+    State.IncCycles();
+    // MOV SI,DI (1000_E831 / 0x1E831)
+    SI = DI;
+    State.IncCycles();
+    // PUSH ES (1000_E833 / 0x1E833)
+    Stack.Push(ES);
+    State.IncCycles();
+    // POP DS (1000_E834 / 0x1E834)
+    DS = Stack.Pop();
+    State.IncCycles();
+    // LODSW SI (1000_E835 / 0x1E835)
+    AX = UInt16[DS, SI];
+    SI = (ushort)(SI + Direction16);
+    State.IncCycles();
+    // MOV CX,0xfa (1000_E836 / 0x1E836)
+    CX = 0xFA;
+    State.IncCycles();
+    label_1000_E839_1E839:
+    // PUSH CX (1000_E839 / 0x1E839)
+    Stack.Push(CX);
+    State.IncCycles();
+    // PUSH SI (1000_E83A / 0x1E83A)
+    Stack.Push(SI);
+    State.IncCycles();
+    // CALL 0x1000:f314 (1000_E83B / 0x1E83B)
+    NearCall(cs1, 0xE83E, spice86_generated_label_call_target_1000_F314_01F314);
+    State.IncCycles();
+    label_1000_E83E_1E83E:
+    // POP SI (1000_E83E / 0x1E83E)
+    SI = Stack.Pop();
+    State.IncCycles();
+    // JC 0x1000:e849 (1000_E83F / 0x1E83F)
+    if(CarryFlag) {
+      goto label_1000_E849_1E849;
+    }
+    State.IncCycles();
+    // CALL 0x1000:f3a7 (1000_E841 / 0x1E841)
+    NearCall(cs1, 0xE844, spice86_generated_label_call_target_1000_F3A7_01F3A7);
+    State.IncCycles();
+    label_1000_E844_1E844:
+    // JNZ 0x1000:e849 (1000_E844 / 0x1E844)
+    if(!ZeroFlag) {
+      goto label_1000_E849_1E849;
+    }
+    State.IncCycles();
+    // CALL 0x1000:e75b (1000_E846 / 0x1E846)
+    NearCall(cs1, 0xE849, spice86_generated_label_call_target_1000_E75B_01E75B);
+    State.IncCycles();
+    label_1000_E849_1E849:
+    // ADD SI,0x19 (1000_E849 / 0x1E849)
+    // SI += 0x19;
+    SI = Alu.Add16(SI, 0x19);
+    State.IncCycles();
+    // POP CX (1000_E84C / 0x1E84C)
+    CX = Stack.Pop();
+    State.IncCycles();
+    // LOOP 0x1000:e839 (1000_E84D / 0x1E84D)
     if(--CX != 0) {
-      goto label_334B_2673_35B23;
+      goto label_1000_E839_1E839;
     }
-    // POP DX (334B_2693 / 0x35B43)
-    DX = Stack.Pop();
-    // POP CX (334B_2694 / 0x35B44)
-    CX = Stack.Pop();
-    // POP BX (334B_2695 / 0x35B45)
-    BX = Stack.Pop();
-    // CALL 0x3000:3ed1 (334B_2696 / 0x35B46)
-    NearCall(cs2, 0x2699, spice86_generated_label_call_target_334B_0A21_033ED1);
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(spice86_generated_label_ret_target_334B_2699_035B49, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
+    State.IncCycles();
+    // POP DS (1000_E84F / 0x1E84F)
+    DS = Stack.Pop();
+    State.IncCycles();
+    label_1000_E850_1E850:
+    // RET  (1000_E850 / 0x1E850)
+    return NearRet();
   }
   
-  public virtual Action spice86_generated_label_ret_target_334B_2699_035B49(int loadOffset) {
+  public virtual Action spice86_generated_label_call_target_1000_E851_01E851(int loadOffset) {
     entrydispatcher:
     if(loadOffset != 0) {
       throw FailAsUntested("External goto not supported for this function.");
     }
-    label_334B_2699_35B49:
-    // CALL 0x3000:4018 (334B_2699 / 0x35B49)
-    NearCall(cs2, 0x269C, spice86_generated_label_call_target_334B_0B68_034018);
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(spice86_generated_label_ret_target_334B_269C_035B4C, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
-    }
-    return JumpDispatcher.JumpAsmReturn!;
+    State.IncCycles();
+    label_1000_E851_1E851:
+    // MOV AX,[0x39b9] (1000_E851 / 0x1E851)
+    AX = UInt16[DS, 0x39B9];
+    State.IncCycles();
+    // ADD AX,0x2f13 (1000_E854 / 0x1E854)
+    AX += 0x2F13;
+    State.IncCycles();
+    // CMP AX,word ptr [0xce68] (1000_E857 / 0x1E857)
+    Alu.Sub16(AX, UInt16[DS, 0xCE68]);
+    State.IncCycles();
+    // RET  (1000_E85B / 0x1E85B)
+    return NearRet();
   }
   
-  public virtual Action spice86_generated_label_ret_target_334B_269C_035B4C(int loadOffset) {
+  public virtual Action spice86_generated_label_call_target_1000_E85C_01E85C(int loadOffset) {
     entrydispatcher:
     if(loadOffset != 0) {
       throw FailAsUntested("External goto not supported for this function.");
     }
-    label_334B_269C_35B4C:
-    // POP BX (334B_269C / 0x35B4C)
-    BX = Stack.Pop();
-    // CALL 0x3000:5acd (334B_269D / 0x35B4D)
-    NearCall(cs2, 0x26A0, spice86_generated_label_call_target_334B_261D_035ACD);
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(spice86_generated_label_ret_target_334B_26A0_035B50, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
+    State.IncCycles();
+    label_1000_E85C_1E85C:
+    // CLI  (1000_E85C / 0x1E85C)
+    InterruptFlag = false;
+    State.IncCycles();
+    // CALL 0x1000:e913 (1000_E85D / 0x1E85D)
+    NearCall(cs1, 0xE860, spice86_generated_label_call_target_1000_E913_01E913);
+    State.IncCycles();
+    label_1000_E860_1E860:
+    // XOR AX,AX (1000_E860 / 0x1E860)
+    AX = 0;
+    State.IncCycles();
+    // MOV ES,AX (1000_E862 / 0x1E862)
+    ES = AX;
+    State.IncCycles();
+    // MOV DI,0x20 (1000_E864 / 0x1E864)
+    DI = 0x20;
+    State.IncCycles();
+    // MOV word ptr ES:[DI],0xe8b8 (1000_E867 / 0x1E867)
+    UInt16[ES, DI] = 0xE8B8;
+    State.IncCycles();
+    // PUSHF  (1000_E86C / 0x1E86C)
+    Stack.Push(FlagRegister);
+    State.IncCycles();
+    // STI  (1000_E86D / 0x1E86D)
+    InterruptFlag = true;
+    State.IncCycles();
+    label_1000_E86E_1E86E:
+    CheckExternalEvents(cs1, 0xE874);
+    // CMP byte ptr CS:[0xe8d4],0x0 (1000_E86E / 0x1E86E)
+    Alu.Sub8(UInt8[cs1, 0xE8D4], 0x0);
+    State.IncCycles();
+    // JZ 0x1000:e86e (1000_E874 / 0x1E874)
+    if(ZeroFlag) {
+      goto label_1000_E86E_1E86E;
     }
-    return JumpDispatcher.JumpAsmReturn!;
-  }
-  
-  public virtual Action spice86_generated_label_ret_target_334B_26A0_035B50(int loadOffset) {
-    entrydispatcher:
-    if(loadOffset != 0) {
-      throw FailAsUntested("External goto not supported for this function.");
+    State.IncCycles();
+    // POPF  (1000_E876 / 0x1E876)
+    FlagRegister = Stack.Pop();
+    State.IncCycles();
+    // MOV word ptr ES:[DI],0xef6a (1000_E877 / 0x1E877)
+    UInt16[ES, DI] = 0xEF6A;
+    State.IncCycles();
+    // MOV AX,CS:[0xe8d2] (1000_E87C / 0x1E87C)
+    AX = UInt16[cs1, 0xE8D2];
+    State.IncCycles();
+    // OR AH,AH (1000_E880 / 0x1E880)
+    // AH |= AH;
+    AH = Alu.Or8(AH, AH);
+    State.IncCycles();
+    // JZ 0x1000:e8a5 (1000_E882 / 0x1E882)
+    if(ZeroFlag) {
+      goto label_1000_E8A5_1E8A5;
     }
-    label_334B_26A0_35B50:
-    // POP DX (334B_26A0 / 0x35B50)
-    DX = Stack.Pop();
-    // POP CX (334B_26A1 / 0x35B51)
-    CX = Stack.Pop();
-    // POP BX (334B_26A2 / 0x35B52)
-    BX = Stack.Pop();
-    // ADD BX,CX (334B_26A3 / 0x35B53)
-    BX += CX;
-    // CMP BX,0x2fd (334B_26A5 / 0x35B55)
-    Alu.Sub16(BX, 0x2FD);
-    // JC 0x3000:5b11 (334B_26A9 / 0x35B59)
+    State.IncCycles();
+    // OR AL,AL (1000_E884 / 0x1E884)
+    // AL |= AL;
+    AL = Alu.Or8(AL, AL);
+    State.IncCycles();
+    // JZ 0x1000:e8a5 (1000_E886 / 0x1E886)
+    if(ZeroFlag) {
+      goto label_1000_E8A5_1E8A5;
+    }
+    State.IncCycles();
+    // XOR DX,DX (1000_E888 / 0x1E888)
+    DX = 0;
+    State.IncCycles();
+    // MOV CX,0x1745 (1000_E88A / 0x1E88A)
+    CX = 0x1745;
+    State.IncCycles();
+    // DIV CX (1000_E88D / 0x1E88D)
+    Cpu.Div16(CX);
+    State.IncCycles();
+    // SHL DX,1 (1000_E88F / 0x1E88F)
+    DX <<= 0x1;
+    State.IncCycles();
+    // CMP DX,CX (1000_E891 / 0x1E891)
+    Alu.Sub16(DX, CX);
+    State.IncCycles();
+    // JC 0x1000:e896 (1000_E893 / 0x1E893)
     if(CarryFlag) {
-      // Jump converted to non entry function call
-      if(JumpDispatcher.Jump(spice86_generated_label_ret_target_334B_265B_035B0B, 0x35B11 - cs1 * 0x10)) {
-        loadOffset = JumpDispatcher.NextEntryAddress;
-        goto entrydispatcher;
-      }
-      return JumpDispatcher.JumpAsmReturn!;
+      goto label_1000_E896_1E896;
     }
-    // DEC DL (334B_26AB / 0x35B5B)
-    DL = Alu.Dec8(DL);
-    // JNZ 0x3000:5b0f (334B_26AD / 0x35B5D)
+    State.IncCycles();
+    // INC AX (1000_E895 / 0x1E895)
+    AX++;
+    State.IncCycles();
+    label_1000_E896_1E896:
+    // DEC AX (1000_E896 / 0x1E896)
+    AX = Alu.Dec16(AX);
+    State.IncCycles();
+    // JNS 0x1000:e89a (1000_E897 / 0x1E897)
+    if(!SignFlag) {
+      goto label_1000_E89A_1E89A;
+    }
+    State.IncCycles();
+    // INC AX (1000_E899 / 0x1E899)
+    AX++;
+    State.IncCycles();
+    label_1000_E89A_1E89A:
+    // CMP AX,0xa (1000_E89A / 0x1E89A)
+    Alu.Sub16(AX, 0xA);
+    State.IncCycles();
+    // JC 0x1000:e8a1 (1000_E89D / 0x1E89D)
+    if(CarryFlag) {
+      goto label_1000_E8A1_1E8A1;
+    }
+    State.IncCycles();
+    // MOV AL,0xa (1000_E89F / 0x1E89F)
+    AL = 0xA;
+    State.IncCycles();
+    label_1000_E8A1_1E8A1:
+    // MOV CS:[0xefd9],AL (1000_E8A1 / 0x1E8A1)
+    UInt8[cs1, 0xEFD9] = AL;
+    State.IncCycles();
+    label_1000_E8A5_1E8A5:
+    // MOV AX,0x1745 (1000_E8A5 / 0x1E8A5)
+    AX = 0x1745;
+    // Function call generated as ASM continues to next function entry point without return
+    if(JumpDispatcher.Jump(spice86_generated_label_call_target_1000_E8A8_01E8A8, 0)) {
+      loadOffset = JumpDispatcher.NextEntryAddress;
+      goto entrydispatcher;
+    }
+    return JumpDispatcher.JumpAsmReturn!;
+  }
+  
+  public virtual Action spice86_generated_label_call_target_1000_E8A8_01E8A8(int loadOffset) {
+    entrydispatcher:
+    if(loadOffset != 0) {
+      throw FailAsUntested("External goto not supported for this function.");
+    }
+    State.IncCycles();
+    label_1000_E8A8_1E8A8:
+    // PUSHF  (1000_E8A8 / 0x1E8A8)
+    Stack.Push(FlagRegister);
+    State.IncCycles();
+    // PUSH AX (1000_E8A9 / 0x1E8A9)
+    Stack.Push(AX);
+    State.IncCycles();
+    // CLI  (1000_E8AA / 0x1E8AA)
+    InterruptFlag = false;
+    State.IncCycles();
+    // MOV AL,0x36 (1000_E8AB / 0x1E8AB)
+    AL = 0x36;
+    State.IncCycles();
+    // OUT 0x43,AL (1000_E8AD / 0x1E8AD)
+    Cpu.Out8(0x43, AL);
+    State.IncCycles();
+    // POP AX (1000_E8AF / 0x1E8AF)
+    AX = Stack.Pop();
+    State.IncCycles();
+    // OUT 0x40,AL (1000_E8B0 / 0x1E8B0)
+    Cpu.Out8(0x40, AL);
+    State.IncCycles();
+    // MOV AL,AH (1000_E8B2 / 0x1E8B2)
+    AL = AH;
+    State.IncCycles();
+    // OUT 0x40,AL (1000_E8B4 / 0x1E8B4)
+    Cpu.Out8(0x40, AL);
+    State.IncCycles();
+    // POPF  (1000_E8B6 / 0x1E8B6)
+    FlagRegister = Stack.Pop();
+    State.IncCycles();
+    // RET  (1000_E8B7 / 0x1E8B7)
+    return NearRet();
+  }
+  
+  public virtual Action get_pit_timer_value_ida_1000_E8B8_1E8B8(int loadOffset) {
+    entrydispatcher:
+    if(loadOffset != 0) {
+      throw FailAsUntested("External goto not supported for this function.");
+    }
+    State.IncCycles();
+    label_1000_E8B8_1E8B8:
+    // PUSH AX (1000_E8B8 / 0x1E8B8)
+    Stack.Push(AX);
+    State.IncCycles();
+    // MOV AL,0x36 (1000_E8B9 / 0x1E8B9)
+    AL = 0x36;
+    State.IncCycles();
+    // OUT 0x43,AL (1000_E8BB / 0x1E8BB)
+    Cpu.Out8(0x43, AL);
+    State.IncCycles();
+    // IN AL,0x40 (1000_E8BD / 0x1E8BD)
+    AL = Cpu.In8(0x40);
+    State.IncCycles();
+    // MOV AH,AL (1000_E8BF / 0x1E8BF)
+    AH = AL;
+    State.IncCycles();
+    // IN AL,0x40 (1000_E8C1 / 0x1E8C1)
+    AL = Cpu.In8(0x40);
+    State.IncCycles();
+    // XCHG AL,AH (1000_E8C3 / 0x1E8C3)
+    byte tmp_1000_E8C3 = AL;
+    AL = AH;
+    AH = tmp_1000_E8C3;
+    State.IncCycles();
+    // MOV CS:[0xe8d2],AX (1000_E8C5 / 0x1E8C5)
+    UInt16[cs1, 0xE8D2] = AX;
+    State.IncCycles();
+    // INC byte ptr CS:[0xe8d4] (1000_E8C9 / 0x1E8C9)
+    UInt8[cs1, 0xE8D4] = Alu.Inc8(UInt8[cs1, 0xE8D4]);
+    State.IncCycles();
+    // POP AX (1000_E8CE / 0x1E8CE)
+    AX = Stack.Pop();
+    State.IncCycles();
+    // JMP 0x1000:ef6a (1000_E8CF / 0x1E8CF)
+    // Jump converted to entry function call
+    if(JumpDispatcher.Jump(spice86_generated_label_jump_target_1000_EF6A_01EF6A, 0)) {
+      loadOffset = JumpDispatcher.NextEntryAddress;
+      goto entrydispatcher;
+    }
+    return JumpDispatcher.JumpAsmReturn!;
+  }
+  
+  public virtual Action spice86_generated_label_call_target_1000_E8D5_01E8D5(int loadOffset) {
+    entrydispatcher:
+    if(loadOffset != 0) {
+      throw FailAsUntested("External goto not supported for this function.");
+    }
+    State.IncCycles();
+    label_1000_E8D5_1E8D5:
+    // CMP word ptr CS:[0xee8a],0x0 (1000_E8D5 / 0x1E8D5)
+    Alu.Sub16(UInt16[cs1, 0xEE8A], 0x0);
+    State.IncCycles();
+    // JZ 0x1000:e8e2 (1000_E8DB / 0x1E8DB)
+    if(ZeroFlag) {
+      goto label_1000_E8E2_1E8E2;
+    }
+    State.IncCycles();
+    // MOV AH,0xa (1000_E8DD / 0x1E8DD)
+    AH = 0xA;
+    State.IncCycles();
+    // CALL 0x1000:ef2b (1000_E8DF / 0x1E8DF)
+    NearCall(cs1, 0xE8E2, call_xms_func_on_block_ida_1000_EF2B_1EF2B);
+    State.IncCycles();
+    label_1000_E8E2_1E8E2:
+    // CMP word ptr CS:[0xed3a],0x0 (1000_E8E2 / 0x1E8E2)
+    Alu.Sub16(UInt16[cs1, 0xED3A], 0x0);
+    State.IncCycles();
+    // JZ 0x1000:e8ef (1000_E8E8 / 0x1E8E8)
+    if(ZeroFlag) {
+      goto label_1000_E8EF_1E8EF;
+    }
+    State.IncCycles();
+    // MOV AH,0x45 (1000_E8EA / 0x1E8EA)
+    AH = 0x45;
+    State.IncCycles();
+    // CALL 0x1000:ed40 (1000_E8EC / 0x1E8EC)
+    NearCall(cs1, 0xE8EF, get_ems_emm_handle_ida_1000_ED40_1ED40);
+    State.IncCycles();
+    label_1000_E8EF_1E8EF:
+    // MOV DX,word ptr CS:[0xed3e] (1000_E8EF / 0x1E8EF)
+    DX = UInt16[cs1, 0xED3E];
+    State.IncCycles();
+    // OR DX,DX (1000_E8F4 / 0x1E8F4)
+    // DX |= DX;
+    DX = Alu.Or16(DX, DX);
+    State.IncCycles();
+    // JZ 0x1000:e8fd (1000_E8F6 / 0x1E8F6)
+    if(ZeroFlag) {
+      goto label_1000_E8FD_1E8FD;
+    }
+    State.IncCycles();
+    // MOV AH,0x45 (1000_E8F8 / 0x1E8F8)
+    AH = 0x45;
+    State.IncCycles();
+    // CALL 0x1000:ed45 (1000_E8FA / 0x1E8FA)
+    NearCall(cs1, 0xE8FD, call_ems_func_ida_1000_ED45_1ED45);
+    State.IncCycles();
+    label_1000_E8FD_1E8FD:
+    // XOR AX,AX (1000_E8FD / 0x1E8FD)
+    AX = 0;
+    State.IncCycles();
+    // CALL 0x1000:e8a8 (1000_E8FF / 0x1E8FF)
+    NearCall(cs1, 0xE902, spice86_generated_label_call_target_1000_E8A8_01E8A8);
+    // Function call generated as ASM continues to next function entry point without return
+    if(JumpDispatcher.Jump(spice86_generated_label_ret_target_1000_E902_01E902, 0)) {
+      loadOffset = JumpDispatcher.NextEntryAddress;
+      goto entrydispatcher;
+    }
+    return JumpDispatcher.JumpAsmReturn!;
+  }
+  
+  public virtual Action spice86_generated_label_ret_target_1000_E902_01E902(int loadOffset) {
+    entrydispatcher:
+    if(loadOffset != 0) {
+      throw FailAsUntested("External goto not supported for this function.");
+    }
+    State.IncCycles();
+    label_1000_E902_1E902:
+    // MOV DL,byte ptr [0x2941] (1000_E902 / 0x1E902)
+    DL = UInt8[DS, 0x2941];
+    State.IncCycles();
+    // MOV AX,0x3301 (1000_E906 / 0x1E906)
+    AX = 0x3301;
+    State.IncCycles();
+    // INT 0x21 (1000_E909 / 0x1E909)
+    Interrupt(0x21);
+    State.IncCycles();
+    // CMP byte ptr [0xce73],0x0 (1000_E90B / 0x1E90B)
+    Alu.Sub8(UInt8[DS, 0xCE73], 0x0);
+    State.IncCycles();
+    // JNZ 0x1000:e913 (1000_E910 / 0x1E910)
     if(!ZeroFlag) {
-      // Jump converted to non entry function call
-      if(JumpDispatcher.Jump(spice86_generated_label_ret_target_334B_265B_035B0B, 0x35B0F - cs1 * 0x10)) {
+      // Jump converted to entry function call
+      if(JumpDispatcher.Jump(spice86_generated_label_call_target_1000_E913_01E913, 0)) {
         loadOffset = JumpDispatcher.NextEntryAddress;
         goto entrydispatcher;
       }
       return JumpDispatcher.JumpAsmReturn!;
     }
-    // RETF  (334B_26AF / 0x35B5F)
+    State.IncCycles();
+    // RET  (1000_E912 / 0x1E912)
+    return NearRet();
+  }
+  
+  public virtual Action spice86_generated_label_call_target_1000_E913_01E913(int loadOffset) {
+    entrydispatcher:
+    if(loadOffset != 0) {
+      throw FailAsUntested("External goto not supported for this function.");
+    }
+    State.IncCycles();
+    label_1000_E913_1E913:
+    // XOR byte ptr [0xce73],0xff (1000_E913 / 0x1E913)
+    // UInt8[DS, 0xCE73] ^= 0xFF;
+    UInt8[DS, 0xCE73] = Alu.Xor8(UInt8[DS, 0xCE73], 0xFF);
+    State.IncCycles();
+    // MOV SI,0x2913 (1000_E918 / 0x1E918)
+    SI = 0x2913;
+    State.IncCycles();
+    // PUSHF  (1000_E91B / 0x1E91B)
+    Stack.Push(FlagRegister);
+    State.IncCycles();
+    // CLI  (1000_E91C / 0x1E91C)
+    InterruptFlag = false;
+    State.IncCycles();
+    // LODSW SI (1000_E91D / 0x1E91D)
+    AX = UInt16[DS, SI];
+    SI = (ushort)(SI + Direction16);
+    State.IncCycles();
+    label_1000_E91E_1E91E:
+    // MOV DI,AX (1000_E91E / 0x1E91E)
+    DI = AX;
+    State.IncCycles();
+    // LODSW SI (1000_E920 / 0x1E920)
+    AX = UInt16[DS, SI];
+    SI = (ushort)(SI + Direction16);
+    State.IncCycles();
+    // XCHG AX,DI (1000_E921 / 0x1E921)
+    ushort tmp_1000_E921 = AX;
+    AX = DI;
+    DI = tmp_1000_E921;
+    State.IncCycles();
+    // PUSH SI (1000_E922 / 0x1E922)
+    Stack.Push(SI);
+    State.IncCycles();
+    // MOV SI,AX (1000_E923 / 0x1E923)
+    SI = AX;
+    State.IncCycles();
+    // SHL SI,1 (1000_E925 / 0x1E925)
+    SI <<= 0x1;
+    State.IncCycles();
+    // SHL SI,1 (1000_E927 / 0x1E927)
+    SI <<= 0x1;
+    State.IncCycles();
+    // XOR AX,AX (1000_E929 / 0x1E929)
+    AX = 0;
+    State.IncCycles();
+    // MOV ES,AX (1000_E92B / 0x1E92B)
+    ES = AX;
+    State.IncCycles();
+    // MOV AX,word ptr CS:[DI] (1000_E92D / 0x1E92D)
+    AX = UInt16[cs1, DI];
+    State.IncCycles();
+    // XCHG word ptr ES:[SI],AX (1000_E930 / 0x1E930)
+    ushort tmp_1000_E930 = UInt16[ES, SI];
+    UInt16[ES, SI] = AX;
+    AX = tmp_1000_E930;
+    State.IncCycles();
+    // MOV word ptr CS:[DI],AX (1000_E933 / 0x1E933)
+    UInt16[cs1, DI] = AX;
+    State.IncCycles();
+    // MOV AX,word ptr CS:[DI + 0x2] (1000_E936 / 0x1E936)
+    AX = UInt16[cs1, (ushort)(DI + 0x2)];
+    State.IncCycles();
+    // XCHG word ptr ES:[SI + 0x2],AX (1000_E93A / 0x1E93A)
+    ushort tmp_1000_E93A = UInt16[ES, (ushort)(SI + 0x2)];
+    UInt16[ES, (ushort)(SI + 0x2)] = AX;
+    AX = tmp_1000_E93A;
+    State.IncCycles();
+    // MOV word ptr CS:[DI + 0x2],AX (1000_E93E / 0x1E93E)
+    UInt16[cs1, (ushort)(DI + 0x2)] = AX;
+    State.IncCycles();
+    // POP SI (1000_E942 / 0x1E942)
+    SI = Stack.Pop();
+    State.IncCycles();
+    // LODSW SI (1000_E943 / 0x1E943)
+    AX = UInt16[DS, SI];
+    SI = (ushort)(SI + Direction16);
+    State.IncCycles();
+    // OR AX,AX (1000_E944 / 0x1E944)
+    // AX |= AX;
+    AX = Alu.Or16(AX, AX);
+    State.IncCycles();
+    // JNS 0x1000:e91e (1000_E946 / 0x1E946)
+    if(!SignFlag) {
+      goto label_1000_E91E_1E91E;
+    }
+    State.IncCycles();
+    // POPF  (1000_E948 / 0x1E948)
+    FlagRegister = Stack.Pop();
+    State.IncCycles();
+    // RET  (1000_E949 / 0x1E949)
+    return NearRet();
+  }
+  
+  public virtual Action spice86_generated_label_call_target_1000_E97A_01E97A(int loadOffset) {
+    entrydispatcher:
+    if(loadOffset != 0) {
+      throw FailAsUntested("External goto not supported for this function.");
+    }
+    State.IncCycles();
+    label_1000_E97A_1E97A:
+    // MOV AX,0x3533 (1000_E97A / 0x1E97A)
+    AX = 0x3533;
+    State.IncCycles();
+    // INT 0x21 (1000_E97D / 0x1E97D)
+    Interrupt(0x21);
+    State.IncCycles();
+    // MOV AX,ES (1000_E97F / 0x1E97F)
+    AX = ES;
+    State.IncCycles();
+    // OR AX,BX (1000_E981 / 0x1E981)
+    // AX |= BX;
+    AX = Alu.Or16(AX, BX);
+    State.IncCycles();
+    // JZ 0x1000:e9f3 (1000_E983 / 0x1E983)
+    if(ZeroFlag) {
+      // JZ target is RET, inlining.
+      State.IncCycles();
+      // RET  (1000_E9F3 / 0x1E9F3)
+      return NearRet();
+    }
+    State.IncCycles();
+    // MOV AX,0x0 (1000_E985 / 0x1E985)
+    AX = 0x0;
+    State.IncCycles();
+    // INT 0x33 (1000_E988 / 0x1E988)
+    Interrupt(0x33);
+    State.IncCycles();
+    // INC AX (1000_E98A / 0x1E98A)
+    AX = Alu.Inc16(AX);
+    State.IncCycles();
+    // JNZ 0x1000:e9f3 (1000_E98B / 0x1E98B)
+    if(!ZeroFlag) {
+      // JNZ target is RET, inlining.
+      State.IncCycles();
+      // RET  (1000_E9F3 / 0x1E9F3)
+      return NearRet();
+    }
+    State.IncCycles();
+    // XOR CX,CX (1000_E98D / 0x1E98D)
+    CX = 0;
+    State.IncCycles();
+    // XOR DX,DX (1000_E98F / 0x1E98F)
+    DX = 0;
+    State.IncCycles();
+    // MOV AX,0x4 (1000_E991 / 0x1E991)
+    AX = 0x4;
+    State.IncCycles();
+    // INT 0x33 (1000_E994 / 0x1E994)
+    Interrupt(0x33);
+    State.IncCycles();
+    label_1000_E996_1E996:
+    // INC byte ptr [0x2580] (1000_E996 / 0x1E996)
+    UInt8[DS, 0x2580] = Alu.Inc8(UInt8[DS, 0x2580]);
+    State.IncCycles();
+    // JS 0x1000:e9b3 (1000_E99A / 0x1E99A)
+    if(SignFlag) {
+      goto label_1000_E9B3_1E9B3;
+    }
+    State.IncCycles();
+    // MOV CL,byte ptr [0x2580] (1000_E99C / 0x1E99C)
+    CL = UInt8[DS, 0x2580];
+    State.IncCycles();
+    // MOV AX,0x1 (1000_E9A0 / 0x1E9A0)
+    AX = 0x1;
+    State.IncCycles();
+    // SHL AX,CL (1000_E9A3 / 0x1E9A3)
+    // AX <<= CL;
+    AX = Alu.Shl16(AX, CL);
+    State.IncCycles();
+    // MOV CX,AX (1000_E9A5 / 0x1E9A5)
+    CX = AX;
+    State.IncCycles();
+    // MOV AX,0x4 (1000_E9A7 / 0x1E9A7)
+    AX = 0x4;
+    State.IncCycles();
+    // INT 0x33 (1000_E9AA / 0x1E9AA)
+    Interrupt(0x33);
+    State.IncCycles();
+    // MOV AX,0x3 (1000_E9AC / 0x1E9AC)
+    AX = 0x3;
+    State.IncCycles();
+    // INT 0x33 (1000_E9AF / 0x1E9AF)
+    Interrupt(0x33);
+    State.IncCycles();
+    // JCXZ 0x1000:e996 (1000_E9B1 / 0x1E9B1)
+    if(CX == 0) {
+      goto label_1000_E996_1E996;
+    }
+    State.IncCycles();
+    label_1000_E9B3_1E9B3:
+    // INC byte ptr [0x2581] (1000_E9B3 / 0x1E9B3)
+    UInt8[DS, 0x2581] = Alu.Inc8(UInt8[DS, 0x2581]);
+    State.IncCycles();
+    // JS 0x1000:e9d0 (1000_E9B7 / 0x1E9B7)
+    if(SignFlag) {
+      goto label_1000_E9D0_1E9D0;
+    }
+    State.IncCycles();
+    // MOV CL,byte ptr [0x2581] (1000_E9B9 / 0x1E9B9)
+    CL = UInt8[DS, 0x2581];
+    State.IncCycles();
+    // MOV DX,0x1 (1000_E9BD / 0x1E9BD)
+    DX = 0x1;
+    State.IncCycles();
+    // SHL DX,CL (1000_E9C0 / 0x1E9C0)
+    // DX <<= CL;
+    DX = Alu.Shl16(DX, CL);
+    State.IncCycles();
+    // MOV AX,0x4 (1000_E9C2 / 0x1E9C2)
+    AX = 0x4;
+    State.IncCycles();
+    // INT 0x33 (1000_E9C5 / 0x1E9C5)
+    Interrupt(0x33);
+    State.IncCycles();
+    // MOV AX,0x3 (1000_E9C7 / 0x1E9C7)
+    AX = 0x3;
+    State.IncCycles();
+    // INT 0x33 (1000_E9CA / 0x1E9CA)
+    Interrupt(0x33);
+    State.IncCycles();
+    // OR DX,DX (1000_E9CC / 0x1E9CC)
+    // DX |= DX;
+    DX = Alu.Or16(DX, DX);
+    State.IncCycles();
+    // JZ 0x1000:e9b3 (1000_E9CE / 0x1E9CE)
+    if(ZeroFlag) {
+      goto label_1000_E9B3_1E9B3;
+    }
+    State.IncCycles();
+    label_1000_E9D0_1E9D0:
+    // MOV AX,0x10 (1000_E9D0 / 0x1E9D0)
+    AX = 0x10;
+    State.IncCycles();
+    // MOV DX,AX (1000_E9D3 / 0x1E9D3)
+    DX = AX;
+    State.IncCycles();
+    // AND word ptr [0x2580],0x7f7f (1000_E9D5 / 0x1E9D5)
+    // UInt16[DS, 0x2580] &= 0x7F7F;
+    UInt16[DS, 0x2580] = Alu.And16(UInt16[DS, 0x2580], 0x7F7F);
+    State.IncCycles();
+    // MOV CX,word ptr [0x2580] (1000_E9DB / 0x1E9DB)
+    CX = UInt16[DS, 0x2580];
+    State.IncCycles();
+    // SHR AX,CL (1000_E9DF / 0x1E9DF)
+    // AX >>= CL;
+    AX = Alu.Shr16(AX, CL);
+    State.IncCycles();
+    // MOV CL,CH (1000_E9E1 / 0x1E9E1)
+    CL = CH;
+    State.IncCycles();
+    // SHR DX,CL (1000_E9E3 / 0x1E9E3)
+    // DX >>= CL;
+    DX = Alu.Shr16(DX, CL);
+    State.IncCycles();
+    // MOV CX,AX (1000_E9E5 / 0x1E9E5)
+    CX = AX;
+    State.IncCycles();
+    // MOV AX,0xf (1000_E9E7 / 0x1E9E7)
+    AX = 0xF;
+    State.IncCycles();
+    // PUSH DX (1000_E9EA / 0x1E9EA)
+    Stack.Push(DX);
+    State.IncCycles();
+    // INT 0x33 (1000_E9EB / 0x1E9EB)
+    Interrupt(0x33);
+    State.IncCycles();
+    // POP DX (1000_E9ED / 0x1E9ED)
+    DX = Stack.Pop();
+    State.IncCycles();
+    // MOV AX,0x13 (1000_E9EE / 0x1E9EE)
+    AX = 0x13;
+    State.IncCycles();
+    // INT 0x33 (1000_E9F1 / 0x1E9F1)
+    Interrupt(0x33);
+    State.IncCycles();
+    label_1000_E9F3_1E9F3:
+    // RET  (1000_E9F3 / 0x1E9F3)
+    return NearRet();
+  }
+  
+  public virtual Action mouse_func_uncalled_ida_1000_E9F4_1E9F4(int loadOffset) {
+    entrydispatcher:
+    if(loadOffset != 0) {
+      throw FailAsUntested("External goto not supported for this function.");
+    }
+    State.IncCycles();
+    label_1000_E9F4_1E9F4:
+    // PUSH AX (1000_E9F4 / 0x1E9F4)
+    Stack.Push(AX);
+    State.IncCycles();
+    // PUSH DS (1000_E9F5 / 0x1E9F5)
+    Stack.Push(DS);
+    State.IncCycles();
+    // MOV DS,word ptr CS:[0xea30] (1000_E9F6 / 0x1E9F6)
+    DS = UInt16[cs1, 0xEA30];
+    State.IncCycles();
+    // MOV word ptr [0xdc36],CX (1000_E9FB / 0x1E9FB)
+    UInt16[DS, 0xDC36] = CX;
+    State.IncCycles();
+    // MOV word ptr [0xdc38],DX (1000_E9FF / 0x1E9FF)
+    UInt16[DS, 0xDC38] = DX;
+    State.IncCycles();
+    // SHR AL,1 (1000_EA03 / 0x1EA03)
+    // AL >>= 0x1;
+    AL = Alu.Shr8(AL, 0x1);
+    State.IncCycles();
+    // JZ 0x1000:ea2d (1000_EA05 / 0x1EA05)
+    if(ZeroFlag) {
+      goto label_1000_EA2D_1EA2D;
+    }
+    State.IncCycles();
+    // PUSH CX (1000_EA07 / 0x1EA07)
+    Stack.Push(CX);
+    State.IncCycles();
+    // MOV CL,byte ptr [0xdc34] (1000_EA08 / 0x1EA08)
+    CL = UInt8[DS, 0xDC34];
+    State.IncCycles();
+    // SHR AL,1 (1000_EA0C / 0x1EA0C)
+    // AL >>= 0x1;
+    AL = Alu.Shr8(AL, 0x1);
+    State.IncCycles();
+    // JNC 0x1000:ea13 (1000_EA0E / 0x1EA0E)
+    if(!CarryFlag) {
+      goto label_1000_EA13_1EA13;
+    }
+    State.IncCycles();
+    // OR CL,0x1 (1000_EA10 / 0x1EA10)
+    CL |= 0x1;
+    State.IncCycles();
+    label_1000_EA13_1EA13:
+    // SHR AL,1 (1000_EA13 / 0x1EA13)
+    // AL >>= 0x1;
+    AL = Alu.Shr8(AL, 0x1);
+    State.IncCycles();
+    // JNC 0x1000:ea1a (1000_EA15 / 0x1EA15)
+    if(!CarryFlag) {
+      goto label_1000_EA1A_1EA1A;
+    }
+    State.IncCycles();
+    // AND CL,0xfe (1000_EA17 / 0x1EA17)
+    CL &= 0xFE;
+    State.IncCycles();
+    label_1000_EA1A_1EA1A:
+    // SHR AL,1 (1000_EA1A / 0x1EA1A)
+    // AL >>= 0x1;
+    AL = Alu.Shr8(AL, 0x1);
+    State.IncCycles();
+    // JNC 0x1000:ea21 (1000_EA1C / 0x1EA1C)
+    if(!CarryFlag) {
+      goto label_1000_EA21_1EA21;
+    }
+    State.IncCycles();
+    // OR CL,0x2 (1000_EA1E / 0x1EA1E)
+    CL |= 0x2;
+    State.IncCycles();
+    label_1000_EA21_1EA21:
+    // SHR AL,1 (1000_EA21 / 0x1EA21)
+    // AL >>= 0x1;
+    AL = Alu.Shr8(AL, 0x1);
+    State.IncCycles();
+    // JNC 0x1000:ea28 (1000_EA23 / 0x1EA23)
+    if(!CarryFlag) {
+      goto label_1000_EA28_1EA28;
+    }
+    State.IncCycles();
+    // AND CL,0xfd (1000_EA25 / 0x1EA25)
+    // CL &= 0xFD;
+    CL = Alu.And8(CL, 0xFD);
+    State.IncCycles();
+    label_1000_EA28_1EA28:
+    // MOV byte ptr [0xdc34],CL (1000_EA28 / 0x1EA28)
+    UInt8[DS, 0xDC34] = CL;
+    State.IncCycles();
+    // POP CX (1000_EA2C / 0x1EA2C)
+    CX = Stack.Pop();
+    State.IncCycles();
+    label_1000_EA2D_1EA2D:
+    // POP DS (1000_EA2D / 0x1EA2D)
+    DS = Stack.Pop();
+    State.IncCycles();
+    // POP AX (1000_EA2E / 0x1EA2E)
+    AX = Stack.Pop();
+    State.IncCycles();
+    // RETF  (1000_EA2F / 0x1EA2F)
     return FarRet();
   }
   
-  public virtual Action spice86_generated_label_call_target_334B_26E3_035B93(int loadOffset) {
+  public virtual Action initialize_joystick_ida_1000_EA32_1EA32(int loadOffset) {
     entrydispatcher:
     if(loadOffset != 0) {
       throw FailAsUntested("External goto not supported for this function.");
     }
-    label_334B_26E3_35B93:
-    // MOV CS:[0x261b],AX (334B_26E3 / 0x35B93)
-    UInt16[cs2, 0x261B] = AX;
-    // Function call generated as ASM continues to next function entry point without return
-    if(JumpDispatcher.Jump(spice86_generated_label_jump_target_334B_26E7_035B97, 0)) {
-      loadOffset = JumpDispatcher.NextEntryAddress;
-      goto entrydispatcher;
+    State.IncCycles();
+    label_1000_EA32_1EA32:
+    // MOV SI,0x39ab (1000_EA32 / 0x1EA32)
+    SI = 0x39AB;
+    State.IncCycles();
+    // XOR BX,BX (1000_EA35 / 0x1EA35)
+    BX = 0;
+    State.IncCycles();
+    // MOV CX,0x4 (1000_EA37 / 0x1EA37)
+    CX = 0x4;
+    State.IncCycles();
+    label_1000_EA3A_1EA3A:
+    // LODSW SI (1000_EA3A / 0x1EA3A)
+    AX = UInt16[DS, SI];
+    SI = (ushort)(SI + Direction16);
+    State.IncCycles();
+    // OR BX,AX (1000_EA3B / 0x1EA3B)
+    // BX |= AX;
+    BX = Alu.Or16(BX, AX);
+    State.IncCycles();
+    // LOOP 0x1000:ea3a (1000_EA3D / 0x1EA3D)
+    if(--CX != 0) {
+      goto label_1000_EA3A_1EA3A;
     }
-    return JumpDispatcher.JumpAsmReturn!;
+    State.IncCycles();
+    // OR BX,BX (1000_EA3F / 0x1EA3F)
+    // BX |= BX;
+    BX = Alu.Or16(BX, BX);
+    State.IncCycles();
+    // JNZ 0x1000:ea74 (1000_EA41 / 0x1EA41)
+    if(!ZeroFlag) {
+      // JNZ target is RET, inlining.
+      State.IncCycles();
+      // RET  (1000_EA74 / 0x1EA74)
+      return NearRet();
+    }
+    State.IncCycles();
+    // CALL 0x1000:dce0 (1000_EA43 / 0x1EA43)
+    NearCall(cs1, 0xEA46, read_game_port_ida_1000_DCE0_1DCE0);
+    State.IncCycles();
+    // MOV AX,DX (1000_EA46 / 0x1EA46)
+    AX = DX;
+    State.IncCycles();
+    // SUB AX,0x4 (1000_EA48 / 0x1EA48)
+    AX -= 0x4;
+    State.IncCycles();
+    // CMP AH,0x4 (1000_EA4B / 0x1EA4B)
+    Alu.Sub8(AH, 0x4);
+    State.IncCycles();
+    // JNC 0x1000:e9f3 (1000_EA4E / 0x1EA4E)
+    if(!CarryFlag) {
+      // JNC target is RET, inlining.
+      State.IncCycles();
+      // RET  (1000_E9F3 / 0x1E9F3)
+      return NearRet();
+    }
+    State.IncCycles();
+    // MOV AX,BX (1000_EA50 / 0x1EA50)
+    AX = BX;
+    State.IncCycles();
+    // SUB AX,0x4 (1000_EA52 / 0x1EA52)
+    AX -= 0x4;
+    State.IncCycles();
+    // CMP AH,0x4 (1000_EA55 / 0x1EA55)
+    Alu.Sub8(AH, 0x4);
+    State.IncCycles();
+    // JNC 0x1000:e9f3 (1000_EA58 / 0x1EA58)
+    if(!CarryFlag) {
+      // JNC target is RET, inlining.
+      State.IncCycles();
+      // RET  (1000_E9F3 / 0x1E9F3)
+      return NearRet();
+    }
+    State.IncCycles();
+    // MOV AX,DX (1000_EA5A / 0x1EA5A)
+    AX = DX;
+    State.IncCycles();
+    // SHR AX,1 (1000_EA5C / 0x1EA5C)
+    AX >>= 0x1;
+    State.IncCycles();
+    // ADD DX,AX (1000_EA5E / 0x1EA5E)
+    // DX += AX;
+    DX = Alu.Add16(DX, AX);
+    State.IncCycles();
+    // MOV SI,0x39ab (1000_EA60 / 0x1EA60)
+    SI = 0x39AB;
+    State.IncCycles();
+    // MOV word ptr [SI],AX (1000_EA63 / 0x1EA63)
+    UInt16[DS, SI] = AX;
+    State.IncCycles();
+    // MOV word ptr [SI + 0x2],DX (1000_EA65 / 0x1EA65)
+    UInt16[DS, (ushort)(SI + 0x2)] = DX;
+    State.IncCycles();
+    // MOV AX,BX (1000_EA68 / 0x1EA68)
+    AX = BX;
+    State.IncCycles();
+    // SHR AX,1 (1000_EA6A / 0x1EA6A)
+    AX >>= 0x1;
+    State.IncCycles();
+    // ADD BX,AX (1000_EA6C / 0x1EA6C)
+    // BX += AX;
+    BX = Alu.Add16(BX, AX);
+    State.IncCycles();
+    // MOV word ptr [SI + 0x4],AX (1000_EA6E / 0x1EA6E)
+    UInt16[DS, (ushort)(SI + 0x4)] = AX;
+    State.IncCycles();
+    // MOV word ptr [SI + 0x6],BX (1000_EA71 / 0x1EA71)
+    UInt16[DS, (ushort)(SI + 0x6)] = BX;
+    State.IncCycles();
+    label_1000_EA74_1EA74:
+    // RET  (1000_EA74 / 0x1EA74)
+    return NearRet();
   }
   
-  public virtual Action spice86_generated_label_jump_target_334B_26E7_035B97(int loadOffset) {
+  public virtual Action spice86_generated_label_call_target_1000_EA7B_01EA7B(int loadOffset) {
     entrydispatcher:
     if(loadOffset != 0) {
       throw FailAsUntested("External goto not supported for this function.");
     }
-    label_334B_26E7_35B97:
-    // XOR BX,BX (334B_26E7 / 0x35B97)
-    BX = 0;
-    label_334B_26E9_35B99:
-    // PUSH BX (334B_26E9 / 0x35B99)
-    Stack.Push(BX);
-    // PUSH DX (334B_26EA / 0x35B9A)
-    Stack.Push(DX);
-    // PUSH word ptr [BP + 0x0] (334B_26EB / 0x35B9B)
-    Stack.Push(UInt16[SS, BP]);
-    // MOV SI,0x5bf (334B_26EE / 0x35B9E)
-    SI = 0x5BF;
-    // ADD SI,BX (334B_26F1 / 0x35BA1)
-    SI += BX;
-    // ADD SI,BX (334B_26F3 / 0x35BA3)
-    SI += BX;
-    // ADD SI,BX (334B_26F5 / 0x35BA5)
-    // SI += BX;
-    SI = Alu.Add16(SI, BX);
-    // MOV DI,SI (334B_26F7 / 0x35BA7)
-    DI = SI;
-    // MOV AX,CS:[0x261b] (334B_26F9 / 0x35BA9)
-    AX = UInt16[cs2, 0x261B];
-    // PUSH AX (334B_26FD / 0x35BAD)
-    Stack.Push(AX);
-    // MOV CX,AX (334B_26FE / 0x35BAE)
-    CX = AX;
-    // ADD CX,CX (334B_2700 / 0x35BB0)
-    CX += CX;
-    // ADD CX,AX (334B_2702 / 0x35BB2)
+    State.IncCycles();
+    label_1000_EA7B_1EA7B:
+    // TEST byte ptr [0x2943],0x80 (1000_EA7B / 0x1EA7B)
+    Alu.And8(UInt8[DS, 0x2943], 0x80);
+    State.IncCycles();
+    // JZ 0x1000:ea85 (1000_EA80 / 0x1EA80)
+    if(ZeroFlag) {
+      goto label_1000_EA85_1EA85;
+    }
+    State.IncCycles();
+    // CALL 0x1000:eea0 (1000_EA82 / 0x1EA82)
+    NearCall(cs1, 0xEA85, initialize_himem_sys_ida_1000_EEA0_1EEA0);
+    State.IncCycles();
+    label_1000_EA85_1EA85:
+    // TEST byte ptr [0x2943],0x48 (1000_EA85 / 0x1EA85)
+    Alu.And8(UInt8[DS, 0x2943], 0x48);
+    State.IncCycles();
+    // JZ 0x1000:ea8f (1000_EA8A / 0x1EA8A)
+    if(ZeroFlag) {
+      goto label_1000_EA8F_1EA8F;
+    }
+    State.IncCycles();
+    // CALL 0x1000:ed4c (1000_EA8C / 0x1EA8C)
+    NearCall(cs1, 0xEA8F, not_observed_1000_ED4C_01ED4C);
+    State.IncCycles();
+    label_1000_EA8F_1EA8F:
+    // TEST byte ptr [0x2943],0xe8 (1000_EA8F / 0x1EA8F)
+    Alu.And8(UInt8[DS, 0x2943], 0xE8);
+    State.IncCycles();
+    // JZ 0x1000:eab6 (1000_EA94 / 0x1EA94)
+    if(ZeroFlag) {
+      // JZ target is RET, inlining.
+      State.IncCycles();
+      // RET  (1000_EAB6 / 0x1EAB6)
+      return NearRet();
+    }
+    State.IncCycles();
+    // MOV DI,0xce6a (1000_EA96 / 0x1EA96)
+    DI = 0xCE6A;
+    State.IncCycles();
+    // MOV CX,word ptr [0x39a9] (1000_EA99 / 0x1EA99)
+    CX = UInt16[DS, 0x39A9];
+    State.IncCycles();
+    // MOV AX,0xb9 (1000_EA9D / 0x1EA9D)
+    AX = 0xB9;
+    State.IncCycles();
+    // MOV [0xce70],AL (1000_EAA0 / 0x1EAA0)
+    UInt8[DS, 0xCE70] = AL;
+    State.IncCycles();
+    // ADD CX,AX (1000_EAA3 / 0x1EAA3)
+    CX += AX;
+    State.IncCycles();
+    // ADD CX,AX (1000_EAA5 / 0x1EAA5)
     // CX += AX;
     CX = Alu.Add16(CX, AX);
-    label_334B_2704_35BB4:
-    // MOV AL,byte ptr [SI] (334B_2704 / 0x35BB4)
-    AL = UInt8[DS, SI];
-    // SUB AL,DH (334B_2706 / 0x35BB6)
-    // AL -= DH;
-    AL = Alu.Sub8(AL, DH);
-    // JNS 0x3000:5bbc (334B_2708 / 0x35BB8)
-    if(!SignFlag) {
-      goto label_334B_270C_35BBC;
-    }
-    // XOR AL,AL (334B_270A / 0x35BBA)
-    AL = 0;
-    label_334B_270C_35BBC:
-    // MOV byte ptr [SI],AL (334B_270C / 0x35BBC)
-    UInt8[DS, SI] = AL;
-    // INC SI (334B_270E / 0x35BBE)
-    SI = Alu.Inc16(SI);
-    // LOOP 0x3000:5bb4 (334B_270F / 0x35BBF)
-    if(--CX != 0) {
-      goto label_334B_2704_35BB4;
-    }
-    // POP CX (334B_2711 / 0x35BC1)
+    State.IncCycles();
+    // PUSH CX (1000_EAA7 / 0x1EAA7)
+    Stack.Push(CX);
+    State.IncCycles();
+    // SHL CX,1 (1000_EAA8 / 0x1EAA8)
+    // CX <<= 0x1;
+    CX = Alu.Shl16(CX, 0x1);
+    State.IncCycles();
+    // CALL 0x1000:f0f6 (1000_EAAA / 0x1EAAA)
+    NearCall(cs1, 0xEAAD, spice86_generated_label_call_target_1000_F0F6_01F0F6);
+    State.IncCycles();
+    // LES DI,[0xce6a] (1000_EAAD / 0x1EAAD)
+    ES = UInt16[DS, 0xCE6C];
+    DI = UInt16[DS, 0xCE6A];
+    State.IncCycles();
+    // POP CX (1000_EAB1 / 0x1EAB1)
     CX = Stack.Pop();
-    // MOV DX,DI (334B_2712 / 0x35BC2)
-    DX = DI;
-    // CALL 0x3000:4018 (334B_2714 / 0x35BC4)
-    NearCall(cs2, 0x2717, spice86_generated_label_call_target_334B_0B68_034018);
-    label_334B_2717_35BC7:
-    // POP BX (334B_2717 / 0x35BC7)
-    BX = Stack.Pop();
-    // CALL 0x3000:5acd (334B_2718 / 0x35BC8)
-    NearCall(cs2, 0x271B, spice86_generated_label_call_target_334B_261D_035ACD);
-    label_334B_271B_35BCB:
-    // POP DX (334B_271B / 0x35BCB)
-    DX = Stack.Pop();
-    // POP BX (334B_271C / 0x35BCC)
-    BX = Stack.Pop();
-    // MOV AX,CS:[0x261b] (334B_271D / 0x35BCD)
-    AX = UInt16[cs2, 0x261B];
-    // ADD BX,AX (334B_2721 / 0x35BD1)
-    BX += AX;
-    // CMP BX,0xff (334B_2723 / 0x35BD3)
-    Alu.Sub16(BX, 0xFF);
-    // JC 0x3000:5b99 (334B_2727 / 0x35BD7)
+    State.IncCycles();
+    // XOR AX,AX (1000_EAB2 / 0x1EAB2)
+    AX = 0;
+    State.IncCycles();
+    // REP
+    while (CX != 0) {
+      CX--;
+      // STOSW ES:DI (1000_EAB4 / 0x1EAB4)
+      UInt16[ES, DI] = AX;
+      DI = (ushort)(DI + Direction16);
+    }
+    State.IncCycles();
+    label_1000_EAB6_1EAB6:
+    // RET  (1000_EAB6 / 0x1EAB6)
+    return NearRet();
+  }
+  
+  public virtual Action memory_func_qq_ida_1000_EAB7_1EAB7(int loadOffset) {
+    entrydispatcher:
+    if(loadOffset != 0) {
+      throw FailAsUntested("External goto not supported for this function.");
+    }
+    State.IncCycles();
+    label_1000_EAB7_1EAB7:
+    // CALL 0x1000:e270 (1000_EAB7 / 0x1EAB7)
+    NearCall(cs1, 0xEABA, spice86_generated_label_call_target_1000_E270_01E270);
+    State.IncCycles();
+    // PUSH DS (1000_EABA / 0x1EABA)
+    Stack.Push(DS);
+    State.IncCycles();
+    // PUSH ES (1000_EABB / 0x1EABB)
+    Stack.Push(ES);
+    State.IncCycles();
+    // SUB SP,0x6 (1000_EABC / 0x1EABC)
+    // SP -= 0x6;
+    SP = Alu.Sub16(SP, 0x6);
+    State.IncCycles();
+    // MOV BP,SP (1000_EABF / 0x1EABF)
+    BP = SP;
+    State.IncCycles();
+    // MOV [0xce6e],AX (1000_EAC1 / 0x1EAC1)
+    UInt16[DS, 0xCE6E] = AX;
+    State.IncCycles();
+    // PUSH DI (1000_EAC4 / 0x1EAC4)
+    Stack.Push(DI);
+    State.IncCycles();
+    // PUSH ES (1000_EAC5 / 0x1EAC5)
+    Stack.Push(ES);
+    State.IncCycles();
+    // LES DI,[0xce6a] (1000_EAC6 / 0x1EAC6)
+    ES = UInt16[DS, 0xCE6C];
+    DI = UInt16[DS, 0xCE6A];
+    State.IncCycles();
+    // MOV SI,AX (1000_EACA / 0x1EACA)
+    SI = AX;
+    State.IncCycles();
+    // MOV AX,[0x39a9] (1000_EACC / 0x1EACC)
+    AX = UInt16[DS, 0x39A9];
+    State.IncCycles();
+    // SHL AX,1 (1000_EACF / 0x1EACF)
+    // AX <<= 0x1;
+    AX = Alu.Shl16(AX, 0x1);
+    State.IncCycles();
+    // MOV word ptr [BP + 0x0],AX (1000_EAD1 / 0x1EAD1)
+    UInt16[SS, BP] = AX;
+    State.IncCycles();
+    // SHL SI,1 (1000_EAD4 / 0x1EAD4)
+    SI <<= 0x1;
+    State.IncCycles();
+    // ADD SI,AX (1000_EAD6 / 0x1EAD6)
+    // SI += AX;
+    SI = Alu.Add16(SI, AX);
+    State.IncCycles();
+    // MOV DX,SI (1000_EAD8 / 0x1EAD8)
+    DX = SI;
+    State.IncCycles();
+    // MOV AX,CS:[0xea75] (1000_EADA / 0x1EADA)
+    AX = UInt16[cs1, 0xEA75];
+    State.IncCycles();
+    // INC AX (1000_EADE / 0x1EADE)
+    AX = Alu.Inc16(AX);
+    State.IncCycles();
+    // MOV word ptr ES:[SI + 0x172],AX (1000_EADF / 0x1EADF)
+    UInt16[ES, (ushort)(SI + 0x172)] = AX;
+    State.IncCycles();
+    // MOV CS:[0xea75],AX (1000_EAE4 / 0x1EAE4)
+    UInt16[cs1, 0xEA75] = AX;
+    State.IncCycles();
+    // MOV word ptr [BP + 0x2],CX (1000_EAE8 / 0x1EAE8)
+    UInt16[SS, (ushort)(BP + 0x2)] = CX;
+    State.IncCycles();
+    // POP DS (1000_EAEB / 0x1EAEB)
+    DS = Stack.Pop();
+    State.IncCycles();
+    // POP SI (1000_EAEC / 0x1EAEC)
+    SI = Stack.Pop();
+    State.IncCycles();
+    label_1000_EAED_1EAED:
+    // CMP DI,word ptr [BP + 0x0] (1000_EAED / 0x1EAED)
+    Alu.Sub16(DI, UInt16[SS, BP]);
+    State.IncCycles();
+    // JC 0x1000:eaf4 (1000_EAF0 / 0x1EAF0)
     if(CarryFlag) {
-      goto label_334B_26E9_35B99;
+      goto label_1000_EAF4_1EAF4;
     }
-    // DEC DL (334B_2729 / 0x35BD9)
-    DL = Alu.Dec8(DL);
-    // JNZ 0x3000:5b97 (334B_272B / 0x35BDB)
+    State.IncCycles();
+    label_1000_EAF2_1EAF2:
+    // XOR DI,DI (1000_EAF2 / 0x1EAF2)
+    DI = 0;
+    State.IncCycles();
+    label_1000_EAF4_1EAF4:
+    // MOV CX,word ptr [BP + 0x0] (1000_EAF4 / 0x1EAF4)
+    CX = UInt16[SS, BP];
+    State.IncCycles();
+    // SUB CX,DI (1000_EAF7 / 0x1EAF7)
+    CX -= DI;
+    State.IncCycles();
+    // SHR CX,1 (1000_EAF9 / 0x1EAF9)
+    CX >>= 0x1;
+    State.IncCycles();
+    // XOR AX,AX (1000_EAFB / 0x1EAFB)
+    AX = 0;
+    State.IncCycles();
+    // REPNE
+    while (CX != 0) {
+      CX--;
+      // SCASW ES:DI (1000_EAFD / 0x1EAFD)
+      Alu.Sub16(AX, UInt16[ES, DI]);
+      DI = (ushort)(DI + Direction16);
+      if(ZeroFlag != false) {
+        break;
+      }
+    }
+    State.IncCycles();
+    // JZ 0x1000:eb08 (1000_EAFF / 0x1EAFF)
+    if(ZeroFlag) {
+      goto label_1000_EB08_1EB08;
+    }
+    State.IncCycles();
+    // CALL 0x1000:eb74 (1000_EB01 / 0x1EB01)
+    NearCall(cs1, 0xEB04, not_observed_1000_EB74_01EB74);
+    State.IncCycles();
+    // JC 0x1000:eaf2 (1000_EB04 / 0x1EB04)
+    if(CarryFlag) {
+      goto label_1000_EAF2_1EAF2;
+    }
+    State.IncCycles();
+    // JMP 0x1000:eb60 (1000_EB06 / 0x1EB06)
+    goto label_1000_EB60_1EB60;
+    State.IncCycles();
+    label_1000_EB08_1EB08:
+    // SUB DI,0x2 (1000_EB08 / 0x1EB08)
+    DI -= 0x2;
+    State.IncCycles();
+    // XOR CX,CX (1000_EB0B / 0x1EB0B)
+    CX = 0;
+    State.IncCycles();
+    // MOV BX,DI (1000_EB0D / 0x1EB0D)
+    BX = DI;
+    State.IncCycles();
+    // SHR BX,1 (1000_EB0F / 0x1EB0F)
+    BX >>= 0x1;
+    State.IncCycles();
+    // INC BX (1000_EB11 / 0x1EB11)
+    BX = Alu.Inc16(BX);
+    State.IncCycles();
+    // MOV word ptr [BP + 0x4],BX (1000_EB12 / 0x1EB12)
+    UInt16[SS, (ushort)(BP + 0x4)] = BX;
+    State.IncCycles();
+    // JMP 0x1000:eb28 (1000_EB15 / 0x1EB15)
+    goto label_1000_EB28_1EB28;
+    State.IncCycles();
+    label_1000_EB17_1EB17:
+    // MOV DI,DX (1000_EB17 / 0x1EB17)
+    DI = DX;
+    State.IncCycles();
+    // ADD DI,0x2 (1000_EB19 / 0x1EB19)
+    DI += 0x2;
+    State.IncCycles();
+    // CMP DI,word ptr [BP + 0x0] (1000_EB1C / 0x1EB1C)
+    Alu.Sub16(DI, UInt16[SS, BP]);
+    State.IncCycles();
+    // JNC 0x1000:eb3f (1000_EB1F / 0x1EB1F)
+    if(!CarryFlag) {
+      goto label_1000_EB3F_1EB3F;
+    }
+    State.IncCycles();
+    // CMP word ptr ES:[DI],0x0 (1000_EB21 / 0x1EB21)
+    Alu.Sub16(UInt16[ES, DI], 0x0);
+    State.IncCycles();
+    // JNZ 0x1000:eb3f (1000_EB25 / 0x1EB25)
     if(!ZeroFlag) {
-      goto label_334B_26E7_35B97;
+      goto label_1000_EB3F_1EB3F;
     }
-    // RET  (334B_272D / 0x35BDD)
+    State.IncCycles();
+    // INC BX (1000_EB27 / 0x1EB27)
+    BX = Alu.Inc16(BX);
+    State.IncCycles();
+    label_1000_EB28_1EB28:
+    // XCHG DX,DI (1000_EB28 / 0x1EB28)
+    ushort tmp_1000_EB28 = DX;
+    DX = DI;
+    DI = tmp_1000_EB28;
+    State.IncCycles();
+    // MOV word ptr ES:[DI],BX (1000_EB2A / 0x1EB2A)
+    UInt16[ES, DI] = BX;
+    State.IncCycles();
+    // MOV AX,0x400 (1000_EB2D / 0x1EB2D)
+    AX = 0x400;
+    State.IncCycles();
+    // ADD CX,AX (1000_EB30 / 0x1EB30)
+    CX += AX;
+    State.IncCycles();
+    // SUB word ptr [BP + 0x2],AX (1000_EB32 / 0x1EB32)
+    // UInt16[SS, (ushort)(BP + 0x2)] -= AX;
+    UInt16[SS, (ushort)(BP + 0x2)] = Alu.Sub16(UInt16[SS, (ushort)(BP + 0x2)], AX);
+    State.IncCycles();
+    // JA 0x1000:eb17 (1000_EB35 / 0x1EB35)
+    if(!CarryFlag && !ZeroFlag) {
+      goto label_1000_EB17_1EB17;
+    }
+    State.IncCycles();
+    // MOV DI,DX (1000_EB37 / 0x1EB37)
+    DI = DX;
+    State.IncCycles();
+    // MOV AX,word ptr [BP + 0x2] (1000_EB39 / 0x1EB39)
+    AX = UInt16[SS, (ushort)(BP + 0x2)];
+    State.IncCycles();
+    // STOSW ES:DI (1000_EB3C / 0x1EB3C)
+    UInt16[ES, DI] = AX;
+    DI = (ushort)(DI + Direction16);
+    State.IncCycles();
+    // ADD CX,AX (1000_EB3D / 0x1EB3D)
+    // CX += AX;
+    CX = Alu.Add16(CX, AX);
+    State.IncCycles();
+    label_1000_EB3F_1EB3F:
+    // MOV BX,word ptr [BP + 0x4] (1000_EB3F / 0x1EB3F)
+    BX = UInt16[SS, (ushort)(BP + 0x4)];
+    State.IncCycles();
+    // PUSH DX (1000_EB42 / 0x1EB42)
+    Stack.Push(DX);
+    State.IncCycles();
+    // CALL 0x1000:ec59 (1000_EB43 / 0x1EB43)
+    NearCall(cs1, 0xEB46, call_memory_func_1_ida_1000_EC59_1EC59);
+    State.IncCycles();
+    // POP DX (1000_EB46 / 0x1EB46)
+    DX = Stack.Pop();
+    State.IncCycles();
+    // MOV DI,DX (1000_EB47 / 0x1EB47)
+    DI = DX;
+    State.IncCycles();
+    // OR word ptr ES:[DI],0x8000 (1000_EB49 / 0x1EB49)
+    // UInt16[ES, DI] |= 0x8000;
+    UInt16[ES, DI] = Alu.Or16(UInt16[ES, DI], 0x8000);
+    State.IncCycles();
+    // MOV AX,word ptr [BP + 0x2] (1000_EB4E / 0x1EB4E)
+    AX = UInt16[SS, (ushort)(BP + 0x2)];
+    State.IncCycles();
+    // DEC AX (1000_EB51 / 0x1EB51)
+    AX--;
+    State.IncCycles();
+    // CMP AX,0xfc00 (1000_EB52 / 0x1EB52)
+    Alu.Sub16(AX, 0xFC00);
+    State.IncCycles();
+    // JBE 0x1000:eaed (1000_EB55 / 0x1EB55)
+    if(CarryFlag || ZeroFlag) {
+      goto label_1000_EAED_1EAED;
+    }
+    State.IncCycles();
+    label_1000_EB57_1EB57:
+    // ADD SP,0x6 (1000_EB57 / 0x1EB57)
+    // SP += 0x6;
+    SP = Alu.Add16(SP, 0x6);
+    State.IncCycles();
+    // POP ES (1000_EB5A / 0x1EB5A)
+    ES = Stack.Pop();
+    State.IncCycles();
+    // POP DS (1000_EB5B / 0x1EB5B)
+    DS = Stack.Pop();
+    State.IncCycles();
+    // CALL 0x1000:e283 (1000_EB5C / 0x1EB5C)
+    NearCall(cs1, 0xEB5F, spice86_generated_label_call_target_1000_E283_01E283);
+    State.IncCycles();
+    // RET  (1000_EB5F / 0x1EB5F)
+    return NearRet();
+    State.IncCycles();
+    label_1000_EB60_1EB60:
+    // MOV SI,word ptr [BP + 0x0] (1000_EB60 / 0x1EB60)
+    SI = UInt16[SS, BP];
+    State.IncCycles();
+    // MOV AX,0xffff (1000_EB63 / 0x1EB63)
+    AX = 0xFFFF;
+    State.IncCycles();
+    // XCHG word ptr SS:[0xce6e],AX (1000_EB66 / 0x1EB66)
+    ushort tmp_1000_EB66 = UInt16[SS, 0xCE6E];
+    UInt16[SS, 0xCE6E] = AX;
+    AX = tmp_1000_EB66;
+    State.IncCycles();
+    // ADD SI,AX (1000_EB6B / 0x1EB6B)
+    SI += AX;
+    State.IncCycles();
+    // ADD SI,AX (1000_EB6D / 0x1EB6D)
+    // SI += AX;
+    SI = Alu.Add16(SI, AX);
+    State.IncCycles();
+    // CALL 0x1000:ebaa (1000_EB6F / 0x1EB6F)
+    NearCall(cs1, 0xEB72, not_observed_1000_EBAA_01EBAA);
+    State.IncCycles();
+    // JMP 0x1000:eb57 (1000_EB72 / 0x1EB72)
+    goto label_1000_EB57_1EB57;
+  }
+  
+  public virtual Action not_observed_1000_EB74_01EB74(int loadOffset) {
+    entrydispatcher:
+    if(loadOffset != 0) {
+      throw FailAsUntested("External goto not supported for this function.");
+    }
+    State.IncCycles();
+    label_1000_EB74_1EB74:
+    // PUSH DX (1000_EB74 / 0x1EB74)
+    Stack.Push(DX);
+    State.IncCycles();
+    // PUSH SI (1000_EB75 / 0x1EB75)
+    Stack.Push(SI);
+    State.IncCycles();
+    // MOV SI,word ptr [BP + 0x0] (1000_EB76 / 0x1EB76)
+    SI = UInt16[SS, BP];
+    State.IncCycles();
+    // MOV CX,0xb9 (1000_EB79 / 0x1EB79)
+    CX = 0xB9;
+    State.IncCycles();
+    // MOV DX,word ptr CS:[0xea75] (1000_EB7C / 0x1EB7C)
+    DX = UInt16[cs1, 0xEA75];
+    State.IncCycles();
+    // XOR BX,BX (1000_EB81 / 0x1EB81)
+    BX = 0;
+    State.IncCycles();
+    label_1000_EB83_1EB83:
+    // MOV AX,word ptr ES:[SI] (1000_EB83 / 0x1EB83)
+    AX = UInt16[ES, SI];
+    State.IncCycles();
+    // OR AX,AX (1000_EB86 / 0x1EB86)
+    // AX |= AX;
+    AX = Alu.Or16(AX, AX);
+    State.IncCycles();
+    // JZ 0x1000:eb99 (1000_EB88 / 0x1EB88)
+    if(ZeroFlag) {
+      goto label_1000_EB99_1EB99;
+    }
+    State.IncCycles();
+    // MOV AX,DX (1000_EB8A / 0x1EB8A)
+    AX = DX;
+    State.IncCycles();
+    // SUB AX,word ptr ES:[SI + 0x172] (1000_EB8C / 0x1EB8C)
+    AX -= UInt16[ES, (ushort)(SI + 0x172)];
+    State.IncCycles();
+    // CMP AX,BX (1000_EB91 / 0x1EB91)
+    Alu.Sub16(AX, BX);
+    State.IncCycles();
+    // JC 0x1000:eb99 (1000_EB93 / 0x1EB93)
+    if(CarryFlag) {
+      goto label_1000_EB99_1EB99;
+    }
+    State.IncCycles();
+    // MOV DI,SI (1000_EB95 / 0x1EB95)
+    DI = SI;
+    State.IncCycles();
+    // MOV BX,AX (1000_EB97 / 0x1EB97)
+    BX = AX;
+    State.IncCycles();
+    label_1000_EB99_1EB99:
+    // ADD SI,0x2 (1000_EB99 / 0x1EB99)
+    // SI += 0x2;
+    SI = Alu.Add16(SI, 0x2);
+    State.IncCycles();
+    // LOOP 0x1000:eb83 (1000_EB9C / 0x1EB9C)
+    if(--CX != 0) {
+      goto label_1000_EB83_1EB83;
+    }
+    State.IncCycles();
+    // OR BX,BX (1000_EB9E / 0x1EB9E)
+    // BX |= BX;
+    BX = Alu.Or16(BX, BX);
+    State.IncCycles();
+    // JZ 0x1000:eba7 (1000_EBA0 / 0x1EBA0)
+    if(ZeroFlag) {
+      goto label_1000_EBA7_1EBA7;
+    }
+    State.IncCycles();
+    // MOV SI,DI (1000_EBA2 / 0x1EBA2)
+    SI = DI;
+    State.IncCycles();
+    // CALL 0x1000:ebaa (1000_EBA4 / 0x1EBA4)
+    NearCall(cs1, 0xEBA7, not_observed_1000_EBAA_01EBAA);
+    State.IncCycles();
+    label_1000_EBA7_1EBA7:
+    // POP SI (1000_EBA7 / 0x1EBA7)
+    SI = Stack.Pop();
+    State.IncCycles();
+    // POP DX (1000_EBA8 / 0x1EBA8)
+    DX = Stack.Pop();
+    State.IncCycles();
+    // RET  (1000_EBA9 / 0x1EBA9)
+    return NearRet();
+  }
+  
+  public virtual Action not_observed_1000_EBAA_01EBAA(int loadOffset) {
+    entrydispatcher:
+    if(loadOffset != 0) {
+      throw FailAsUntested("External goto not supported for this function.");
+    }
+    State.IncCycles();
+    label_1000_EBAA_1EBAA:
+    // XOR BX,BX (1000_EBAA / 0x1EBAA)
+    BX = 0;
+    State.IncCycles();
+    // XCHG word ptr ES:[SI],BX (1000_EBAC / 0x1EBAC)
+    ushort tmp_1000_EBAC = UInt16[ES, SI];
+    UInt16[ES, SI] = BX;
+    BX = tmp_1000_EBAC;
+    State.IncCycles();
+    // SHL BX,1 (1000_EBAF / 0x1EBAF)
+    // BX <<= 0x1;
+    BX = Alu.Shl16(BX, 0x1);
+    State.IncCycles();
+    // MOV SI,BX (1000_EBB1 / 0x1EBB1)
+    SI = BX;
+    State.IncCycles();
+    // DEC SI (1000_EBB3 / 0x1EBB3)
+    SI--;
+    State.IncCycles();
+    // DEC SI (1000_EBB4 / 0x1EBB4)
+    SI = Alu.Dec16(SI);
+    State.IncCycles();
+    // JNC 0x1000:ebaa (1000_EBB5 / 0x1EBB5)
+    if(!CarryFlag) {
+      goto label_1000_EBAA_1EBAA;
+    }
+    State.IncCycles();
+    // RET  (1000_EBB7 / 0x1EBB7)
+    return NearRet();
+  }
+  
+  public virtual Action not_observed_1000_EBE3_01EBE3(int loadOffset) {
+    entrydispatcher:
+    if(loadOffset != 0) {
+      throw FailAsUntested("External goto not supported for this function.");
+    }
+    State.IncCycles();
+    label_1000_EBE3_1EBE3:
+    // PUSH DX (1000_EBE3 / 0x1EBE3)
+    Stack.Push(DX);
+    State.IncCycles();
+    // PUSH DS (1000_EBE4 / 0x1EBE4)
+    Stack.Push(DS);
+    State.IncCycles();
+    // MOV SI,word ptr [0x39a9] (1000_EBE5 / 0x1EBE5)
+    SI = UInt16[DS, 0x39A9];
+    State.IncCycles();
+    // MOV DS,word ptr [0xce6c] (1000_EBE9 / 0x1EBE9)
+    DS = UInt16[DS, 0xCE6C];
+    State.IncCycles();
+    // ADD SI,AX (1000_EBED / 0x1EBED)
+    SI += AX;
+    State.IncCycles();
+    // SHL SI,1 (1000_EBEF / 0x1EBEF)
+    // SI <<= 0x1;
+    SI = Alu.Shl16(SI, 0x1);
+    State.IncCycles();
+    // MOV AX,word ptr [SI] (1000_EBF1 / 0x1EBF1)
+    AX = UInt16[DS, SI];
+    State.IncCycles();
+    // OR AX,AX (1000_EBF3 / 0x1EBF3)
+    // AX |= AX;
+    AX = Alu.Or16(AX, AX);
+    State.IncCycles();
+    // JZ 0x1000:ec43 (1000_EBF5 / 0x1EBF5)
+    if(ZeroFlag) {
+      goto label_1000_EC43_1EC43;
+    }
+    State.IncCycles();
+    // MOV BX,AX (1000_EBF7 / 0x1EBF7)
+    BX = AX;
+    State.IncCycles();
+    // MOV AX,CS:[0xea75] (1000_EBF9 / 0x1EBF9)
+    AX = UInt16[cs1, 0xEA75];
+    State.IncCycles();
+    // INC AX (1000_EBFD / 0x1EBFD)
+    AX = Alu.Inc16(AX);
+    State.IncCycles();
+    // MOV word ptr [SI + 0x172],AX (1000_EBFE / 0x1EBFE)
+    UInt16[DS, (ushort)(SI + 0x172)] = AX;
+    State.IncCycles();
+    // MOV CS:[0xea75],AX (1000_EC02 / 0x1EC02)
+    UInt16[cs1, 0xEA75] = AX;
+    State.IncCycles();
+    // MOV AX,BX (1000_EC06 / 0x1EC06)
+    AX = BX;
+    State.IncCycles();
+    // PUSH DI (1000_EC08 / 0x1EC08)
+    Stack.Push(DI);
+    State.IncCycles();
+    // PUSH ES (1000_EC09 / 0x1EC09)
+    Stack.Push(ES);
+    State.IncCycles();
+    label_1000_EC0A_1EC0A:
+    // MOV BX,AX (1000_EC0A / 0x1EC0A)
+    BX = AX;
+    State.IncCycles();
+    // MOV DX,AX (1000_EC0C / 0x1EC0C)
+    DX = AX;
+    State.IncCycles();
+    // XOR CX,CX (1000_EC0E / 0x1EC0E)
+    CX = 0;
+    State.IncCycles();
+    label_1000_EC10_1EC10:
+    // ADD CX,0x400 (1000_EC10 / 0x1EC10)
+    CX += 0x400;
+    State.IncCycles();
+    // SHL AX,1 (1000_EC14 / 0x1EC14)
+    // AX <<= 0x1;
+    AX = Alu.Shl16(AX, 0x1);
+    State.IncCycles();
+    // JC 0x1000:ec33 (1000_EC16 / 0x1EC16)
+    if(CarryFlag) {
+      goto label_1000_EC33_1EC33;
+    }
+    State.IncCycles();
+    // MOV SI,AX (1000_EC18 / 0x1EC18)
+    SI = AX;
+    State.IncCycles();
+    // SUB SI,0x2 (1000_EC1A / 0x1EC1A)
+    SI -= 0x2;
+    State.IncCycles();
+    // INC DX (1000_EC1D / 0x1EC1D)
+    DX = Alu.Inc16(DX);
+    State.IncCycles();
+    // MOV AX,word ptr [SI] (1000_EC1E / 0x1EC1E)
+    AX = UInt16[DS, SI];
+    State.IncCycles();
+    // CMP AX,DX (1000_EC20 / 0x1EC20)
+    Alu.Sub16(AX, DX);
+    State.IncCycles();
+    // JZ 0x1000:ec10 (1000_EC22 / 0x1EC22)
+    if(ZeroFlag) {
+      goto label_1000_EC10_1EC10;
+    }
+    State.IncCycles();
+    // SHL AX,1 (1000_EC24 / 0x1EC24)
+    // AX <<= 0x1;
+    AX = Alu.Shl16(AX, 0x1);
+    State.IncCycles();
+    // JC 0x1000:ec33 (1000_EC26 / 0x1EC26)
+    if(CarryFlag) {
+      goto label_1000_EC33_1EC33;
+    }
+    State.IncCycles();
+    // SHR AX,1 (1000_EC28 / 0x1EC28)
+    // AX >>= 0x1;
+    AX = Alu.Shr16(AX, 0x1);
+    State.IncCycles();
+    // PUSH AX (1000_EC2A / 0x1EC2A)
+    Stack.Push(AX);
+    State.IncCycles();
+    // CALL 0x1000:ec46 (1000_EC2B / 0x1EC2B)
+    NearCall(cs1, 0xEC2E, call_memory_func_2_ida_1000_EC46_1EC46);
+    State.IncCycles();
+    // POP AX (1000_EC2E / 0x1EC2E)
+    AX = Stack.Pop();
+    State.IncCycles();
+    // JC 0x1000:ec3a (1000_EC2F / 0x1EC2F)
+    if(CarryFlag) {
+      goto label_1000_EC3A_1EC3A;
+    }
+    State.IncCycles();
+    // JMP 0x1000:ec0a (1000_EC31 / 0x1EC31)
+    goto label_1000_EC0A_1EC0A;
+    State.IncCycles();
+    label_1000_EC33_1EC33:
+    // SAR AX,1 (1000_EC33 / 0x1EC33)
+    AX = Alu.Sar16(AX, 0x1);
+    State.IncCycles();
+    // ADD CX,AX (1000_EC35 / 0x1EC35)
+    // CX += AX;
+    CX = Alu.Add16(CX, AX);
+    State.IncCycles();
+    // CALL 0x1000:ec46 (1000_EC37 / 0x1EC37)
+    NearCall(cs1, 0xEC3A, call_memory_func_2_ida_1000_EC46_1EC46);
+    State.IncCycles();
+    label_1000_EC3A_1EC3A:
+    // MOV CX,DI (1000_EC3A / 0x1EC3A)
+    CX = DI;
+    State.IncCycles();
+    // POP ES (1000_EC3C / 0x1EC3C)
+    ES = Stack.Pop();
+    State.IncCycles();
+    // POP DI (1000_EC3D / 0x1EC3D)
+    DI = Stack.Pop();
+    State.IncCycles();
+    // PUSHF  (1000_EC3E / 0x1EC3E)
+    Stack.Push(FlagRegister);
+    State.IncCycles();
+    // SUB CX,DI (1000_EC3F / 0x1EC3F)
+    CX -= DI;
+    State.IncCycles();
+    // POPF  (1000_EC41 / 0x1EC41)
+    FlagRegister = Stack.Pop();
+    State.IncCycles();
+    // CMC  (1000_EC42 / 0x1EC42)
+    CarryFlag = !CarryFlag;
+    State.IncCycles();
+    label_1000_EC43_1EC43:
+    // POP DS (1000_EC43 / 0x1EC43)
+    DS = Stack.Pop();
+    State.IncCycles();
+    // POP DX (1000_EC44 / 0x1EC44)
+    DX = Stack.Pop();
+    State.IncCycles();
+    // RET  (1000_EC45 / 0x1EC45)
+    return NearRet();
+  }
+  
+  public virtual Action call_memory_func_2_ida_1000_EC46_1EC46(int loadOffset) {
+    entrydispatcher:
+    if(loadOffset != 0) {
+      throw FailAsUntested("External goto not supported for this function.");
+    }
+    State.IncCycles();
+    label_1000_EC46_1EC46:
+    // PUSH CX (1000_EC46 / 0x1EC46)
+    Stack.Push(CX);
+    State.IncCycles();
+    // PUSH DI (1000_EC47 / 0x1EC47)
+    Stack.Push(DI);
+    State.IncCycles();
+    // PUSH DS (1000_EC48 / 0x1EC48)
+    Stack.Push(DS);
+    State.IncCycles();
+    // PUSH ES (1000_EC49 / 0x1EC49)
+    Stack.Push(ES);
+    State.IncCycles();
+    // DEC BX (1000_EC4A / 0x1EC4A)
+    BX = Alu.Dec16(BX);
+    State.IncCycles();
+    // CALL word ptr CS:[0xea79] (1000_EC4B / 0x1EC4B)
+    // Indirect call to word ptr CS:[0xea79], generating possible targets from emulator records
+    uint targetAddress_1000_EC4B = (uint)(UInt16[cs1, 0xEA79]);
+    switch(targetAddress_1000_EC4B) {
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_EC4B));
+        break;
+    }
+    State.IncCycles();
+    // POP ES (1000_EC50 / 0x1EC50)
+    ES = Stack.Pop();
+    State.IncCycles();
+    // POP DS (1000_EC51 / 0x1EC51)
+    DS = Stack.Pop();
+    State.IncCycles();
+    // POP DI (1000_EC52 / 0x1EC52)
+    DI = Stack.Pop();
+    State.IncCycles();
+    // POP CX (1000_EC53 / 0x1EC53)
+    CX = Stack.Pop();
+    State.IncCycles();
+    // PUSHF  (1000_EC54 / 0x1EC54)
+    Stack.Push(FlagRegister);
+    State.IncCycles();
+    // ADD DI,CX (1000_EC55 / 0x1EC55)
+    DI += CX;
+    State.IncCycles();
+    // POPF  (1000_EC57 / 0x1EC57)
+    FlagRegister = Stack.Pop();
+    State.IncCycles();
+    // RET  (1000_EC58 / 0x1EC58)
+    return NearRet();
+  }
+  
+  public virtual Action call_memory_func_1_ida_1000_EC59_1EC59(int loadOffset) {
+    entrydispatcher:
+    if(loadOffset != 0) {
+      throw FailAsUntested("External goto not supported for this function.");
+    }
+    State.IncCycles();
+    label_1000_EC59_1EC59:
+    // PUSH SI (1000_EC59 / 0x1EC59)
+    Stack.Push(SI);
+    State.IncCycles();
+    // PUSH DS (1000_EC5A / 0x1EC5A)
+    Stack.Push(DS);
+    State.IncCycles();
+    // PUSH ES (1000_EC5B / 0x1EC5B)
+    Stack.Push(ES);
+    State.IncCycles();
+    // PUSH CX (1000_EC5C / 0x1EC5C)
+    Stack.Push(CX);
+    State.IncCycles();
+    // DEC BX (1000_EC5D / 0x1EC5D)
+    BX = Alu.Dec16(BX);
+    State.IncCycles();
+    // CALL word ptr CS:[0xea77] (1000_EC5E / 0x1EC5E)
+    // Indirect call to word ptr CS:[0xea77], generating possible targets from emulator records
+    uint targetAddress_1000_EC5E = (uint)(UInt16[cs1, 0xEA77]);
+    switch(targetAddress_1000_EC5E) {
+      default: throw FailAsUntested("Error: Function not registered at address " + ConvertUtils.ToHex32WithoutX(targetAddress_1000_EC5E));
+        break;
+    }
+    State.IncCycles();
+    // POP AX (1000_EC63 / 0x1EC63)
+    AX = Stack.Pop();
+    State.IncCycles();
+    // POP ES (1000_EC64 / 0x1EC64)
+    ES = Stack.Pop();
+    State.IncCycles();
+    // POP DS (1000_EC65 / 0x1EC65)
+    DS = Stack.Pop();
+    State.IncCycles();
+    // POP SI (1000_EC66 / 0x1EC66)
+    SI = Stack.Pop();
+    State.IncCycles();
+    // PUSHF  (1000_EC67 / 0x1EC67)
+    Stack.Push(FlagRegister);
+    State.IncCycles();
+    // ADD SI,AX (1000_EC68 / 0x1EC68)
+    SI += AX;
+    State.IncCycles();
+    // POPF  (1000_EC6A / 0x1EC6A)
+    FlagRegister = Stack.Pop();
+    State.IncCycles();
+    // RET  (1000_EC6B / 0x1EC6B)
+    return NearRet();
+  }
+  
+  public virtual Action xms_memory_func_1_ida_1000_EC9C_1EC9C(int loadOffset) {
+    entrydispatcher:
+    if(loadOffset != 0) {
+      throw FailAsUntested("External goto not supported for this function.");
+    }
+    State.IncCycles();
+    label_1000_EC9C_1EC9C:
+    // MOV DI,0xec6c (1000_EC9C / 0x1EC9C)
+    DI = 0xEC6C;
+    State.IncCycles();
+    // INC CX (1000_EC9F / 0x1EC9F)
+    CX++;
+    State.IncCycles();
+    // SHR CX,1 (1000_ECA0 / 0x1ECA0)
+    // CX >>= 0x1;
+    CX = Alu.Shr16(CX, 0x1);
+    State.IncCycles();
+    // PUSH CX (1000_ECA2 / 0x1ECA2)
+    Stack.Push(CX);
+    State.IncCycles();
+    // SHL CX,1 (1000_ECA3 / 0x1ECA3)
+    // CX <<= 0x1;
+    CX = Alu.Shl16(CX, 0x1);
+    State.IncCycles();
+    // MOV word ptr CS:[DI + 0x10],CX (1000_ECA5 / 0x1ECA5)
+    UInt16[cs1, (ushort)(DI + 0x10)] = CX;
+    State.IncCycles();
+    // MOV word ptr CS:[DI + 0x18],CX (1000_ECA9 / 0x1ECA9)
+    UInt16[cs1, (ushort)(DI + 0x18)] = CX;
+    State.IncCycles();
+    // MOV AX,DS (1000_ECAD / 0x1ECAD)
+    AX = DS;
+    State.IncCycles();
+    // XOR DX,DX (1000_ECAF / 0x1ECAF)
+    DX = 0;
+    State.IncCycles();
+    // MOV CX,0x4 (1000_ECB1 / 0x1ECB1)
+    CX = 0x4;
+    State.IncCycles();
+    label_1000_ECB4_1ECB4:
+    // SHL AX,1 (1000_ECB4 / 0x1ECB4)
+    // AX <<= 0x1;
+    AX = Alu.Shl16(AX, 0x1);
+    State.IncCycles();
+    // RCL DX,1 (1000_ECB6 / 0x1ECB6)
+    DX = Alu.Rcl16(DX, 0x1);
+    State.IncCycles();
+    // LOOP 0x1000:ecb4 (1000_ECB8 / 0x1ECB8)
+    if(--CX != 0) {
+      goto label_1000_ECB4_1ECB4;
+    }
+    State.IncCycles();
+    // ADD AX,SI (1000_ECBA / 0x1ECBA)
+    // AX += SI;
+    AX = Alu.Add16(AX, SI);
+    State.IncCycles();
+    // ADC DX,0x0 (1000_ECBC / 0x1ECBC)
+    DX = Alu.Adc16(DX, 0x0);
+    State.IncCycles();
+    // MOV word ptr CS:[DI + 0x12],AX (1000_ECBF / 0x1ECBF)
+    UInt16[cs1, (ushort)(DI + 0x12)] = AX;
+    State.IncCycles();
+    // MOV DH,0x92 (1000_ECC3 / 0x1ECC3)
+    DH = 0x92;
+    State.IncCycles();
+    // MOV word ptr CS:[DI + 0x14],DX (1000_ECC5 / 0x1ECC5)
+    UInt16[cs1, (ushort)(DI + 0x14)] = DX;
+    State.IncCycles();
+    // XOR DL,DL (1000_ECC9 / 0x1ECC9)
+    DL = 0;
+    State.IncCycles();
+    // XCHG BH,BL (1000_ECCB / 0x1ECCB)
+    byte tmp_1000_ECCB = BH;
+    BH = BL;
+    BL = tmp_1000_ECCB;
+    State.IncCycles();
+    // XCHG DL,BL (1000_ECCD / 0x1ECCD)
+    byte tmp_1000_ECCD = DL;
+    DL = BL;
+    BL = tmp_1000_ECCD;
+    State.IncCycles();
+    // SHL BX,1 (1000_ECCF / 0x1ECCF)
+    // BX <<= 0x1;
+    BX = Alu.Shl16(BX, 0x1);
+    State.IncCycles();
+    // RCL DL,1 (1000_ECD1 / 0x1ECD1)
+    DL = Alu.Rcl8(DL, 0x1);
+    State.IncCycles();
+    // SHL BX,1 (1000_ECD3 / 0x1ECD3)
+    // BX <<= 0x1;
+    BX = Alu.Shl16(BX, 0x1);
+    State.IncCycles();
+    // RCL DL,1 (1000_ECD5 / 0x1ECD5)
+    DL = Alu.Rcl8(DL, 0x1);
+    State.IncCycles();
+    // ADD DL,0x10 (1000_ECD7 / 0x1ECD7)
+    // DL += 0x10;
+    DL = Alu.Add8(DL, 0x10);
+    State.IncCycles();
+    // MOV word ptr CS:[DI + 0x1a],BX (1000_ECDA / 0x1ECDA)
+    UInt16[cs1, (ushort)(DI + 0x1A)] = BX;
+    State.IncCycles();
+    // MOV word ptr CS:[DI + 0x1c],DX (1000_ECDE / 0x1ECDE)
+    UInt16[cs1, (ushort)(DI + 0x1C)] = DX;
+    State.IncCycles();
+    // MOV SI,DI (1000_ECE2 / 0x1ECE2)
+    SI = DI;
+    State.IncCycles();
+    // PUSH CS (1000_ECE4 / 0x1ECE4)
+    Stack.Push(cs1);
+    State.IncCycles();
+    // POP ES (1000_ECE5 / 0x1ECE5)
+    ES = Stack.Pop();
+    State.IncCycles();
+    // POP CX (1000_ECE6 / 0x1ECE6)
+    CX = Stack.Pop();
+    State.IncCycles();
+    // MOV AH,0x87 (1000_ECE7 / 0x1ECE7)
+    AH = 0x87;
+    State.IncCycles();
+    // INT 0x15 (1000_ECE9 / 0x1ECE9)
+    Interrupt(0x15);
+    State.IncCycles();
+    // RET  (1000_ECEB / 0x1ECEB)
+    return NearRet();
+  }
+  
+  public virtual Action xms_memory_func_1_ida_1000_ECEC_1ECEC(int loadOffset) {
+    entrydispatcher:
+    if(loadOffset != 0) {
+      throw FailAsUntested("External goto not supported for this function.");
+    }
+    State.IncCycles();
+    label_1000_ECEC_1ECEC:
+    // MOV SI,0xec6c (1000_ECEC / 0x1ECEC)
+    SI = 0xEC6C;
+    State.IncCycles();
+    // INC CX (1000_ECEF / 0x1ECEF)
+    CX++;
+    State.IncCycles();
+    // SHR CX,1 (1000_ECF0 / 0x1ECF0)
+    // CX >>= 0x1;
+    CX = Alu.Shr16(CX, 0x1);
+    State.IncCycles();
+    // PUSH CX (1000_ECF2 / 0x1ECF2)
+    Stack.Push(CX);
+    State.IncCycles();
+    // SHL CX,1 (1000_ECF3 / 0x1ECF3)
+    // CX <<= 0x1;
+    CX = Alu.Shl16(CX, 0x1);
+    State.IncCycles();
+    // MOV word ptr CS:[SI + 0x10],CX (1000_ECF5 / 0x1ECF5)
+    UInt16[cs1, (ushort)(SI + 0x10)] = CX;
+    State.IncCycles();
+    // MOV word ptr CS:[SI + 0x18],CX (1000_ECF9 / 0x1ECF9)
+    UInt16[cs1, (ushort)(SI + 0x18)] = CX;
+    State.IncCycles();
+    // MOV AX,ES (1000_ECFD / 0x1ECFD)
+    AX = ES;
+    State.IncCycles();
+    // XOR DX,DX (1000_ECFF / 0x1ECFF)
+    DX = 0;
+    State.IncCycles();
+    // MOV CX,0x4 (1000_ED01 / 0x1ED01)
+    CX = 0x4;
+    State.IncCycles();
+    label_1000_ED04_1ED04:
+    // SHL AX,1 (1000_ED04 / 0x1ED04)
+    // AX <<= 0x1;
+    AX = Alu.Shl16(AX, 0x1);
+    State.IncCycles();
+    // RCL DX,1 (1000_ED06 / 0x1ED06)
+    DX = Alu.Rcl16(DX, 0x1);
+    State.IncCycles();
+    // LOOP 0x1000:ed04 (1000_ED08 / 0x1ED08)
+    if(--CX != 0) {
+      goto label_1000_ED04_1ED04;
+    }
+    State.IncCycles();
+    // ADD AX,DI (1000_ED0A / 0x1ED0A)
+    // AX += DI;
+    AX = Alu.Add16(AX, DI);
+    State.IncCycles();
+    // ADC DX,0x0 (1000_ED0C / 0x1ED0C)
+    DX = Alu.Adc16(DX, 0x0);
+    State.IncCycles();
+    // MOV word ptr CS:[SI + 0x1a],AX (1000_ED0F / 0x1ED0F)
+    UInt16[cs1, (ushort)(SI + 0x1A)] = AX;
+    State.IncCycles();
+    // MOV DH,0x92 (1000_ED13 / 0x1ED13)
+    DH = 0x92;
+    State.IncCycles();
+    // MOV word ptr CS:[SI + 0x1c],DX (1000_ED15 / 0x1ED15)
+    UInt16[cs1, (ushort)(SI + 0x1C)] = DX;
+    State.IncCycles();
+    // XOR DL,DL (1000_ED19 / 0x1ED19)
+    DL = 0;
+    State.IncCycles();
+    // XCHG BH,BL (1000_ED1B / 0x1ED1B)
+    byte tmp_1000_ED1B = BH;
+    BH = BL;
+    BL = tmp_1000_ED1B;
+    State.IncCycles();
+    // XCHG DL,BL (1000_ED1D / 0x1ED1D)
+    byte tmp_1000_ED1D = DL;
+    DL = BL;
+    BL = tmp_1000_ED1D;
+    State.IncCycles();
+    // SHL BX,1 (1000_ED1F / 0x1ED1F)
+    // BX <<= 0x1;
+    BX = Alu.Shl16(BX, 0x1);
+    State.IncCycles();
+    // RCL DL,1 (1000_ED21 / 0x1ED21)
+    DL = Alu.Rcl8(DL, 0x1);
+    State.IncCycles();
+    // SHL BX,1 (1000_ED23 / 0x1ED23)
+    // BX <<= 0x1;
+    BX = Alu.Shl16(BX, 0x1);
+    State.IncCycles();
+    // RCL DL,1 (1000_ED25 / 0x1ED25)
+    DL = Alu.Rcl8(DL, 0x1);
+    State.IncCycles();
+    // ADD DL,0x10 (1000_ED27 / 0x1ED27)
+    // DL += 0x10;
+    DL = Alu.Add8(DL, 0x10);
+    State.IncCycles();
+    // MOV word ptr CS:[SI + 0x12],BX (1000_ED2A / 0x1ED2A)
+    UInt16[cs1, (ushort)(SI + 0x12)] = BX;
+    State.IncCycles();
+    // MOV word ptr CS:[SI + 0x14],DX (1000_ED2E / 0x1ED2E)
+    UInt16[cs1, (ushort)(SI + 0x14)] = DX;
+    State.IncCycles();
+    // PUSH CS (1000_ED32 / 0x1ED32)
+    Stack.Push(cs1);
+    State.IncCycles();
+    // POP ES (1000_ED33 / 0x1ED33)
+    ES = Stack.Pop();
+    State.IncCycles();
+    // POP CX (1000_ED34 / 0x1ED34)
+    CX = Stack.Pop();
+    State.IncCycles();
+    // MOV AH,0x87 (1000_ED35 / 0x1ED35)
+    AH = 0x87;
+    State.IncCycles();
+    // INT 0x15 (1000_ED37 / 0x1ED37)
+    Interrupt(0x15);
+    State.IncCycles();
+    // RET  (1000_ED39 / 0x1ED39)
     return NearRet();
   }
   
