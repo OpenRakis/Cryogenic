@@ -18,6 +18,7 @@ public partial class Overrides {
         DefineFunction(cs1, 0x0678, "load_PRESENT_HNM_ida");
         DefineFunction(cs1, 0x0684, "play_PRESENT_HNM_ida");
         DefineFunction(cs1, 0x69E, "load_INTRO_HNM_ida");
+        DefineFunction(cs1, 0xF131, "setErrorMessageToNotEnoughMemory");
         DefineFunction(cs1, 0x6AA, "play_hnm_86_frames_ida");
         DefineFunction(cs1, 0x6BD, "play_hnm_skippable_ida");
         DefineFunction(cs1, 0x9EF, "play_CREDITS_HNM_ida");

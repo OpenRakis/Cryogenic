@@ -25,7 +25,7 @@ public partial class Overrides {
         DefineFunction(cs1, 0xDB44, ShlDXAndCXByAX_1000_DB44_01DB44);
         DefineFunction(cs1, 0xE26F, NoOp_1000_E26F_01E26F);
         DefineFunction(cs1, 0xE75B, UnknownStructCreation_1000_E75B_01E75B);
-        DefineFunction(cs1, 0xE851, CheckUnknown39B9_1000_E851_01E851);
+        DefineFunction(cs1, 0xE851, CheckNextFreeMemorySegment39B9_1000_E851_01E851);
         DefineFunction(cs1, 0x3AE9, Fill47F8WithFF_1000_3AE9_013AE9);
         DefineFunction(cs1, 0xB2B9, Inc2788_1000_B2B9_01B2B9);
         DefineFunction(cs1, 0xDE4E, SetCEE8To0_1000_DE4E_01DE4E);
@@ -174,7 +174,7 @@ public partial class Overrides {
         return NearRet();
     }
 
-    public Action CheckUnknown39B9_1000_E851_01E851(int gotoAddress) {
+    public Action CheckNextFreeMemorySegment39B9_1000_E851_01E851(int gotoAddress) {
         // Game stops if carry flag is unset
         ushort value = globalsOnDs.Get1138_39B9_Word16_allocatorNextFreeSegment();
         value += 0x2F13;
