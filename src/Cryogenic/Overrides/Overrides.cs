@@ -44,72 +44,55 @@ public partial class Overrides : GeneratedOverrides {
         if (!Machine.Configuration.UseCodeOverride) {
             // Detect code rewrites only in emulated mode
             DetectCodeRewrites();
-            // Remap drivers so that their segments is a multiple of 0x1000. This is to workaround a bug in ghidra 
-            // See https://github.com/NationalSecurityAgency/ghidra/issues/981
-            RemapDrivers();
-            // Dump memory at the proper time. Too soon and drivers wont be loaded, too late and init code will be erased
-            DoDump();
         }
+
+        DefineDriversRemapping();
+        DetectDriversEntryPoints();
+        // Dump memory at the proper time. Too soon and drivers wont be loaded, too late and init code will be erased
+        DefineMemoryDumpsMapping();
 
         SetupExecutableCodeModificationStrategy();
 
         // Generated code, crashes for various reasons
-        //DefineGeneratedCodeOverrides();
+        DefineGeneratedCodeOverrides();
     }
-
-    private void DoDump() {
-        OverrideInstruction(cs1, 0x000C, () => {
-            new RecorderDataWriter(Machine.Configuration.RecordedDataDirectory, Machine).DumpAll();
-            // STI  (1000_000C / 0x1000C)
-            InterruptFlag = true;
-            return NearJump(0x000D);
+    
+    private void DefineMemoryDumpsMapping() {
+        DoOnTopOfInstruction(cs1, 0x000C, () => {
+            DumpMemoryWithSuffix("_" + ConvertUtils.ToHex16WithoutX(cs1) + "_000C_After_driver_load");
+        });
+        DoOnTopOfInstruction(cs4, 0x02DC, () => {
+            callsTo02DB++;
+            DumpMemoryWithSuffix("_" + ConvertUtils.ToHex16WithoutX(cs4) + "_02DC_After_code_modification_" +
+                                 callsTo02DB);
+        });
+        DoOnTopOfInstruction(cs4, 0x03EE, () => {
+            callsTo03ED++;
+            DumpMemoryWithSuffix("_" + ConvertUtils.ToHex16WithoutX(cs4) + "_03EE_After_code_modification_" +
+                                 callsTo03ED);
         });
     }
 
-    private void RemapDrivers() {
-        OverrideInstruction(cs1, 0xE57B, () => {
-            /*
-             AX values:
-             0: DNVGA
-             1: DN386
-             2: DNPCS
-             3: DNADL
-             4: DNADP
-             5: DNADG
-             6: DNMID
-             7: DNPCS2
-             8: DNSDB
-             9: DNSBP
-             */
+    private int callsTo02DB = 0;
+    private int callsTo03ED = 0;
 
-            // Last free segment
-            UInt16[DS, 0xce68] = 0x9FFF;
-            // VGA driver
-            if (AX == 0) {
-                UInt16[DS, 0x39B9] = 0x4010;
-            }
+    private void DumpMemoryWithSuffix(string suffix) {
+        new RecorderDataWriter(Machine.Configuration.RecordedDataDirectory, Machine).DumpMemory(suffix);
+    }
 
-            // PC speaker 2
-            if (AX == 7) {
-                // Override last free segment just this time so that allocator accepts to let us load over 0xA000
-                UInt16[DS, 0xce68] = 0xEFFF;
-                UInt16[DS, 0x39B9] = 0xC010;
-            }
-
-            // MIDI
-            if (AX == 6) {
-                UInt16[DS, 0x39B9] = 0x7010;
-            }
-
-            // PC speaker
-            if (AX == 2) {
-                //UInt16[DS, 0x39B9] = 0xD000;
-            }
-            // PUSH CX (1000_E57B / 0x1E57B)
-            Stack.Push(CX);
-            return NearJump(0xE57C);
+    private void DefineDriversRemapping() {
+        DoOnTopOfInstruction(cs1, 0xE57B, () => {
+            DriverLoadToolbox.RemapDrivers(State, Memory);
         });
-        // Could have modified checks at CS1:E794 and CS1:E7F3 to have ZF always false and get away with the last free segment check, but doing so did not work well
+        DoOnTopOfInstruction(cs1, 0xE593, () => {
+            DriverLoadToolbox.ResetAllocator(State, Memory);
+        });
+    }
+
+    private void DetectDriversEntryPoints() {
+        DoOnTopOfInstruction(cs1, 0xE589, () => {
+            DriverLoadToolbox.ReadDriverFunctionTable(State, Memory, this);
+        });
     }
 
     private void SetupExecutableCodeModificationStrategy() {
@@ -205,6 +188,18 @@ public partial class Overrides : GeneratedOverrides {
 
             IsRegisterExecutableCodeModificationEnabled = true;
             return NearJump(0x03ED);
+        });
+        OverrideInstruction(cs1, 0x49F7, () => {
+            // Seems like obfuscation, it is erasing CS:E40C -> CS:E85C with 0x0800
+            IsRegisterExecutableCodeModificationEnabled = false;
+            // STOSW ES:DI (1000_49F7 / 0x149F7)
+            UInt16[ES, DI] = AX;
+            DI = (ushort)(DI + Direction16);
+            // STOSW ES:DI (1000_49F8 / 0x149F8)
+            UInt16[ES, DI] = AX;
+            DI = (ushort)(DI + Direction16);
+            IsRegisterExecutableCodeModificationEnabled = true;
+            return NearJump(0x49F9);
         });
     }
 }

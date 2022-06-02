@@ -1,0 +1,14 @@
+{
+    "Namespace":"Cryogenic.Overrides",
+    "CodeToInject": {
+        "CheckExternalEvents({nextSegment}, {nextOffset});": [
+            125038
+        ],
+        "DriverLoadToolbox.RemapDrivers(State, Memory);": [
+            124283
+        ],
+        "DriverLoadToolbox.ResetAllocator(State, Memory);": [
+            124307
+        ]
+    }
+}
