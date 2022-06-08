@@ -41,7 +41,7 @@ public partial class Overrides : GeneratedOverrides {
         DefineTimerCodeOverrides();
         DefineUnknownCodeOverrides();
         DefineVideoCodeOverrides();
-        if (!Machine.Configuration.UseCodeOverride) {
+        if (!Machine.Configuration.UseCodeOverrideOption) {
             // Detect code rewrites only in emulated mode
             DetectCodeRewrites();
         }
@@ -200,6 +200,21 @@ public partial class Overrides : GeneratedOverrides {
             DI = (ushort)(DI + Direction16);
             IsRegisterExecutableCodeModificationEnabled = true;
             return NearJump(0x49F9);
+        });
+        
+        OverrideInstruction(cs1, 0xB4A6, () => {
+            // Overwrites init code but after it has been modified ...
+            IsRegisterExecutableCodeModificationEnabled = false;
+            // REP
+            while (CX != 0) {
+                CX--;
+                // MOVSB ES:DI,SI (1000_B4A6 / 0x1B4A6)
+                UInt8[ES, DI] = UInt8[DS, SI];
+                SI = (ushort)(SI + Direction8);
+                DI = (ushort)(DI + Direction8);
+            }
+            IsRegisterExecutableCodeModificationEnabled = true;
+            return NearJump(0xB4A8);
         });
     }
 }
