@@ -2,13 +2,14 @@
     "Namespace":"Cryogenic.Overrides",
     "CodeToInject": {
         "CheckExternalEvents({nextSegment}, {nextOffset});": [
-            125038
+            "CS1:E86E", "CS1:0628", "CS1:0628", "CS1:DD63", "CS1:C9F4"
         ],
         "DriverLoadToolbox.RemapDrivers(State, Memory);": [
-            124283
+            "CS1:E57B"
         ],
         "DriverLoadToolbox.ResetAllocator(State, Memory);": [
-            124307
+            "CS1:E593"
         ]
-    }
+    },
+    "GenerateIncCycle":false
 }
