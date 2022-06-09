@@ -203,7 +203,7 @@ public partial class Overrides : GeneratedOverrides {
         });
         
         OverrideInstruction(cs1, 0xB4A6, () => {
-            // Overwrites init code but after it has been modified ...
+            // Overwrites init code but after it has been executed ...
             IsRegisterExecutableCodeModificationEnabled = false;
             // REP
             while (CX != 0) {
@@ -215,6 +215,15 @@ public partial class Overrides : GeneratedOverrides {
             }
             IsRegisterExecutableCodeModificationEnabled = true;
             return NearJump(0xB4A8);
+        });
+
+        OverrideInstruction(cs1, 0xA087, () => {
+            // Overwrites init code but after it has been executed ...
+            IsRegisterExecutableCodeModificationEnabled = false;
+            // MOV word ptr CS:[BP + 0x2],0x0 (1000_A087 / 0x1A087)
+            UInt16[cs1, (ushort)(BP + 0x2)] = 0x0;
+            IsRegisterExecutableCodeModificationEnabled = true;
+            return NearJump(0xA08D);
         });
     }
 }
