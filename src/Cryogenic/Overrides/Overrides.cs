@@ -216,10 +216,11 @@ public partial class Overrides : GeneratedOverrides {
             IsRegisterExecutableCodeModificationEnabled = true;
             return NearJump(0xB4A8);
         });
-
-        OverrideInstruction(cs1, 0xA087, () => {
+        OverrideInstruction(cs1, 0xA083, () => {
             // Overwrites init code but after it has been executed ...
             IsRegisterExecutableCodeModificationEnabled = false;
+            // MOV word ptr CS:[BP + 0x0],AX (1000_A083 / 0x1A083)
+            UInt16[cs1, BP] = AX;
             // MOV word ptr CS:[BP + 0x2],0x0 (1000_A087 / 0x1A087)
             UInt16[cs1, (ushort)(BP + 0x2)] = 0x0;
             IsRegisterExecutableCodeModificationEnabled = true;

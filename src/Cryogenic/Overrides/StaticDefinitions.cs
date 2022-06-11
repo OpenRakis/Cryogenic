@@ -137,6 +137,8 @@ public partial class Overrides {
         DefineFunction(cs1, 0xF2FC, "strcpy_to_filename_buf_ida");
         DefineFunction(cs1, 0xF314, "locate_res_by_name_dssi_ida");
         DefineFunction(cs1, 0xF403, "hsq_decomp_skip_header_dssi_to_esdi_ida");
+        // Jumped to by self modifying code, needs to be there
+        DefineFunction(cs2, 0x1EC9, "split_C000_1EC9_C1EC9");
     }
 
     public void DefineStaticDefinitionsGlobals() {
