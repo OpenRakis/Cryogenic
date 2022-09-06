@@ -1,6 +1,6 @@
 namespace Cryogenic;
 
-using Spice86.Emulator.CPU;
+using Spice86.Core.Emulator.CPU;
 
 /**
  * Purpose is to load the drivers at a multiple of 0x1000 so that it's easier to see in the listing where we are

@@ -1,6 +1,6 @@
 namespace Cryogenic.Overrides;
 
-using Spice86.Emulator.Function;
+using Spice86.Core.Emulator.Function;
 
 public partial class GeneratedOverrides : CSharpOverrideHelper {
 

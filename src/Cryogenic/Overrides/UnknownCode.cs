@@ -1,6 +1,6 @@
 namespace Cryogenic.Overrides;
 
-using Spice86.Emulator.Memory;
+using Spice86.Core.Emulator.Memory;
 
 using System;
 

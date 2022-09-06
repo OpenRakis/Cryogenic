@@ -1,6 +1,6 @@
 namespace Cryogenic.Overrides;
 
-using Spice86.Emulator.CPU;
+using Spice86.Core.Emulator.CPU;
 
 // Method names contain _ to separate addresses.
 public partial class Overrides {

@@ -1,7 +1,7 @@
 namespace Cryogenic.Overrides;
 
-using Spice86.Emulator.InterruptHandlers.Dos;
-using Spice86.Emulator.ReverseEngineer;
+using Spice86.Core.Emulator.InterruptHandlers.Dos;
+using Spice86.Core.Emulator.ReverseEngineer;
 
 using System;
 

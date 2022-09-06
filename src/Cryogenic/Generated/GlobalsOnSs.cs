@@ -1,8 +1,8 @@
 namespace Cryogenic.Generated;
 
-using Spice86.Emulator.Memory;
-using Spice86.Emulator.ReverseEngineer;
-using Spice86.Emulator.VM;
+using Spice86.Core.Emulator.Memory;
+using Spice86.Core.Emulator.ReverseEngineer;
+using Spice86.Core.Emulator.VM;
 
 // Accessors for values accessed via register SS
 public class GlobalsOnSs : MemoryBasedDataStructureWithSsBaseAddress {

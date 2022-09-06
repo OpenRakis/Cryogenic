@@ -4,10 +4,10 @@ using Globals;
 
 using Serilog;
 
-using Spice86.Emulator.Function;
-using Spice86.Emulator.Function.Dump;
-using Spice86.Emulator.Memory;
-using Spice86.Emulator.VM;
+using Spice86.Core.Emulator.Function;
+using Spice86.Core.Emulator.Function.Dump;
+using Spice86.Core.Emulator.Memory;
+using Spice86.Core.Emulator.VM;
 
 using System.Collections.Generic;
 

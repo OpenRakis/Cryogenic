@@ -1,10 +1,10 @@
 namespace Cryogenic.Overrides;
 
 
-using Spice86.Emulator.Devices.Video;
-using Spice86.Emulator.Errors;
-using Spice86.Emulator.Memory;
-using Spice86.Utils;
+using Spice86.Core.Emulator.Devices.Video;
+using Spice86.Core.Emulator.Errors;
+using Spice86.Core.Emulator.Memory;
+using Spice86.Core.Utils;
 
 using System;
 

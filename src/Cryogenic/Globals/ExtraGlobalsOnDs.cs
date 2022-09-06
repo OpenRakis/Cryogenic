@@ -2,7 +2,7 @@ namespace Cryogenic.Globals;
 
 using Cryogenic.Generated;
 
-using Spice86.Emulator.VM;
+using Spice86.Core.Emulator.VM;
 
 // Non generated code for values that could not be detected by running the game
 public class ExtraGlobalsOnDs : GlobalsOnDs {

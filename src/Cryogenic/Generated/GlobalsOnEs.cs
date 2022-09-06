@@ -1,7 +1,7 @@
 namespace Cryogenic.Generated;
 
-using Spice86.Emulator.ReverseEngineer;
-using Spice86.Emulator.VM;
+using Spice86.Core.Emulator.ReverseEngineer;
+using Spice86.Core.Emulator.VM;
 
 // Accessors for values accessed via register ES
 public class GlobalsOnEs : MemoryBasedDataStructureWithEsBaseAddress {
