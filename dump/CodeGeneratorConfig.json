@@ -25,5 +25,5 @@
         "CS2:0CDC":"\/\/ Manual replacement of instruction that can be either ADD or SUB (CS2:0CDC)\r\nFailIfValueIsNot(UInt8[cs2, 0x0CDD], 0xC7, 0xEF);\r\nswitch (UInt8[cs2, 0x0CDD]) {\r\n    case 0xC7: DI = Alu.Add16(DI, 0x140);break;\r\n    case 0xEF: DI = Alu.Sub16(DI, 0x140);break;\r\n}",
         "CS2:0E12":"\/\/ Manual replacement of instruction that can be either ADD or SUB (CS2:0E12)\r\nFailIfValueIsNot(UInt8[cs2, 0x0E13], 0xC7, 0xEF);\r\nswitch (UInt8[cs2, 0x0E13]) {\r\n    case 0xC7: DI = Alu.Add16(DI, 0x140);break;\r\n    case 0xEF: DI = Alu.Sub16(DI, 0x140);break;\r\n}"
     },
-    "GenerateIncCycle":false
+    "GenerateCheckExternalEventsBeforeInstruction":false
 }
