@@ -10,7 +10,7 @@ Fiddling with [Cryo dune](https://en.wikipedia.org/wiki/Dune_(video_game)) (CD V
 
 SHA256 signature of supported dncdprg.exe: 5f30aeb84d67cf2e053a83c09c2890f010f2e25ee877ebec58ea15c5b30cfff9
 
-This projects requires [.NET 6](https://dotnet.microsoft.com/en-us/download/dotnet/6.0).
+This projects requires [.NET 7](https://dotnet.microsoft.com/en-us/download/dotnet/7.0).
 
 # Download
 See the [releases](https://github.com/OpenRakis/Cryogenic/releases) section.

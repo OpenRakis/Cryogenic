@@ -1,0 +1,29 @@
+{
+    "Namespace":"Cryogenic.Overrides",
+    "CodeToInject": {
+        "CheckExternalEvents({nextSegment}, {nextOffset});": [
+            "CS1:E86E",
+            "CS1:D296","CS1:D2A9","CS1:D7B7","CS1:D815","CS1:D893","CS1:D8DA","CS1:D935","CS1:D962","CS1:D97A","CS1:D9D5","CS1:18B1","CS1:1AF0","CS1:2B47","CS1:2E55","CS1:4F27","CS1:4F34","CS1:5C0D","CS1:A774","CS1:A7D5","CS1:A894","CS1:A89D","CS1:ABAE","CS1:ABBC","CS1:ACCD","CS1:AD07","CS1:AD0D","CS1:C0DE","CS1:C0EC","CS1:C121","CS1:DDCA","CS1:DDDA","CS1:DE93","CS1:E05E","CS1:E213","CS1:E354","CS1:E37B","CS1:E38F","CS1:E393","CS1:E3A2","CS1:E3A5","CS1:E63D","CS1:C85B","CS1:C8C3","CS1:C8ED","CS1:CA59","CS1:CADA",
+            "CS1:0FEC","CS1:1B23",
+            "CS1:395C","CS1:917A","CS1:950F","CS1:9572","CS1:957D","CS1:0FF6","CS1:1A42","CS1:1AC5","CS1:1AD1","CS1:1AE0","CS1:1B46","CS1:1F6B","CS1:1F79","CS1:32C7","CS1:B393","CS1:6D7B","CS1:705C","CS1:7159","CS1:66A3","CS1:6B25","CS1:BDCE","CS1:BE3C","CS1:BED7","CS1:BF89",
+            "CS1:ADCA","CS1:AE10","CS1:AE17","CS1:ACF9","CS1:AD3C","CS1:AD6D","CS1:DDF0","CS1:DE0C",
+            "CS1:0635","CS1:DE2F",
+            "CS1:DE23",
+            "CS1:D820","CS1:DD6B","CS1:DE59"
+        ],
+        "DriverLoadToolbox.RemapDrivers(State, Memory);": [
+            "CS1:E57B"
+        ],
+        "DriverLoadToolbox.ResetAllocator(State, Memory);": [
+            "CS1:E593"
+        ]
+    },
+    "InstructionsToReplace": {
+        "CS2:1E4A":"\/\/ Manual replacement of instruction that can be either jump or NOP (CS2:1E4A)\r\nFailIfValueIsNot(UInt16[cs2, 0x1E4A], 0x9090, 0x7DEB);\r\nswitch (UInt16[cs2, 0x1E4A]) {\r\n    case 0x9090: break;\r\n    case 0x7DEB: return split_C000_1EC9_C1EC9(0);\r\n}",
+        "CS2:1E4B":"",
+        "CS2:0C42":"\/\/ Manual replacement of instruction that can be either ADD or SUB (CS2:0C42)\r\nFailIfValueIsNot(UInt8[cs2, 0x0C43], 0xC7, 0xEF);\r\nswitch (UInt8[cs2, 0x0C43]) {\r\n    case 0xC7: DI = Alu.Add16(DI, 0x140);break;\r\n    case 0xEF: DI = Alu.Sub16(DI, 0x140);break;\r\n}",
+        "CS2:0CDC":"\/\/ Manual replacement of instruction that can be either ADD or SUB (CS2:0CDC)\r\nFailIfValueIsNot(UInt8[cs2, 0x0CDD], 0xC7, 0xEF);\r\nswitch (UInt8[cs2, 0x0CDD]) {\r\n    case 0xC7: DI = Alu.Add16(DI, 0x140);break;\r\n    case 0xEF: DI = Alu.Sub16(DI, 0x140);break;\r\n}",
+        "CS2:0E12":"\/\/ Manual replacement of instruction that can be either ADD or SUB (CS2:0E12)\r\nFailIfValueIsNot(UInt8[cs2, 0x0E13], 0xC7, 0xEF);\r\nswitch (UInt8[cs2, 0x0E13]) {\r\n    case 0xC7: DI = Alu.Add16(DI, 0x140);break;\r\n    case 0xEF: DI = Alu.Sub16(DI, 0x140);break;\r\n}"
+    },
+    "GenerateCheckExternalEventsBeforeInstruction":false
+}

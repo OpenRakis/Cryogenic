@@ -6,20 +6,20 @@ using Spice86.Core.Emulator.ReverseEngineer;
 using System;
 
 // Method names contain _ to separate addresses.
-public partial class Overrides : CSharpOverrideHelper {
+public partial class Overrides {
 
     public void DefineHnmCodeOverrides() {
-        DefineFunction(cs1, 0xCDBF, HnmReadFromFileHandle_1ED_CDBF_EC8F);
+        DefineFunction(cs1, 0xCDBF, HnmReadFromFileHandle_1000_CDBF_01CDBF);
     }
 
-    public Action HnmReadFromFileHandle_1ED_CDBF_EC8F(int gotoAddress) {
+    public Action HnmReadFromFileHandle_1000_CDBF_01CDBF(int gotoAddress) {
         DosFileManager dosFileManager = Machine.DosInt21Handler.DosFileManager;
         ushort fileHandle = globalsOnDs.Get1138_35A6_Word16_IsAnimateMenuUnneeded();
         if (fileHandle == 0) {
             return NearRet();
         }
 
-        ushort readLength = State.CX;
+        ushort readLength = CX;
         uint offset = globalsOnDs.Get1138_DC04_DWord32_hnmFileOffset();
         uint targetMemory = globalsOnDs.GetPtr1138_DC0C_Dword32_hnmFileReadBufferSegment().ToPhysical();
         _logger.Debug("Read {@ReadLength} bytes from hnm file handle {@FileHandle} at offset {@Offset}", readLength, fileHandle, offset);

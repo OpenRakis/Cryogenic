@@ -7,7 +7,7 @@ using Spice86.Core.Emulator.VM;
 
 using System.Collections.Generic;
 
-public partial class Overrides : CSharpOverrideHelper {
+public partial class Overrides {
 
     public void DefineStaticDefinitionsFunctions() {
         DefineFunction(cs1, 0x3A, "exit");
@@ -25,6 +25,7 @@ public partial class Overrides : CSharpOverrideHelper {
         DefineFunction(cs1, 0x0678, "load_PRESENT_HNM_ida");
         DefineFunction(cs1, 0x0684, "play_PRESENT_HNM_ida");
         DefineFunction(cs1, 0x69E, "load_INTRO_HNM_ida");
+        DefineFunction(cs1, 0xF131, "setErrorMessageToNotEnoughMemory");
         DefineFunction(cs1, 0x6AA, "play_hnm_86_frames_ida");
         DefineFunction(cs1, 0x6BD, "play_hnm_skippable_ida");
         DefineFunction(cs1, 0x9EF, "play_CREDITS_HNM_ida");
@@ -143,6 +144,8 @@ public partial class Overrides : CSharpOverrideHelper {
         DefineFunction(cs1, 0xF2FC, "strcpy_to_filename_buf_ida");
         DefineFunction(cs1, 0xF314, "locate_res_by_name_dssi_ida");
         DefineFunction(cs1, 0xF403, "hsq_decomp_skip_header_dssi_to_esdi_ida");
+        // Jumped to by self modifying code, needs to be there
+        DefineFunction(cs2, 0x1EC9, "split_C000_1EC9_C1EC9");
     }
 
     public void DefineStaticDefinitionsGlobals() {
