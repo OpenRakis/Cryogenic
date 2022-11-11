@@ -11,7 +11,12 @@ using Spice86.Core.Emulator.VM;
 
 using System.Collections.Generic;
 
-public partial class Overrides : GeneratedOverrides {
+public partial class Overrides : CSharpOverrideHelper {
+    protected ushort cs1; // 0x1000
+    protected ushort cs2; // 0x334B
+    protected ushort cs3; // 0x5635
+    protected ushort cs4; // 0x563E
+    protected ushort cs5; // 0xF000
     private static readonly ILogger _logger = Log.Logger.ForContext<Overrides>();
     private ExtraGlobalsOnDs globalsOnDs;
     private ExtraGlobalsOnCsSegment0x2538 globalsOnCsSegment0X2538;
@@ -41,20 +46,20 @@ public partial class Overrides : GeneratedOverrides {
         DefineTimerCodeOverrides();
         DefineUnknownCodeOverrides();
         DefineVideoCodeOverrides();
-        if (!Machine.Configuration.UseCodeOverrideOption) {
-            // Detect code rewrites only in emulated mode
-            DetectCodeRewrites();
-        }
+        //if (!Machine.Configuration.UseCodeOverrideOption) {
+        //    // Detect code rewrites only in emulated mode
+        //    DetectCodeRewrites();
+        //}
 
-        DefineDriversRemapping();
-        DetectDriversEntryPoints();
-        // Dump memory at the proper time. Too soon and drivers wont be loaded, too late and init code will be erased
-        DefineMemoryDumpsMapping();
+        //DefineDriversRemapping();
+        //DetectDriversEntryPoints();
+        //// Dump memory at the proper time. Too soon and drivers wont be loaded, too late and init code will be erased
+        //DefineMemoryDumpsMapping();
 
-        SetupExecutableCodeModificationStrategy();
+        //SetupExecutableCodeModificationStrategy();
 
         // Generated code, crashes for various reasons
-        DefineGeneratedCodeOverrides();
+        //DefineGeneratedCodeOverrides();
     }
     
     private void DefineMemoryDumpsMapping() {
