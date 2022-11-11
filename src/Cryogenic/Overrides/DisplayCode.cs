@@ -67,38 +67,38 @@ public partial class Overrides {
         // Called in most changes related to display like scene change, displaying map, clicking on map, clicking on
         // characters ...
         // XCHG AX <-> Stack[0x0C] (or 0x0E if done before the pop)
-        ushort ax = Stack.Pop();
-        ushort stackPeek = Stack.Peek(0x0C);
-        Stack.Poke(0x0C, ax);
+        ushort ax = Stack.Pop16();
+        ushort stackPeek = Stack.Peek16(0x0C);
+        Stack.Poke16(0x0C, ax);
         AX = stackPeek;
 
         // Regular pops
-        BP = Stack.Pop();
-        DI = Stack.Pop();
-        SI = Stack.Pop();
-        DX = Stack.Pop();
-        CX = Stack.Pop();
-        BX = Stack.Pop();
+        BP = Stack.Pop16();
+        DI = Stack.Pop16();
+        SI = Stack.Pop16();
+        DX = Stack.Pop16();
+        CX = Stack.Pop16();
+        BX = Stack.Pop16();
         return NearRet();
     }
 
     public Action PushAll_1000_E270_01E270(int gotoAddress) {
         _logger.Debug("pushAll");
-        Stack.Push(BX);
-        Stack.Push(CX);
-        Stack.Push(DX);
-        Stack.Push(SI);
-        Stack.Push(DI);
-        Stack.Push(BP);
-        ushort stackTop = Stack.Peek(0);
+        Stack.Push16(BX);
+        Stack.Push16(CX);
+        Stack.Push16(DX);
+        Stack.Push16(SI);
+        Stack.Push16(DI);
+        Stack.Push16(BP);
+        ushort stackTop = Stack.Peek16(0);
 
         // XCHG AX <-> Stack[0x0C]
-        ushort stackPeek = Stack.Peek(0x0C);
-        Stack.Poke(0x0C, AX);
+        ushort stackPeek = Stack.Peek16(0x0C);
+        Stack.Poke16(0x0C, AX);
 
         // In the original assembly code, AX seems modified but it's not the case as it's restored to its original value
         // later.
-        Stack.Push(stackPeek);
+        Stack.Push16(stackPeek);
         BP = stackTop;
         return NearRet();
     }
