@@ -1,6 +1,6 @@
 namespace Cryogenic.Overrides;
 
-using Spice86.Emulator.ReverseEngineer;
+using Spice86.Core.Emulator.ReverseEngineer;
 
 // Method names contain _ to separate addresses.
 public partial class Overrides : CSharpOverrideHelper {

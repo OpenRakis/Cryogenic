@@ -1,11 +1,11 @@
 namespace Cryogenic.Overrides;
 
 
-using Spice86.Emulator.Devices.Video;
-using Spice86.Emulator.Errors;
-using Spice86.Emulator.Memory;
-using Spice86.Emulator.ReverseEngineer;
-using Spice86.Utils;
+using Spice86.Core.Emulator.Devices.Video;
+using Spice86.Core.Emulator.Errors;
+using Spice86.Core.Emulator.Memory;
+using Spice86.Core.Emulator.ReverseEngineer;
+using Spice86.Core.Utils;
 
 using System;
 using System.Collections.Generic;
@@ -289,8 +289,8 @@ public partial class Overrides : CSharpOverrideHelper {
         // no jump, 28 lines in ghidra, part of the function is not executed in the logs and DX is always 3DA.
         // Wait for retrace.
         VgaCard vgaCard = Machine.VgaCard;
-        while (!vgaCard.TickRetrace())
-            ;
+        vgaCard.TickRetrace();
+        Thread.Sleep(15);
         State.CarryFlag = true;
         return NearRet();
     }

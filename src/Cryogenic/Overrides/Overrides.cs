@@ -4,9 +4,9 @@ using Globals;
 
 using Serilog;
 
-using Spice86.Emulator.Function;
-using Spice86.Emulator.Memory;
-using Spice86.Emulator.VM;
+using Spice86.Core.Emulator.Function;
+using Spice86.Core.Emulator.Memory;
+using Spice86.Core.Emulator.VM;
 
 using System.Collections.Generic;
 
@@ -52,10 +52,10 @@ public partial class Overrides {
         OverrideInstruction(cs1, 0xc, () => {
             // cs1:000C is STI
             InterruptFlag = true;
-            DetectCodeRewrites();
+            //DetectCodeRewrites();
             return NearJump(0xd);
         });
         // Generated code, crashes for various reasons
-        DefineGeneratedCodeOverrides();
+        //DefineGeneratedCodeOverrides();
     }
 }

@@ -5,10 +5,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-using Spice86.Emulator.Function;
-using Spice86.Emulator.Memory;
-using Spice86.Emulator.ReverseEngineer;
-using Spice86.Emulator.VM;
+using Spice86.Core.Emulator.Function;
+using Spice86.Core.Emulator.Memory;
+using Spice86.Core.Emulator.ReverseEngineer;
+using Spice86.Core.Emulator.VM;
 
 using Serilog;
 

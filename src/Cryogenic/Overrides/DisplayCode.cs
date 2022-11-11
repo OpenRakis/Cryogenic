@@ -3,8 +3,9 @@ namespace Cryogenic.Overrides;
 using Cryogenic.Globals;
 using Serilog;
 
-using Spice86.Emulator.CPU;
-using Spice86.Emulator.ReverseEngineer;
+using Spice86.Core.Emulator.CPU;
+using Spice86.Core.Emulator.ReverseEngineer;
+using Spice86.Core.Emulator.Memory;
 
 using System;
 
@@ -73,38 +74,38 @@ public partial class Overrides : CSharpOverrideHelper {
         // Called in most changes related to display like scene change, displaying map, clicking on map, clicking on
         // characters ...
         // XCHG AX <-> Stack[0x0C] (or 0x0E if done before the pop)
-        ushort ax = Stack.Pop();
-        ushort stackPeek = Stack.Peek(0x0C);
-        Stack.Poke(0x0C, ax);
+        ushort ax = Stack.Pop16();
+        ushort stackPeek = Stack.Peek16(0x0C);
+        Stack.Poke16(0x0C, ax);
         State.AX = stackPeek;
 
         // Regular pops
-        State.BP = Stack.Pop();
-        State.DI = Stack.Pop();
-        State.SI = Stack.Pop();
-        State.DX = Stack.Pop();
-        State.CX = Stack.Pop();
-        State.BX = Stack.Pop();
+        State.BP = Stack.Pop16();
+        State.DI = Stack.Pop16();
+        State.SI = Stack.Pop16();
+        State.DX = Stack.Pop16();
+        State.CX = Stack.Pop16();
+        State.BX = Stack.Pop16();
         return NearRet();
     }
 
     public Action PushAll_1ED_E270_10140(int gotoAddress) {
         _logger.Debug("pushAll");
-        Stack.Push(State.BX);
-        Stack.Push(State.CX);
-        Stack.Push(State.DX);
-        Stack.Push(State.SI);
-        Stack.Push(State.DI);
-        Stack.Push(State.BP);
-        ushort stackTop = Stack.Peek(0);
+        Stack.Push16(State.BX);
+        Stack.Push16(State.CX);
+        Stack.Push16(State.DX);
+        Stack.Push16(State.SI);
+        Stack.Push16(State.DI);
+        Stack.Push16(State.BP);
+        ushort stackTop = Stack.Peek16(0);
 
         // XCHG AX <-> Stack[0x0C]
-        ushort stackPeek = Stack.Peek(0x0C);
-        Stack.Poke(0x0C, State.AX);
+        ushort stackPeek = Stack.Peek16(0x0C);
+        Stack.Poke16(0x0C, State.AX);
 
         // In the original assembly code, AX seems modified but it's not the case as it's restored to its original value
         // later.
-        Stack.Push(stackPeek);
+        Stack.Push16(stackPeek);
         State.BP = stackTop;
         return NearRet();
     }
