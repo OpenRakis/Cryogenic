@@ -17,12 +17,19 @@ public partial class Overrides : CSharpOverrideHelper {
     protected ushort cs3; // 0x5635
     protected ushort cs4; // 0x563E
     protected ushort cs5; // 0xF000
-    private static readonly ILogger _logger = Log.Logger.ForContext<Overrides>();
     private ExtraGlobalsOnDs globalsOnDs;
     private ExtraGlobalsOnCsSegment0x2538 globalsOnCsSegment0X2538;
 
     public Overrides(Dictionary<SegmentedAddress, FunctionInformation> functionInformations, ushort entrySegment,
-        Machine machine) : base(functionInformations, machine) {
+        Machine machine, ILogger logger) : base(functionInformations, machine,  logger) {
+        // Main code
+        this.cs1 = 0x1000;
+        // Vga driver is remapped here
+        this.cs2 = 0xC000;
+        // PCM driver
+        this.cs3 = 0xD000;
+        // Midi driver
+        this.cs4 = 0xE000;
         // This does not depend on the entry segment. 
         this.cs5 = 0xF000;
         globalsOnDs = new ExtraGlobalsOnDs(machine);
@@ -46,17 +53,13 @@ public partial class Overrides : CSharpOverrideHelper {
         DefineTimerCodeOverrides();
         DefineUnknownCodeOverrides();
         DefineVideoCodeOverrides();
-        //if (!Machine.Configuration.UseCodeOverrideOption) {
-        //    // Detect code rewrites only in emulated mode
-        //    DetectCodeRewrites();
-        //}
 
-        //DefineDriversRemapping();
-        //DetectDriversEntryPoints();
+        DefineDriversRemapping();
+        DetectDriversEntryPoints();
         //// Dump memory at the proper time. Too soon and drivers wont be loaded, too late and init code will be erased
-        //DefineMemoryDumpsMapping();
+        DefineMemoryDumpsMapping();
 
-        //SetupExecutableCodeModificationStrategy();
+        SetupExecutableCodeModificationStrategy();
 
         // Generated code, crashes for various reasons
         //DefineGeneratedCodeOverrides();
@@ -82,7 +85,7 @@ public partial class Overrides : CSharpOverrideHelper {
     private int callsTo03ED = 0;
 
     private void DumpMemoryWithSuffix(string suffix) {
-        new RecorderDataWriter(Machine.Configuration.RecordedDataDirectory, Machine).DumpMemory(suffix);
+        new RecorderDataWriter(Machine.Configuration.RecordedDataDirectory, Machine, _logger).DumpMemory(suffix);
     }
 
     private void DefineDriversRemapping() {

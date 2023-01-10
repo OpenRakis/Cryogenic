@@ -1,5 +1,6 @@
 namespace Cryogenic;
 
+using Spice86.Core.DI;
 using Spice86.Core.Emulator.Function;
 using Spice86.Core.Emulator.Memory;
 using Spice86.Core.Emulator.ReverseEngineer;
@@ -20,7 +21,7 @@ public class DuneCdOverrideSupplier : IOverrideSupplier {
 
     private void CreateOverrides(ushort programStartSegment, Machine machine,
         Dictionary<SegmentedAddress, FunctionInformation> res) {
-        new Overrides.Overrides(res, programStartSegment, machine).DefineOverrides();
-        new CSharpOverrideHelper(res, machine).SetProvidedInterruptHandlersAsOverridden();
+        new Overrides.Overrides(res, programStartSegment, machine, new ServiceProvider().GetLoggerForContext<Overrides.Overrides>()).DefineOverrides();
+        new CSharpOverrideHelper(res, machine, new ServiceProvider().GetLoggerForContext<CSharpOverrideHelper>()).SetProvidedInterruptHandlersAsOverridden();
     }
 }
