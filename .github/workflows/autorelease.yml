@@ -1,0 +1,52 @@
+name: "pre-release"
+
+on:
+  push:
+    branches:
+      - "master"
+
+jobs:
+  pre-release:
+    name: "Pre Release"
+    runs-on: "ubuntu-latest"
+
+    steps:
+       - uses: actions/checkout@v1
+
+       - name: Setup .NET
+         uses: actions/setup-dotnet@v1
+         with:
+           dotnet-version: '7.0.x'
+
+       - name: Install zip
+         uses: montudor/action-zip@v1
+
+       - name: Build with dotnet
+         working-directory: ./src/
+         run: |
+              dotnet restore
+              dotnet publish -c Release -r linux-x64 --self-contained true -p:PublishReadyToRun=true -p:PublishSingleFile=true -o Release/linux
+              dotnet publish -c Release -r win-x64 --self-contained true -p:PublishReadyToRun=true -p:PublishSingleFile=true -o Release/windows
+              dotnet publish -c Release -r osx-x64 --self-contained true -p:PublishReadyToRun=true -p:PublishSingleFile=true -o Release/macos
+              dotnet publish -c Debug -r linux-x64 --self-contained true -p:PublishReadyToRun=true -p:PublishSingleFile=true -o Debug/linux
+              dotnet publish -c Debug -r win-x64 --self-contained true -p:PublishReadyToRun=true -p:PublishSingleFile=true -o Debug/windows
+              dotnet publish -c Debug -r osx-x64 --self-contained true -p:PublishReadyToRun=true -p:PublishSingleFile=true -o Debug/macos
+
+       - name: Zip Debug output
+         run: zip -qq -r DebugBuild.zip Debug
+         working-directory: ./src/Spice86/bin
+
+       - name: Zip Release output
+         run: zip -qq -r ReleaseBuild.zip Release
+         working-directory: ./src/Spice86/bin
+
+       - name: Publish GitHub Release
+         uses: "marvinpinto/action-automatic-releases@latest"
+         with:
+           repo_token: "${{ secrets.GITHUB_TOKEN }}"
+           automatic_release_tag: "latest"
+           prerelease: true
+           title: "Development Build"
+           files: |
+             ./src/bin/DebugBuild.zip
+             ./src/bin/ReleaseBuild.zip
