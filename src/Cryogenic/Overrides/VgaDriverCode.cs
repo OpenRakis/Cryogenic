@@ -1,11 +1,12 @@
 namespace Cryogenic.Overrides;
 
-
+using Spice86.Aeon.Emulator.Video;
 using Spice86.Core.Emulator.Devices.Video;
 using Spice86.Core.Emulator.Errors;
 using Spice86.Core.Emulator.Memory;
 using Spice86.Core.Emulator.ReverseEngineer;
 using Spice86.Core.Utils;
+using Spice86.Shared.Interfaces;
 
 using System;
 
@@ -51,7 +52,7 @@ public partial class Overrides {
     }
 
     public Action CopyCsRamB5FToB2F_334B_0A58_033F08(int gotoAddress) {
-        _logger.Debug("CopyCsRamB5FToB2F");
+        _loggerService.Debug("CopyCsRamB5FToB2F");
 
         // No jump
         uint sourceAddress = MemoryUtils.ToPhysicalAddress(CS, 0x5BF);
@@ -67,7 +68,7 @@ public partial class Overrides {
         ushort blockSize = CX;
         uint baseSourceAddress = MemoryUtils.ToPhysicalAddress(DS, SI);
         uint baseDestinationAddress = MemoryUtils.ToPhysicalAddress(ES, DI);
-        _logger.Debug("unknownMapCopyMapBlock blockSize={@BlockSize}, baseSourceAddress:{@BaseSourceAddress},baseDestinationAddress:{@BaseDestinationAddress}", blockSize, baseSourceAddress, baseDestinationAddress);
+        _loggerService.Debug("unknownMapCopyMapBlock blockSize={@BlockSize}, baseSourceAddress:{@BaseSourceAddress},baseDestinationAddress:{@BaseDestinationAddress}", blockSize, baseSourceAddress, baseDestinationAddress);
         for (int i = 0; i < 4; i++) {
             for (int j = 0; j < blockSize; j++) {
                 byte value = Memory.GetUint8((uint)(baseSourceAddress + j + 400 * i));
@@ -96,7 +97,7 @@ public partial class Overrides {
     public Action VgaFunc08FillWithZeroFor64000AtES_334B_0118_0335C8(int gotoAddress) {
         // 26D77
         uint address = MemoryUtils.ToPhysicalAddress(ES, 0);
-        _logger.Debug("fillWithZeroFor64000AtES address:{@Address}", address);
+        _loggerService.Debug("fillWithZeroFor64000AtES address:{@Address}", address);
         Memory.Memset(address, 0, 64000);
         return FarRet();
     }
@@ -113,8 +114,8 @@ public partial class Overrides {
         SetDiFromXYCordsDxBx_334B_0C10_0340C0(0);
         ushort destinationOffsetAddress = DI;
         int direction = DirectionFlag ? -1 : 1;
-        if (_logger.IsEnabled(Serilog.Events.LogEventLevel.Debug)) {
-            _logger.Debug("generateFloors xy:{@X},{@Y} destinationBaseAddress:{@DestinationBaseAddress},destinationOffsetAddress:{@DestinationOffsetAddress}," + "colorIncrement:{@ColorIncrement},initialColor:{@InitialColor},xorNoise:{@XorNoise},xorNoisePattern:{@XorNoisePattern},length:{@Length},direction:{@Direction}", DX, BX, destinationBaseAddress,
+        if (_loggerService.IsEnabled(Serilog.Events.LogEventLevel.Debug)) {
+            _loggerService.Debug("generateFloors xy:{@X},{@Y} destinationBaseAddress:{@DestinationBaseAddress},destinationOffsetAddress:{@DestinationOffsetAddress}," + "colorIncrement:{@ColorIncrement},initialColor:{@InitialColor},xorNoise:{@XorNoise},xorNoisePattern:{@XorNoisePattern},length:{@Length},direction:{@Direction}", DX, BX, destinationBaseAddress,
                 destinationOffsetAddress, colorIncrement, initialColor, xorNoise, xorNoisePattern, length, direction);
         }
 
@@ -142,7 +143,7 @@ public partial class Overrides {
 
     public Action VgaFunc01GetInfoInAxCxBp_334B_0103_0335B3(int gotoAddress) {
         // 25D59
-        _logger.Debug("getInfoInAxCxBp");
+        _loggerService.Debug("getInfoInAxCxBp");
         AX = MemoryMap.GraphicVideoMemorySegment;
         CX = IMAGE_UNDER_MOUSE_CURSOR_START;
         BP = 0;
@@ -152,34 +153,34 @@ public partial class Overrides {
     public Action LoadPaletteInVgaDac_334B_0B68_034018(int gotoAddress) {
         // No jump, 49 lines in ghidra
         try {
-            VgaCard vgaCard = Machine.VgaCard;
+            IAeonVgaCard vgaCard = (IAeonVgaCard) Machine.VgaCard;
             uint baseAddress = MemoryUtils.ToPhysicalAddress(ES, DX);
             byte writeIndex = BL;
             ushort numberOfColors = CX;
             byte loadMode = globalsOnCsSegment0X2538.Get2538_01BD_Byte8_PaletteLoadMode();
-            _logger.Debug("loadPaletteInVgaDac, baseAddress:{@BaseAddress}, writeIndex:{@Writeindex}, loadMode:{@LoadMode}, numberOfColors:{@NumberOfColors}", baseAddress, writeIndex, loadMode, numberOfColors);
-            vgaCard.SetVgaWriteIndex(writeIndex);
+            _loggerService.Debug("loadPaletteInVgaDac, baseAddress:{@BaseAddress}, writeIndex:{@Writeindex}, loadMode:{@LoadMode}, numberOfColors:{@NumberOfColors}", baseAddress, writeIndex, loadMode, numberOfColors);
+            vgaCard.Dac.WriteIndex = writeIndex;
             if (loadMode == 0) {
                 for (uint i = 0; i < numberOfColors * 3; i++) {
                     byte value = UInt8[baseAddress + i];
-                    vgaCard.RgbDataWrite(value);
+                    vgaCard.Dac.Write(value);
                 }
             } else {
                 // Untested ... 25f29 in ghidra, 2538:BA9 in dosbox, probably wrong
-                throw FailAsUntested("This palette code path was converted to java but never executed...");
+                throw FailAsUntested("This palette code path was converted to C# but never executed...");
                 for (ushort i = 0; i < numberOfColors * 3; i += 3) {
                     byte r = (byte)(UInt8[baseAddress + i] & 0x3F);
                     byte g = (byte)(UInt8[baseAddress + i + 1] & 0x3F);
                     byte b = (byte)(UInt8[baseAddress + i + 2] & 0x3F);
                     byte value = (byte)((r * 5 + g * 9 + b * 2) >> 4);
-                    vgaCard.RgbDataWrite(value);
-                    vgaCard.RgbDataWrite(value);
-                    vgaCard.RgbDataWrite(value);
+                    vgaCard.Dac.Write(value);
+                    vgaCard.Dac.Write(value);
+                    vgaCard.Dac.Write(value);
                 }
             }
 
             return NearRet();
-        } catch (InvalidColorIndexException e) {
+        } catch (ArgumentOutOfRangeException e) {
             throw new UnrecoverableException(e.Message);
         }
     }
@@ -197,7 +198,7 @@ public partial class Overrides {
         // No jump, 22 lines in ghidra
         uint sourceAddress = MemoryUtils.ToPhysicalAddress(DS, 0);
         uint destinationAddress = MemoryUtils.ToPhysicalAddress(ES, 0);
-        _logger.Debug("memcpyDSToESFor64000 sourceAddress:{@SourceAddress},destinationAddress:{@DestinationAddress}", sourceAddress, destinationAddress);
+        _loggerService.Debug("memcpyDSToESFor64000 sourceAddress:{@SourceAddress},destinationAddress:{@DestinationAddress}", sourceAddress, destinationAddress);
         Memory.MemCopy(sourceAddress, destinationAddress, 64000);
         return FarRet();
     }
@@ -211,7 +212,7 @@ public partial class Overrides {
         uint destinationAddress = MemoryUtils.ToPhysicalAddress(ES, baseOffsetDi);
         ushort rowCount = BP;
         ushort columnCount = AX;
-        _logger.Debug("moveSquareOfPixels sourceBuffer:{@SourceBuffer}, destinationBuffer:{@DestinationBuffer},startX:{@StartX},startY:{@StartY},columnCount:{@ColumnCount},rowCount:{@RowCount}", DS, ES, DX, BX, columnCount, rowCount);
+        _loggerService.Debug("moveSquareOfPixels sourceBuffer:{@SourceBuffer}, destinationBuffer:{@DestinationBuffer},startX:{@StartX},startY:{@StartY},columnCount:{@ColumnCount},rowCount:{@RowCount}", DS, ES, DX, BX, columnCount, rowCount);
         for (ushort y = 0; y < columnCount; y++) {
             for (ushort x = 0; x < rowCount; x++) {
                 int disp = y * 320 + x;
@@ -234,7 +235,7 @@ public partial class Overrides {
         ushort mouseCursorAddressInVram = this.globalsOnCsSegment0X2538.Get2538_018A_Word16_MouseCursorAddressInVram();
         ushort columns = this.globalsOnCsSegment0X2538.Get2538_018C_Word16_ColumnsOfMouseCursorCount();
         ushort lines = this.globalsOnCsSegment0X2538.Get2538_018E_Word16_LinesOfMouseCursorCount();
-        _logger.Debug("restoreImageUnderMouseCursor mouseCursorAddressInVram:{@MouseCursorAddressInVram},columns:{@Columns},lines:{@Lines}", mouseCursorAddressInVram, columns, lines);
+        _loggerService.Debug("restoreImageUnderMouseCursor mouseCursorAddressInVram:{@MouseCursorAddressInVram},columns:{@Columns},lines:{@Lines}", mouseCursorAddressInVram, columns, lines);
         uint sourceAddress = MemoryUtils.ToPhysicalAddress(MemoryMap.GraphicVideoMemorySegment, IMAGE_UNDER_MOUSE_CURSOR_START);
         uint destinationAddress = MemoryUtils.ToPhysicalAddress(MemoryMap.GraphicVideoMemorySegment, mouseCursorAddressInVram);
         for (ushort i = 0; i < lines; i++) {
@@ -280,14 +281,14 @@ public partial class Overrides {
         // 25F86
         ushort lineNumber = AX;
         this.globalsOnCsSegment0X2538.Set2538_01A3_Word16_VgaOffset((ushort)(lineNumber * 320));
-        _logger.Debug("updateVgaOffset01A3FromLineNumberAsAx lineNumber:{@LineNumber},vgaOffset01A3:{@VgaOffset01A3}", lineNumber, globalsOnCsSegment0X2538.Get2538_01A3_Word16_VgaOffset());
+        _loggerService.Debug("updateVgaOffset01A3FromLineNumberAsAx lineNumber:{@LineNumber},vgaOffset01A3:{@VgaOffset01A3}", lineNumber, globalsOnCsSegment0X2538.Get2538_01A3_Word16_VgaOffset());
         return FarRet();
     }
 
     public Action WaitForRetrace_334B_09B8_033E68(int gotoAddress) {
         // no jump, 28 lines in ghidra, part of the function is not executed in the logs and DX is always 3DA.
         // Wait for retrace.
-        VgaCard vgaCard = Machine.VgaCard;
+        IVideoCard vgaCard = Machine.VgaCard;
         vgaCard.TickRetrace();
         Thread.Sleep(15);
         State.CarryFlag = true;
@@ -314,7 +315,7 @@ public partial class Overrides {
 
         ushort res = (ushort)(320 * y + x + offset);
         DI = res;
-        _logger.Debug("setDiFromXYCordsDxBx x:{@X},y:{@Y},offset:{@Offset},res:{@Res}", x, y, offset, res);
+        _loggerService.Debug("setDiFromXYCordsDxBx x:{@X},y:{@Y},offset:{@Offset},res:{@Res}", x, y, offset, res);
         return NearRet();
     }
 }

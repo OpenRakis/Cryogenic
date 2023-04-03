@@ -31,8 +31,8 @@ public partial class Overrides {
 
     public Action SetMapClickHandlerAddressFromAx_1000_D95E_01D95E(int gotoAddress) {
         globalsOnDs.Set1138_2570_Word16_MapClickHandlerAddress(AX);
-        if (_logger.IsEnabled(Serilog.Events.LogEventLevel.Debug)) {
-            _logger.Debug("setMapClickHandlerAddressFromAx: DS:{@Ds}, AX:{@Ax}", ConvertUtils.ToHex16(DS), ConvertUtils.ToHex16(AX));
+        if (_loggerService.IsEnabled(Serilog.Events.LogEventLevel.Debug)) {
+            _loggerService.Debug("setMapClickHandlerAddressFromAx: DS:{@Ds}, AX:{@Ax}", ConvertUtils.ToHex16(DS), ConvertUtils.ToHex16(AX));
         }
 
         return NearRet();
@@ -49,8 +49,8 @@ public partial class Overrides {
     public Action SetSiToMapCursorTypeDC58_1000_DAAA_01DAAA(int gotoAddress) {
         // when taking an orni: 0x149C, when loading globe or results: 0x2448
         ushort value = SI;
-        if (_logger.IsEnabled(Serilog.Events.LogEventLevel.Debug)) {
-            _logger.Debug("setSiToMapCursorTypeDC58: value:{@Value}", ConvertUtils.ToHex16(value));
+        if (_loggerService.IsEnabled(Serilog.Events.LogEventLevel.Debug)) {
+            _loggerService.Debug("setSiToMapCursorTypeDC58: value:{@Value}", ConvertUtils.ToHex16(value));
         }
 
         this.globalsOnDs.Set1138_DC58_Word16_MapCursorType(value);

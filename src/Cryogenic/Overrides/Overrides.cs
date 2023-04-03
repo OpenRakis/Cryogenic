@@ -2,12 +2,11 @@ namespace Cryogenic.Overrides;
 
 using Globals;
 
-using Serilog;
-
 using Spice86.Core.Emulator.Function;
 using Spice86.Core.Emulator.Function.Dump;
 using Spice86.Core.Emulator.Memory;
 using Spice86.Core.Emulator.VM;
+using Spice86.Shared.Interfaces;
 
 using System.Collections.Generic;
 
@@ -21,7 +20,7 @@ public partial class Overrides : CSharpOverrideHelper {
     private ExtraGlobalsOnCsSegment0x2538 globalsOnCsSegment0X2538;
 
     public Overrides(Dictionary<SegmentedAddress, FunctionInformation> functionInformations, ushort entrySegment,
-        Machine machine, ILogger logger) : base(functionInformations, machine,  logger) {
+        Machine machine, ILoggerService loggerService) : base(functionInformations, machine,  loggerService) {
         // Main code
         this.cs1 = 0x1000;
         // Vga driver is remapped here
@@ -85,7 +84,7 @@ public partial class Overrides : CSharpOverrideHelper {
     private int callsTo03ED = 0;
 
     private void DumpMemoryWithSuffix(string suffix) {
-        new RecorderDataWriter(Machine.Configuration.RecordedDataDirectory, Machine, _logger).DumpMemory(suffix);
+        new RecorderDataWriter(Machine.Configuration.RecordedDataDirectory, Machine, _loggerService).DumpMemory(suffix);
     }
 
     private void DefineDriversRemapping() {

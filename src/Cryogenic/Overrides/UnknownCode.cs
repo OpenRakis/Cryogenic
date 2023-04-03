@@ -115,7 +115,7 @@ public partial class Overrides {
             }
         }
 
-        _logger.Debug("2943={@Value},res={@Res}", value, res);
+        _loggerService.Debug("2943={@Value},res={@Res}", value, res);
         CarryFlag = res;
         if (res) {
             throw FailAsUntested($"isUnknownDBC80x100And2943BitmaskNonZero was called with a true result. value: {value}");

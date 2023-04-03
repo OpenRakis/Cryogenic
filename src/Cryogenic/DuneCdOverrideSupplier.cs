@@ -1,17 +1,18 @@
 namespace Cryogenic;
 
-using Spice86.Core.DI;
 using Spice86.Core.Emulator.Function;
 using Spice86.Core.Emulator.Memory;
 using Spice86.Core.Emulator.ReverseEngineer;
 using Spice86.Core.Emulator.VM;
+using Spice86.Shared.Interfaces;
 
 using System.Collections.Generic;
 
 /// <summary>
-/// Example command line debug arguments: "commandLineArgs": "--Exe C:\\Jeux\\ABWFR\\DUNE_CD\\C\\DNCDPRG.EXE --CDrive=C:\\Jeux\\ABWFR\\DUNE_CD\\C --UseCodeOverride"
+/// Example command line debug arguments: -e "C:\\Jeux\\ABWFR\\DUNE_CD\\C\\DNCDPRG.EXE" --UseCodeOverride true
 /// </summary>
 public class DuneCdOverrideSupplier : IOverrideSupplier {
+    
     public Dictionary<SegmentedAddress, FunctionInformation> GenerateFunctionInformations(int programStartSegment,
         Machine machine) {
         Dictionary<SegmentedAddress, FunctionInformation> res = new();
@@ -21,7 +22,7 @@ public class DuneCdOverrideSupplier : IOverrideSupplier {
 
     private void CreateOverrides(ushort programStartSegment, Machine machine,
         Dictionary<SegmentedAddress, FunctionInformation> res) {
-        new Overrides.Overrides(res, programStartSegment, machine, new ServiceProvider().GetLoggerForContext<Overrides.Overrides>()).DefineOverrides();
-        new CSharpOverrideHelper(res, machine, new ServiceProvider().GetLoggerForContext<CSharpOverrideHelper>()).SetProvidedInterruptHandlersAsOverridden();
+        new Overrides.Overrides(res, programStartSegment, machine, (ILoggerService)Program.ServiceProvider!.GetService(typeof(ILoggerService))).DefineOverrides();
+        new CSharpOverrideHelper(res, machine, (ILoggerService)Program.ServiceProvider!.GetService(typeof(ILoggerService))).SetProvidedInterruptHandlersAsOverridden();
     }
 }

@@ -12,7 +12,7 @@ public partial class Overrides {
         ushort offset = globalsOnDs.Get1138_4854_Word16_SceneSequenceOffset();
         ushort value = UInt16[CS, offset];
         AX = value;
-        _logger.Debug("loadSceneSequenceDataIntoAXAndAdvanceSI: offset:{@Offset},value:{@Value}", offset, value);
+        _loggerService.Debug("loadSceneSequenceDataIntoAXAndAdvanceSI: offset:{@Offset},value:{@Value}", offset, value);
 
         // point to next value
         SI = (ushort)(offset + 2);
@@ -24,7 +24,7 @@ public partial class Overrides {
 
     public Action SetSceneSequenceOffsetToSi_1000_0945_010945(int gotoAddress) {
         ushort offset = SI;
-        _logger.Debug("setUnknownOffset4854ToSi: offset:{@Offset}", offset);
+        _loggerService.Debug("setUnknownOffset4854ToSi: offset:{@Offset}", offset);
         globalsOnDs.Set1138_4854_Word16_SceneSequenceOffset(offset);
         return NearRet();
     }

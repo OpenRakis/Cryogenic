@@ -14,7 +14,7 @@ public partial class Overrides {
     public Action SetPitTimerToAX_1000_E8A8_01E8A8(int gotoAddress) {
         // Seems only called on quit
         ushort valueToSet = AX;
-        _logger.Debug("Setting timer 0 value to {@ValueToSet}", valueToSet);
+        _loggerService.Debug("Setting timer 0 value to {@ValueToSet}", valueToSet);
         Timer timer = Machine.Timer;
         Counter counter = timer.GetCounter(0);
         counter.ReadWritePolicy = 0;

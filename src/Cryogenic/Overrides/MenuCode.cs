@@ -30,7 +30,7 @@ public partial class Overrides {
         // called when a menu has a submenu
         int isAnimateMenuUneeded = globalsOnDs.Get1138_35A6_Word16_IsAnimateMenuUnneeded();
         byte value2 = globalsOnDs.Get1138_DCE6_Byte8_TransitionBitmask();
-        _logger.Debug("isAnimateMenuUneeded={@IsAnimateMenuUneeded},DCE6={@DCE6}", isAnimateMenuUneeded, value2);
+        _loggerService.Debug("isAnimateMenuUneeded={@IsAnimateMenuUneeded},DCE6={@DCE6}", isAnimateMenuUneeded, value2);
         if (isAnimateMenuUneeded == 0) {
             value2 |= 1;
             globalsOnDs.Set1138_DCE6_Byte8_TransitionBitmask(value2);

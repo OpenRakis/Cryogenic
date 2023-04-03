@@ -12,7 +12,7 @@ public partial class Overrides {
 
     public Action CheckIfHnmComplete_1000_CC85_01CC85(int gotoAddress) {
         int value = globalsOnDs.Get1138_DBE7_Byte8_hnmFinishedFlag();
-        _logger.Debug("DBE7={@DBE7}", value);
+        _loggerService.Debug("DBE7={@DBE7}", value);
         ZeroFlag = value is 0 or 1;
         return NearRet();
     }
@@ -24,7 +24,7 @@ public partial class Overrides {
         // Only executed when a video starts
         ushort offset = (ushort)(AX * 2 + 0x33A3);
         ushort value = UInt16[DS, offset];
-        _logger.Debug("read33A3WithAxOffset {@Ax} {@Value}", AX, value);
+        _loggerService.Debug("read33A3WithAxOffset {@Ax} {@Value}", AX, value);
         BX = value;
         return NearRet();
     }
@@ -33,7 +33,7 @@ public partial class Overrides {
         // seems to have no impact what so ever is done here. Only executed during videos
         ushort value = globalsOnDs.Get1138_CE7A_Word16_VideoPlayRelatedIndex();
         globalsOnDs.Set1138_DC22_Word16_VideoPlayRelatedIndex(value);
-        _logger.Debug("videoPlayRelated value:{@Value}", value);
+        _loggerService.Debug("videoPlayRelated value:{@Value}", value);
         return NearRet();
     }
 }

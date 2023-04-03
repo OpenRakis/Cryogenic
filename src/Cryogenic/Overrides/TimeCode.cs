@@ -29,8 +29,8 @@ public partial class Overrides {
 
     public Action SetHourOfTheDayToAX_1000_1AE0_011AE0(int gotoAddress) {
         AX = GetHourOfTheDay();
-        if (_logger.IsEnabled(LogEventLevel.Debug)) {
-            _logger.Debug("setHourOfTheDayToAX:gameTime:{@GameTime}, gameHour:{@GameHour}", globalsOnDs.Get1138_0002_Word16_GameElapsedTime(), AX);
+        if (_loggerService.IsEnabled(LogEventLevel.Debug)) {
+            _loggerService.Debug("setHourOfTheDayToAX:gameTime:{@GameTime}, gameHour:{@GameHour}", globalsOnDs.Get1138_0002_Word16_GameElapsedTime(), AX);
         }
 
         return NearRet();

@@ -29,7 +29,7 @@ public partial class Overrides {
     public Action ClearUnknownValuesAndAX_1000_98F5_0198F5(int gotoAddress) {
         // Called after screen change (video, room, dialogue, map ...).
         // When set to 255, cannot enter orni and enter palace instead
-        _logger.Debug("Before: 1C06:{@1C06}, 1BF8:{@1BF8}, 1BEA:{@1BEA}", globalsOnDs.Get1138_1C06_Word16(), globalsOnDs.Get1138_1BF8_Word16(), globalsOnDs.Get1138_1BEA_Word16());
+        _loggerService.Debug("Before: 1C06:{@1C06}, 1BF8:{@1BF8}, 1BEA:{@1BEA}", globalsOnDs.Get1138_1C06_Word16(), globalsOnDs.Get1138_1BF8_Word16(), globalsOnDs.Get1138_1BEA_Word16());
         globalsOnDs.Set1138_1C06_Word16(0);
 
         // 128 after end of dialogue if character is in the room
@@ -45,7 +45,7 @@ public partial class Overrides {
 
     // sets the gfx offset to 0
     public Action ClearGlobalVgaOffset_1000_0579_010579(int gotoAddress) {
-        _logger.Debug("Clearing VGA offset");
+        _loggerService.Debug("Clearing VGA offset");
         CheckVtableContainsExpected(SegmentRegisters.DsIndex, 0x3939, cs2, 0x163);
         AX = 0;
         VgaFunc33UpdateVgaOffset01A3FromLineNumberAsAx_334B_0163_033613(0);
@@ -57,12 +57,12 @@ public partial class Overrides {
         ushort y = globalsOnDs.Get1138_D82E_Word16_CharacterYCoord();
         DX = x;
         BX = y;
-        _logger.Debug("getCharacterCoordsXY x:{@X} y:{@Y}", DX, BX);
+        _loggerService.Debug("getCharacterCoordsXY x:{@X} y:{@Y}", DX, BX);
         return NearRet();
     }
 
     public Action PopAll_1000_E283_01E283(int gotoAddress) {
-        _logger.Debug("popAll");
+        _loggerService.Debug("popAll");
 
         // Called in most changes related to display like scene change, displaying map, clicking on map, clicking on
         // characters ...
@@ -83,7 +83,7 @@ public partial class Overrides {
     }
 
     public Action PushAll_1000_E270_01E270(int gotoAddress) {
-        _logger.Debug("pushAll");
+        _loggerService.Debug("pushAll");
         Stack.Push16(BX);
         Stack.Push16(CX);
         Stack.Push16(DX);
@@ -150,7 +150,7 @@ public partial class Overrides {
         ushort oldValue = globalsOnDs.Get1138_DBDA_Word16_framebufferActive();
         if (value != oldValue) {
             globalsOnDs.Set1138_DBDA_Word16_framebufferActive(value);
-            _logger.Debug("{@FunctionName} value:{@Value}, oldValue:{@OldValue}", functionName, value, oldValue);
+            _loggerService.Debug("{@FunctionName} value:{@Value}, oldValue:{@OldValue}", functionName, value, oldValue);
         }
 
         return NearRet();
