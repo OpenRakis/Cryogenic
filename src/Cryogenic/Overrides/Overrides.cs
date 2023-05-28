@@ -6,6 +6,7 @@ using Spice86.Core.Emulator.Function;
 using Spice86.Core.Emulator.Function.Dump;
 using Spice86.Core.Emulator.Memory;
 using Spice86.Core.Emulator.VM;
+using Spice86.Shared.Emulator.Memory;
 using Spice86.Shared.Interfaces;
 
 using System.Collections.Generic;
@@ -109,7 +110,7 @@ public partial class Overrides : CSharpOverrideHelper {
             IsRegisterExecutableCodeModificationEnabled = false;
             Interrupt(0x21);
             IsRegisterExecutableCodeModificationEnabled = true;
-            return NearJump(0xF2F8);
+            NearJump(0xF2F8).Invoke();
         });
         OverrideInstruction(cs1, 0xF43B, () => {
             // Part of HSQ decompression, disable code modification detection
@@ -119,7 +120,7 @@ public partial class Overrides : CSharpOverrideHelper {
             SI = (ushort)(SI + Direction8);
             DI = (ushort)(DI + Direction8);
             IsRegisterExecutableCodeModificationEnabled = true;
-            return NearJump(0xF43C);
+            NearJump(0xF43C).Invoke();
         });
         OverrideInstruction(cs1, 0xF429, () => {
             // Part of HSQ decompression, disable code modification detection
@@ -134,7 +135,7 @@ public partial class Overrides : CSharpOverrideHelper {
             }
 
             IsRegisterExecutableCodeModificationEnabled = true;
-            return NearJump(0xF42B);
+            NearJump(0xF42B).Invoke();
         });
         OverrideInstruction(cs1, 0xF47A, () => {
             // Part of HSQ decompression, disable code modification detection
@@ -149,7 +150,7 @@ public partial class Overrides : CSharpOverrideHelper {
             }
 
             IsRegisterExecutableCodeModificationEnabled = true;
-            return NearJump(0xF47C);
+            NearJump(0xF47C).Invoke();
         });
         OverrideInstruction(cs1, 0xE933, () => {
             // Installation of interrupt handlers and update of jumps, only done once and already in the dump -> we dont care
@@ -165,7 +166,7 @@ public partial class Overrides : CSharpOverrideHelper {
             // MOV word ptr CS:[DI + 0x2],AX (1000_E93E / 0x1E93E)
             UInt16[cs1, (ushort)(DI + 0x2)] = AX;
             IsRegisterExecutableCodeModificationEnabled = true;
-            return NearJump(0xE942);
+            NearJump(0xE942).Invoke();
         });
         OverrideInstruction(cs4, 0x02D9, () => {
             // Driver modifying itself only once (setting opcodes from 0x00 to 0x60)
@@ -179,7 +180,7 @@ public partial class Overrides : CSharpOverrideHelper {
             }
 
             IsRegisterExecutableCodeModificationEnabled = true;
-            return NearJump(0x02DB);
+            NearJump(0x02DB).Invoke();
         });
         OverrideInstruction(cs4, 0x03EB, () => {
             // Driver modifying itself only once (Copying to memory containing 0s)
@@ -194,7 +195,7 @@ public partial class Overrides : CSharpOverrideHelper {
             }
 
             IsRegisterExecutableCodeModificationEnabled = true;
-            return NearJump(0x03ED);
+            NearJump(0x03ED).Invoke();
         });
         OverrideInstruction(cs1, 0x49F7, () => {
             // Seems like obfuscation, it is erasing CS:E40C -> CS:E85C with 0x0800
@@ -206,7 +207,7 @@ public partial class Overrides : CSharpOverrideHelper {
             UInt16[ES, DI] = AX;
             DI = (ushort)(DI + Direction16);
             IsRegisterExecutableCodeModificationEnabled = true;
-            return NearJump(0x49F9);
+            NearJump(0x49F9).Invoke();
         });
         
         OverrideInstruction(cs1, 0xB4A6, () => {
@@ -221,7 +222,7 @@ public partial class Overrides : CSharpOverrideHelper {
                 DI = (ushort)(DI + Direction8);
             }
             IsRegisterExecutableCodeModificationEnabled = true;
-            return NearJump(0xB4A8);
+            NearJump(0xB4A8).Invoke();
         });
         OverrideInstruction(cs1, 0xA083, () => {
             // Overwrites init code but after it has been executed ...
@@ -231,7 +232,7 @@ public partial class Overrides : CSharpOverrideHelper {
             // MOV word ptr CS:[BP + 0x2],0x0 (1000_A087 / 0x1A087)
             UInt16[cs1, (ushort)(BP + 0x2)] = 0x0;
             IsRegisterExecutableCodeModificationEnabled = true;
-            return NearJump(0xA08D);
+            NearJump(0xA08D).Invoke();
         });
     }
 }

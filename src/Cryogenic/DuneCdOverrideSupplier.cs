@@ -1,9 +1,9 @@
 namespace Cryogenic;
 
 using Spice86.Core.Emulator.Function;
-using Spice86.Core.Emulator.Memory;
 using Spice86.Core.Emulator.ReverseEngineer;
 using Spice86.Core.Emulator.VM;
+using Spice86.Shared.Emulator.Memory;
 using Spice86.Shared.Interfaces;
 
 using System.Collections.Generic;

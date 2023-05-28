@@ -3,6 +3,7 @@ namespace Cryogenic.Generated;
 using Spice86.Core.Emulator.Memory;
 using Spice86.Core.Emulator.ReverseEngineer;
 using Spice86.Core.Emulator.VM;
+using Spice86.Shared.Emulator.Memory;
 
 public class GlobalsOnCsSegment0x2538 : MemoryBasedDataStructureWithBaseAddress {
 

@@ -5,7 +5,8 @@ using Spice86.Core.Emulator.Devices.Video;
 using Spice86.Core.Emulator.Errors;
 using Spice86.Core.Emulator.Memory;
 using Spice86.Core.Emulator.ReverseEngineer;
-using Spice86.Core.Utils;
+using Spice86.Shared.Emulator.Errors;
+using Spice86.Shared.Utils;
 using Spice86.Shared.Interfaces;
 
 using System;

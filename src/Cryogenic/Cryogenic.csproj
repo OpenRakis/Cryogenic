@@ -12,10 +12,10 @@
 		<Using Include="Spice86.Core.Emulator.Memory" />
 		<Using Include="Spice86.Core.Emulator.ReverseEngineer" />
 		<Using Include="Spice86.Core.Emulator.VM" />
-		<Using Include="Spice86.Core.Utils" />
+		<Using Include="Spice86.Shared.Utils" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Spice86" Version="4.1.1" />
+		<PackageReference Include="Spice86" Version="4.1.2" />
 	</ItemGroup>
 </Project>

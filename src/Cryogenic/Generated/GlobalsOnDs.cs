@@ -12,6 +12,8 @@ using Spice86.Core.Emulator.VM;
 
 using Serilog;
 
+using Spice86.Shared.Emulator.Memory;
+
 // Accessors for values accessed via register DS
 public class GlobalsOnDs : MemoryBasedDataStructureWithDsBaseAddress {
     public GlobalsOnDs(Machine machine) : base(machine) {
