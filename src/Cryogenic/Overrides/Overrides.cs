@@ -43,7 +43,7 @@ public partial class Overrides : CSharpOverrideHelper {
         DefineDataStructureOverrides();
         DefineVgaDriverCodeOverrides();
         DefineDialoguesCodeOverrides();
-        DefineDisplayCodeOverrides();
+        //DefineDisplayCodeOverrides();
         DefineHnmCodeOverrides();
         DefineInitCodeOverrides();
         DefineMapCodeOverrides();
@@ -54,9 +54,9 @@ public partial class Overrides : CSharpOverrideHelper {
         DefineUnknownCodeOverrides();
         DefineVideoCodeOverrides();
 
-        DefineDriversRemapping();
+        //DefineDriversRemapping();
         DetectDriversEntryPoints();
-        //// Dump memory at the proper time. Too soon and drivers wont be loaded, too late and init code will be erased
+        // Dump memory at the proper time. Too soon and drivers wont be loaded, too late and init code will be erased
         DefineMemoryDumpsMapping();
 
         SetupExecutableCodeModificationStrategy();
