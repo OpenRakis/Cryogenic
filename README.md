@@ -26,7 +26,7 @@ To run it, just run the project with dune CD exe in parameter:
 ```
 git clone https://github.com/OpenRakis/crygenic
 cd cryogenic/src/Cryogenic
-dotnet run --Exe C:/path/to/dunecd/DNCDPRG.EXE
+dotnet run --Exe C:/path/to/dunecd/DNCDPRG.EXE --UseCodeOverride true
 ```
 
 # Building it
