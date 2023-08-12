@@ -1,7 +1,7 @@
 namespace Cryogenic.Overrides;
 
 using Spice86.Core.Emulator.Memory;
-using Spice86.Core.Emulator.ReverseEngineer;
+using Spice86.Core.Emulator.ReverseEngineer.DataStructure.Array;
 using Spice86.Shared.Emulator.Memory;
 
 using System;
@@ -19,8 +19,8 @@ public partial class Overrides {
         // wtf
         int increment = DI;
         int count = UInt16[initialAddress] / 2;
-        Uint16Array array = new Uint16Array(Memory, initialAddress, count);
-        for (int i = 0; i < array.Length; i++) {
+        UInt16Array array = new UInt16Array(Memory, initialAddress, count);
+        for (int i = 0; i < array.Count; i++) {
             array[i] = (ushort)(array[i] + increment);
         }
 
