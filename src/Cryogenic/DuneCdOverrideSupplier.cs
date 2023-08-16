@@ -1,5 +1,6 @@
 namespace Cryogenic;
 
+using Spice86.Core.CLI;
 using Spice86.Core.Emulator.Function;
 using Spice86.Core.Emulator.ReverseEngineer;
 using Spice86.Core.Emulator.VM;
@@ -13,16 +14,18 @@ using System.Collections.Generic;
 /// </summary>
 public class DuneCdOverrideSupplier : IOverrideSupplier {
     
-    public Dictionary<SegmentedAddress, FunctionInformation> GenerateFunctionInformations(int programStartSegment,
+    public IDictionary<SegmentedAddress, FunctionInformation> GenerateFunctionInformations(
+        ILoggerService loggerService,
+        Configuration configuration,
+        ushort programStartSegment,
         Machine machine) {
         Dictionary<SegmentedAddress, FunctionInformation> res = new();
-        CreateOverrides((ushort)programStartSegment, machine, res);
+        CreateOverrides(loggerService, configuration, programStartSegment, machine, res);
         return res;
     }
 
-    private void CreateOverrides(ushort programStartSegment, Machine machine,
-        Dictionary<SegmentedAddress, FunctionInformation> res) {
-        new Overrides.Overrides(res, programStartSegment, machine, (ILoggerService)Program.ServiceProvider!.GetService(typeof(ILoggerService))).DefineOverrides();
-        new CSharpOverrideHelper(res, machine, (ILoggerService)Program.ServiceProvider!.GetService(typeof(ILoggerService))).SetProvidedInterruptHandlersAsOverridden();
+    private void CreateOverrides(ILoggerService loggerService, Configuration configuration, ushort programStartSegment, 
+        Machine machine, Dictionary<SegmentedAddress, FunctionInformation> res) {
+        new Overrides.Overrides(res, programStartSegment, machine, loggerService, configuration);
     }
 }

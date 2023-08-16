@@ -1,8 +1,5 @@
 namespace Cryogenic.Overrides;
 
-using Spice86.Core.Emulator.Memory;
-using Spice86.Core.Emulator.ReverseEngineer;
-
 using System;
 
 // Method names contain _ to separate addresses.
@@ -55,7 +52,7 @@ public partial class Overrides {
         // Called when leaving or entering a scene. Does not seem to have any effect on game whatever the value is in this
         // area.
         uint address = MemoryUtils.ToPhysicalAddress(DS, 0x47F8);
-        Memory.Memset(address, 0xFF, 2 * 0x2E);
+        Memory.Memset8(address, 0xFF, 2 * 0x2E);
         return NearRet();
     }
 
@@ -164,8 +161,8 @@ public partial class Overrides {
 
     public Action UnknownStructCreation_1000_E75B_01E75B(int gotoAddress) {
         uint destinationAddress = MemoryUtils.ToPhysicalAddress(ES, DI);
-        Memory.SetUint16(destinationAddress, AX);
-        Memory.SetUint8(destinationAddress + 2, DL);
+        Memory.UInt16[destinationAddress] = AX;
+        Memory.UInt8[destinationAddress + 2] = DL;
         uint sourceAddress = MemoryUtils.ToPhysicalAddress(DS, SI) + 0x10;
         Memory.MemCopy(sourceAddress, destinationAddress + 3, 3);
         Memory.MemCopy(sourceAddress + 4, destinationAddress + 6, 4);

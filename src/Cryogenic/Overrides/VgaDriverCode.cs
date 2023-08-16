@@ -1,10 +1,7 @@
 namespace Cryogenic.Overrides;
 
-using Spice86.Aeon.Emulator.Video;
 using Spice86.Core.Emulator.Devices.Video;
-using Spice86.Core.Emulator.Errors;
 using Spice86.Core.Emulator.Memory;
-using Spice86.Core.Emulator.ReverseEngineer;
 using Spice86.Shared.Emulator.Errors;
 using Spice86.Shared.Utils;
 using Spice86.Shared.Interfaces;
@@ -72,9 +69,9 @@ public partial class Overrides {
         _loggerService.Debug("unknownMapCopyMapBlock blockSize={@BlockSize}, baseSourceAddress:{@BaseSourceAddress},baseDestinationAddress:{@BaseDestinationAddress}", blockSize, baseSourceAddress, baseDestinationAddress);
         for (int i = 0; i < 4; i++) {
             for (int j = 0; j < blockSize; j++) {
-                byte value = Memory.GetUint8((uint)(baseSourceAddress + j + 400 * i));
+                byte value = Memory.UInt8[baseSourceAddress + j + 400 * i];
                 value = (byte)(((value >> 4) & 0xF) + 0x10);
-                Memory.SetUint8((uint)(baseDestinationAddress + j + 320 * i), value);
+                Memory.UInt8[baseDestinationAddress + j + 320 * i] = value;
             }
         }
 
@@ -99,7 +96,7 @@ public partial class Overrides {
         // 26D77
         uint address = MemoryUtils.ToPhysicalAddress(ES, 0);
         _loggerService.Debug("fillWithZeroFor64000AtES address:{@Address}", address);
-        Memory.Memset(address, 0, 64000);
+        Memory.Memset8(address, 0, 64000);
         return FarRet();
     }
 
@@ -129,7 +126,7 @@ public partial class Overrides {
             }
 
             byte valueToStore = (byte)(ConvertUtils.Uint8((byte)((xorNoise & 0x3) - 1)) + ConvertUtils.Uint8((byte)(initialColor >> 8)));
-            Memory.SetUint8((uint)(destinationAddress + i * direction), valueToStore);
+            Memory.UInt8[destinationAddress + i * direction] = valueToStore;
             initialColor += colorIncrement;
         }
 
@@ -154,17 +151,19 @@ public partial class Overrides {
     public Action LoadPaletteInVgaDac_334B_0B68_034018(int gotoAddress) {
         // No jump, 49 lines in ghidra
         try {
-            IAeonVgaCard vgaCard = (IAeonVgaCard) Machine.VgaCard;
+            IVideoCard vgaCard = Machine.VgaCard;
             uint baseAddress = MemoryUtils.ToPhysicalAddress(ES, DX);
             byte writeIndex = BL;
             ushort numberOfColors = CX;
             byte loadMode = globalsOnCsSegment0X2538.Get2538_01BD_Byte8_PaletteLoadMode();
             _loggerService.Debug("loadPaletteInVgaDac, baseAddress:{@BaseAddress}, writeIndex:{@Writeindex}, loadMode:{@LoadMode}, numberOfColors:{@NumberOfColors}", baseAddress, writeIndex, loadMode, numberOfColors);
-            vgaCard.Dac.WriteIndex = writeIndex;
+            IVideoState videoState = Machine.VgaRegisters;
+            videoState.DacRegisters.IndexRegisterWriteMode = writeIndex;
+            
             if (loadMode == 0) {
                 for (uint i = 0; i < numberOfColors * 3; i++) {
                     byte value = UInt8[baseAddress + i];
-                    vgaCard.Dac.Write(value);
+                    videoState.DacRegisters.DataRegister = value;
                 }
             } else {
                 // Untested ... 25f29 in ghidra, 2538:BA9 in dosbox, probably wrong
@@ -174,9 +173,9 @@ public partial class Overrides {
                     byte g = (byte)(UInt8[baseAddress + i + 1] & 0x3F);
                     byte b = (byte)(UInt8[baseAddress + i + 2] & 0x3F);
                     byte value = (byte)((r * 5 + g * 9 + b * 2) >> 4);
-                    vgaCard.Dac.Write(value);
-                    vgaCard.Dac.Write(value);
-                    vgaCard.Dac.Write(value);
+                    videoState.DacRegisters.DataRegister = value;
+                    videoState.DacRegisters.DataRegister = value;
+                    videoState.DacRegisters.DataRegister = value;
                 }
             }
 
@@ -217,7 +216,7 @@ public partial class Overrides {
         for (ushort y = 0; y < columnCount; y++) {
             for (ushort x = 0; x < rowCount; x++) {
                 int disp = y * 320 + x;
-                UInt8[(uint)(destinationAddress + disp)] = UInt8[(uint)(sourceAddress + disp)];
+                UInt8[destinationAddress + disp] = UInt8[sourceAddress + disp];
             }
         }
 
@@ -290,7 +289,7 @@ public partial class Overrides {
         // no jump, 28 lines in ghidra, part of the function is not executed in the logs and DX is always 3DA.
         // Wait for retrace.
         IVideoCard vgaCard = Machine.VgaCard;
-        vgaCard.TickRetrace();
+        vgaCard.UpdateScreen();
         Thread.Sleep(15);
         State.CarryFlag = true;
         return NearRet();

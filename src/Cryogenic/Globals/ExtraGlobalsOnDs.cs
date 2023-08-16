@@ -11,23 +11,23 @@ public class ExtraGlobalsOnDs : GlobalsOnDs {
     }
 
     public uint Get1138_DC04_DWord32_hnmFileOffset() {
-        return GetUint32(0xDC04);
+        return UInt32[0xDC04];
     }
 
     public uint Get1138_DC08_DWord32_hnmFileRemain() {
-        return GetUint32(0xDC08);
+        return UInt32[0xDC08];
     }
 
     public ushort GetMenuType() {
         // menu displayed and associated actions depend on this value
-        return this.GetUint16(Get1138_21DA_Word16_OffsetToMenuType());
+        return this.UInt16[Get1138_21DA_Word16_OffsetToMenuType()];
     }
 
     public void Set1138_DC04_DWord32_hnmFileOffset(uint value) {
-        SetUint32(0xDC04, value);
+        UInt32[0xDC04] = value;
     }
 
     public void Set1138_DC08_DWord32_hnmFileRemain(uint value) {
-        SetUint32(0xDC08, value);
+        UInt32[0xDC08] = value;
     }
 }
