@@ -58,6 +58,7 @@ public partial class Overrides : CSharpOverrideHelper {
         DefineDriversRemapping();
         DetectDriversEntryPoints();
         // Dump memory at the proper time. Too soon and drivers wont be loaded, too late and init code will be erased
+        DefineMT32DriverCodeOverrides();
         DefineMemoryDumpsMapping();
         
         // Generated code, crashes for various reasons
