@@ -5,7 +5,7 @@ using Spice86.Core.Emulator.CPU;
 // Method names contain _ to separate addresses.
 public partial class Overrides {
     public void DefineDisplayCodeOverrides() {
-        DefineFunction(cs1, 0x0579, ClearGlobalVgaOffset_1000_0579_010579);
+        //DefineFunction(cs1, 0x0579, ClearGlobalVgaOffset_1000_0579_010579);
         DefineFunction(cs1, 0x98F5, ClearUnknownValuesAndAX_1000_98F5_0198F5);
         DefineFunction(cs1, 0x9901, Set479ETo0_1000_9901_019901);
         DefineFunction(cs1, 0xC07C, SetFrontBufferAsActiveFrameBuffer_1000_C07C_01C07C);
