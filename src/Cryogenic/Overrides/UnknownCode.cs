@@ -31,7 +31,7 @@ public partial class Overrides {
 
     public Action CheckPcmEnabled_1000_AE2F_1AE2F(int gotoAddress) {
         ushort value = globalsOnDs.Get1138_DBC8_Word16();
-        Cpu.Alu.And16(value, 1);
+        Alu16.And(value, 1);
         return NearRet();
     }
 
@@ -131,7 +131,7 @@ public partial class Overrides {
         ushort value = globalsOnDs.Get1138_DBC8_Word16();
 
         // Seems that this function is called with only JZ / JNZ, but not sure so call the real thing
-        Cpu.Alu.Sub16(value, 0x100);
+        Alu16.Sub(value, 0x100);
         return NearRet();
     }
 
@@ -176,7 +176,7 @@ public partial class Overrides {
         // Game stops if carry flag is unset
         ushort value = globalsOnDs.Get1138_39B9_Word16_allocatorNextFreeSegment();
         value += 0x2F13;
-        Cpu.Alu.Sub16(value, globalsOnDs.Get1138_CE68_Word16_allocatorLastFreeSegment());
+        Alu16.Sub(value, globalsOnDs.Get1138_CE68_Word16_allocatorLastFreeSegment());
         return NearRet();
     }
 }
