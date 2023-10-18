@@ -16,7 +16,7 @@ This projects requires [.NET 7](https://dotnet.microsoft.com/en-us/download/dotn
 See the [releases](https://github.com/OpenRakis/Cryogenic/releases) section.
 
 # Status
-Thanks to the hybrid ASM / .NET mode provided by [Spice86](https://github.com/OpenRakis/Spice86), the game is fully playable, but there is no sound (yet).
+Thanks to the hybrid ASM / .NET mode provided by [Spice86](https://github.com/OpenRakis/Spice86), the game is fully playable, including sound and music. 
 
 The goal is to have more and more logic written in human readable C#.
 
