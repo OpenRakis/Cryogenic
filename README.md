@@ -24,7 +24,9 @@ Thanks to the hybrid ASM / .NET mode provided by [Spice86](https://github.com/Op
 
 The goal is to have more and more logic written in human readable C#.
 
-# Running it
+# Build & Run
+
+## Running it
 To run it, just run the project with dune CD exe in parameter:
 
 ```
@@ -33,7 +35,7 @@ cd Cryogenic/src
 dotnet run --Exe C:/path/to/dunecd/DNCDPRG.EXE --UseCodeOverride true
 ```
 
-# Running it with music and sound effetcs enabled:
+## Running it with music and sound effetcs enabled:
 
 Example with Adlib music:
 ```
@@ -41,7 +43,7 @@ cd Cryogenic/src
 dotnet run --Exe C:/path/to/dunecd/DNCDPRG.EXE --UseCodeOverride true -a "ADL220 SBP2227"
 ```
 
-# Building it
+## Building it
  - Clone this repo, and build it:
 
 ```
