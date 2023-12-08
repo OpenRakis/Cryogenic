@@ -22,7 +22,7 @@ jobs:
          uses: montudor/action-zip@v1
 
        - name: Build with dotnet
-         working-directory: ./src/
+         working-directory: ./src/Cryogenic
          run: |
               dotnet restore
               dotnet publish -c Release -r linux-arm64 --self-contained true -p:PublishReadyToRun=true -p:PublishSingleFile=true -o Release/linux-arm64
