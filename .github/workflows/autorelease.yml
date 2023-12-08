@@ -40,11 +40,11 @@ jobs:
 
        - name: Zip Debug output
          run: zip -qq -r DebugBuild.zip Debug
-         working-directory: ./src/Spice86/bin
+         working-directory: ./src/Cryogenic/bin
 
        - name: Zip Release output
          run: zip -qq -r ReleaseBuild.zip Release
-         working-directory: ./src/Spice86/bin
+         working-directory: ./src/Cryogenic/bin
 
        - name: Publish GitHub Release
          uses: "marvinpinto/action-automatic-releases@latest"
