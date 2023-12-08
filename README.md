@@ -45,8 +45,8 @@ dotnet run --Exe C:/path/to/dunecd/DNCDPRG.EXE --UseCodeOverride true -a "ADL220
  - Clone this repo, and build it:
 
 ```
-git clone https://github.com/OpenRakis/crygenic
-cd cryogenic
+git clone https://github.com/OpenRakis/Crygenic
+cd Cryogenic/src
 dotnet build
 ```
 
