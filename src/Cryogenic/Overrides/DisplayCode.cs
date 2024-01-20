@@ -1,6 +1,7 @@
 namespace Cryogenic.Overrides;
 
 using Spice86.Core.Emulator.CPU;
+using Spice86.Core.Emulator.CPU.Registers;
 
 // Method names contain _ to separate addresses.
 public partial class Overrides {
@@ -46,7 +47,7 @@ public partial class Overrides {
     // sets the gfx offset to 0
     public Action ClearGlobalVgaOffset_1000_0579_010579(int gotoAddress) {
         _loggerService.Debug("Clearing VGA offset");
-        CheckVtableContainsExpected(SegmentRegisters.DsIndex, 0x3939, cs2, 0x163);
+        CheckVtableContainsExpected((int)SegmentRegisters.DsIndex, 0x3939, cs2, 0x163);
         AX = 0;
         VgaFunc33UpdateVgaOffset01A3FromLineNumberAsAx_334B_0163_033613(0);
         return NearRet();
