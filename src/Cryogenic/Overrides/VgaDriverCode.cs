@@ -125,7 +125,7 @@ public partial class Overrides {
                 xorNoise ^= xorNoisePattern;
             }
 
-            byte valueToStore = (byte)(ConvertUtils.Uint8((byte)((xorNoise & 0x3) - 1)) + ConvertUtils.Uint8((byte)(initialColor >> 8)));
+            byte valueToStore = (byte)((uint)ConvertUtils.Int8((byte)((xorNoise & 0x3) - 1)) + (uint)ConvertUtils.Int8((byte)(initialColor >> 8)));
             Memory.UInt8[destinationAddress + i * direction] = valueToStore;
             initialColor += colorIncrement;
         }

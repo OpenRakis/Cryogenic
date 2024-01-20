@@ -145,6 +145,6 @@ public class DriverLoadToolbox {
             return;
         }
 
-        cSharpOverrideHelper.Machine.Cpu.FunctionHandler.GetOrCreateFunctionInformation(address, name);
+        cSharpOverrideHelper.Machine.Cpu.FunctionHandler.GetOrCreateFunctionInformation(address.Value, name);
     }
 }
