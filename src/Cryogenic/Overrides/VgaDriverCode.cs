@@ -151,7 +151,7 @@ public partial class Overrides {
     public Action LoadPaletteInVgaDac_334B_0B68_034018(int gotoAddress) {
         // No jump, 49 lines in ghidra
         try {
-            IVideoCard vgaCard = Machine.VgaCard;
+            VgaCard vgaCard = Machine.VgaCard;
             uint baseAddress = MemoryUtils.ToPhysicalAddress(ES, DX);
             byte writeIndex = BL;
             ushort numberOfColors = CX;
@@ -288,8 +288,6 @@ public partial class Overrides {
     public Action WaitForRetrace_334B_09B8_033E68(int gotoAddress) {
         // no jump, 28 lines in ghidra, part of the function is not executed in the logs and DX is always 3DA.
         // Wait for retrace.
-        IVideoCard vgaCard = Machine.VgaCard;
-        vgaCard.UpdateScreen();
         Thread.Sleep(15);
         State.CarryFlag = true;
         return NearRet();
