@@ -27,7 +27,9 @@ The goal is to have more and more logic written in human readable C#.
 # Build & Run
 
 ## Running it
-To run it, just run the project with dune CD exe in parameter:
+To run it, ensure that you have DUNE.DAT and DNCDPRG.EXE together in the same folder.
+
+Next, just run the project with dune CD executable as parameter:
 
 ```
 git clone https://github.com/OpenRakis/Crygenic
