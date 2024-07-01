@@ -37,10 +37,11 @@ dotnet run --Exe C:/path/to/dunecd/DNCDPRG.EXE --UseCodeOverride true
 
 ## Running it with music and sound effetcs enabled:
 
-Example with Adlib music:
+Example with Adlib music and PCM voices:
 ```
-cd Cryogenic/src
-dotnet run --Exe C:/path/to/dunecd/DNCDPRG.EXE --UseCodeOverride true -a "ADL220 SBP2227"
+cd Cryogenic/src/Cryogenic
+dotnet publish
+bin/Release/net8.0/publish/Cryogenic --Exe C:/path/to/dunecd/DNCDPRG.EXE --UseCodeOverride true -a "ADL220 SBP2227"
 ```
 
 ## Building it
