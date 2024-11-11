@@ -33,8 +33,8 @@ public partial class Overrides : CSharpOverrideHelper {
         this.cs4 = DriverLoadToolbox.DRIVER2_SEGMENT;
         // Bios, This does not depend on the entry segment. 
         this.cs5 = DriverLoadToolbox.INTERRUPT_HANDLER_SEGMENT;
-        globalsOnDs = new ExtraGlobalsOnDs(machine);
-        globalsOnCsSegment0X2538 = new ExtraGlobalsOnCsSegment0x2538(machine, cs2);
+        globalsOnDs = new ExtraGlobalsOnDs(machine.Memory, machine.Cpu.State.SegmentRegisters);
+        globalsOnCsSegment0X2538 = new ExtraGlobalsOnCsSegment0x2538(machine.Memory, cs2);
 
         DefineOverrides();
         DefineStaticDefinitionsFunctions();

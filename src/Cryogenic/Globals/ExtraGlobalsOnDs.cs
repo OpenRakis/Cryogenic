@@ -2,12 +2,13 @@ namespace Cryogenic.Globals;
 
 using Cryogenic.Generated;
 
-using Spice86.Core.Emulator.VM;
+using Spice86.Core.Emulator.CPU.Registers;
+using Spice86.Core.Emulator.Memory.ReaderWriter;
 
 // Non generated code for values that could not be detected by running the game
 public class ExtraGlobalsOnDs : GlobalsOnDs {
 
-    public ExtraGlobalsOnDs(Machine machine) : base(machine) {
+    public ExtraGlobalsOnDs(IByteReaderWriter memory, SegmentRegisters segmentRegisters) : base(memory, segmentRegisters) {
     }
 
     public uint Get1138_DC04_DWord32_hnmFileOffset() {

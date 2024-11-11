@@ -1,14 +1,14 @@
 namespace Cryogenic.Generated;
 
-using Spice86.Core.Emulator.VM;
-
-
+using Spice86.Core.Emulator.CPU.Registers;
+using Spice86.Core.Emulator.Memory.ReaderWriter;
 using Spice86.Core.Emulator.ReverseEngineer.DataStructure;
 using Spice86.Shared.Emulator.Memory;
 
+
 // Accessors for values accessed via register DS
 public class GlobalsOnDs : MemoryBasedDataStructureWithDsBaseAddress {
-    public GlobalsOnDs(Machine machine) : base(machine) {
+    public GlobalsOnDs(IByteReaderWriter memory, SegmentRegisters segmentRegisters) : base(memory, segmentRegisters) {
     }
 
     // Getters and Setters for address 0x1DD:0x2/0x1DD2.

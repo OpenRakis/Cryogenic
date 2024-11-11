@@ -1,11 +1,13 @@
 namespace Cryogenic.Generated;
 
+using Spice86.Core.Emulator.Memory.ReaderWriter;
 using Spice86.Core.Emulator.ReverseEngineer.DataStructure;
 using Spice86.Core.Emulator.VM;
 
 public class GlobalsOnCsSegment0x1ED : MemoryBasedDataStructure {
 
-    public GlobalsOnCsSegment0x1ED(Machine machine, uint segment) : base(machine.Memory, segment * 0x10) {
+    public GlobalsOnCsSegment0x1ED(IByteReaderWriter byteReaderWriter, uint baseAddress) : base(byteReaderWriter, baseAddress) {
+
     }
 
     // Getters and Setters for address 0x1ED:0xAA/0x1F7A.
