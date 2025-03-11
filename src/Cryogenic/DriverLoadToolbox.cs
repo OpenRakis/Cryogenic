@@ -120,16 +120,16 @@ public class DriverLoadToolbox {
             DefineFunctionIfNotPresent(entryAddress, $"{driverName}_entry_{i.ToString("D2")}", cSharpOverrideHelper);
             // Parse the jump to create the target function address in the driver
             SegmentedAddress? jumpTargetAddress = null;
-            if (memory.UInt8[entryAddress.ToPhysical()] == 0xE9) {
+            if (memory.UInt8[entryAddress.Linear] == 0xE9) {
                 // 16bit offset
-                short jumpDisp = (short)memory.UInt16[entryAddress.ToPhysical() + 1];
+                short jumpDisp = (short)memory.UInt16[entryAddress.Linear + 1];
                 ushort jumpOffset = (ushort)(entryAddress.Offset + 3 + jumpDisp);
                 jumpTargetAddress = new SegmentedAddress(segment, jumpOffset);
             }
 
-            if (memory.UInt8[entryAddress.ToPhysical()] == 0xEB) {
+            if (memory.UInt8[entryAddress.Linear] == 0xEB) {
                 // 8 bit offset
-                sbyte jumpDisp = (sbyte)memory.UInt8[entryAddress.ToPhysical() + 1];
+                sbyte jumpDisp = (sbyte)memory.UInt8[entryAddress.Linear + 1];
                 ushort jumpOffset = (ushort)(entryAddress.Offset + 2 + jumpDisp);
                 jumpTargetAddress = new SegmentedAddress(segment, jumpOffset);
             }

@@ -1,7 +1,6 @@
 namespace Cryogenic.Overrides;
 
 using Spice86.Core.Emulator.Devices.Timer;
-using Spice86.Core.Emulator.ReverseEngineer;
 
 using System;
 
@@ -16,11 +15,11 @@ public partial class Overrides {
         ushort valueToSet = AX;
         _loggerService.Debug("Setting timer 0 value to {@ValueToSet}", valueToSet);
         Timer timer = Machine.Timer;
-        Counter counter = timer.GetCounter(0);
+        Pit8254Counter counter = timer.GetCounter(0);
         counter.ReadWritePolicy = 0;
         counter.Mode = 3;
-        counter.Bcd = 0;
-        counter.SetValue(valueToSet);
+        counter.Bcd = false;
+        counter.Configure(valueToSet);
         return NearRet();
     }
 }

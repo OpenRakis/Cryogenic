@@ -9,7 +9,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <PackageReference Include="Spice86" Version="8.0.2" />
+	  <PackageReference Include="Spice86" Version="9.0.0" />
 	</ItemGroup>
 
 	<ItemGroup>

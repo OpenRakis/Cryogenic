@@ -1,9 +1,7 @@
 namespace Cryogenic.Overrides;
 
-using Spice86.Core.Emulator.InterruptHandlers.Dos;
 using Spice86.Core.Emulator.OperatingSystem;
 using Spice86.Core.Emulator.OperatingSystem.Structures;
-using Spice86.Core.Emulator.ReverseEngineer;
 
 using System;
 
@@ -23,7 +21,7 @@ public partial class Overrides {
 
         ushort readLength = CX;
         uint offset = globalsOnDs.Get1138_DC04_DWord32_hnmFileOffset();
-        uint targetMemory = globalsOnDs.GetPtr1138_DC0C_Dword32_hnmFileReadBufferSegment().ToPhysical();
+        uint targetMemory = globalsOnDs.GetPtr1138_DC0C_Dword32_hnmFileReadBufferSegment().Linear;
         _loggerService.Debug("Read {@ReadLength} bytes from hnm file handle {@FileHandle} at offset {@Offset}", readLength, fileHandle, offset);
         dosFileManager.MoveFilePointerUsingHandle(0, fileHandle, offset);
         DosFileOperationResult result = dosFileManager.ReadFile(fileHandle, readLength, targetMemory);

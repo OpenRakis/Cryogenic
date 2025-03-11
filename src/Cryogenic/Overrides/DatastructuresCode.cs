@@ -31,7 +31,7 @@ public partial class Overrides {
         // TODO: create a proper data structure with more organized accessors when what this is is known better.
         int index = AX;
         SegmentedAddress baseAddress = globalsOnDs.GetPtr1138_DBB0_Dword32_spriteSheetResourcePointer();
-        int resOffset = baseAddress.Offset + UInt16[(uint)(baseAddress.ToPhysical() + index * 2)];
+        int resOffset = baseAddress.Offset + UInt16[(uint)(baseAddress.Linear + index * 2)];
         ES = baseAddress.Segment;
         SI = (ushort)resOffset;
         return NearRet();
