@@ -2,14 +2,20 @@
 
 	<PropertyGroup>
 		<OutputType>Exe</OutputType>
-		<TargetFramework>net9.0</TargetFramework>
+		<TargetFramework>net8.0</TargetFramework>
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<NoWarn>0164;0162</NoWarn>
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <PackageReference Include="Spice86" Version="9.0.0" />
+		<!--PackageReference Include="Spice86" Version="9.0.0" /-->
+		<ProjectReference Include="../../../Spice86/src/Spice86.Shared/Spice86.Shared.csproj" />
+		<ProjectReference Include="../../../Spice86/src/Spice86.Logging/Spice86.Logging.csproj" />
+		<ProjectReference Include="../../../Spice86/src/Bufdio.Spice86/Bufdio.Spice86.csproj" />
+		<ProjectReference Include="../../../Spice86/src/Spice86/Spice86.csproj" />
+		<ProjectReference Include="../../../Spice86/src/Spice86.Core/Spice86.Core.csproj" />
+		<ProjectReference Include="../../../Spice86/src/Spice86.MicroBenchmarkTemplate/Spice86.MicroBenchmarkTemplate.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
