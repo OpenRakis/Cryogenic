@@ -8,8 +8,12 @@
 		<NoWarn>0164;0162</NoWarn>
 	</PropertyGroup>
 
+	<PropertyGroup Label="Avalonia">
+	  <AvaloniaUseCompiledBindingsByDefault>True</AvaloniaUseCompiledBindingsByDefault>
+	</PropertyGroup>
+
 	<ItemGroup>
-		<PackageReference Include="Spice86" Version="10.0.0" />
+		<PackageReference Include="Spice86" Version="11.0.0" />
 	</ItemGroup>
 
 	<ItemGroup>

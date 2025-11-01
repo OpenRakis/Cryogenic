@@ -23,7 +23,7 @@ public partial class Overrides {
         uint offset = globalsOnDs.Get1138_DC04_DWord32_hnmFileOffset();
         uint targetMemory = globalsOnDs.GetPtr1138_DC0C_Dword32_hnmFileReadBufferSegment().Linear;
         _loggerService.Debug("Read {@ReadLength} bytes from hnm file handle {@FileHandle} at offset {@Offset}", readLength, fileHandle, offset);
-        dosFileManager.MoveFilePointerUsingHandle(0, fileHandle, offset);
+        dosFileManager.MoveFilePointerUsingHandle(0, fileHandle, (int)offset);
         DosFileOperationResult result = dosFileManager.ReadFileOrDevice(fileHandle, readLength, targetMemory);
         uint? actualReadLength = result.Value;
         if (actualReadLength != readLength) {

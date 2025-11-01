@@ -34,7 +34,7 @@ Next, just run the project with dune CD executable as parameter:
 ```
 git clone https://github.com/OpenRakis/Crygenic
 cd Cryogenic/src
-dotnet run --Exe C:/path/to/dunecd/DNCDPRG.EXE --UseCodeOverride true
+dotnet run --Exe C:/path/to/dunecd/DNCDPRG.EXE --UseCodeOverride true -p 4096
 ```
 
 ## Running it with music and sound effetcs enabled:
@@ -43,7 +43,7 @@ Example with Adlib music and PCM voices:
 ```
 cd Cryogenic/src/Cryogenic
 dotnet publish
-bin/Release/net8.0/publish/Cryogenic --Exe C:/path/to/dunecd/DNCDPRG.EXE --UseCodeOverride true -a "ADL220 SBP2227"
+bin/Release/net8.0/publish/Cryogenic --Exe C:/path/to/dunecd/DNCDPRG.EXE --UseCodeOverride true -p 4096 -a "ADL220 SBP2227"
 ```
 
 ## Building it
