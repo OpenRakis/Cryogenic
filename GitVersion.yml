@@ -7,48 +7,51 @@ branches:
   main:
     regex: ^(main|master)$
     mode: ContinuousDeployment
-    tag: ''
+    label: ''
     increment: Patch
-    prevent-increment-of-merged-branch-version: true
+    prevent-increment:
+      of-merged-branch: true
     track-merge-target: false
     tracks-release-branches: false
     is-release-branch: true
   pull-request:
     regex: ^(pull|pull\-requests|pr)[/-]
     mode: ContinuousDeployment
-    tag: PullRequest
+    label: PullRequest
     increment: Inherit
-    tag-number-pattern: '[/-](?<number>\d+)[-/]'
+    label-number-pattern: '[/-](?<number>\d+)[-/]'
   feature:
     regex: ^features?[/-]
     mode: ContinuousDeployment
-    tag: useBranchName
+    label: useBranchName
     increment: Inherit
   copilot:
     regex: ^copilot[/-]
     mode: ContinuousDeployment
-    tag: useBranchName
+    label: useBranchName
     increment: Inherit
   develop:
     regex: ^dev(elop)?(ment)?$
     mode: ContinuousDeployment
-    tag: alpha
+    label: alpha
     increment: Minor
-    prevent-increment-of-merged-branch-version: false
+    prevent-increment:
+      of-merged-branch: false
     track-merge-target: true
   release:
     regex: ^releases?[/-]
     mode: ContinuousDeployment
-    tag: beta
+    label: beta
     increment: None
-    prevent-increment-of-merged-branch-version: true
+    prevent-increment:
+      of-merged-branch: true
     track-merge-target: false
     tracks-release-branches: true
     is-release-branch: true
   hotfix:
     regex: ^hotfix(es)?[/-]
     mode: ContinuousDeployment
-    tag: beta
+    label: beta
     increment: Patch
 ignore:
   sha: []
