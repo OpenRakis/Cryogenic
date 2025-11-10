@@ -102,7 +102,7 @@ Cryogenic/
 │       │   ├── MenuCode.cs           # Menu system overrides
 │       │   ├── DialoguesCode.cs      # Dialogue system overrides
 │       │   └── ...
-│       ├── Generated/                 # Auto-generated code (don't edit)
+│       ├── Generated/                 # Auto-generated properties for globals
 │       └── Globals/                   # Game state accessors
 ├── doc/                              # Documentation and screenshots
 ├── dump/                             # Memory dumps and analysis configs
@@ -142,10 +142,6 @@ Example:
 ```csharp
 DefineFunction(cs1, 0xC085, SetBackBufferAsActiveFrameBuffer_1000_C085_01C085, false);
 ```
-
-#### Generated Code
-
-Files under `Generated/` are produced by Spice86's dump tooling. **Never edit these manually**. Add custom accessors in `Globals/Extra*` files instead.
 
 #### Return Methods
 
