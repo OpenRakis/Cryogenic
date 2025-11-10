@@ -11,15 +11,12 @@ jobs:
     runs-on: "ubuntu-latest"
 
     steps:
-       - uses: actions/checkout@v1
+       - uses: actions/checkout@v4
 
        - name: Setup .NET
-         uses: actions/setup-dotnet@v1
+         uses: actions/setup-dotnet@v4
          with:
            dotnet-version: '8.0.x'
-
-       - name: Install zip
-         uses: montudor/action-zip@v1
 
        - name: Build with dotnet
          working-directory: ./src/Cryogenic
