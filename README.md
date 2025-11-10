@@ -4,6 +4,17 @@
 
 # CRYOGENIC
 
+[![PR Validation](https://github.com/OpenRakis/Cryogenic/actions/workflows/pr-validation.yml/badge.svg)](https://github.com/OpenRakis/Cryogenic/actions/workflows/pr-validation.yml)
+[![Release](https://github.com/OpenRakis/Cryogenic/actions/workflows/release.yml/badge.svg)](https://github.com/OpenRakis/Cryogenic/actions/workflows/release.yml)
+[![Deploy Pages](https://github.com/OpenRakis/Cryogenic/actions/workflows/static.yml/badge.svg)](https://github.com/OpenRakis/Cryogenic/actions/workflows/static.yml)
+[![CodeQL](https://github.com/OpenRakis/Cryogenic/actions/workflows/pr-validation.yml/badge.svg?event=push)](https://github.com/OpenRakis/Cryogenic/security/code-scanning)
+[![License](https://img.shields.io/github/license/OpenRakis/Cryogenic)](LICENSE)
+[![Latest Release](https://img.shields.io/github/v/release/OpenRakis/Cryogenic)](https://github.com/OpenRakis/Cryogenic/releases/latest)
+[![GitHub Stars](https://img.shields.io/github/stars/OpenRakis/Cryogenic?style=social)](https://github.com/OpenRakis/Cryogenic/stargazers)
+[![GitHub Forks](https://img.shields.io/github/forks/OpenRakis/Cryogenic?style=social)](https://github.com/OpenRakis/Cryogenic/network/members)
+[![GitHub Issues](https://img.shields.io/github/issues/OpenRakis/Cryogenic)](https://github.com/OpenRakis/Cryogenic/issues)
+[![.NET Version](https://img.shields.io/badge/.NET-8.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
+
 **Reverse Engineering the Classic Dune Game**
 
 📚 **[GitHub Page](https://openrakis.github.io/Cryogenic/)**
