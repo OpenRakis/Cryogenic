@@ -1,5 +1,8 @@
 mode: ContinuousDeployment
 next-version: 0.1.0
+assembly-versioning-scheme: MajorMinorPatch
+assembly-file-versioning-scheme: MajorMinorPatch
+assembly-informational-format: '{InformationalVersion}'
 branches:
   main:
     regex: ^(main|master)$
