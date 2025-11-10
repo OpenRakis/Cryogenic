@@ -8,10 +8,35 @@ using Spice86.Shared.Interfaces;
 
 using System;
 
-// Method names contain _ to separate addresses.
+/// <summary>
+/// Partial class containing VGA graphics driver (DNVGA) function overrides.
+/// </summary>
+/// <remarks>
+/// <para>
+/// This file provides C# implementations for the custom VGA driver used by Dune CD.
+/// The driver is loaded at segment 0xD000 (cs2) and provides hardware-accelerated
+/// graphics operations including blitting, palette management, retrace synchronization,
+/// and specialized rendering for maps and globe views.
+/// </para>
+/// <para>
+/// Method names contain underscores to separate segment, offset, and linear addresses
+/// for traceability back to the original DOS disassembly.
+/// </para>
+/// </remarks>
 public partial class Overrides {
+    /// <summary>
+    /// Offset in video memory where the image under the mouse cursor is saved (0xFA00).
+    /// </summary>
     private const ushort IMAGE_UNDER_MOUSE_CURSOR_START = 0xFA00;
     
+    /// <summary>
+    /// Registers VGA driver function overrides with Spice86.
+    /// </summary>
+    /// <remarks>
+    /// Defines overrides for DNVGA driver functions including mode setting, blitting,
+    /// palette operations, mouse cursor handling, retrace synchronization, and specialized
+    /// rendering routines for maps and textures.
+    /// </remarks>
     public void DefineVgaDriverCodeOverrides() {
         DefineFunction(cs2, 0x100, "VgaFunc00SetMode");
         DefineFunction(cs2, 0x103, VgaFunc01GetInfoInAxCxBp_334B_0103_0335B3);
