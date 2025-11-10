@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cryogenic - Reverse Engineering Dune (CD Version)</title>
+    <meta name="description" content="Reverse engineering the classic Cryo Dune game using Spice86 hybrid ASM/C# technology">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'dune-sand': '#D4A574',
+                        'dune-dark': '#1a1410',
+                        'dune-orange': '#CC5500',
+                        'spice': '#FF6B35',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;600;700&display=swap');
+        
+        .font-orbitron {
+            font-family: 'Orbitron', sans-serif;
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #1a1410 0%, #2d1810 50%, #1a1410 100%);
+        }
+        
+        .glow {
+            box-shadow: 0 0 20px rgba(255, 107, 53, 0.3);
+        }
+        
+        .hover-glow:hover {
+            box-shadow: 0 0 30px rgba(255, 107, 53, 0.5);
+            transform: translateY(-2px);
+            transition: all 0.3s ease;
+        }
+        
+        .code-block {
+            background: #1e1e1e;
+            border-left: 4px solid #FF6B35;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .float-animation {
+            animation: float 3s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 font-sans">
+    <!-- Navigation -->
+    <nav class="gradient-bg border-b border-dune-orange/30 sticky top-0 z-50 backdrop-blur-sm">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <span class="text-3xl font-orbitron font-bold text-spice">CRYOGENIC</span>
+                    <span class="text-sm text-gray-400 hidden sm:inline">Dune Reverse Engineering</span>
+                </div>
+                <div class="flex space-x-6">
+                    <a href="#about" class="hover:text-spice transition">About</a>
+                    <a href="#goals" class="hover:text-spice transition">Goals</a>
+                    <a href="#tech" class="hover:text-spice transition">Technology</a>
+                    <a href="#contributing" class="hover:text-spice transition">Contributing</a>
+                    <a href="https://github.com/OpenRakis/Cryogenic" target="_blank" class="hover:text-spice transition">
+                        <svg class="w-6 h-6 inline" fill="currentColor" viewBox="0 0 24 24">
+                            <path fill-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.17 6.839 9.49.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.604-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.463-1.11-1.463-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.167 22 16.418 22 12c0-5.523-4.477-10-10-10z" clip-rule="evenodd" />
+                        </svg>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="gradient-bg py-20 relative overflow-hidden">
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-0 left-0 w-full h-full" style="background-image: url('data:image/svg+xml,%3Csvg width=\"60\" height=\"60\" viewBox=\"0 0 60 60\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cg fill=\"none\" fill-rule=\"evenodd\"%3E%3Cg fill=\"%23FF6B35\" fill-opacity=\"0.4\"%3E%3Cpath d=\"M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E');"></div>
+        </div>
+        <div class="container mx-auto px-4 text-center relative z-10">
+            <h1 class="text-6xl md:text-7xl font-orbitron font-black mb-6 text-transparent bg-clip-text bg-gradient-to-r from-spice to-dune-orange">
+                CRYOGENIC
+            </h1>
+            <p class="text-2xl md:text-3xl mb-4 text-gray-300">Reverse Engineering the Classic Dune Game</p>
+            <p class="text-lg md:text-xl mb-8 text-gray-400 max-w-3xl mx-auto">
+                Modernizing Cryo's iconic 1992 Dune adventure through hybrid ASM/C# technology powered by Spice86
+            </p>
+            <div class="flex flex-wrap justify-center gap-4 mb-12">
+                <a href="https://github.com/OpenRakis/Cryogenic/releases" class="bg-spice hover-glow px-8 py-3 rounded-lg font-semibold transition">
+                    Download Latest Release
+                </a>
+                <a href="#contributing" class="border border-spice hover-glow px-8 py-3 rounded-lg font-semibold transition">
+                    Start Contributing
+                </a>
+            </div>
+            <div class="flex flex-wrap justify-center gap-4 text-sm">
+                <span class="bg-gray-800 px-4 py-2 rounded-full">
+                    <img src="https://img.shields.io/badge/-Linux-grey?logo=linux" alt="Linux" class="inline">
+                </span>
+                <span class="bg-gray-800 px-4 py-2 rounded-full">
+                    <img src="https://img.shields.io/badge/-OSX-black?logo=apple" alt="OSX" class="inline">
+                </span>
+                <span class="bg-gray-800 px-4 py-2 rounded-full">
+                    <img src="https://img.shields.io/badge/-Windows-red?logo=windows" alt="Windows" class="inline">
+                </span>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="py-16 bg-gray-800">
+        <div class="container mx-auto px-4">
+            <h2 class="text-4xl font-orbitron font-bold mb-8 text-center text-spice">About the Project</h2>
+            <div class="max-w-4xl mx-auto">
+                <p class="text-lg mb-6 text-gray-300 leading-relaxed">
+                    Cryogenic is an ambitious reverse engineering project dedicated to understanding and modernizing 
+                    <strong>Cryo's Dune</strong> (CD Version, 1992) - one of the most atmospheric adventure games of the early 90s. 
+                    Using the powerful <a href="https://github.com/OpenRakis/Spice86" class="text-spice hover:underline">Spice86</a> 
+                    reverse engineering toolkit, we're gradually rewriting the game from x86 assembly into readable, maintainable C# code.
+                </p>
+                <p class="text-lg mb-6 text-gray-300 leading-relaxed">
+                    The game is <strong>fully playable</strong> right now, complete with sound and music support. As we continue 
+                    to replace assembly routines with C# implementations, the codebase becomes more accessible to modern developers 
+                    while preserving the exact behavior of the original DOS executable.
+                </p>
+                <div class="bg-gray-900 border border-dune-orange/30 rounded-lg p-6 mb-6">
+                    <p class="text-sm text-gray-400 mb-2">Supported DNCDPRG.EXE SHA256:</p>
+                    <code class="text-xs text-spice break-all">5f30aeb84d67cf2e053a83c09c2890f010f2e25ee877ebec58ea15c5b30cfff9</code>
+                </div>
+                <p class="text-sm text-gray-400 italic">
+                    ⚠️ Note: The CD release of DUNE (version 3.7) must be obtained separately, as it is copyrighted material.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Screenshots -->
+    <section class="py-16 bg-gray-900">
+        <div class="container mx-auto px-4">
+            <h2 class="text-4xl font-orbitron font-bold mb-12 text-center text-spice">Game Screenshots</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-6xl mx-auto">
+                <div class="rounded-lg overflow-hidden shadow-lg hover-glow">
+                    <img src="https://raw.githubusercontent.com/OpenRakis/Cryogenic/main/doc/cryodune_worm.png" alt="Desert Worm" class="w-full h-auto">
+                    <div class="bg-gray-800 p-4">
+                        <p class="text-sm text-gray-400">Encounter with the mighty sandworm</p>
+                    </div>
+                </div>
+                <div class="rounded-lg overflow-hidden shadow-lg hover-glow">
+                    <img src="https://raw.githubusercontent.com/OpenRakis/Cryogenic/main/doc/cryodune_chani.png" alt="Chani" class="w-full h-auto">
+                    <div class="bg-gray-800 p-4">
+                        <p class="text-sm text-gray-400">Meeting with Chani</p>
+                    </div>
+                </div>
+                <div class="rounded-lg overflow-hidden shadow-lg hover-glow">
+                    <img src="https://raw.githubusercontent.com/OpenRakis/Cryogenic/main/doc/cryodune_send_spice.png" alt="Spice Management" class="w-full h-auto">
+                    <div class="bg-gray-800 p-4">
+                        <p class="text-sm text-gray-400">Managing spice resources</p>
+                    </div>
+                </div>
+                <div class="rounded-lg overflow-hidden shadow-lg hover-glow">
+                    <img src="https://raw.githubusercontent.com/OpenRakis/Cryogenic/main/doc/cryodune_harkonen.png" alt="Harkonnen" class="w-full h-auto">
+                    <div class="bg-gray-800 p-4">
+                        <p class="text-sm text-gray-400">Harkonnen confrontation</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Goals Section -->
+    <section id="goals" class="py-16 bg-gray-800">
+        <div class="container mx-auto px-4">
+            <h2 class="text-4xl font-orbitron font-bold mb-8 text-center text-spice">Project Goals</h2>
+            <div class="max-w-5xl mx-auto">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-gray-900 rounded-lg p-6 border border-dune-orange/20 hover-glow">
+                        <div class="text-spice text-3xl mb-4">🔍</div>
+                        <h3 class="text-xl font-bold mb-3 font-orbitron">Understand the Game</h3>
+                        <p class="text-gray-300">
+                            Deep dive into the inner workings of Dune's game engine, uncovering how Cryo implemented 
+                            dialogue systems, resource management, and real-time strategy elements in the DOS era.
+                        </p>
+                    </div>
+                    <div class="bg-gray-900 rounded-lg p-6 border border-dune-orange/20 hover-glow">
+                        <div class="text-spice text-3xl mb-4">🔄</div>
+                        <h3 class="text-xl font-bold mb-3 font-orbitron">Incremental Rewriting</h3>
+                        <p class="text-gray-300">
+                            Gradually replace x86 assembly routines with clean, documented C# code while maintaining 
+                            100% behavioral compatibility with the original game.
+                        </p>
+                    </div>
+                    <div class="bg-gray-900 rounded-lg p-6 border border-dune-orange/20 hover-glow">
+                        <div class="text-spice text-3xl mb-4">📚</div>
+                        <h3 class="text-xl font-bold mb-3 font-orbitron">Document Everything</h3>
+                        <p class="text-gray-300">
+                            Create comprehensive documentation of game mechanics, data structures, and algorithms 
+                            to preserve this knowledge for future developers and gaming historians.
+                        </p>
+                    </div>
+                    <div class="bg-gray-900 rounded-lg p-6 border border-dune-orange/20 hover-glow">
+                        <div class="text-spice text-3xl mb-4">🎮</div>
+                        <h3 class="text-xl font-bold mb-3 font-orbitron">Preserve Gaming History</h3>
+                        <p class="text-gray-300">
+                            Ensure this classic adventure game remains playable on modern systems and provide 
+                            a foundation for potential future enhancements and ports.
+                        </p>
+                    </div>
+                    <div class="bg-gray-900 rounded-lg p-6 border border-dune-orange/20 hover-glow">
+                        <div class="text-spice text-3xl mb-4">🛠️</div>
+                        <h3 class="text-xl font-bold mb-3 font-orbitron">Educational Resource</h3>
+                        <p class="text-gray-300">
+                            Serve as a reference implementation for reverse engineering techniques and demonstrate 
+                            the power of hybrid emulation approaches.
+                        </p>
+                    </div>
+                    <div class="bg-gray-900 rounded-lg p-6 border border-dune-orange/20 hover-glow">
+                        <div class="text-spice text-3xl mb-4">🌐</div>
+                        <h3 class="text-xl font-bold mb-3 font-orbitron">Cross-Platform Support</h3>
+                        <p class="text-gray-300">
+                            Leverage .NET 8's cross-platform capabilities to run the game natively on Windows, 
+                            macOS, and Linux without emulation layers.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Technology Section -->
+    <section id="tech" class="py-16 bg-gray-900">
+        <div class="container mx-auto px-4">
+            <h2 class="text-4xl font-orbitron font-bold mb-8 text-center text-spice">The Spice86 Technology</h2>
+            <div class="max-w-5xl mx-auto">
+                <div class="bg-gray-800 rounded-lg p-8 mb-8 border border-spice/30">
+                    <h3 class="text-2xl font-bold mb-4 text-spice font-orbitron">What is Spice86?</h3>
+                    <p class="text-lg text-gray-300 mb-4 leading-relaxed">
+                        <a href="https://github.com/OpenRakis/Spice86" class="text-spice hover:underline font-semibold">Spice86</a> 
+                        is a revolutionary reverse engineering toolkit and PC emulator specifically designed for 16-bit real mode x86 programs. 
+                        Unlike traditional emulators that simply run old software, Spice86 enables you to <strong>gradually modernize</strong> 
+                        legacy DOS applications by replacing assembly code with high-level C# implementations.
+                    </p>
+                    <p class="text-lg text-gray-300 leading-relaxed">
+                        Built on .NET 8, Spice86 provides a unique hybrid execution model where the original DOS executable runs 
+                        alongside your C# overrides, allowing for incremental reverse engineering and testing.
+                    </p>
+                </div>
+
+                <h3 class="text-2xl font-bold mb-6 text-spice font-orbitron">Key Features</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+                    <div class="bg-gray-800 rounded-lg p-6 border-l-4 border-spice">
+                        <h4 class="text-lg font-bold mb-2">🔄 Hybrid Execution</h4>
+                        <p class="text-gray-300">
+                            Run original DOS binaries while selectively replacing functions with C# implementations. 
+                            Test your reverse-engineered code against the real thing in real-time.
+                        </p>
+                    </div>
+                    <div class="bg-gray-800 rounded-lg p-6 border-l-4 border-spice">
+                        <h4 class="text-lg font-bold mb-2">🔬 Runtime Analysis</h4>
+                        <p class="text-gray-300">
+                            Collect memory dumps, execution traces, and runtime data while the program runs. 
+                            Understand program behavior through dynamic analysis.
+                        </p>
+                    </div>
+                    <div class="bg-gray-800 rounded-lg p-6 border-l-4 border-spice">
+                        <h4 class="text-lg font-bold mb-2">🎯 Ghidra Integration</h4>
+                        <p class="text-gray-300">
+                            Import runtime data into Ghidra for static analysis. Convert assembly segments into 
+                            documented C# code with context from actual execution.
+                        </p>
+                    </div>
+                    <div class="bg-gray-800 rounded-lg p-6 border-l-4 border-spice">
+                        <h4 class="text-lg font-bold mb-2">🐛 Advanced Debugging</h4>
+                        <p class="text-gray-300">
+                            Built-in debugger with GDB remote protocol support. Set breakpoints, inspect memory, 
+                            and step through code with modern debugging tools.
+                        </p>
+                    </div>
+                    <div class="bg-gray-800 rounded-lg p-6 border-l-4 border-spice">
+                        <h4 class="text-lg font-bold mb-2">🎮 Hardware Emulation</h4>
+                        <p class="text-gray-300">
+                            Complete support for VGA/EGA/CGA graphics, PC Speaker, AdLib, SoundBlaster, 
+                            keyboard, and mouse. Run old games with full audiovisual fidelity.
+                        </p>
+                    </div>
+                    <div class="bg-gray-800 rounded-lg p-6 border-l-4 border-spice">
+                        <h4 class="text-lg font-bold mb-2">🌍 Cross-Platform</h4>
+                        <p class="text-gray-300">
+                            Built on .NET 8 for Windows, macOS, and Linux. Modern, maintainable codebase 
+                            accessible to contemporary developers.
+                        </p>
+                    </div>
+                </div>
+
+                <h3 class="text-2xl font-bold mb-6 text-spice font-orbitron">How Cryogenic Uses Spice86</h3>
+                <div class="bg-gray-800 rounded-lg p-8 border border-dune-orange/30">
+                    <div class="space-y-4">
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0 w-10 h-10 rounded-full bg-spice/20 flex items-center justify-center mr-4">
+                                <span class="text-spice font-bold">1</span>
+                            </div>
+                            <div>
+                                <h4 class="font-bold mb-2">Override Registration</h4>
+                                <p class="text-gray-300">
+                                    Cryogenic registers C# function overrides in <code class="text-spice">DuneCdOverrideSupplier</code> 
+                                    that replace specific assembly routines at runtime.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0 w-10 h-10 rounded-full bg-spice/20 flex items-center justify-center mr-4">
+                                <span class="text-spice font-bold">2</span>
+                            </div>
+                            <div>
+                                <h4 class="font-bold mb-2">Segment Management</h4>
+                                <p class="text-gray-300">
+                                    Memory segments (CS1=0x1000 for main code, CS2/3/4 for drivers, CS5=0xF000 for BIOS) 
+                                    are carefully managed to ensure accurate address translation.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0 w-10 h-10 rounded-full bg-spice/20 flex items-center justify-center mr-4">
+                                <span class="text-spice font-bold">3</span>
+                            </div>
+                            <div>
+                                <h4 class="font-bold mb-2">Hybrid Execution</h4>
+                                <p class="text-gray-300">
+                                    When DNCDPRG.EXE calls an overridden function, Spice86 redirects execution to the 
+                                    C# implementation. When the C# code returns, execution continues in assembly.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0 w-10 h-10 rounded-full bg-spice/20 flex items-center justify-center mr-4">
+                                <span class="text-spice font-bold">4</span>
+                            </div>
+                            <div>
+                                <h4 class="font-bold mb-2">State Synchronization</h4>
+                                <p class="text-gray-300">
+                                    Global game state accessors like <code class="text-spice">globalsOnDs</code> ensure 
+                                    C# code and assembly share the same memory, maintaining perfect compatibility.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-8 bg-gray-800 rounded-lg p-6 border-l-4 border-spice">
+                    <p class="text-gray-300">
+                        <strong>Example:</strong> The VGA driver functions, originally in pure assembly, have been 
+                        replaced with C# implementations in <code class="text-spice">Overrides/VgaDriverCode.cs</code>. 
+                        These functions interact with the same frame buffers and registers as the original code, 
+                        making the replacement transparent to the rest of the game.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Build & Run Section -->
+    <section class="py-16 bg-gray-800">
+        <div class="container mx-auto px-4">
+            <h2 class="text-4xl font-orbitron font-bold mb-8 text-center text-spice">Build & Run</h2>
+            <div class="max-w-4xl mx-auto space-y-6">
+                <div class="bg-gray-900 rounded-lg p-6 border border-dune-orange/30">
+                    <h3 class="text-xl font-bold mb-4 text-spice">Prerequisites</h3>
+                    <ul class="list-disc list-inside text-gray-300 space-y-2">
+                        <li><a href="https://dotnet.microsoft.com/en-us/download/dotnet/8.0" class="text-spice hover:underline">.NET 8 SDK</a></li>
+                        <li>Dune CD Version 3.7 (DNCDPRG.EXE and DUNE.DAT) - must be obtained separately</li>
+                    </ul>
+                </div>
+
+                <div class="bg-gray-900 rounded-lg p-6 border border-dune-orange/30">
+                    <h3 class="text-xl font-bold mb-4 text-spice">Quick Start</h3>
+                    <div class="code-block rounded p-4 text-sm overflow-x-auto">
+                        <pre class="text-gray-300"><code># Clone the repository
+git clone https://github.com/OpenRakis/Cryogenic
+cd Cryogenic/src
+
+# Build the project
+dotnet build
+
+# Run the game (basic mode)
+dotnet run --Exe C:/path/to/dunecd/DNCDPRG.EXE --UseCodeOverride true -p 4096</code></pre>
+                    </div>
+                </div>
+
+                <div class="bg-gray-900 rounded-lg p-6 border border-dune-orange/30">
+                    <h3 class="text-xl font-bold mb-4 text-spice">Running with Audio</h3>
+                    <p class="text-gray-300 mb-4">
+                        For the full experience with AdLib music and PCM sound effects:
+                    </p>
+                    <div class="code-block rounded p-4 text-sm overflow-x-auto">
+                        <pre class="text-gray-300"><code>cd Cryogenic/src/Cryogenic
+dotnet publish
+bin/Release/net8.0/publish/Cryogenic --Exe C:/path/to/dunecd/DNCDPRG.EXE --UseCodeOverride true -p 4096 -a "ADL220 SBP2227"</code></pre>
+                    </div>
+                    <p class="text-sm text-gray-400 mt-4">
+                        Note: Always use <code class="text-spice">--UseCodeOverride true</code> or your C# code won't execute!
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contributing Section -->
+    <section id="contributing" class="py-16 bg-gray-900">
+        <div class="container mx-auto px-4">
+            <h2 class="text-4xl font-orbitron font-bold mb-8 text-center text-spice">Contributing Guide</h2>
+            <div class="max-w-5xl mx-auto">
+                <div class="bg-gray-800 rounded-lg p-8 mb-8 border border-spice/30">
+                    <p class="text-lg text-gray-300 mb-4 leading-relaxed">
+                        We welcome contributions from developers of all skill levels! Whether you're experienced in 
+                        reverse engineering or just getting started, there's a place for you in this project.
+                    </p>
+                    <p class="text-lg text-gray-300 leading-relaxed">
+                        For detailed contribution guidelines, please see our 
+                        <a href="https://github.com/OpenRakis/Cryogenic/blob/main/CONTRIBUTING.md" class="text-spice hover:underline font-semibold">CONTRIBUTING.md</a> file.
+                    </p>
+                </div>
+
+                <h3 class="text-2xl font-bold mb-6 text-spice font-orbitron">Ways to Contribute</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+                    <div class="bg-gray-800 rounded-lg p-6 hover-glow">
+                        <h4 class="text-lg font-bold mb-3 text-spice">🔍 Reverse Engineering</h4>
+                        <p class="text-gray-300 mb-3">
+                            Analyze assembly code, identify functions, and create C# implementations. Great for those 
+                            who enjoy low-level programming and detective work.
+                        </p>
+                        <ul class="text-sm text-gray-400 space-y-1">
+                            <li>• Identify and document game functions</li>
+                            <li>• Convert assembly to C# overrides</li>
+                            <li>• Verify behavioral equivalence</li>
+                        </ul>
+                    </div>
+                    <div class="bg-gray-800 rounded-lg p-6 hover-glow">
+                        <h4 class="text-lg font-bold mb-3 text-spice">📝 Documentation</h4>
+                        <p class="text-gray-300 mb-3">
+                            Help document game mechanics, data structures, and code functionality. Essential for 
+                            making the project accessible.
+                        </p>
+                        <ul class="text-sm text-gray-400 space-y-1">
+                            <li>• Document override functions</li>
+                            <li>• Explain game mechanics</li>
+                            <li>• Create tutorials and guides</li>
+                        </ul>
+                    </div>
+                    <div class="bg-gray-800 rounded-lg p-6 hover-glow">
+                        <h4 class="text-lg font-bold mb-3 text-spice">🧪 Testing</h4>
+                        <p class="text-gray-300 mb-3">
+                            Play the game, find bugs, and verify that C# overrides behave identically to the 
+                            original assembly code.
+                        </p>
+                        <ul class="text-sm text-gray-400 space-y-1">
+                            <li>• Test game scenarios</li>
+                            <li>• Report behavioral differences</li>
+                            <li>• Validate override implementations</li>
+                        </ul>
+                    </div>
+                    <div class="bg-gray-800 rounded-lg p-6 hover-glow">
+                        <h4 class="text-lg font-bold mb-3 text-spice">🛠️ Code Quality</h4>
+                        <p class="text-gray-300 mb-3">
+                            Improve existing C# code, refactor for clarity, and add helpful comments. Make the 
+                            codebase more maintainable.
+                        </p>
+                        <ul class="text-sm text-gray-400 space-y-1">
+                            <li>• Refactor complex functions</li>
+                            <li>• Add code comments</li>
+                            <li>• Improve error handling</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <h3 class="text-2xl font-bold mb-6 text-spice font-orbitron">Getting Started</h3>
+                <div class="bg-gray-800 rounded-lg p-8 space-y-6">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0 w-10 h-10 rounded-full bg-spice/20 flex items-center justify-center mr-4">
+                            <span class="text-spice font-bold">1</span>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="font-bold mb-2">Fork & Clone</h4>
+                            <p class="text-gray-300">Fork the repository and clone it to your local machine.</p>
+                            <div class="code-block rounded p-3 text-sm mt-2">
+                                <code class="text-gray-300">git clone https://github.com/YOUR-USERNAME/Cryogenic.git</code>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0 w-10 h-10 rounded-full bg-spice/20 flex items-center justify-center mr-4">
+                            <span class="text-spice font-bold">2</span>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="font-bold mb-2">Set Up Development Environment</h4>
+                            <p class="text-gray-300">
+                                Install .NET 8 SDK, obtain the Dune CD files, and familiarize yourself with the 
+                                codebase structure.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0 w-10 h-10 rounded-full bg-spice/20 flex items-center justify-center mr-4">
+                            <span class="text-spice font-bold">3</span>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="font-bold mb-2">Pick an Issue</h4>
+                            <p class="text-gray-300">
+                                Check the <a href="https://github.com/OpenRakis/Cryogenic/issues" class="text-spice hover:underline">issues page</a> 
+                                for tasks labeled <code class="text-spice">good first issue</code> or <code class="text-spice">help wanted</code>.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0 w-10 h-10 rounded-full bg-spice/20 flex items-center justify-center mr-4">
+                            <span class="text-spice font-bold">4</span>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="font-bold mb-2">Create a Branch</h4>
+                            <p class="text-gray-300">Create a feature branch for your work.</p>
+                            <div class="code-block rounded p-3 text-sm mt-2">
+                                <code class="text-gray-300">git checkout -b feature/your-feature-name</code>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0 w-10 h-10 rounded-full bg-spice/20 flex items-center justify-center mr-4">
+                            <span class="text-spice font-bold">5</span>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="font-bold mb-2">Make Your Changes</h4>
+                            <p class="text-gray-300">
+                                Implement your changes, following the coding conventions described in the 
+                                <a href="https://github.com/OpenRakis/Cryogenic/blob/main/.github/copilot-instructions.md" class="text-spice hover:underline">copilot-instructions.md</a>.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0 w-10 h-10 rounded-full bg-spice/20 flex items-center justify-center mr-4">
+                            <span class="text-spice font-bold">6</span>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="font-bold mb-2">Test Thoroughly</h4>
+                            <p class="text-gray-300">
+                                Run the game and verify your changes work correctly. Test edge cases and ensure 
+                                no regressions.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0 w-10 h-10 rounded-full bg-spice/20 flex items-center justify-center mr-4">
+                            <span class="text-spice font-bold">7</span>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="font-bold mb-2">Submit a Pull Request</h4>
+                            <p class="text-gray-300">
+                                Push your branch and open a pull request with a clear description of your changes.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-8 bg-gray-900 rounded-lg p-6 border-l-4 border-spice">
+                    <h4 class="font-bold mb-3">Code of Conduct</h4>
+                    <p class="text-gray-300">
+                        We are committed to providing a welcoming and inclusive environment. Please be respectful, 
+                        constructive, and professional in all interactions. See our 
+                        <a href="https://github.com/OpenRakis/Cryogenic/blob/main/CONTRIBUTING.md" class="text-spice hover:underline">contribution guidelines</a> 
+                        for more details.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Resources Section -->
+    <section class="py-16 bg-gray-800">
+        <div class="container mx-auto px-4">
+            <h2 class="text-4xl font-orbitron font-bold mb-8 text-center text-spice">Resources & Links</h2>
+            <div class="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6">
+                <a href="https://github.com/OpenRakis/Cryogenic" class="bg-gray-900 rounded-lg p-6 hover-glow block">
+                    <div class="flex items-center mb-3">
+                        <svg class="w-8 h-8 mr-3 text-spice" fill="currentColor" viewBox="0 0 24 24">
+                            <path fill-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.17 6.839 9.49.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.604-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.463-1.11-1.463-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.167 22 16.418 22 12c0-5.523-4.477-10-10-10z" clip-rule="evenodd" />
+                        </svg>
+                        <h3 class="text-xl font-bold">GitHub Repository</h3>
+                    </div>
+                    <p class="text-gray-400">Source code, issues, and releases</p>
+                </a>
+                <a href="https://github.com/OpenRakis/Spice86" class="bg-gray-900 rounded-lg p-6 hover-glow block">
+                    <div class="flex items-center mb-3">
+                        <span class="text-3xl mr-3">🌶️</span>
+                        <h3 class="text-xl font-bold">Spice86 Project</h3>
+                    </div>
+                    <p class="text-gray-400">The reverse engineering toolkit powering Cryogenic</p>
+                </a>
+                <a href="https://en.wikipedia.org/wiki/Dune_(video_game)" class="bg-gray-900 rounded-lg p-6 hover-glow block">
+                    <div class="flex items-center mb-3">
+                        <span class="text-3xl mr-3">📖</span>
+                        <h3 class="text-xl font-bold">Dune (1992) - Wikipedia</h3>
+                    </div>
+                    <p class="text-gray-400">Learn about the original game</p>
+                </a>
+                <a href="https://github.com/OpenRakis/Cryogenic/releases" class="bg-gray-900 rounded-lg p-6 hover-glow block">
+                    <div class="flex items-center mb-3">
+                        <span class="text-3xl mr-3">📦</span>
+                        <h3 class="text-xl font-bold">Download Releases</h3>
+                    </div>
+                    <p class="text-gray-400">Get the latest version of Cryogenic</p>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="gradient-bg py-8 border-t border-dune-orange/30">
+        <div class="container mx-auto px-4 text-center">
+            <p class="text-gray-400 mb-4">
+                Cryogenic is an open-source project licensed under the Apache License 2.0
+            </p>
+            <p class="text-gray-500 text-sm mb-4">
+                © 2021-2024 Kevin Ferrare and contributors. Dune is © Cryo Interactive Entertainment.
+            </p>
+            <p class="text-gray-500 text-sm">
+                This project is not affiliated with or endorsed by Cryo Interactive Entertainment or any rights holders.
+            </p>
+            <div class="mt-6">
+                <a href="https://github.com/OpenRakis/Cryogenic" class="text-spice hover:underline mx-2">GitHub</a>
+                <span class="text-gray-600">•</span>
+                <a href="https://github.com/OpenRakis/Cryogenic/issues" class="text-spice hover:underline mx-2">Issues</a>
+                <span class="text-gray-600">•</span>
+                <a href="https://github.com/OpenRakis/Cryogenic/blob/main/CONTRIBUTING.md" class="text-spice hover:underline mx-2">Contributing</a>
+                <span class="text-gray-600">•</span>
+                <a href="https://github.com/OpenRakis/Cryogenic/blob/main/LICENSE" class="text-spice hover:underline mx-2">License</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scroll to top button -->
+    <button id="scrollTop" class="fixed bottom-8 right-8 bg-spice hover-glow p-3 rounded-full shadow-lg hidden transition opacity-90 hover:opacity-100">
+        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
+        </svg>
+    </button>
+
+    <script>
+        // Smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Scroll to top button
+        const scrollTopBtn = document.getElementById('scrollTop');
+        window.addEventListener('scroll', () => {
+            if (window.pageYOffset > 300) {
+                scrollTopBtn.classList.remove('hidden');
+            } else {
+                scrollTopBtn.classList.add('hidden');
+            }
+        });
+
+        scrollTopBtn.addEventListener('click', () => {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        });
+    </script>
+</body>
+</html>
