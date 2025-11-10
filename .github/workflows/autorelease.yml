@@ -54,5 +54,5 @@ jobs:
            prerelease: true
            title: "Pre-release"
            files: |
-             ./src/bin/DebugBuild.zip
-             ./src/bin/ReleaseBuild.zip
+             ./src/Cryogenic/bin/DebugBuild.zip
+             ./src/Cryogenic/bin/ReleaseBuild.zip
