@@ -1,7 +1,25 @@
 namespace Cryogenic.Overrides;
 
+/// <summary>
+/// Partial class containing static function definitions from the original DOS executable.
+/// </summary>
+/// <remarks>
+/// This file defines symbolic names for known functions in the DNCDPRG.EXE executable
+/// to enable better tracing and debugging in Spice86. Most function names are derived
+/// from IDA Pro analysis with "_ida" suffix indicating their origin.
+/// These definitions do not provide C# implementations, only symbolic mappings.
+/// </remarks>
 public partial class Overrides {
 
+    /// <summary>
+    /// Registers static function definitions with Spice86 for improved tracing and debugging.
+    /// </summary>
+    /// <remarks>
+    /// These function definitions establish symbolic names for addresses in the original
+    /// DOS executable, enabling more readable logs and stack traces. Functions span
+    /// various game systems including video playback (HNM), resource loading, audio,
+    /// memory management, map rendering, and user interface.
+    /// </remarks>
     public void DefineStaticDefinitionsFunctions() {
         DefineFunction(cs1, 0x3A, "exit");
         DefineFunction(cs1, 0xB0, "initialize_2_ida");

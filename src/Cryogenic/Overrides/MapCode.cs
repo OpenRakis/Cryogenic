@@ -7,14 +7,33 @@ using Spice86.Shared.Utils;
 
 using System;
 
-// Method names contain _ to separate addresses.
+/// <summary>
+/// Partial class containing map view and cursor handling overrides.
+/// </summary>
+/// <remarks>
+/// Method names contain underscores to separate segment, offset, and linear addresses
+/// for traceability back to the original DOS disassembly. This file handles different
+/// map views (flat map, globe, ornithopter map) and their associated click handlers.
+/// </remarks>
 public partial class Overrides {
+    /// <summary>Address of the click handler for flat strategic map view.</summary>
     public const ushort CLICK_HANDLER_FLAT_MAP = 0x1A9E;
+
+    /// <summary>Address of the click handler for globe/planetary view.</summary>
     public const ushort CLICK_HANDLER_GLOBE_MAP = 0x2562;
+
+    /// <summary>Address of the click handler for in-game exploration view.</summary>
     public const ushort CLICK_HANDLER_INGAME = 0x2572;
+
+    /// <summary>Address of the click handler for troop movement map.</summary>
     public const ushort CLICK_HANDLER_MOVE_TROOP_MAP = 0x1AAC;
+
+    /// <summary>Address of the click handler for ornithopter flight map.</summary>
     public const ushort CLICK_HANDLER_ORNI_MAP = 0x1AC8;
 
+    /// <summary>
+    /// Registers map view and cursor handling function overrides with Spice86.
+    /// </summary>
     public void DefineMapCodeOverrides() {
         DefineFunction(cs1, 0xD95B, SetMapClickHandlerAddressToInGame_1000_D95B_01D95B);
         DefineFunction(cs1, 0xD95E, SetMapClickHandlerAddressFromAx_1000_D95E_01D95E);

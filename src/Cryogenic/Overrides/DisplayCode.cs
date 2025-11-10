@@ -3,8 +3,18 @@ namespace Cryogenic.Overrides;
 using Spice86.Core.Emulator.CPU;
 using Spice86.Core.Emulator.CPU.Registers;
 
-// Method names contain _ to separate addresses.
+/// <summary>
+/// Partial class containing display and framebuffer management overrides.
+/// </summary>
+/// <remarks>
+/// Method names contain underscores to separate segment, offset, and linear addresses
+/// for traceability back to the original DOS disassembly. This file handles video buffer
+/// switching, clearing, font selection, and character coordinate management.
+/// </remarks>
 public partial class Overrides {
+    /// <summary>
+    /// Registers display and framebuffer management function overrides with Spice86.
+    /// </summary>
     public void DefineDisplayCodeOverrides() {
         //DefineFunction(cs1, 0x0579, ClearGlobalVgaOffset_1000_0579_010579);
         DefineFunction(cs1, 0x98F5, ClearUnknownValuesAndAX_1000_98F5_0198F5);

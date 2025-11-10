@@ -2,9 +2,25 @@ namespace Cryogenic.Overrides;
 
 using System;
 
-// Method names contain _ to separate addresses.
+/// <summary>
+/// Partial class containing overrides for functions whose exact purpose is not yet fully understood.
+/// </summary>
+/// <remarks>
+/// <para>
+/// This file contains overrides for various game functions that have been reverse-engineered
+/// but whose complete purpose or significance is still being researched. Function names
+/// describe observable behavior or affected memory locations rather than semantic purpose.
+/// </para>
+/// <para>
+/// Method names contain underscores to separate segment, offset, and linear addresses
+/// for traceability back to the original DOS disassembly.
+/// </para>
+/// </remarks>
 public partial class Overrides {
 
+    /// <summary>
+    /// Registers function overrides for routines of uncertain or partially understood purpose.
+    /// </summary>
     public void DefineUnknownCodeOverrides() {
         DefineFunction(cs1, 0x0F66, NoOp_1000_0F66_10F66);
         DefineFunction(cs1, 0x5B99, MemCopy8BytesDsSIToDsDi_1000_5B99_15B99);
