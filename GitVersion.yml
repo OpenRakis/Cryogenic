@@ -1,4 +1,8 @@
 mode: ContinuousDeployment
+next-version: 0.1.0
+assembly-versioning-scheme: MajorMinorPatch
+assembly-file-versioning-scheme: MajorMinorPatch
+assembly-informational-format: '{InformationalVersion}'
 branches:
   main:
     regex: ^(main|master)$
@@ -17,6 +21,11 @@ branches:
     tag-number-pattern: '[/-](?<number>\d+)[-/]'
   feature:
     regex: ^features?[/-]
+    mode: ContinuousDeployment
+    tag: useBranchName
+    increment: Inherit
+  copilot:
+    regex: ^copilot[/-]
     mode: ContinuousDeployment
     tag: useBranchName
     increment: Inherit
