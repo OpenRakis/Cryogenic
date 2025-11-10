@@ -6,7 +6,7 @@
 
 **Reverse Engineering the Classic Dune Game**
 
-📚 **[Visit our comprehensive documentation site](https://openrakis.github.io/Cryogenic/)**
+📚 **[GitHub Page](https://openrakis.github.io/Cryogenic/)**
 
 ---
 
