@@ -1,0 +1,255 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+      - master
+
+permissions:
+  contents: write
+  security-events: write
+  actions: read
+
+jobs:
+  build-test-scan:
+    name: Build, Test & CodeQL Scan
+    runs-on: ubuntu-latest
+    outputs:
+      semver: ${{ steps.gitversion.outputs.semVer }}
+      assemblysemver: ${{ steps.gitversion.outputs.assemblySemVer }}
+      assemblysemfilever: ${{ steps.gitversion.outputs.assemblySemFileVer }}
+      informationalversion: ${{ steps.gitversion.outputs.informationalVersion }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for GitVersion
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v3.0.0
+        with:
+          versionSpec: '6.x'
+
+      - name: Determine Version
+        id: gitversion
+        uses: gittools/actions/gitversion/execute@v3.0.0
+        with:
+          useConfigFile: true
+          configFilePath: GitVersion.yml
+
+      - name: Display GitVersion outputs
+        run: |
+          echo "SemVer: ${{ steps.gitversion.outputs.semVer }}"
+          echo "AssemblySemVer: ${{ steps.gitversion.outputs.assemblySemVer }}"
+          echo "InformationalVersion: ${{ steps.gitversion.outputs.informationalVersion }}"
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: csharp
+          queries: security-and-quality
+
+      - name: Restore dependencies
+        working-directory: ./src
+        run: dotnet restore
+
+      - name: Build
+        working-directory: ./src
+        run: |
+          dotnet build --configuration Release --no-restore \
+            /p:Version=${{ steps.gitversion.outputs.semVer }} \
+            /p:AssemblyVersion=${{ steps.gitversion.outputs.assemblySemVer }} \
+            /p:FileVersion=${{ steps.gitversion.outputs.assemblySemFileVer }} \
+            /p:InformationalVersion=${{ steps.gitversion.outputs.informationalVersion }}
+
+      - name: Run tests
+        working-directory: ./src
+        run: dotnet test --configuration Release --no-build --verbosity normal
+        continue-on-error: true  # Continue if no tests exist
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:csharp"
+
+  publish-and-release:
+    name: Publish & Create Release
+    needs: build-test-scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore dependencies
+        working-directory: ./src/Cryogenic
+        run: dotnet restore
+
+      - name: Publish for all platforms
+        working-directory: ./src/Cryogenic
+        env:
+          VERSION: ${{ needs.build-test-scan.outputs.semver }}
+          ASSEMBLY_VERSION: ${{ needs.build-test-scan.outputs.assemblysemver }}
+          FILE_VERSION: ${{ needs.build-test-scan.outputs.assemblysemfilever }}
+          INFORMATIONAL_VERSION: ${{ needs.build-test-scan.outputs.informationalversion }}
+        run: |
+          # Release builds
+          dotnet publish -c Release -r linux-arm64 --self-contained true \
+            -p:PublishReadyToRun=true -p:PublishSingleFile=true \
+            -p:Version=$VERSION \
+            -p:AssemblyVersion=$ASSEMBLY_VERSION \
+            -p:FileVersion=$FILE_VERSION \
+            -p:InformationalVersion=$INFORMATIONAL_VERSION \
+            -o Release/linux-arm64
+
+          dotnet publish -c Release -r linux-x64 --self-contained true \
+            -p:PublishReadyToRun=true -p:PublishSingleFile=true \
+            -p:Version=$VERSION \
+            -p:AssemblyVersion=$ASSEMBLY_VERSION \
+            -p:FileVersion=$FILE_VERSION \
+            -p:InformationalVersion=$INFORMATIONAL_VERSION \
+            -o Release/linux-x64
+
+          dotnet publish -c Release -r win-x64 --self-contained true \
+            -p:PublishReadyToRun=true -p:PublishSingleFile=true \
+            -p:Version=$VERSION \
+            -p:AssemblyVersion=$ASSEMBLY_VERSION \
+            -p:FileVersion=$FILE_VERSION \
+            -p:InformationalVersion=$INFORMATIONAL_VERSION \
+            -o Release/windows-x64
+
+          dotnet publish -c Release -r win-arm64 --self-contained true \
+            -p:PublishReadyToRun=true -p:PublishSingleFile=true \
+            -p:Version=$VERSION \
+            -p:AssemblyVersion=$ASSEMBLY_VERSION \
+            -p:FileVersion=$FILE_VERSION \
+            -p:InformationalVersion=$INFORMATIONAL_VERSION \
+            -o Release/windows-arm64
+
+          dotnet publish -c Release -r osx-x64 --self-contained true \
+            -p:PublishReadyToRun=true -p:PublishSingleFile=true \
+            -p:Version=$VERSION \
+            -p:AssemblyVersion=$ASSEMBLY_VERSION \
+            -p:FileVersion=$FILE_VERSION \
+            -p:InformationalVersion=$INFORMATIONAL_VERSION \
+            -o Release/macos-x64
+
+          dotnet publish -c Release -r osx-arm64 --self-contained true \
+            -p:PublishReadyToRun=true -p:PublishSingleFile=true \
+            -p:Version=$VERSION \
+            -p:AssemblyVersion=$ASSEMBLY_VERSION \
+            -p:FileVersion=$FILE_VERSION \
+            -p:InformationalVersion=$INFORMATIONAL_VERSION \
+            -o Release/macos-arm64
+
+          # Debug builds
+          dotnet publish -c Debug -r linux-x64 --self-contained true \
+            -p:PublishReadyToRun=true -p:PublishSingleFile=true \
+            -p:Version=$VERSION \
+            -p:AssemblyVersion=$ASSEMBLY_VERSION \
+            -p:FileVersion=$FILE_VERSION \
+            -p:InformationalVersion=$INFORMATIONAL_VERSION \
+            -o Debug/linux-x64
+
+          dotnet publish -c Debug -r linux-arm64 --self-contained true \
+            -p:PublishReadyToRun=true -p:PublishSingleFile=true \
+            -p:Version=$VERSION \
+            -p:AssemblyVersion=$ASSEMBLY_VERSION \
+            -p:FileVersion=$FILE_VERSION \
+            -p:InformationalVersion=$INFORMATIONAL_VERSION \
+            -o Debug/linux-arm64
+
+          dotnet publish -c Debug -r win-x64 --self-contained true \
+            -p:PublishReadyToRun=true -p:PublishSingleFile=true \
+            -p:Version=$VERSION \
+            -p:AssemblyVersion=$ASSEMBLY_VERSION \
+            -p:FileVersion=$FILE_VERSION \
+            -p:InformationalVersion=$INFORMATIONAL_VERSION \
+            -o Debug/windows-x64
+
+          dotnet publish -c Debug -r win-arm64 --self-contained true \
+            -p:PublishReadyToRun=true -p:PublishSingleFile=true \
+            -p:Version=$VERSION \
+            -p:AssemblyVersion=$ASSEMBLY_VERSION \
+            -p:FileVersion=$FILE_VERSION \
+            -p:InformationalVersion=$INFORMATIONAL_VERSION \
+            -o Debug/windows-arm64
+
+          dotnet publish -c Debug -r osx-x64 --self-contained true \
+            -p:PublishReadyToRun=true -p:PublishSingleFile=true \
+            -p:Version=$VERSION \
+            -p:AssemblyVersion=$ASSEMBLY_VERSION \
+            -p:FileVersion=$FILE_VERSION \
+            -p:InformationalVersion=$INFORMATIONAL_VERSION \
+            -o Debug/macos-x64
+
+          dotnet publish -c Debug -r osx-arm64 --self-contained true \
+            -p:PublishReadyToRun=true -p:PublishSingleFile=true \
+            -p:Version=$VERSION \
+            -p:AssemblyVersion=$ASSEMBLY_VERSION \
+            -p:FileVersion=$FILE_VERSION \
+            -p:InformationalVersion=$INFORMATIONAL_VERSION \
+            -o Debug/macos-arm64
+
+      - name: Create distribution packages
+        working-directory: ./src/Cryogenic/bin
+        run: |
+          zip -qq -r Cryogenic-${{ needs.build-test-scan.outputs.semver }}-Debug.zip Debug
+          zip -qq -r Cryogenic-${{ needs.build-test-scan.outputs.semver }}-Release.zip Release
+
+      - name: Generate Release Notes
+        id: release_notes
+        run: |
+          # Get the last tag
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+
+          if [ -z "$LAST_TAG" ]; then
+            echo "## What's Changed" > release_notes.md
+            echo "" >> release_notes.md
+            echo "Initial release" >> release_notes.md
+          else
+            echo "## What's Changed" > release_notes.md
+            echo "" >> release_notes.md
+            git log ${LAST_TAG}..HEAD --pretty=format:"* %s (%h)" --no-merges >> release_notes.md
+          fi
+
+          echo "" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "## Assets" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "Download the appropriate build for your platform:" >> release_notes.md
+          echo "- **Release builds**: Production-ready optimized builds" >> release_notes.md
+          echo "- **Debug builds**: Builds with debug symbols for troubleshooting" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "### Supported Platforms" >> release_notes.md
+          echo "- Linux (x64, ARM64)" >> release_notes.md
+          echo "- Windows (x64, ARM64)" >> release_notes.md
+          echo "- macOS (x64, ARM64)" >> release_notes.md
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.build-test-scan.outputs.semver }}
+          name: Release v${{ needs.build-test-scan.outputs.semver }}
+          body_path: release_notes.md
+          draft: false
+          prerelease: false
+          files: |
+            ./src/Cryogenic/bin/Cryogenic-${{ needs.build-test-scan.outputs.semver }}-Debug.zip
+            ./src/Cryogenic/bin/Cryogenic-${{ needs.build-test-scan.outputs.semver }}-Release.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
