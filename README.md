@@ -4,6 +4,8 @@
 
 # Cryo dune reverse engineering
 
+📚 **[Visit our comprehensive documentation site](https://openrakis.github.io/Cryogenic/)**
+
 Fiddling with [Cryo dune](https://en.wikipedia.org/wiki/Dune_(video_game)) (CD Version) for fun:
  - Trying to understand how the game works with [Spice86 reverse engineering toolkit](https://github.com/OpenRakis/Spice86) which allows to run real mode x86 ASM / C# hybrids.
  - Rewriting the game in C# bit by bit.
@@ -32,7 +34,7 @@ To run it, ensure that you have DUNE.DAT and DNCDPRG.EXE together in the same fo
 Next, just run the project with dune CD executable as parameter:
 
 ```
-git clone https://github.com/OpenRakis/Crygenic
+git clone https://github.com/OpenRakis/Cryogenic
 cd Cryogenic/src
 dotnet run --Exe C:/path/to/dunecd/DNCDPRG.EXE --UseCodeOverride true -p 4096
 ```
@@ -50,7 +52,7 @@ bin/Release/net8.0/publish/Cryogenic --Exe C:/path/to/dunecd/DNCDPRG.EXE --UseCo
  - Clone this repo, and build it:
 
 ```
-git clone https://github.com/OpenRakis/Crygenic
+git clone https://github.com/OpenRakis/Cryogenic
 cd Cryogenic/src
 dotnet build
 ```
