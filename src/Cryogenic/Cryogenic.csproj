@@ -6,11 +6,14 @@
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<NoWarn>0164;0162</NoWarn>
-		<!-- GitVersion properties -->
-		<Version>0.1.0</Version>
-		<AssemblyVersion>0.1.0.0</AssemblyVersion>
-		<FileVersion>0.1.0.0</FileVersion>
-		<InformationalVersion>0.1.0</InformationalVersion>
+	</PropertyGroup>
+
+	<!-- Version properties with fallback defaults (overridden by GitVersion in CI/CD) -->
+	<PropertyGroup>
+		<Version Condition="'$(Version)' == ''">0.1.0</Version>
+		<AssemblyVersion Condition="'$(AssemblyVersion)' == ''">0.1.0.0</AssemblyVersion>
+		<FileVersion Condition="'$(FileVersion)' == ''">0.1.0.0</FileVersion>
+		<InformationalVersion Condition="'$(InformationalVersion)' == ''">0.1.0</InformationalVersion>
 	</PropertyGroup>
 
 	<PropertyGroup Label="Avalonia">
