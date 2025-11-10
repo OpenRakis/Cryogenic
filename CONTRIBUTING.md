@@ -135,7 +135,7 @@ Memory segments are the foundation of address translation:
 
 Overrides are registered in `Overrides.DefineOverrides()` using:
 
-- `DefineFunction(segment, offset, method)` - Replace CALL targets
+- `DefineFunction(segment, offset, method)` - Replaces identified functions (note: Dune sometimes modifies the stack to change return addresses instead of using CALL instructions)
 - `DoOnTopOfInstruction(segment, offset, method)` - Inline hooks
 
 Example:
@@ -229,7 +229,7 @@ Follow standard C# conventions with these project-specific rules:
    }
    ```
 
-4. **Handle edge cases** - DOS code often has surprising edge cases. Document and handle them:
+4. **Handle edge cases** - Dune code often has surprising edge cases. Document and handle them:
    ```csharp
    // Original assembly has special handling for value 0xFFFF
    if (value == 0xFFFF) {
@@ -244,7 +244,7 @@ Follow standard C# conventions with these project-specific rules:
 
 ### Override Implementation Guidelines
 
-1. **Match original behavior exactly** - Byte-for-byte compatibility is the goal
+1. **Match original behavior exactly** - Dune is hand-written assembly; we must achieve identical behavior, not necessarily byte-for-byte compatibility
 2. **Test thoroughly** - Play the game and verify the override works in all scenarios
 3. **Add safety checks** - Throw `FailAsUntested` for unobserved code paths
 4. **Keep it simple** - Don't over-engineer; match the original logic
@@ -270,13 +270,15 @@ Follow standard C# conventions with these project-specific rules:
 
 ### Tools and Techniques
 
-#### Using Ghidra
+#### Using Spice86's CFGCPU
 
-1. Load DNCDPRG.EXE in Ghidra
-2. Analyze with default settings
-3. Use Spice86's Ghidra plugin to import runtime data
-4. Navigate to function addresses
-5. Understand the logic and data structures
+Spice86's CFGCPU (Control Flow Graph CPU) is the recommended approach for analyzing Dune's code, as it:
+- Handles self-modifying code that Dune uses
+- Works reliably with 16-bit x86 assembly
+- Is compatible with C# overrides
+- Already supports Dune and other games
+
+**Note**: The Ghidra plugin is largely abandoned and has numerous bugs with 16-bit x86 support. CFGCPU will eventually enable automated code generation.
 
 #### Using Spice86 Debugger
 
