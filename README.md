@@ -158,13 +158,13 @@ bin/Release/net8.0/publish/Cryogenic --Exe C:/path/to/dunecd/DNCDPRG.EXE --UseCo
 ![Desert Worm](doc/cryodune_worm.png)
 *Encounter with the mighty sandworm*
 
-![Chani](doc/cryodune_chani.PNG)
+![Chani](doc/cryodune_chani.png)
 *Meeting with Chani*
 
 ![Spice Management](doc/cryodune_send_spice.png)
 *Managing spice resources*
 
-![Harkonnen](doc/cryodune_harkonen.PNG)
+![Harkonnen](doc/cryodune_harkonen.png)
 *Harkonnen confrontation*
 
 </div>
