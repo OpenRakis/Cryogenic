@@ -17,40 +17,40 @@ jobs:
   build-and-test:
     name: Build and Test
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0  # Full history for GitVersion
-      
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
-      
+
       - name: Install GitVersion
         uses: gittools/actions/gitversion/setup@v3.0.0
         with:
           versionSpec: '6.x'
-      
+
       - name: Determine Version
         id: gitversion
         uses: gittools/actions/gitversion/execute@v3.0.0
         with:
           useConfigFile: true
           configFilePath: GitVersion.yml
-      
+
       - name: Display GitVersion outputs
         run: |
           echo "SemVer: ${{ steps.gitversion.outputs.semVer }}"
           echo "AssemblySemVer: ${{ steps.gitversion.outputs.assemblySemVer }}"
           echo "InformationalVersion: ${{ steps.gitversion.outputs.informationalVersion }}"
-      
+
       - name: Restore dependencies
         working-directory: ./src
         run: dotnet restore
-      
+
       - name: Build
         working-directory: ./src
         run: |
@@ -59,7 +59,7 @@ jobs:
             /p:AssemblyVersion=${{ steps.gitversion.outputs.assemblySemVer }} \
             /p:FileVersion=${{ steps.gitversion.outputs.assemblySemFileVer }} \
             /p:InformationalVersion=${{ steps.gitversion.outputs.informationalVersion }}
-      
+
       - name: Run tests
         working-directory: ./src
         run: dotnet test --configuration Release --no-build --verbosity normal
@@ -72,30 +72,30 @@ jobs:
       security-events: write
       contents: read
       actions: read
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
           languages: csharp
           queries: security-and-quality
-      
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
-      
+
       - name: Restore dependencies
         working-directory: ./src
         run: dotnet restore
-      
+
       - name: Build for CodeQL
         working-directory: ./src
         run: dotnet build --configuration Release --no-restore
-      
+
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
         with:
