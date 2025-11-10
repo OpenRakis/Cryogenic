@@ -162,7 +162,7 @@ bin/Release/net8.0/publish/Cryogenic --Exe C:/path/to/dunecd/DNCDPRG.EXE --UseCo
 *Meeting with Chani*
 
 ![Spice Management](doc/cryodune_send_spice.png)
-*Managing spice resources*
+*Sending Spice to the Emperor*
 
 ![Harkonnen](doc/cryodune_harkonen.png)
 *Harkonnen confrontation*
