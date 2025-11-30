@@ -81,8 +81,9 @@ public class DuneGameStateViewModel : INotifyPropertyChanged, IDisposable {
     // Core game state
     public ushort GameElapsedTime => _gameState.GameElapsedTime;
     public string GameElapsedTimeHex => $"0x{GameElapsedTime:X4}";
-    public byte Charisma => _gameState.Charisma;
-    public string CharismaDisplay => $"{Charisma} (0x{Charisma:X2})";
+    public byte CharismaRaw => _gameState.CharismaRaw;
+    public int CharismaDisplayed => _gameState.CharismaDisplayed;
+    public string CharismaDisplay => $"{CharismaDisplayed} (raw: 0x{CharismaRaw:X2})";
     public byte GameStage => _gameState.GameStage;
     public string GameStageDisplay => _gameState.GetGameStageDescription();
     public ushort Spice => _gameState.Spice;
@@ -261,7 +262,8 @@ public class DuneGameStateViewModel : INotifyPropertyChanged, IDisposable {
         OnPropertyChanged(nameof(DateTimeDisplay));
         OnPropertyChanged(nameof(Spice));
         OnPropertyChanged(nameof(SpiceDisplay));
-        OnPropertyChanged(nameof(Charisma));
+        OnPropertyChanged(nameof(CharismaRaw));
+        OnPropertyChanged(nameof(CharismaDisplayed));
         OnPropertyChanged(nameof(CharismaDisplay));
         OnPropertyChanged(nameof(ContactDistance));
         OnPropertyChanged(nameof(ContactDistanceDisplay));
