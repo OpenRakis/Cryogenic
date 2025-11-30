@@ -39,12 +39,14 @@ public partial class DuneGameState : MemoryBasedDataStructureWithDsBaseAddress {
     public const int NpcBaseOffset = TroopBaseOffset + (TroopEntrySize * MaxTroops);
     public const int NpcEntrySize = 8;
     public const int NpcPadding = 8;
+    public const int NpcTotalEntrySize = NpcEntrySize + NpcPadding; // 16 bytes total
     public const int MaxNpcs = 16;
     
     // Smuggler array follows NPCs (14 bytes per smuggler + 3 bytes padding per odrade)
-    public const int SmugglerBaseOffset = NpcBaseOffset + ((NpcEntrySize + NpcPadding) * MaxNpcs);
+    public const int SmugglerBaseOffset = NpcBaseOffset + (NpcTotalEntrySize * MaxNpcs);
     public const int SmugglerEntrySize = 14;
     public const int SmugglerPadding = 3;
+    public const int SmugglerTotalEntrySize = SmugglerEntrySize + SmugglerPadding; // 17 bytes total
     public const int MaxSmugglers = 6;
 
     public DuneGameState(IByteReaderWriter memory, SegmentRegisters segmentRegisters) 

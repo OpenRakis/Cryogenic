@@ -23,62 +23,62 @@ namespace Cryogenic.GameEngineWindow.Models;
 public partial class DuneGameState {
     public byte GetSmugglerRegion(int index) {
         if (index < 0 || index >= MaxSmugglers) return 0;
-        return UInt8[SmugglerBaseOffset + (index * SmugglerEntrySize)];
+        return UInt8[SmugglerBaseOffset + (index * SmugglerTotalEntrySize)];
     }
 
     public byte GetSmugglerWillingnessToHaggle(int index) {
         if (index < 0 || index >= MaxSmugglers) return 0;
-        return UInt8[SmugglerBaseOffset + (index * SmugglerEntrySize) + 1];
+        return UInt8[SmugglerBaseOffset + (index * SmugglerTotalEntrySize) + 1];
     }
 
     public byte GetSmugglerHarvesters(int index) {
         if (index < 0 || index >= MaxSmugglers) return 0;
-        return UInt8[SmugglerBaseOffset + (index * SmugglerEntrySize) + 4];
+        return UInt8[SmugglerBaseOffset + (index * SmugglerTotalEntrySize) + 4];
     }
 
     public byte GetSmugglerOrnithopters(int index) {
         if (index < 0 || index >= MaxSmugglers) return 0;
-        return UInt8[SmugglerBaseOffset + (index * SmugglerEntrySize) + 5];
+        return UInt8[SmugglerBaseOffset + (index * SmugglerTotalEntrySize) + 5];
     }
 
     public byte GetSmugglerKrysKnives(int index) {
         if (index < 0 || index >= MaxSmugglers) return 0;
-        return UInt8[SmugglerBaseOffset + (index * SmugglerEntrySize) + 6];
+        return UInt8[SmugglerBaseOffset + (index * SmugglerTotalEntrySize) + 6];
     }
 
     public byte GetSmugglerLaserGuns(int index) {
         if (index < 0 || index >= MaxSmugglers) return 0;
-        return UInt8[SmugglerBaseOffset + (index * SmugglerEntrySize) + 7];
+        return UInt8[SmugglerBaseOffset + (index * SmugglerTotalEntrySize) + 7];
     }
 
     public byte GetSmugglerWeirdingModules(int index) {
         if (index < 0 || index >= MaxSmugglers) return 0;
-        return UInt8[SmugglerBaseOffset + (index * SmugglerEntrySize) + 8];
+        return UInt8[SmugglerBaseOffset + (index * SmugglerTotalEntrySize) + 8];
     }
 
     public ushort GetSmugglerHarvesterPrice(int index) {
         if (index < 0 || index >= MaxSmugglers) return 0;
-        return (ushort)(UInt8[SmugglerBaseOffset + (index * SmugglerEntrySize) + 9] * 10);
+        return (ushort)(UInt8[SmugglerBaseOffset + (index * SmugglerTotalEntrySize) + 9] * 10);
     }
 
     public ushort GetSmugglerOrnithopterPrice(int index) {
         if (index < 0 || index >= MaxSmugglers) return 0;
-        return (ushort)(UInt8[SmugglerBaseOffset + (index * SmugglerEntrySize) + 10] * 10);
+        return (ushort)(UInt8[SmugglerBaseOffset + (index * SmugglerTotalEntrySize) + 10] * 10);
     }
 
     public ushort GetSmugglerKrysKnifePrice(int index) {
         if (index < 0 || index >= MaxSmugglers) return 0;
-        return (ushort)(UInt8[SmugglerBaseOffset + (index * SmugglerEntrySize) + 11] * 10);
+        return (ushort)(UInt8[SmugglerBaseOffset + (index * SmugglerTotalEntrySize) + 11] * 10);
     }
 
     public ushort GetSmugglerLaserGunPrice(int index) {
         if (index < 0 || index >= MaxSmugglers) return 0;
-        return (ushort)(UInt8[SmugglerBaseOffset + (index * SmugglerEntrySize) + 12] * 10);
+        return (ushort)(UInt8[SmugglerBaseOffset + (index * SmugglerTotalEntrySize) + 12] * 10);
     }
 
     public ushort GetSmugglerWeirdingModulePrice(int index) {
         if (index < 0 || index >= MaxSmugglers) return 0;
-        return (ushort)(UInt8[SmugglerBaseOffset + (index * SmugglerEntrySize) + 13] * 10);
+        return (ushort)(UInt8[SmugglerBaseOffset + (index * SmugglerTotalEntrySize) + 13] * 10);
     }
 
     public string GetSmugglerLocationName(int index) {

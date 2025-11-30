@@ -17,27 +17,27 @@ namespace Cryogenic.GameEngineWindow.Models;
 public partial class DuneGameState {
     public byte GetNpcSpriteId(int index) {
         if (index < 0 || index >= MaxNpcs) return 0;
-        return UInt8[NpcBaseOffset + (index * NpcEntrySize)];
+        return UInt8[NpcBaseOffset + (index * NpcTotalEntrySize)];
     }
 
     public byte GetNpcRoomLocation(int index) {
         if (index < 0 || index >= MaxNpcs) return 0;
-        return UInt8[NpcBaseOffset + (index * NpcEntrySize) + 2];
+        return UInt8[NpcBaseOffset + (index * NpcTotalEntrySize) + 2];
     }
 
     public byte GetNpcPlaceType(int index) {
         if (index < 0 || index >= MaxNpcs) return 0;
-        return UInt8[NpcBaseOffset + (index * NpcEntrySize) + 3];
+        return UInt8[NpcBaseOffset + (index * NpcTotalEntrySize) + 3];
     }
 
     public byte GetNpcExactPlace(int index) {
         if (index < 0 || index >= MaxNpcs) return 0;
-        return UInt8[NpcBaseOffset + (index * NpcEntrySize) + 5];
+        return UInt8[NpcBaseOffset + (index * NpcTotalEntrySize) + 5];
     }
 
     public byte GetNpcDialogueFlag(int index) {
         if (index < 0 || index >= MaxNpcs) return 0;
-        return UInt8[NpcBaseOffset + (index * NpcEntrySize) + 6];
+        return UInt8[NpcBaseOffset + (index * NpcTotalEntrySize) + 6];
     }
 
     public static string GetNpcName(byte npcId) => npcId switch {
