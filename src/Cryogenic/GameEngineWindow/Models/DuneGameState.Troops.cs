@@ -90,11 +90,6 @@ public partial class DuneGameState {
         return (ushort)(ReadByte(GetTroopAddress(index, 26)) * 10);
     }
 
-    public byte GetTroopLocation(int index) {
-        if (index < 0 || index >= MaxTroops) return 0;
-        return ReadByte(GetTroopAddress(index, 2));
-    }
-
     public static string GetTroopOccupationDescription(byte occupation) {
         byte baseOccupation = (byte)(occupation & 0x7F);
         bool notHired = (occupation & 0x80) != 0;
@@ -121,8 +116,10 @@ public partial class DuneGameState {
     }
 
     public static bool IsTroopFremen(byte occupation) {
-        byte baseOcc = (byte)(occupation & 0x0F);
-        return (baseOcc < 0x0C) || (occupation >= 0xA0);
+        // Fremen troops: occupation 0x00 (Mining Spice) or 0x02 (Waiting for Orders)
+        // Also includes slaved Fremen (occupation >= 0xA0)
+        byte baseOccupation = (byte)(occupation & 0x7F);
+        return baseOccupation == 0x00 || baseOccupation == 0x02 || occupation >= 0xA0;
     }
 
     public static string GetTroopEquipmentDescription(byte equipment) {

@@ -240,5 +240,10 @@ public partial class DuneGameState : MemoryBasedDataStructure {
     public byte GetSietchStatus(int index) => GetLocationStatus(index);
     public ushort GetSietchSpiceField(int index) => (ushort)GetLocationSpiceAmount(index);
     public (ushort X, ushort Y) GetSietchCoordinates(int index) => GetLocationCoordinates(index);
+    
+    /// <summary>
+    /// Returns the count of discovered locations (including palaces, villages, sietches).
+    /// Wrapper for GetDiscoveredLocationCount() for consistency with Sietch-named accessors.
+    /// </summary>
     public int GetDiscoveredSietchCount() => GetDiscoveredLocationCount();
 }

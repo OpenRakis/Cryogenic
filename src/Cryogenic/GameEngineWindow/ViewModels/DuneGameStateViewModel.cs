@@ -214,7 +214,6 @@ public class DuneGameStateViewModel : INotifyPropertyChanged, IDisposable {
             Troops[i].OccupationName = DuneGameState.GetTroopOccupationDescription(Troops[i].Occupation);
             Troops[i].IsFremen = DuneGameState.IsTroopFremen(Troops[i].Occupation);
             Troops[i].Position = _gameState.GetTroopPosition(i);
-            Troops[i].Location = _gameState.GetTroopLocation(i);
             Troops[i].Motivation = _gameState.GetTroopMotivation(i);
             Troops[i].Dissatisfaction = _gameState.GetTroopDissatisfaction(i);
             Troops[i].SpiceSkill = _gameState.GetTroopSpiceSkill(i);
