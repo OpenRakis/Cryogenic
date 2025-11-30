@@ -9,9 +9,14 @@ using Spice86.Core.Emulator.ReverseEngineer.DataStructure;
 /// <remarks>
 /// <para>
 /// This partial class is the main entry point for Dune game state access.
-/// Uses absolute memory addressing (0x11380 base) to ensure stable values regardless of
-/// which code segment is currently executing. Offsets are taken from GlobalsOnDs.cs
-/// which was generated from runtime memory access tracing.
+/// Uses absolute memory addressing to ensure stable values regardless of
+/// which code segment is currently executing. The base address 0x11380 corresponds
+/// to segment 0x1138 (0x1138 * 16 = 0x11380) which is where the game data resides.
+/// </para>
+/// <para>
+/// Offsets are from GlobalsOnDs.cs and remain the same as DS-relative offsets
+/// because we use the same base segment. For example, GameElapsedTime at DS:0x0002
+/// becomes absolute address 0x11380 + 0x0002 = 0x11382.
 /// </para>
 /// <para>
 /// Memory regions per madmoose's analysis (from sub_1B427_create_save_in_memory):
@@ -27,11 +32,13 @@ using Spice86.Core.Emulator.ReverseEngineer.DataStructure;
 /// </remarks>
 public partial class DuneGameState : MemoryBasedDataStructure {
     /// <summary>
-    /// Absolute base address for Dune game data (segment 0x1138 * 16 = 0x11380).
+    /// Absolute base address for Dune game data.
+    /// Calculated as segment 0x1138 * 16 = 0x11380.
     /// Using absolute address ensures values don't change depending on which code is executing.
     /// </summary>
     public const uint DuneDataBaseAddress = 0x11380;
-    // Location array starts at DS:AA76 per madmoose analysis
+    
+    // Location array starts at offset 0xAA76 from base (per madmoose analysis)
     public const int LocationBaseOffset = 0xAA76;
     public const int LocationEntrySize = 28;
     public const int MaxLocations = 70;
