@@ -4,8 +4,8 @@
         x:Class="Cryogenic.GameEngineWindow.Views.DuneGameStateWindow"
         x:DataType="vm:DuneGameStateViewModel"
         Title="Dune Game Engine - Live Memory View"
-        Width="1000"
-        Height="800"
+        Width="1100"
+        Height="850"
         WindowStartupLocation="CenterScreen">
 
     <TabControl Margin="10">
@@ -13,101 +13,128 @@
         <TabItem Header="Player Stats">
             <ScrollViewer>
                 <StackPanel Margin="10" Spacing="10">
+                    <TextBlock Text="Pause the emulator to refresh data" FontStyle="Italic" IsVisible="{Binding !IsPaused}"/>
                     <Grid ColumnDefinitions="200,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" Margin="0,10,0,0">
-                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Date &amp; Time:" FontWeight="SemiBold"/>
-                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding DateTimeDisplay}"/>
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Date &amp; Time:" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding DateTimeDisplay, Mode=OneWay}" IsReadOnly="True"/>
                         
-                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Game Elapsed Time:" FontWeight="SemiBold"/>
-                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding GameElapsedTimeHex}"/>
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Game Elapsed Time:" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding GameElapsedTimeHex, Mode=OneWay}" IsReadOnly="True"/>
                         
-                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Spice (Total):" FontWeight="SemiBold"/>
-                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding SpiceDisplay}"/>
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Spice (Total):" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding SpiceDisplay, Mode=OneWay}" IsReadOnly="True"/>
                         
-                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Spice Reserve:" FontWeight="SemiBold"/>
-                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding SpiceReserveDisplay}"/>
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Spice Reserve:" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding SpiceReserveDisplay, Mode=OneWay}" IsReadOnly="True"/>
                         
-                        <TextBlock Grid.Row="4" Grid.Column="0" Text="Water Reserve:" FontWeight="SemiBold"/>
-                        <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding WaterReserveDisplay}"/>
+                        <TextBlock Grid.Row="4" Grid.Column="0" Text="Water Reserve:" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding WaterReserveDisplay, Mode=OneWay}" IsReadOnly="True"/>
                         
-                        <TextBlock Grid.Row="5" Grid.Column="0" Text="Money (Solaris):" FontWeight="SemiBold"/>
-                        <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding MoneyDisplay}"/>
+                        <TextBlock Grid.Row="5" Grid.Column="0" Text="Money (Solaris):" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding MoneyDisplay, Mode=OneWay}" IsReadOnly="True"/>
                         
-                        <TextBlock Grid.Row="6" Grid.Column="0" Text="Charisma:" FontWeight="SemiBold"/>
-                        <TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding CharismaDisplay}"/>
+                        <TextBlock Grid.Row="6" Grid.Column="0" Text="Charisma:" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="6" Grid.Column="1" Text="{Binding CharismaDisplay, Mode=OneWay}" IsReadOnly="True"/>
                         
-                        <TextBlock Grid.Row="7" Grid.Column="0" Text="Contact Distance:" FontWeight="SemiBold"/>
-                        <TextBlock Grid.Row="7" Grid.Column="1" Text="{Binding ContactDistanceDisplay}"/>
+                        <TextBlock Grid.Row="7" Grid.Column="0" Text="Contact Distance:" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="7" Grid.Column="1" Text="{Binding ContactDistanceDisplay, Mode=OneWay}" IsReadOnly="True"/>
                         
-                        <TextBlock Grid.Row="8" Grid.Column="0" Text="Military Strength:" FontWeight="SemiBold"/>
-                        <TextBlock Grid.Row="8" Grid.Column="1" Text="{Binding MilitaryStrengthDisplay}"/>
+                        <TextBlock Grid.Row="8" Grid.Column="0" Text="Military Strength:" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="8" Grid.Column="1" Text="{Binding MilitaryStrengthDisplay, Mode=OneWay}" IsReadOnly="True"/>
                         
-                        <TextBlock Grid.Row="9" Grid.Column="0" Text="Ecology Progress:" FontWeight="SemiBold"/>
-                        <TextBlock Grid.Row="9" Grid.Column="1" Text="{Binding EcologyProgressDisplay}"/>
+                        <TextBlock Grid.Row="9" Grid.Column="0" Text="Ecology Progress:" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="9" Grid.Column="1" Text="{Binding EcologyProgressDisplay, Mode=OneWay}" IsReadOnly="True"/>
                         
-                        <TextBlock Grid.Row="10" Grid.Column="0" Text="Game Stage:" FontWeight="SemiBold"/>
-                        <TextBlock Grid.Row="10" Grid.Column="1" Text="{Binding GameStageDisplay}"/>
+                        <TextBlock Grid.Row="10" Grid.Column="0" Text="Game Stage:" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="10" Grid.Column="1" Text="{Binding GameStageDisplay, Mode=OneWay}" IsReadOnly="True"/>
                         
-                        <TextBlock Grid.Row="11" Grid.Column="0" Text="Discovered Sietches:" FontWeight="SemiBold"/>
-                        <TextBlock Grid.Row="11" Grid.Column="1" Text="{Binding DiscoveredSietchCountDisplay}"/>
+                        <TextBlock Grid.Row="11" Grid.Column="0" Text="Discovered Locations:" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="11" Grid.Column="1" Text="{Binding DiscoveredLocationCountDisplay, Mode=OneWay}" IsReadOnly="True"/>
                         
-                        <TextBlock Grid.Row="12" Grid.Column="0" Text="Active Troops:" FontWeight="SemiBold"/>
-                        <TextBlock Grid.Row="12" Grid.Column="1" Text="{Binding ActiveTroopCountDisplay}"/>
+                        <TextBlock Grid.Row="12" Grid.Column="0" Text="Active Troops:" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="12" Grid.Column="1" Text="{Binding ActiveTroopCountDisplay, Mode=OneWay}" IsReadOnly="True"/>
                     </Grid>
                 </StackPanel>
             </ScrollViewer>
         </TabItem>
 
-        <TabItem Header="NPCs &amp; Followers">
+        <TabItem Header="NPCs">
+            <Grid RowDefinitions="Auto,*">
+                <TextBlock Grid.Row="0" Text="Pause the emulator to refresh data" FontStyle="Italic" Margin="10" IsVisible="{Binding !IsPaused}"/>
+                <DataGrid Grid.Row="1" ItemsSource="{Binding Npcs}" AutoGenerateColumns="False" IsReadOnly="True" Margin="10">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="ID" Binding="{Binding Index}" Width="50"/>
+                        <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="180"/>
+                        <DataGridTextColumn Header="Sprite" Binding="{Binding SpriteId, StringFormat='0x{0:X2}'}" Width="70"/>
+                        <DataGridTextColumn Header="Room" Binding="{Binding RoomLocation, StringFormat='0x{0:X2}'}" Width="70"/>
+                        <DataGridTextColumn Header="Place Type" Binding="{Binding PlaceTypeDescription}" Width="120"/>
+                        <DataGridTextColumn Header="Exact Place" Binding="{Binding ExactPlace, StringFormat='0x{0:X2}'}" Width="90"/>
+                        <DataGridTextColumn Header="Dialogue" Binding="{Binding DialogueFlag, StringFormat='0x{0:X2}'}" Width="80"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
+        </TabItem>
+
+        <TabItem Header="Followers">
             <ScrollViewer>
                 <StackPanel Margin="10" Spacing="10">
+                    <TextBlock Text="Pause the emulator to refresh data" FontStyle="Italic" IsVisible="{Binding !IsPaused}"/>
                     <Grid ColumnDefinitions="200,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" Margin="0,10,0,0">
-                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Follower 1 ID:" FontWeight="SemiBold"/>
-                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding Follower1Id, StringFormat='0x{0:X2}'}"/>
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Follower 1 ID:" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding Follower1Id, StringFormat='0x{0:X2}', Mode=OneWay}" IsReadOnly="True"/>
                         
-                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Follower 1 Name:" FontWeight="SemiBold"/>
-                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Follower1Name}"/>
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Follower 1 Name:" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Follower1Name, Mode=OneWay}" IsReadOnly="True"/>
                         
-                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Follower 2 ID:" FontWeight="SemiBold"/>
-                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding Follower2Id, StringFormat='0x{0:X2}'}"/>
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Follower 2 ID:" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Follower2Id, StringFormat='0x{0:X2}', Mode=OneWay}" IsReadOnly="True"/>
                         
-                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Follower 2 Name:" FontWeight="SemiBold"/>
-                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding Follower2Name}"/>
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Follower 2 Name:" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding Follower2Name, Mode=OneWay}" IsReadOnly="True"/>
                         
-                        <TextBlock Grid.Row="4" Grid.Column="0" Text="Current Room:" FontWeight="SemiBold"/>
-                        <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding CurrentRoomDisplay}"/>
+                        <TextBlock Grid.Row="4" Grid.Column="0" Text="Current Room:" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding CurrentRoomDisplay, Mode=OneWay}" IsReadOnly="True"/>
                         
-                        <TextBlock Grid.Row="5" Grid.Column="0" Text="World Position X:" FontWeight="SemiBold"/>
-                        <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding WorldPosX}"/>
+                        <TextBlock Grid.Row="5" Grid.Column="0" Text="World Position X:" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding WorldPosX, Mode=OneWay}" IsReadOnly="True"/>
                         
-                        <TextBlock Grid.Row="6" Grid.Column="0" Text="World Position Y:" FontWeight="SemiBold"/>
-                        <TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding WorldPosY}"/>
+                        <TextBlock Grid.Row="6" Grid.Column="0" Text="World Position Y:" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="6" Grid.Column="1" Text="{Binding WorldPosY, Mode=OneWay}" IsReadOnly="True"/>
                         
-                        <TextBlock Grid.Row="7" Grid.Column="0" Text="Current Speaker ID:" FontWeight="SemiBold"/>
-                        <TextBlock Grid.Row="7" Grid.Column="1" Text="{Binding CurrentSpeakerId, StringFormat='0x{0:X2}'}"/>
+                        <TextBlock Grid.Row="7" Grid.Column="0" Text="Current Speaker ID:" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="7" Grid.Column="1" Text="{Binding CurrentSpeakerId, StringFormat='0x{0:X2}', Mode=OneWay}" IsReadOnly="True"/>
                         
-                        <TextBlock Grid.Row="8" Grid.Column="0" Text="Current Speaker:" FontWeight="SemiBold"/>
-                        <TextBlock Grid.Row="8" Grid.Column="1" Text="{Binding CurrentSpeakerName}"/>
+                        <TextBlock Grid.Row="8" Grid.Column="0" Text="Current Speaker:" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="8" Grid.Column="1" Text="{Binding CurrentSpeakerName, Mode=OneWay}" IsReadOnly="True"/>
                         
-                        <TextBlock Grid.Row="9" Grid.Column="0" Text="Dialogue State:" FontWeight="SemiBold"/>
-                        <TextBlock Grid.Row="9" Grid.Column="1" Text="{Binding DialogueStateDisplay}"/>
+                        <TextBlock Grid.Row="9" Grid.Column="0" Text="Dialogue State:" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="9" Grid.Column="1" Text="{Binding DialogueStateDisplay, Mode=OneWay}" IsReadOnly="True"/>
                     </Grid>
                 </StackPanel>
             </ScrollViewer>
         </TabItem>
         
-        <TabItem Header="Sietches">
+        <TabItem Header="Locations">
             <Grid RowDefinitions="Auto,*">
-                <StackPanel Grid.Row="0" Margin="10">
-                    <TextBlock Text="{Binding DiscoveredSietchCountDisplay, StringFormat='Discovered: {0}'}" FontWeight="SemiBold"/>
+                <StackPanel Grid.Row="0" Margin="10" Orientation="Horizontal" Spacing="20">
+                    <TextBlock Text="{Binding DiscoveredLocationCountDisplay, StringFormat='Discovered: {0}'}" FontWeight="SemiBold"/>
+                    <TextBlock Text="Pause the emulator to refresh data" FontStyle="Italic" IsVisible="{Binding !IsPaused}"/>
                 </StackPanel>
-                <DataGrid Grid.Row="1" ItemsSource="{Binding Sietches}" AutoGenerateColumns="False" IsReadOnly="True" Margin="10">
+                <DataGrid Grid.Row="1" ItemsSource="{Binding Locations}" AutoGenerateColumns="False" IsReadOnly="True" Margin="10">
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="Index" Binding="{Binding Index}" Width="60"/>
-                        <DataGridTextColumn Header="Status" Binding="{Binding Status, StringFormat='0x{0:X2}'}" Width="80"/>
-                        <DataGridCheckBoxColumn Header="Discovered" Binding="{Binding IsDiscovered}" Width="80"/>
-                        <DataGridTextColumn Header="Spice Field" Binding="{Binding SpiceField}" Width="100"/>
-                        <DataGridTextColumn Header="X" Binding="{Binding X}" Width="80"/>
-                        <DataGridTextColumn Header="Y" Binding="{Binding Y}" Width="80"/>
+                        <DataGridTextColumn Header="ID" Binding="{Binding Index}" Width="40"/>
+                        <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="150"/>
+                        <DataGridTextColumn Header="Type" Binding="{Binding LocationType}" Width="120"/>
+                        <DataGridCheckBoxColumn Header="Discovered" Binding="{Binding IsDiscovered}" Width="75"/>
+                        <DataGridTextColumn Header="Status" Binding="{Binding Status, StringFormat='0x{0:X2}'}" Width="60"/>
+                        <DataGridTextColumn Header="Troop" Binding="{Binding HousedTroopId}" Width="50"/>
+                        <DataGridTextColumn Header="Spice" Binding="{Binding SpiceAmount}" Width="50"/>
+                        <DataGridTextColumn Header="Density" Binding="{Binding SpiceDensity}" Width="55"/>
+                        <DataGridTextColumn Header="Harv" Binding="{Binding Harvesters}" Width="45"/>
+                        <DataGridTextColumn Header="Orni" Binding="{Binding Ornithopters}" Width="45"/>
+                        <DataGridTextColumn Header="Water" Binding="{Binding Water}" Width="50"/>
+                        <DataGridTextColumn Header="X" Binding="{Binding X}" Width="60"/>
+                        <DataGridTextColumn Header="Y" Binding="{Binding Y}" Width="60"/>
                     </DataGrid.Columns>
                 </DataGrid>
             </Grid>
@@ -115,21 +142,46 @@
         
         <TabItem Header="Troops">
             <Grid RowDefinitions="Auto,*">
-                <StackPanel Grid.Row="0" Margin="10">
+                <StackPanel Grid.Row="0" Margin="10" Orientation="Horizontal" Spacing="20">
                     <TextBlock Text="{Binding ActiveTroopCountDisplay, StringFormat='Active: {0}'}" FontWeight="SemiBold"/>
+                    <TextBlock Text="Pause the emulator to refresh data" FontStyle="Italic" IsVisible="{Binding !IsPaused}"/>
                 </StackPanel>
                 <DataGrid Grid.Row="1" ItemsSource="{Binding Troops}" AutoGenerateColumns="False" IsReadOnly="True" Margin="10">
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="Index" Binding="{Binding Index}" Width="60"/>
-                        <DataGridTextColumn Header="Occupation" Binding="{Binding Occupation, StringFormat='0x{0:X2}'}" Width="80"/>
-                        <DataGridTextColumn Header="Type" Binding="{Binding OccupationName}" Width="120"/>
-                        <DataGridCheckBoxColumn Header="Active" Binding="{Binding IsActive}" Width="60"/>
-                        <DataGridTextColumn Header="Location" Binding="{Binding Location, StringFormat='0x{0:X2}'}" Width="80"/>
-                        <DataGridTextColumn Header="Motivation" Binding="{Binding Motivation}" Width="80"/>
-                        <DataGridTextColumn Header="Spice" Binding="{Binding SpiceSkill}" Width="60"/>
-                        <DataGridTextColumn Header="Army" Binding="{Binding ArmySkill}" Width="60"/>
-                        <DataGridTextColumn Header="Ecology" Binding="{Binding EcologySkill}" Width="70"/>
-                        <DataGridTextColumn Header="Equipment" Binding="{Binding Equipment, StringFormat='0x{0:X2}'}" Width="80"/>
+                        <DataGridTextColumn Header="ID" Binding="{Binding Index}" Width="40"/>
+                        <DataGridTextColumn Header="Occupation" Binding="{Binding OccupationName}" Width="160"/>
+                        <DataGridCheckBoxColumn Header="Fremen" Binding="{Binding IsFremen}" Width="60"/>
+                        <DataGridTextColumn Header="Pos" Binding="{Binding Position}" Width="40"/>
+                        <DataGridTextColumn Header="Pop" Binding="{Binding Population}" Width="50"/>
+                        <DataGridTextColumn Header="Motiv" Binding="{Binding Motivation}" Width="50"/>
+                        <DataGridTextColumn Header="Dissat" Binding="{Binding Dissatisfaction}" Width="50"/>
+                        <DataGridTextColumn Header="Spice" Binding="{Binding SpiceSkill}" Width="50"/>
+                        <DataGridTextColumn Header="Army" Binding="{Binding ArmySkill}" Width="50"/>
+                        <DataGridTextColumn Header="Ecol" Binding="{Binding EcologySkill}" Width="50"/>
+                        <DataGridTextColumn Header="Equipment" Binding="{Binding EquipmentDescription}" Width="200"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
+        </TabItem>
+
+        <TabItem Header="Smugglers">
+            <Grid RowDefinitions="Auto,*">
+                <TextBlock Grid.Row="0" Text="Pause the emulator to refresh data" FontStyle="Italic" Margin="10" IsVisible="{Binding !IsPaused}"/>
+                <DataGrid Grid.Row="1" ItemsSource="{Binding Smugglers}" AutoGenerateColumns="False" IsReadOnly="True" Margin="10">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="ID" Binding="{Binding Index}" Width="40"/>
+                        <DataGridTextColumn Header="Location" Binding="{Binding LocationName}" Width="150"/>
+                        <DataGridTextColumn Header="Haggle" Binding="{Binding WillingnessToHaggle}" Width="60"/>
+                        <DataGridTextColumn Header="Harv" Binding="{Binding Harvesters}" Width="50"/>
+                        <DataGridTextColumn Header="Orni" Binding="{Binding Ornithopters}" Width="50"/>
+                        <DataGridTextColumn Header="Krys" Binding="{Binding KrysKnives}" Width="50"/>
+                        <DataGridTextColumn Header="Laser" Binding="{Binding LaserGuns}" Width="50"/>
+                        <DataGridTextColumn Header="Weird" Binding="{Binding WeirdingModules}" Width="50"/>
+                        <DataGridTextColumn Header="Harv $" Binding="{Binding HarvesterPrice}" Width="60"/>
+                        <DataGridTextColumn Header="Orni $" Binding="{Binding OrnithopterPrice}" Width="60"/>
+                        <DataGridTextColumn Header="Krys $" Binding="{Binding KrysKnifePrice}" Width="60"/>
+                        <DataGridTextColumn Header="Laser $" Binding="{Binding LaserGunPrice}" Width="60"/>
+                        <DataGridTextColumn Header="Weird $" Binding="{Binding WeirdingModulePrice}" Width="60"/>
                     </DataGrid.Columns>
                 </DataGrid>
             </Grid>
@@ -138,30 +190,31 @@
         <TabItem Header="HNM Video">
             <ScrollViewer>
                 <StackPanel Margin="10" Spacing="10">
+                    <TextBlock Text="Pause the emulator to refresh data" FontStyle="Italic" IsVisible="{Binding !IsPaused}"/>
                     <Grid ColumnDefinitions="200,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" Margin="0,10,0,0">
-                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Video ID:" FontWeight="SemiBold"/>
-                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding HnmVideoIdDisplay}"/>
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Video ID:" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding HnmVideoIdDisplay, Mode=OneWay}" IsReadOnly="True"/>
                         
-                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Active Video ID:" FontWeight="SemiBold"/>
-                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding HnmActiveVideoId, StringFormat='0x{0:X4}'}"/>
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Active Video ID:" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding HnmActiveVideoId, StringFormat='0x{0:X4}', Mode=OneWay}" IsReadOnly="True"/>
                         
-                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Frame Counter:" FontWeight="SemiBold"/>
-                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding HnmFrameCounter}"/>
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Frame Counter:" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding HnmFrameCounter, Mode=OneWay}" IsReadOnly="True"/>
                         
-                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Counter 2:" FontWeight="SemiBold"/>
-                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding HnmCounter2}"/>
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Counter 2:" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding HnmCounter2, Mode=OneWay}" IsReadOnly="True"/>
                         
-                        <TextBlock Grid.Row="4" Grid.Column="0" Text="Finished Flag:" FontWeight="SemiBold"/>
-                        <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding HnmFinishedFlag, StringFormat='0x{0:X2}'}"/>
+                        <TextBlock Grid.Row="4" Grid.Column="0" Text="Finished Flag:" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding HnmFinishedFlag, StringFormat='0x{0:X2}', Mode=OneWay}" IsReadOnly="True"/>
                         
-                        <TextBlock Grid.Row="5" Grid.Column="0" Text="Resource Flag:" FontWeight="SemiBold"/>
-                        <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding CurrentHnmResourceFlag, StringFormat='0x{0:X2}'}"/>
+                        <TextBlock Grid.Row="5" Grid.Column="0" Text="Resource Flag:" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding CurrentHnmResourceFlag, StringFormat='0x{0:X2}', Mode=OneWay}" IsReadOnly="True"/>
                         
-                        <TextBlock Grid.Row="6" Grid.Column="0" Text="File Offset:" FontWeight="SemiBold"/>
-                        <TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding HnmFileOffsetDisplay}"/>
+                        <TextBlock Grid.Row="6" Grid.Column="0" Text="File Offset:" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="6" Grid.Column="1" Text="{Binding HnmFileOffsetDisplay, Mode=OneWay}" IsReadOnly="True"/>
                         
-                        <TextBlock Grid.Row="7" Grid.Column="0" Text="File Remaining:" FontWeight="SemiBold"/>
-                        <TextBlock Grid.Row="7" Grid.Column="1" Text="{Binding HnmFileRemainDisplay}"/>
+                        <TextBlock Grid.Row="7" Grid.Column="0" Text="File Remaining:" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="7" Grid.Column="1" Text="{Binding HnmFileRemainDisplay, Mode=OneWay}" IsReadOnly="True"/>
                     </Grid>
                 </StackPanel>
             </ScrollViewer>
@@ -170,21 +223,22 @@
         <TabItem Header="Display">
             <ScrollViewer>
                 <StackPanel Margin="10" Spacing="10">
+                    <TextBlock Text="Pause the emulator to refresh data" FontStyle="Italic" IsVisible="{Binding !IsPaused}"/>
                     <Grid ColumnDefinitions="200,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" Margin="0,10,0,0">
-                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Front Framebuffer:" FontWeight="SemiBold"/>
-                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding FramebufferFrontDisplay}"/>
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Front Framebuffer:" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding FramebufferFrontDisplay, Mode=OneWay}" IsReadOnly="True"/>
                         
-                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Back Framebuffer:" FontWeight="SemiBold"/>
-                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding FramebufferBackDisplay}"/>
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Back Framebuffer:" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding FramebufferBackDisplay, Mode=OneWay}" IsReadOnly="True"/>
                         
-                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Active Framebuffer:" FontWeight="SemiBold"/>
-                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding FramebufferActiveDisplay}"/>
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Active Framebuffer:" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding FramebufferActiveDisplay, Mode=OneWay}" IsReadOnly="True"/>
                         
-                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Screen Buffer:" FontWeight="SemiBold"/>
-                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding ScreenBufferDisplay}"/>
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Screen Buffer:" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding ScreenBufferDisplay, Mode=OneWay}" IsReadOnly="True"/>
                         
-                        <TextBlock Grid.Row="4" Grid.Column="0" Text="Transition Bitmask:" FontWeight="SemiBold"/>
-                        <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding TransitionBitmaskDisplay}"/>
+                        <TextBlock Grid.Row="4" Grid.Column="0" Text="Transition Bitmask:" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding TransitionBitmaskDisplay, Mode=OneWay}" IsReadOnly="True"/>
                     </Grid>
                 </StackPanel>
             </ScrollViewer>
@@ -193,24 +247,25 @@
         <TabItem Header="Input">
             <ScrollViewer>
                 <StackPanel Margin="10" Spacing="10">
+                    <TextBlock Text="Pause the emulator to refresh data" FontStyle="Italic" IsVisible="{Binding !IsPaused}"/>
                     <Grid ColumnDefinitions="200,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto" Margin="0,10,0,0">
-                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Mouse Position X:" FontWeight="SemiBold"/>
-                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding MousePosX}"/>
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Mouse Position X:" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding MousePosX, Mode=OneWay}" IsReadOnly="True"/>
                         
-                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Mouse Position Y:" FontWeight="SemiBold"/>
-                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding MousePosY}"/>
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Mouse Position Y:" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding MousePosY, Mode=OneWay}" IsReadOnly="True"/>
                         
-                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Mouse Draw X:" FontWeight="SemiBold"/>
-                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding MouseDrawPosX}"/>
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Mouse Draw X:" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding MouseDrawPosX, Mode=OneWay}" IsReadOnly="True"/>
                         
-                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Mouse Draw Y:" FontWeight="SemiBold"/>
-                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding MouseDrawPosY}"/>
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Mouse Draw Y:" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding MouseDrawPosY, Mode=OneWay}" IsReadOnly="True"/>
                         
-                        <TextBlock Grid.Row="4" Grid.Column="0" Text="Cursor Hide Counter:" FontWeight="SemiBold"/>
-                        <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding CursorHideCounter}"/>
+                        <TextBlock Grid.Row="4" Grid.Column="0" Text="Cursor Hide Counter:" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding CursorHideCounter, Mode=OneWay}" IsReadOnly="True"/>
                         
-                        <TextBlock Grid.Row="5" Grid.Column="0" Text="Map Cursor Type:" FontWeight="SemiBold"/>
-                        <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding MapCursorTypeDisplay}"/>
+                        <TextBlock Grid.Row="5" Grid.Column="0" Text="Map Cursor Type:" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding MapCursorTypeDisplay, Mode=OneWay}" IsReadOnly="True"/>
                     </Grid>
                 </StackPanel>
             </ScrollViewer>
@@ -219,12 +274,13 @@
         <TabItem Header="Sound">
             <ScrollViewer>
                 <StackPanel Margin="10" Spacing="10">
+                    <TextBlock Text="Pause the emulator to refresh data" FontStyle="Italic" IsVisible="{Binding !IsPaused}"/>
                     <Grid ColumnDefinitions="200,*" RowDefinitions="Auto,Auto" Margin="0,10,0,0">
-                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Sound Present:" FontWeight="SemiBold"/>
-                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding IsSoundPresentDisplay}"/>
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Sound Present:" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding IsSoundPresentDisplay, Mode=OneWay}" IsReadOnly="True"/>
                         
-                        <TextBlock Grid.Row="1" Grid.Column="0" Text="MIDI Func5 Return:" FontWeight="SemiBold"/>
-                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding MidiFunc5ReturnBxDisplay}"/>
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="MIDI Func5 Return:" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding MidiFunc5ReturnBxDisplay, Mode=OneWay}" IsReadOnly="True"/>
                     </Grid>
                 </StackPanel>
             </ScrollViewer>

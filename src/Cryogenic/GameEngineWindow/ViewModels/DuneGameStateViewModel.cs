@@ -4,36 +4,78 @@ using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
-using System.Timers;
 
 using Cryogenic.GameEngineWindow.Models;
 
 using Spice86.Core.Emulator.CPU.Registers;
 using Spice86.Core.Emulator.Memory.ReaderWriter;
+using Spice86.Core.Emulator.VM;
 
 public class DuneGameStateViewModel : INotifyPropertyChanged, IDisposable {
     private readonly DuneGameState _gameState;
-    private readonly Timer _refreshTimer;
+    private readonly IPauseHandler? _pauseHandler;
     private bool _disposed;
+    private bool _isPaused;
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
-    public DuneGameStateViewModel(IByteReaderWriter memory, SegmentRegisters segmentRegisters) {
+    public bool IsPaused {
+        get => _isPaused;
+        private set {
+            if (_isPaused != value) {
+                _isPaused = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+
+    public DuneGameStateViewModel(IByteReaderWriter memory, SegmentRegisters segmentRegisters, IPauseHandler? pauseHandler = null) {
         _gameState = new DuneGameState(memory, segmentRegisters);
-        Sietches = new ObservableCollection<SietchViewModel>();
-        Troops = new ObservableCollection<TroopViewModel>();
+        _pauseHandler = pauseHandler;
         
-        for (int i = 0; i < 70; i++) {
+        Locations = new ObservableCollection<LocationViewModel>();
+        Troops = new ObservableCollection<TroopViewModel>();
+        Npcs = new ObservableCollection<NpcViewModel>();
+        Smugglers = new ObservableCollection<SmugglerViewModel>();
+        Sietches = new ObservableCollection<SietchViewModel>();
+        
+        for (int i = 0; i < DuneGameState.MaxLocations; i++) {
+            Locations.Add(new LocationViewModel(i));
             Sietches.Add(new SietchViewModel(i));
         }
-        for (int i = 0; i < 68; i++) {
+        for (int i = 0; i < DuneGameState.MaxTroops; i++) {
             Troops.Add(new TroopViewModel(i));
         }
+        for (int i = 0; i < DuneGameState.MaxNpcs; i++) {
+            Npcs.Add(new NpcViewModel(i));
+        }
+        for (int i = 0; i < DuneGameState.MaxSmugglers; i++) {
+            Smugglers.Add(new SmugglerViewModel(i));
+        }
         
-        _refreshTimer = new Timer(250);
-        _refreshTimer.Elapsed += OnRefreshTimerElapsed;
-        _refreshTimer.AutoReset = true;
-        _refreshTimer.Start();
+        if (_pauseHandler != null) {
+            _pauseHandler.Paused += OnEmulatorPaused;
+            _pauseHandler.Resumed += OnEmulatorResumed;
+            IsPaused = _pauseHandler.IsPaused;
+        }
+    }
+
+    private void OnEmulatorPaused() {
+        IsPaused = true;
+        RefreshAllData();
+    }
+
+    private void OnEmulatorResumed() {
+        IsPaused = false;
+    }
+
+    public void RefreshAllData() {
+        RefreshLocations();
+        RefreshSietches();
+        RefreshTroops();
+        RefreshNpcs();
+        RefreshSmugglers();
+        NotifyGameStateProperties();
     }
 
     // Core game state
@@ -94,15 +136,20 @@ public class DuneGameStateViewModel : INotifyPropertyChanged, IDisposable {
     public byte TransitionBitmask => _gameState.TransitionBitmask;
     public string TransitionBitmaskDisplay => $"0x{TransitionBitmask:X2} (0b{Convert.ToString(TransitionBitmask, 2).PadLeft(8, '0')})";
 
-    // Sietches
     public ObservableCollection<SietchViewModel> Sietches { get; }
     public int DiscoveredSietchCount => _gameState.GetDiscoveredSietchCount();
-    public string DiscoveredSietchCountDisplay => $"{DiscoveredSietchCount} / 70";
+    public string DiscoveredSietchCountDisplay => $"{DiscoveredSietchCount} / {DuneGameState.MaxLocations}";
 
-    // Troops
+    public ObservableCollection<LocationViewModel> Locations { get; }
+    public int DiscoveredLocationCount => _gameState.GetDiscoveredLocationCount();
+    public string DiscoveredLocationCountDisplay => $"{DiscoveredLocationCount} / {DuneGameState.MaxLocations}";
+
     public ObservableCollection<TroopViewModel> Troops { get; }
     public int ActiveTroopCount => _gameState.GetActiveTroopCount();
-    public string ActiveTroopCountDisplay => $"{ActiveTroopCount} / 68";
+    public string ActiveTroopCountDisplay => $"{ActiveTroopCount} / {DuneGameState.MaxTroops}";
+
+    public ObservableCollection<NpcViewModel> Npcs { get; }
+    public ObservableCollection<SmugglerViewModel> Smugglers { get; }
 
     // NPCs/Characters
     public byte Follower1Id => _gameState.Follower1Id;
@@ -131,14 +178,27 @@ public class DuneGameStateViewModel : INotifyPropertyChanged, IDisposable {
     public byte EcologyProgress => _gameState.EcologyProgress;
     public string EcologyProgressDisplay => $"{EcologyProgress}% (0x{EcologyProgress:X2})";
 
-    private void OnRefreshTimerElapsed(object? sender, ElapsedEventArgs e) {
-        RefreshSietches();
-        RefreshTroops();
-        NotifyGameStateProperties();
+    private void RefreshLocations() {
+        for (int i = 0; i < DuneGameState.MaxLocations; i++) {
+            Locations[i].NameFirst = _gameState.GetLocationNameFirst(i);
+            Locations[i].NameSecond = _gameState.GetLocationNameSecond(i);
+            Locations[i].Status = _gameState.GetLocationStatus(i);
+            Locations[i].Appearance = _gameState.GetLocationAppearance(i);
+            Locations[i].HousedTroopId = _gameState.GetLocationHousedTroopId(i);
+            Locations[i].SpiceFieldId = _gameState.GetLocationSpiceFieldId(i);
+            Locations[i].SpiceAmount = _gameState.GetLocationSpiceAmount(i);
+            Locations[i].SpiceDensity = _gameState.GetLocationSpiceDensity(i);
+            Locations[i].Harvesters = _gameState.GetLocationHarvesters(i);
+            Locations[i].Ornithopters = _gameState.GetLocationOrnithopters(i);
+            Locations[i].Water = _gameState.GetLocationWater(i);
+            var coords = _gameState.GetLocationCoordinates(i);
+            Locations[i].X = coords.X;
+            Locations[i].Y = coords.Y;
+        }
     }
 
     private void RefreshSietches() {
-        for (int i = 0; i < 70; i++) {
+        for (int i = 0; i < DuneGameState.MaxLocations; i++) {
             Sietches[i].Status = _gameState.GetSietchStatus(i);
             Sietches[i].SpiceField = _gameState.GetSietchSpiceField(i);
             var coords = _gameState.GetSietchCoordinates(i);
@@ -148,15 +208,49 @@ public class DuneGameStateViewModel : INotifyPropertyChanged, IDisposable {
     }
 
     private void RefreshTroops() {
-        for (int i = 0; i < 68; i++) {
+        for (int i = 0; i < DuneGameState.MaxTroops; i++) {
+            Troops[i].TroopId = _gameState.GetTroopId(i);
             Troops[i].Occupation = _gameState.GetTroopOccupation(i);
             Troops[i].OccupationName = DuneGameState.GetTroopOccupationDescription(Troops[i].Occupation);
+            Troops[i].IsFremen = DuneGameState.IsTroopFremen(Troops[i].Occupation);
+            Troops[i].Position = _gameState.GetTroopPosition(i);
             Troops[i].Location = _gameState.GetTroopLocation(i);
             Troops[i].Motivation = _gameState.GetTroopMotivation(i);
+            Troops[i].Dissatisfaction = _gameState.GetTroopDissatisfaction(i);
             Troops[i].SpiceSkill = _gameState.GetTroopSpiceSkill(i);
             Troops[i].ArmySkill = _gameState.GetTroopArmySkill(i);
             Troops[i].EcologySkill = _gameState.GetTroopEcologySkill(i);
             Troops[i].Equipment = _gameState.GetTroopEquipment(i);
+            Troops[i].EquipmentDescription = DuneGameState.GetTroopEquipmentDescription(Troops[i].Equipment);
+            Troops[i].Population = _gameState.GetTroopPopulation(i);
+        }
+    }
+
+    private void RefreshNpcs() {
+        for (int i = 0; i < DuneGameState.MaxNpcs; i++) {
+            Npcs[i].SpriteId = _gameState.GetNpcSpriteId(i);
+            Npcs[i].RoomLocation = _gameState.GetNpcRoomLocation(i);
+            Npcs[i].PlaceType = _gameState.GetNpcPlaceType(i);
+            Npcs[i].ExactPlace = _gameState.GetNpcExactPlace(i);
+            Npcs[i].DialogueFlag = _gameState.GetNpcDialogueFlag(i);
+        }
+    }
+
+    private void RefreshSmugglers() {
+        for (int i = 0; i < DuneGameState.MaxSmugglers; i++) {
+            Smugglers[i].Region = _gameState.GetSmugglerRegion(i);
+            Smugglers[i].LocationName = _gameState.GetSmugglerLocationName(i);
+            Smugglers[i].WillingnessToHaggle = _gameState.GetSmugglerWillingnessToHaggle(i);
+            Smugglers[i].Harvesters = _gameState.GetSmugglerHarvesters(i);
+            Smugglers[i].Ornithopters = _gameState.GetSmugglerOrnithopters(i);
+            Smugglers[i].KrysKnives = _gameState.GetSmugglerKrysKnives(i);
+            Smugglers[i].LaserGuns = _gameState.GetSmugglerLaserGuns(i);
+            Smugglers[i].WeirdingModules = _gameState.GetSmugglerWeirdingModules(i);
+            Smugglers[i].HarvesterPrice = _gameState.GetSmugglerHarvesterPrice(i);
+            Smugglers[i].OrnithopterPrice = _gameState.GetSmugglerOrnithopterPrice(i);
+            Smugglers[i].KrysKnifePrice = _gameState.GetSmugglerKrysKnifePrice(i);
+            Smugglers[i].LaserGunPrice = _gameState.GetSmugglerLaserGunPrice(i);
+            Smugglers[i].WeirdingModulePrice = _gameState.GetSmugglerWeirdingModulePrice(i);
         }
     }
 
@@ -248,8 +342,10 @@ public class DuneGameStateViewModel : INotifyPropertyChanged, IDisposable {
     protected virtual void Dispose(bool disposing) {
         if (!_disposed) {
             if (disposing) {
-                _refreshTimer.Stop();
-                _refreshTimer.Dispose();
+                if (_pauseHandler != null) {
+                    _pauseHandler.Paused -= OnEmulatorPaused;
+                    _pauseHandler.Resumed -= OnEmulatorResumed;
+                }
             }
             _disposed = true;
         }
@@ -305,6 +401,12 @@ public class TroopViewModel : INotifyPropertyChanged {
 
     public int Index { get; }
 
+    private byte _troopId;
+    public byte TroopId {
+        get => _troopId;
+        set { if (_troopId != value) { _troopId = value; OnPropertyChanged(); } }
+    }
+
     private byte _occupation;
     public byte Occupation {
         get => _occupation;
@@ -319,6 +421,18 @@ public class TroopViewModel : INotifyPropertyChanged {
         set { if (_occupationName != value) { _occupationName = value; OnPropertyChanged(); } }
     }
 
+    private bool _isFremen;
+    public bool IsFremen {
+        get => _isFremen;
+        set { if (_isFremen != value) { _isFremen = value; OnPropertyChanged(); } }
+    }
+
+    private byte _position;
+    public byte Position {
+        get => _position;
+        set { if (_position != value) { _position = value; OnPropertyChanged(); } }
+    }
+
     private byte _location;
     public byte Location {
         get => _location;
@@ -329,6 +443,12 @@ public class TroopViewModel : INotifyPropertyChanged {
     public byte Motivation {
         get => _motivation;
         set { if (_motivation != value) { _motivation = value; OnPropertyChanged(); } }
+    }
+
+    private byte _dissatisfaction;
+    public byte Dissatisfaction {
+        get => _dissatisfaction;
+        set { if (_dissatisfaction != value) { _dissatisfaction = value; OnPropertyChanged(); } }
     }
 
     private byte _spiceSkill;
@@ -353,6 +473,254 @@ public class TroopViewModel : INotifyPropertyChanged {
     public byte Equipment {
         get => _equipment;
         set { if (_equipment != value) { _equipment = value; OnPropertyChanged(); } }
+    }
+
+    private string _equipmentDescription = "None";
+    public string EquipmentDescription {
+        get => _equipmentDescription;
+        set { if (_equipmentDescription != value) { _equipmentDescription = value; OnPropertyChanged(); } }
+    }
+
+    private ushort _population;
+    public ushort Population {
+        get => _population;
+        set { if (_population != value) { _population = value; OnPropertyChanged(); } }
+    }
+
+    protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null) {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
+}
+
+public class LocationViewModel : INotifyPropertyChanged {
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    public LocationViewModel(int index) {
+        Index = index;
+    }
+
+    public int Index { get; }
+
+    private byte _nameFirst;
+    public byte NameFirst {
+        get => _nameFirst;
+        set { if (_nameFirst != value) { _nameFirst = value; OnPropertyChanged(); OnPropertyChanged(nameof(Name)); OnPropertyChanged(nameof(LocationType)); } }
+    }
+
+    private byte _nameSecond;
+    public byte NameSecond {
+        get => _nameSecond;
+        set { if (_nameSecond != value) { _nameSecond = value; OnPropertyChanged(); OnPropertyChanged(nameof(Name)); OnPropertyChanged(nameof(LocationType)); } }
+    }
+
+    public string Name => DuneGameState.GetLocationNameStr(NameFirst, NameSecond);
+    public string LocationType => DuneGameState.GetLocationTypeStr(NameSecond);
+
+    private byte _status;
+    public byte Status {
+        get => _status;
+        set { if (_status != value) { _status = value; OnPropertyChanged(); OnPropertyChanged(nameof(IsDiscovered)); } }
+    }
+
+    public bool IsDiscovered => (Status & 0x80) == 0;
+
+    private byte _appearance;
+    public byte Appearance {
+        get => _appearance;
+        set { if (_appearance != value) { _appearance = value; OnPropertyChanged(); } }
+    }
+
+    private byte _housedTroopId;
+    public byte HousedTroopId {
+        get => _housedTroopId;
+        set { if (_housedTroopId != value) { _housedTroopId = value; OnPropertyChanged(); } }
+    }
+
+    private byte _spiceFieldId;
+    public byte SpiceFieldId {
+        get => _spiceFieldId;
+        set { if (_spiceFieldId != value) { _spiceFieldId = value; OnPropertyChanged(); } }
+    }
+
+    private byte _spiceAmount;
+    public byte SpiceAmount {
+        get => _spiceAmount;
+        set { if (_spiceAmount != value) { _spiceAmount = value; OnPropertyChanged(); } }
+    }
+
+    private byte _spiceDensity;
+    public byte SpiceDensity {
+        get => _spiceDensity;
+        set { if (_spiceDensity != value) { _spiceDensity = value; OnPropertyChanged(); } }
+    }
+
+    private byte _harvesters;
+    public byte Harvesters {
+        get => _harvesters;
+        set { if (_harvesters != value) { _harvesters = value; OnPropertyChanged(); } }
+    }
+
+    private byte _ornithopters;
+    public byte Ornithopters {
+        get => _ornithopters;
+        set { if (_ornithopters != value) { _ornithopters = value; OnPropertyChanged(); } }
+    }
+
+    private byte _water;
+    public byte Water {
+        get => _water;
+        set { if (_water != value) { _water = value; OnPropertyChanged(); } }
+    }
+
+    private ushort _x;
+    public ushort X {
+        get => _x;
+        set { if (_x != value) { _x = value; OnPropertyChanged(); } }
+    }
+
+    private ushort _y;
+    public ushort Y {
+        get => _y;
+        set { if (_y != value) { _y = value; OnPropertyChanged(); } }
+    }
+
+    protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null) {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
+}
+
+public class NpcViewModel : INotifyPropertyChanged {
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    public NpcViewModel(int index) {
+        Index = index;
+    }
+
+    public int Index { get; }
+    public string Name => DuneGameState.GetNpcName((byte)(Index + 1));
+
+    private byte _spriteId;
+    public byte SpriteId {
+        get => _spriteId;
+        set { if (_spriteId != value) { _spriteId = value; OnPropertyChanged(); } }
+    }
+
+    private byte _roomLocation;
+    public byte RoomLocation {
+        get => _roomLocation;
+        set { if (_roomLocation != value) { _roomLocation = value; OnPropertyChanged(); } }
+    }
+
+    private byte _placeType;
+    public byte PlaceType {
+        get => _placeType;
+        set { if (_placeType != value) { _placeType = value; OnPropertyChanged(); OnPropertyChanged(nameof(PlaceTypeDescription)); } }
+    }
+
+    public string PlaceTypeDescription => DuneGameState.GetNpcPlaceTypeDescription(PlaceType);
+
+    private byte _exactPlace;
+    public byte ExactPlace {
+        get => _exactPlace;
+        set { if (_exactPlace != value) { _exactPlace = value; OnPropertyChanged(); } }
+    }
+
+    private byte _dialogueFlag;
+    public byte DialogueFlag {
+        get => _dialogueFlag;
+        set { if (_dialogueFlag != value) { _dialogueFlag = value; OnPropertyChanged(); } }
+    }
+
+    protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null) {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
+}
+
+public class SmugglerViewModel : INotifyPropertyChanged {
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    public SmugglerViewModel(int index) {
+        Index = index;
+    }
+
+    public int Index { get; }
+
+    private byte _region;
+    public byte Region {
+        get => _region;
+        set { if (_region != value) { _region = value; OnPropertyChanged(); } }
+    }
+
+    private string _locationName = "";
+    public string LocationName {
+        get => _locationName;
+        set { if (_locationName != value) { _locationName = value; OnPropertyChanged(); } }
+    }
+
+    private byte _willingnessToHaggle;
+    public byte WillingnessToHaggle {
+        get => _willingnessToHaggle;
+        set { if (_willingnessToHaggle != value) { _willingnessToHaggle = value; OnPropertyChanged(); } }
+    }
+
+    private byte _harvesters;
+    public byte Harvesters {
+        get => _harvesters;
+        set { if (_harvesters != value) { _harvesters = value; OnPropertyChanged(); } }
+    }
+
+    private byte _ornithopters;
+    public byte Ornithopters {
+        get => _ornithopters;
+        set { if (_ornithopters != value) { _ornithopters = value; OnPropertyChanged(); } }
+    }
+
+    private byte _krysKnives;
+    public byte KrysKnives {
+        get => _krysKnives;
+        set { if (_krysKnives != value) { _krysKnives = value; OnPropertyChanged(); } }
+    }
+
+    private byte _laserGuns;
+    public byte LaserGuns {
+        get => _laserGuns;
+        set { if (_laserGuns != value) { _laserGuns = value; OnPropertyChanged(); } }
+    }
+
+    private byte _weirdingModules;
+    public byte WeirdingModules {
+        get => _weirdingModules;
+        set { if (_weirdingModules != value) { _weirdingModules = value; OnPropertyChanged(); } }
+    }
+
+    private ushort _harvesterPrice;
+    public ushort HarvesterPrice {
+        get => _harvesterPrice;
+        set { if (_harvesterPrice != value) { _harvesterPrice = value; OnPropertyChanged(); } }
+    }
+
+    private ushort _ornithopterPrice;
+    public ushort OrnithopterPrice {
+        get => _ornithopterPrice;
+        set { if (_ornithopterPrice != value) { _ornithopterPrice = value; OnPropertyChanged(); } }
+    }
+
+    private ushort _krysKnifePrice;
+    public ushort KrysKnifePrice {
+        get => _krysKnifePrice;
+        set { if (_krysKnifePrice != value) { _krysKnifePrice = value; OnPropertyChanged(); } }
+    }
+
+    private ushort _laserGunPrice;
+    public ushort LaserGunPrice {
+        get => _laserGunPrice;
+        set { if (_laserGunPrice != value) { _laserGunPrice = value; OnPropertyChanged(); } }
+    }
+
+    private ushort _weirdingModulePrice;
+    public ushort WeirdingModulePrice {
+        get => _weirdingModulePrice;
+        set { if (_weirdingModulePrice != value) { _weirdingModulePrice = value; OnPropertyChanged(); } }
     }
 
     protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null) {

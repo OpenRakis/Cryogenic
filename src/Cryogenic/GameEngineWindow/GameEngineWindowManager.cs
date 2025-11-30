@@ -9,15 +9,16 @@ using Cryogenic.GameEngineWindow.Views;
 
 using Spice86.Core.Emulator.CPU.Registers;
 using Spice86.Core.Emulator.Memory.ReaderWriter;
+using Spice86.Core.Emulator.VM;
 
 public static class GameEngineWindowManager {
     private static DuneGameStateWindow? _window;
     private static DuneGameStateViewModel? _viewModel;
     private static bool _isWindowOpen;
 
-    public static void ShowWindow(IByteReaderWriter memory, SegmentRegisters segmentRegisters) {
+    public static void ShowWindow(IByteReaderWriter memory, SegmentRegisters segmentRegisters, IPauseHandler? pauseHandler = null) {
         if (!Dispatcher.UIThread.CheckAccess()) {
-            Dispatcher.UIThread.Post(() => ShowWindow(memory, segmentRegisters));
+            Dispatcher.UIThread.Post(() => ShowWindow(memory, segmentRegisters, pauseHandler));
             return;
         }
 
@@ -28,7 +29,7 @@ public static class GameEngineWindowManager {
         }
 
         _viewModel?.Dispose();
-        _viewModel = new DuneGameStateViewModel(memory, segmentRegisters);
+        _viewModel = new DuneGameStateViewModel(memory, segmentRegisters, pauseHandler);
         _window = new DuneGameStateWindow {
             DataContext = _viewModel
         };
