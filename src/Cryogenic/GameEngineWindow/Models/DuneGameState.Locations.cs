@@ -4,33 +4,41 @@ namespace Cryogenic.GameEngineWindow.Models;
 /// Location/Sietch structure accessors for Dune game state.
 /// </summary>
 /// <remarks>
-/// Location structure (28 bytes per entry, 70 max locations at 10FC:000F):
-/// - Offset 0: Name first byte (region: 01-0C)
-/// - Offset 1: Name second byte (type: 01-0B, 0A=village)
-/// - Offset 2-7: Coordinates (6 bytes)
-/// - Offset 8: Appearance type
-/// - Offset 9: Housed troop ID
-/// - Offset 10: Status flags
-/// - Offset 11-15: Stage for discovery
-/// - Offset 16: Spice field ID
-/// - Offset 17: Spice amount
-/// - Offset 18: Spice density
-/// - Offset 19: Field J
-/// - Offset 20: Harvesters count
-/// - Offset 21: Ornithopters count
-/// - Offset 22: Krys knives count
-/// - Offset 23: Laser guns count
-/// - Offset 24: Weirding modules count
-/// - Offset 25: Atomics count
-/// - Offset 26: Bulbs count
-/// - Offset 27: Water amount
+/// Location structure (28 bytes per entry, 70 max locations at DS:0100):
+/// Per madmoose dune-rust data.rs - Sietch structure at offset 0x100 in DataSegment.
+/// - Offset 0: first_name (region: 01-0C)
+/// - Offset 1: last_name (type: 01-0B, 0A=village)
+/// - Offset 2: desert
+/// - Offset 3: map_x
+/// - Offset 4: map_y
+/// - Offset 5: map_u
+/// - Offset 6: another_x
+/// - Offset 7: another_y
+/// - Offset 8: apparence (appearance type)
+/// - Offset 9: troop_id (housed troop ID)
+/// - Offset 10: status flags
+/// - Offset 11: discoverable_at_phase
+/// - Offset 12-15: unk1-unk4
+/// - Offset 16: spice_field_id
+/// - Offset 17: unk5 (spice amount in odrade)
+/// - Offset 18: spice_density
+/// - Offset 19: unk6
+/// - Offset 20: nbr_moiss (harvesters)
+/// - Offset 21: nbr_orni (ornithopters)
+/// - Offset 22: nbr_knife (krys knives)
+/// - Offset 23: nbr_guns (laser guns)
+/// - Offset 24: nbr_mods (weirding modules)
+/// - Offset 25: nbr_atoms (atomics)
+/// - Offset 26: nbr_bulbs (bulbs)
+/// - Offset 27: water
 /// </remarks>
 public partial class DuneGameState {
     /// <summary>
     /// Get the absolute address for a location entry.
+    /// Locations are at BaseAddress + LocationArrayOffset (0x0100).
     /// </summary>
     private uint GetLocationAddress(int index, int fieldOffset = 0) {
-        return LocationsBaseAddress + (uint)LocationArrayOffset + (uint)(index * LocationEntrySize) + (uint)fieldOffset;
+        return BaseAddress + (uint)LocationArrayOffset + (uint)(index * LocationEntrySize) + (uint)fieldOffset;
     }
 
     public byte GetLocationNameFirst(int index) {

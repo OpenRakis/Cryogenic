@@ -9,77 +9,67 @@ using Spice86.Core.Emulator.ReverseEngineer.DataStructure;
 /// <remarks>
 /// <para>
 /// This partial class is the main entry point for Dune game state access.
-/// Uses absolute memory addressing to ensure stable values regardless of
-/// which code segment is currently executing.
+/// Uses absolute memory addressing at segment 0x1138 (linear 0x11380) which is the
+/// DS segment during normal game execution. All offsets are from this single base.
 /// </para>
 /// <para>
-/// IMPORTANT: Different game structures reside at different memory segments:
-/// - Player globals (spice, charisma, game stage): Segment 0x10ED → linear 0x10ED0
-/// - Locations/Sietches structure: Segment 0x10FC → linear 0x10FC0
-/// - Troops structure: Segment 0x9B05 → linear 0x9B050
-/// - Display/HNM/Mouse data: Segment 0x1138 → linear 0x11380
+/// Per madmoose's dune-rust savegame analysis and GlobalsOnDs.cs:
+/// All game state data is in segment 0x1138 at various offsets:
+/// - DS:0000-0x125F: Player state (4705 bytes) - charisma, game stage, sietches, etc.
+/// - DS:AA76+: Troops, NPCs, Smugglers (4600 bytes)
+/// - DS:DCFE+: Map data (12671 bytes)
+/// - DS:DBD6+: Display/HNM/Mouse/Sound state
 /// </para>
 /// <para>
-/// Per madmoose's analysis (from sub_1B427_create_save_in_memory), savegame consists of:
-/// - DS:[DCFE]: 12671 bytes (2 bits for each of 50684 bytes)
-/// - CS:00AA: 162 bytes (code segment data)
-/// - DS:AA76: 4600 bytes (locations, troops, NPCs, smugglers)
-/// - DS:0000: 4705 bytes (player state, dialogue, etc.)
-/// These DS/CS values refer to runtime register values, not fixed segments.
+/// Offset sources:
+/// - madmoose/dune-rust crates/savegame/src/data.rs: DataSegment structure
+/// - GlobalsOnDs.cs: Runtime traced memory accesses at segment 0x1138
+/// - debrouxl/odrade: Location, troop, NPC, smuggler structure definitions
 /// </para>
 /// <para>
 /// Note: Raw memory values may differ from displayed in-game values.
-/// Example: Charisma raw value 0x50 (80) displays as 25 in-game.
+/// Example: Charisma raw value 0x50 (80) displays as 25 in-game via formula (raw * 5) / 16.
 /// </para>
 /// </remarks>
 public partial class DuneGameState : MemoryBasedDataStructure {
     /// <summary>
-    /// Base address for player globals (spice, charisma, game stage, etc.).
-    /// Segment 0x10ED * 16 = 0x10ED0.
-    /// Per problem statement: Charisma at 10ED:0029, Spice at 10ED:009F, etc.
-    /// </summary>
-    public const uint PlayerGlobalsBaseAddress = 0x10ED0;
-    
-    /// <summary>
-    /// Base address for locations/sietches structure.
-    /// Segment 0x10FC * 16 = 0x10FC0.
-    /// Per problem statement: Sietchs structure at 10FC:000F.
-    /// </summary>
-    public const uint LocationsBaseAddress = 0x10FC0;
-    
-    /// <summary>
-    /// Base address for troops structure.
-    /// Segment 0x9B05 * 16 = 0x9B050.
-    /// Per problem statement: Troops structure at 9B05:0003.
-    /// </summary>
-    public const uint TroopsBaseAddress = 0x9B050;
-    
-    /// <summary>
-    /// Base address for display/HNM/Mouse/Sound data.
+    /// Base address for all game state data.
     /// Segment 0x1138 * 16 = 0x11380.
-    /// From GlobalsOnDs.cs: framebufferFront, mousePosX, hnmFrameCounter, etc.
+    /// This is the DS segment value during normal game execution.
     /// </summary>
-    public const uint DisplayBaseAddress = 0x11380;
+    public new const uint BaseAddress = 0x11380;
     
-    // Location array structure
-    public const int LocationArrayOffset = 0x000F;  // Offset from LocationsBaseAddress
-    public const int LocationEntrySize = 28;
+    // Player data offsets within DS segment (from madmoose dune-rust data.rs)
+    public const int GameTimeOffset = 0x0002;         // game_time: u16
+    public const int PersonsTravelingWithOffset = 0x0010;  // persons_traveling_with: u16
+    public const int PersonsInRoomOffset = 0x0012;    // persons_in_room: u16
+    public const int PersonsTalkingToOffset = 0x0014; // persons_talking_to: u16
+    public const int SietchesAvailableOffset = 0x0027; // sietches_available: u8
+    public const int CharismaOffset = 0x0029;         // charisma: u8
+    public const int GamePhaseOffset = 0x002A;        // game_phase: u8
+    public const int DaysLeftOffset = 0x00CF;         // days_left_until_spice_shipment: u8
+    public const int UIHeadIndexOffset = 0x00E8;      // ui_head_index: u8
+    
+    // Sietches/Locations array (from madmoose dune-rust data.rs)
+    public const int LocationArrayOffset = 0x0100;    // sietches: [Sietch; 70] at offset 0x100
+    public const int LocationEntrySize = 28;          // sizeof(Sietch) = 28 bytes
     public const int MaxLocations = 70;
     
-    // Troop array structure  
-    public const int TroopArrayOffset = 0x0003;  // Offset from TroopsBaseAddress
-    public const int TroopEntrySize = 27;
+    // Troop/NPC/Smuggler arrays are at DS:AA76+ region (4600 bytes)
+    // Offset from DS:0000 to start of troop data
+    public const int TroopArrayOffset = 0xAA76;       // DS:AA76 per madmoose analysis
+    public const int TroopEntrySize = 27;             // sizeof(Troop) per odrade
     public const int MaxTroops = 68;
     
     // NPC and Smuggler arrays follow troops in memory
     public const int NpcEntrySize = 8;
     public const int NpcPadding = 8;
-    public const int NpcTotalEntrySize = NpcEntrySize + NpcPadding; // 16 bytes total
+    public const int NpcTotalEntrySize = NpcEntrySize + NpcPadding; // 16 bytes total per odrade
     public const int MaxNpcs = 16;
     
     public const int SmugglerEntrySize = 14;
     public const int SmugglerPadding = 3;
-    public const int SmugglerTotalEntrySize = SmugglerEntrySize + SmugglerPadding; // 17 bytes total
+    public const int SmugglerTotalEntrySize = SmugglerEntrySize + SmugglerPadding; // 17 bytes total per odrade
     public const int MaxSmugglers = 6;
     
     // Location status flags (from odrade)
@@ -110,85 +100,93 @@ public partial class DuneGameState : MemoryBasedDataStructure {
     /// </summary>
     private uint ReadDword(uint absoluteAddress) => UInt32[absoluteAddress];
 
-    // Core game state - these are at PlayerGlobalsBaseAddress (0x10ED0)
-    // Offsets match the problem statement: 10ED:0029, 10ED:009F, etc.
+    // Core game state - all at BaseAddress (0x11380) + offset
+    // Offsets from madmoose dune-rust data.rs and GlobalsOnDs.cs
     
-    /// <summary>Game elapsed time counter at 10ED:0002</summary>
-    public ushort GameElapsedTime => ReadWord(PlayerGlobalsBaseAddress + 0x0002);
+    /// <summary>Game elapsed time counter at DS:0002</summary>
+    public ushort GameElapsedTime => ReadWord(BaseAddress + GameTimeOffset);
     
     /// <summary>
-    /// Raw charisma byte at 10ED:0029.
-    /// Per problem statement: 0x50 (80) displays as 25 in-game.
+    /// Raw charisma byte at DS:0029.
+    /// Per madmoose analysis: 0x50 (80) displays as 25 in-game.
+    /// Formula: (raw * 5) / 16 gives approximately correct display value.
     /// </summary>
-    public byte CharismaRaw => ReadByte(PlayerGlobalsBaseAddress + 0x0029);
+    public byte CharismaRaw => ReadByte(BaseAddress + CharismaOffset);
     
     /// <summary>
     /// Displayed charisma calculation.
-    /// Per problem statement: 0x50 (80) → 25, so formula is approximately raw / 3.2 or (raw * 5) / 16.
+    /// Formula derived from in-game observation: 0x50 (80) → 25
     /// Using (raw * 5) / 16 as integer approximation.
     /// </summary>
     public int CharismaDisplayed => (CharismaRaw * 5) / 16;
     
-    /// <summary>Game stage/progress at 10ED:002A</summary>
-    public byte GameStage => ReadByte(PlayerGlobalsBaseAddress + 0x002A);
+    /// <summary>Game stage/progress at DS:002A</summary>
+    public byte GameStage => ReadByte(BaseAddress + GamePhaseOffset);
     
-    /// <summary>Total spice at 10ED:009F</summary>
-    public ushort Spice => ReadWord(PlayerGlobalsBaseAddress + 0x009F);
+    /// <summary>Days left until spice shipment at DS:00CF</summary>
+    public byte DaysLeftUntilSpiceShipment => ReadByte(BaseAddress + DaysLeftOffset);
     
-    /// <summary>Date/time packed value at 10ED:1174</summary>
-    public ushort DateTimeRaw => ReadWord(PlayerGlobalsBaseAddress + 0x1174);
+    /// <summary>UI head index at DS:00E8</summary>
+    public byte UIHeadIndex => ReadByte(BaseAddress + UIHeadIndexOffset);
+
+    // HNM Video state - at BaseAddress + offset (from GlobalsOnDs.cs)
+    public byte HnmFinishedFlag => ReadByte(BaseAddress + 0xDBE7);
+    public ushort HnmFrameCounter => ReadWord(BaseAddress + 0xDBE8);
+    public ushort HnmCounter2 => ReadWord(BaseAddress + 0xDBEA);
+    public byte CurrentHnmResourceFlag => ReadByte(BaseAddress + 0xDBFE);
+    public ushort HnmVideoId => ReadWord(BaseAddress + 0xDC00);
+    public ushort HnmActiveVideoId => ReadWord(BaseAddress + 0xDC02);
+    public uint HnmFileOffset => ReadDword(BaseAddress + 0xDC04);
+    public uint HnmFileRemain => ReadDword(BaseAddress + 0xDC08);
+
+    // Display/framebuffer state - at BaseAddress + offset (from GlobalsOnDs.cs)
+    public ushort FramebufferFront => ReadWord(BaseAddress + 0xDBD6);
+    public ushort ScreenBuffer => ReadWord(BaseAddress + 0xDBD8);
+    public ushort FramebufferActive => ReadWord(BaseAddress + 0xDBDA);
+    public ushort FramebufferBack => ReadWord(BaseAddress + 0xDC32);
+
+    // Mouse/cursor state - at BaseAddress + offset (from GlobalsOnDs.cs)
+    public ushort MousePosY => ReadWord(BaseAddress + 0xDC36);
+    public ushort MousePosX => ReadWord(BaseAddress + 0xDC38);
+    public ushort MouseDrawPosY => ReadWord(BaseAddress + 0xDC42);
+    public ushort MouseDrawPosX => ReadWord(BaseAddress + 0xDC44);
+    public byte CursorHideCounter => ReadByte(BaseAddress + 0xDC46);
+    public ushort MapCursorType => ReadWord(BaseAddress + 0xDC58);
+
+    // Sound state - at BaseAddress + offset (from GlobalsOnDs.cs)
+    public byte IsSoundPresent => ReadByte(BaseAddress + 0xDBCD);
+    public ushort MidiFunc5ReturnBx => ReadWord(BaseAddress + 0xDBCE);
+
+    // Graphics transition - at BaseAddress + offset (from GlobalsOnDs.cs)
+    public byte TransitionBitmask => ReadByte(BaseAddress + 0xDCE6);
+
+    // Player party/position state - offsets need verification
+    // These may be at different offsets in the DataSegment
+    public byte Follower1Id => ReadByte(BaseAddress + PersonsTravelingWithOffset);
+    public byte Follower2Id => ReadByte(BaseAddress + PersonsTravelingWithOffset + 1);
+    public byte CurrentRoomId => ReadByte(BaseAddress + 0x0005); // current_location_and_room is at 0x04-0x05
+    public ushort WorldPosX => ReadWord(BaseAddress + 0x001C);   // Needs verification
+    public ushort WorldPosY => ReadWord(BaseAddress + 0x001E);   // Needs verification
+
+    // Player resources - offsets need verification from actual game data
+    public ushort WaterReserve => ReadWord(BaseAddress + 0x0020); // Needs verification
+    public ushort SpiceReserve => ReadWord(BaseAddress + 0x0022); // Needs verification
+    public uint Money => ReadDword(BaseAddress + 0x0024);         // Needs verification
+    public byte MilitaryStrength => ReadByte(BaseAddress + 0x002B);
+    public byte EcologyProgress => ReadByte(BaseAddress + 0x002C);
     
-    /// <summary>Contact distance at 10ED:1176</summary>
-    public byte ContactDistance => ReadByte(PlayerGlobalsBaseAddress + 0x1176);
+    // Spice - need to find correct offset
+    public ushort Spice => ReadWord(BaseAddress + 0x009F);        // Needs verification
+    
+    // Date/time - from game time calculation
+    public ushort DateTimeRaw => GameElapsedTime;
+    
+    // Contact distance - needs verification  
+    public byte ContactDistance => ReadByte(BaseAddress + 0x1176); // Needs verification
 
-    // HNM Video state - these are at DisplayBaseAddress (0x11380)
-    public byte HnmFinishedFlag => ReadByte(DisplayBaseAddress + 0xDBE7);
-    public ushort HnmFrameCounter => ReadWord(DisplayBaseAddress + 0xDBE8);
-    public ushort HnmCounter2 => ReadWord(DisplayBaseAddress + 0xDBEA);
-    public byte CurrentHnmResourceFlag => ReadByte(DisplayBaseAddress + 0xDBFE);
-    public ushort HnmVideoId => ReadWord(DisplayBaseAddress + 0xDC00);
-    public ushort HnmActiveVideoId => ReadWord(DisplayBaseAddress + 0xDC02);
-    public uint HnmFileOffset => ReadDword(DisplayBaseAddress + 0xDC04);
-    public uint HnmFileRemain => ReadDword(DisplayBaseAddress + 0xDC08);
-
-    // Display/framebuffer state - at DisplayBaseAddress (0x11380)
-    public ushort FramebufferFront => ReadWord(DisplayBaseAddress + 0xDBD6);
-    public ushort ScreenBuffer => ReadWord(DisplayBaseAddress + 0xDBD8);
-    public ushort FramebufferActive => ReadWord(DisplayBaseAddress + 0xDBDA);
-    public ushort FramebufferBack => ReadWord(DisplayBaseAddress + 0xDC32);
-
-    // Mouse/cursor state - at DisplayBaseAddress (0x11380)
-    public ushort MousePosY => ReadWord(DisplayBaseAddress + 0xDC36);
-    public ushort MousePosX => ReadWord(DisplayBaseAddress + 0xDC38);
-    public ushort MouseDrawPosY => ReadWord(DisplayBaseAddress + 0xDC42);
-    public ushort MouseDrawPosX => ReadWord(DisplayBaseAddress + 0xDC44);
-    public byte CursorHideCounter => ReadByte(DisplayBaseAddress + 0xDC46);
-    public ushort MapCursorType => ReadWord(DisplayBaseAddress + 0xDC58);
-
-    // Sound state - at DisplayBaseAddress (0x11380)
-    public byte IsSoundPresent => ReadByte(DisplayBaseAddress + 0xDBCD);
-    public ushort MidiFunc5ReturnBx => ReadWord(DisplayBaseAddress + 0xDBCE);
-
-    // Graphics transition - at DisplayBaseAddress (0x11380)
-    public byte TransitionBitmask => ReadByte(DisplayBaseAddress + 0xDCE6);
-
-    // Player party/position state - at PlayerGlobalsBaseAddress (0x10ED0)
-    public byte Follower1Id => ReadByte(PlayerGlobalsBaseAddress + 0x0019);
-    public byte Follower2Id => ReadByte(PlayerGlobalsBaseAddress + 0x001A);
-    public byte CurrentRoomId => ReadByte(PlayerGlobalsBaseAddress + 0x001B);
-    public ushort WorldPosX => ReadWord(PlayerGlobalsBaseAddress + 0x001C);
-    public ushort WorldPosY => ReadWord(PlayerGlobalsBaseAddress + 0x001E);
-
-    // Player resources - at PlayerGlobalsBaseAddress (0x10ED0)
-    public ushort WaterReserve => ReadWord(PlayerGlobalsBaseAddress + 0x0020);
-    public ushort SpiceReserve => ReadWord(PlayerGlobalsBaseAddress + 0x0022);
-    public uint Money => ReadDword(PlayerGlobalsBaseAddress + 0x0024);
-    public byte MilitaryStrength => ReadByte(PlayerGlobalsBaseAddress + 0x002B);
-    public byte EcologyProgress => ReadByte(PlayerGlobalsBaseAddress + 0x002C);
-
-    // Dialogue state - at DisplayBaseAddress (0x11380)
-    public byte CurrentSpeakerId => ReadByte(DisplayBaseAddress + 0xDC8C);
-    public ushort DialogueState => ReadWord(DisplayBaseAddress + 0xDC8E);
+    // Dialogue state - at BaseAddress + offset
+    public byte CurrentSpeakerId => ReadByte(BaseAddress + 0xDC8C);
+    public ushort DialogueState => ReadWord(BaseAddress + 0xDC8E);
 
     /// <summary>
     /// Get day from packed date/time.

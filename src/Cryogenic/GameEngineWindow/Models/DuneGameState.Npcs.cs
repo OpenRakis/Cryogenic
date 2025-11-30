@@ -5,7 +5,8 @@ namespace Cryogenic.GameEngineWindow.Models;
 /// </summary>
 /// <remarks>
 /// NPC structure (8 bytes per entry + 8 bytes padding = 16 bytes total, 16 NPCs max).
-/// NPCs follow troops in memory at TroopsBaseAddress + troops size.
+/// NPCs follow troops in memory at BaseAddress + TroopArrayOffset + troops size.
+/// Per odrade npc.go:
 /// - Offset 0: Sprite identificator
 /// - Offset 1: Field B
 /// - Offset 2: Room location
@@ -18,10 +19,10 @@ namespace Cryogenic.GameEngineWindow.Models;
 public partial class DuneGameState {
     /// <summary>
     /// Get the absolute address for an NPC entry.
-    /// NPCs follow troops in memory.
+    /// NPCs follow troops in memory at BaseAddress + TroopArrayOffset + (MaxTroops * TroopEntrySize).
     /// </summary>
     private uint GetNpcAddress(int index, int fieldOffset = 0) {
-        uint npcsStart = TroopsBaseAddress + (uint)TroopArrayOffset + (uint)(MaxTroops * TroopEntrySize);
+        uint npcsStart = BaseAddress + (uint)TroopArrayOffset + (uint)(MaxTroops * TroopEntrySize);
         return npcsStart + (uint)(index * NpcTotalEntrySize) + (uint)fieldOffset;
     }
 

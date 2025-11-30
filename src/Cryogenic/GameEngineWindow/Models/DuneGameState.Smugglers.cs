@@ -5,7 +5,8 @@ namespace Cryogenic.GameEngineWindow.Models;
 /// </summary>
 /// <remarks>
 /// Smuggler structure (14 bytes per entry + 3 bytes padding = 17 bytes total, 6 smugglers max).
-/// Smugglers follow NPCs in memory.
+/// Smugglers follow NPCs in memory at BaseAddress + TroopArrayOffset + troops size + NPCs size.
+/// Per odrade smuggler.go:
 /// - Offset 0: Region/location byte
 /// - Offset 1: Willingness to haggle
 /// - Offset 2: Field C
@@ -24,10 +25,10 @@ namespace Cryogenic.GameEngineWindow.Models;
 public partial class DuneGameState {
     /// <summary>
     /// Get the absolute address for a smuggler entry.
-    /// Smugglers follow NPCs in memory (after troops + NPCs).
+    /// Smugglers follow NPCs in memory: BaseAddress + TroopArrayOffset + troops size + NPCs size.
     /// </summary>
     private uint GetSmugglerAddress(int index, int fieldOffset = 0) {
-        uint npcsStart = TroopsBaseAddress + (uint)TroopArrayOffset + (uint)(MaxTroops * TroopEntrySize);
+        uint npcsStart = BaseAddress + (uint)TroopArrayOffset + (uint)(MaxTroops * TroopEntrySize);
         uint smugglersStart = npcsStart + (uint)(MaxNpcs * NpcTotalEntrySize);
         return smugglersStart + (uint)(index * SmugglerTotalEntrySize) + (uint)fieldOffset;
     }

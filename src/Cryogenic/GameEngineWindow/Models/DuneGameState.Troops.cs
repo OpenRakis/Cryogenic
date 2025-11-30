@@ -4,7 +4,8 @@ namespace Cryogenic.GameEngineWindow.Models;
 /// Troop structure accessors for Dune game state.
 /// </summary>
 /// <remarks>
-/// Troop structure (27 bytes per entry, 68 max troops at 9B05:0003):
+/// Troop structure (27 bytes per entry, 68 max troops) at DS:AA76+.
+/// Per odrade troop.go and madmoose analysis:
 /// - Offset 0: Troop ID
 /// - Offset 1: Next troop ID (for chains)
 /// - Offset 2: Position in location
@@ -25,9 +26,10 @@ namespace Cryogenic.GameEngineWindow.Models;
 public partial class DuneGameState {
     /// <summary>
     /// Get the absolute address for a troop entry.
+    /// Troops are at BaseAddress + TroopArrayOffset (0xAA76).
     /// </summary>
     private uint GetTroopAddress(int index, int fieldOffset = 0) {
-        return TroopsBaseAddress + (uint)TroopArrayOffset + (uint)(index * TroopEntrySize) + (uint)fieldOffset;
+        return BaseAddress + (uint)TroopArrayOffset + (uint)(index * TroopEntrySize) + (uint)fieldOffset;
     }
 
     public byte GetTroopId(int index) {
