@@ -26,10 +26,11 @@ namespace Cryogenic.GameEngineWindow.Models;
 public partial class DuneGameState {
     /// <summary>
     /// Get the absolute address for a troop entry.
-    /// Troops are at BaseAddress + TroopArrayOffset (0xAA76).
+    /// Troops are at TroopBaseAddress (0x9B050) + TroopArrayOffset (0x0003).
+    /// Per problem statement: MEMDUMPBIN 0x9B053 = 9B05:0003
     /// </summary>
     private uint GetTroopAddress(int index, int fieldOffset = 0) {
-        return BaseAddress + (uint)TroopArrayOffset + (uint)(index * TroopEntrySize) + (uint)fieldOffset;
+        return TroopBaseAddress + (uint)TroopArrayOffset + (uint)(index * TroopEntrySize) + (uint)fieldOffset;
     }
 
     public byte GetTroopId(int index) {

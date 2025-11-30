@@ -25,10 +25,11 @@ namespace Cryogenic.GameEngineWindow.Models;
 public partial class DuneGameState {
     /// <summary>
     /// Get the absolute address for a smuggler entry.
-    /// Smugglers follow NPCs in memory: BaseAddress + TroopArrayOffset + troops size + NPCs size.
+    /// Smugglers follow NPCs in memory: TroopBaseAddress + TroopArrayOffset + troops size + NPCs size.
+    /// Per problem statement: troops/NPCs/smugglers at segment 9B05.
     /// </summary>
     private uint GetSmugglerAddress(int index, int fieldOffset = 0) {
-        uint npcsStart = BaseAddress + (uint)TroopArrayOffset + (uint)(MaxTroops * TroopEntrySize);
+        uint npcsStart = TroopBaseAddress + (uint)TroopArrayOffset + (uint)(MaxTroops * TroopEntrySize);
         uint smugglersStart = npcsStart + (uint)(MaxNpcs * NpcTotalEntrySize);
         return smugglersStart + (uint)(index * SmugglerTotalEntrySize) + (uint)fieldOffset;
     }

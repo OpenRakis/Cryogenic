@@ -19,10 +19,11 @@ namespace Cryogenic.GameEngineWindow.Models;
 public partial class DuneGameState {
     /// <summary>
     /// Get the absolute address for an NPC entry.
-    /// NPCs follow troops in memory at BaseAddress + TroopArrayOffset + (MaxTroops * TroopEntrySize).
+    /// NPCs follow troops in memory at TroopBaseAddress + TroopArrayOffset + (MaxTroops * TroopEntrySize).
+    /// Per problem statement: troops at 9B05:0003, NPCs follow.
     /// </summary>
     private uint GetNpcAddress(int index, int fieldOffset = 0) {
-        uint npcsStart = BaseAddress + (uint)TroopArrayOffset + (uint)(MaxTroops * TroopEntrySize);
+        uint npcsStart = TroopBaseAddress + (uint)TroopArrayOffset + (uint)(MaxTroops * TroopEntrySize);
         return npcsStart + (uint)(index * NpcTotalEntrySize) + (uint)fieldOffset;
     }
 
