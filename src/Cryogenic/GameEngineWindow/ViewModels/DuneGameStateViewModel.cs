@@ -70,6 +70,7 @@ public class DuneGameStateViewModel : INotifyPropertyChanged, IDisposable {
 
     public void RefreshAllData() {
         RefreshLocations();
+        RefreshSietches();
         RefreshTroops();
         RefreshNpcs();
         RefreshSmugglers();
