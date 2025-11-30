@@ -1,6 +1,5 @@
 namespace Cryogenic.GameEngineWindow.Models;
 
-using Spice86.Core.Emulator.CPU.Registers;
 using Spice86.Core.Emulator.Memory.ReaderWriter;
 using Spice86.Core.Emulator.ReverseEngineer.DataStructure;
 
@@ -10,13 +9,15 @@ using Spice86.Core.Emulator.ReverseEngineer.DataStructure;
 /// <remarks>
 /// <para>
 /// This partial class is the main entry point for Dune game state access.
-/// Offsets are taken from GlobalsOnDs.cs which was generated from runtime memory access tracing.
+/// Uses absolute memory addressing (0x11380 base) to ensure stable values regardless of
+/// which code segment is currently executing. Offsets are taken from GlobalsOnDs.cs
+/// which was generated from runtime memory access tracing.
 /// </para>
 /// <para>
 /// Memory regions per madmoose's analysis (from sub_1B427_create_save_in_memory):
-/// - DS:0000: 4705 bytes (player state, dialogue, etc.)
-/// - DS:AA76: 4600 bytes (locations, troops, NPCs, smugglers)
-/// - DS:DCFE: 12671 bytes (2 bits for each of 50684 bytes)
+/// - 0x11380+0x0000: 4705 bytes (player state, dialogue, etc.)
+/// - 0x11380+0xAA76: 4600 bytes (locations, troops, NPCs, smugglers)
+/// - 0x11380+0xDCFE: 12671 bytes (2 bits for each of 50684 bytes)
 /// - CS:00AA: 162 bytes (code segment data)
 /// </para>
 /// <para>
@@ -24,7 +25,12 @@ using Spice86.Core.Emulator.ReverseEngineer.DataStructure;
 /// For example, the displayed "CHARISMA" value may use a formula based on the raw byte value.
 /// </para>
 /// </remarks>
-public partial class DuneGameState : MemoryBasedDataStructureWithDsBaseAddress {
+public partial class DuneGameState : MemoryBasedDataStructure {
+    /// <summary>
+    /// Absolute base address for Dune game data (segment 0x1138 * 16 = 0x11380).
+    /// Using absolute address ensures values don't change depending on which code is executing.
+    /// </summary>
+    public const uint DuneDataBaseAddress = 0x11380;
     // Location array starts at DS:AA76 per madmoose analysis
     public const int LocationBaseOffset = 0xAA76;
     public const int LocationEntrySize = 28;
@@ -57,8 +63,8 @@ public partial class DuneGameState : MemoryBasedDataStructureWithDsBaseAddress {
     public const int SmugglerTotalEntrySize = SmugglerEntrySize + SmugglerPadding; // 17 bytes total
     public const int MaxSmugglers = 6;
 
-    public DuneGameState(IByteReaderWriter memory, SegmentRegisters segmentRegisters) 
-        : base(memory, segmentRegisters) {
+    public DuneGameState(IByteReaderWriter memory) 
+        : base(memory, DuneDataBaseAddress) {
     }
 
     // Core game state - offsets from GlobalsOnDs.cs (segment 0x1138)

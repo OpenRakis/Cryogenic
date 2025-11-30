@@ -7,7 +7,6 @@ using System.Runtime.CompilerServices;
 
 using Cryogenic.GameEngineWindow.Models;
 
-using Spice86.Core.Emulator.CPU.Registers;
 using Spice86.Core.Emulator.Memory.ReaderWriter;
 using Spice86.Core.Emulator.VM;
 
@@ -29,8 +28,8 @@ public class DuneGameStateViewModel : INotifyPropertyChanged, IDisposable {
         }
     }
 
-    public DuneGameStateViewModel(IByteReaderWriter memory, SegmentRegisters segmentRegisters, IPauseHandler? pauseHandler = null) {
-        _gameState = new DuneGameState(memory, segmentRegisters);
+    public DuneGameStateViewModel(IByteReaderWriter memory, IPauseHandler? pauseHandler = null) {
+        _gameState = new DuneGameState(memory);
         _pauseHandler = pauseHandler;
         
         Locations = new ObservableCollection<LocationViewModel>();
