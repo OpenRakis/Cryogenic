@@ -1,0 +1,190 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Cryogenic.GameEngineWindow.ViewModels"
+        x:Class="Cryogenic.GameEngineWindow.Views.DuneGameStateWindow"
+        x:DataType="vm:DuneGameStateViewModel"
+        Title="Dune Game Engine - Live Memory View"
+        Width="800"
+        Height="600"
+        WindowStartupLocation="CenterScreen">
+
+    <TabControl Margin="10">
+        
+        <!-- Savegame Structure Tab -->
+        <TabItem Header="Savegame Structure">
+            <ScrollViewer>
+                <StackPanel Margin="10" Spacing="15">
+                    <TextBlock Text="Core Game State (Live Memory)" FontWeight="Bold" FontSize="16"/>
+                    <TextBlock Text="Memory read from DS:0000 region" FontStyle="Italic" Foreground="Gray"/>
+                    
+                    <Grid ColumnDefinitions="200,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto" Margin="0,10,0,0">
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Game Elapsed Time:" FontWeight="SemiBold"/>
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding GameElapsedTimeHex}"/>
+                        
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Date &amp; Time:" FontWeight="SemiBold"/>
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding DateTimeDisplay}"/>
+                        
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Spice:" FontWeight="SemiBold"/>
+                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding SpiceDisplay}"/>
+                        
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Charisma:" FontWeight="SemiBold"/>
+                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding CharismaDisplay}"/>
+                        
+                        <TextBlock Grid.Row="4" Grid.Column="0" Text="Contact Distance:" FontWeight="SemiBold"/>
+                        <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding ContactDistanceDisplay}"/>
+                        
+                        <TextBlock Grid.Row="5" Grid.Column="0" Text="Game Stage:" FontWeight="SemiBold"/>
+                        <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding GameStageDisplay}"/>
+                        
+                        <TextBlock Grid.Row="6" Grid.Column="0" Text="Game Stage (Raw):" FontWeight="SemiBold"/>
+                        <TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding GameStage, StringFormat='0x{0:X2}'}"/>
+                    </Grid>
+                </StackPanel>
+            </ScrollViewer>
+        </TabItem>
+        
+        <!-- HNM Video Tab -->
+        <TabItem Header="HNM Video">
+            <ScrollViewer>
+                <StackPanel Margin="10" Spacing="15">
+                    <TextBlock Text="HNM Video Playback State" FontWeight="Bold" FontSize="16"/>
+                    <TextBlock Text="Live video playback information" FontStyle="Italic" Foreground="Gray"/>
+                    
+                    <Grid ColumnDefinitions="200,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" Margin="0,10,0,0">
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Video ID:" FontWeight="SemiBold"/>
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding HnmVideoIdDisplay}"/>
+                        
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Active Video ID:" FontWeight="SemiBold"/>
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding HnmActiveVideoId, StringFormat='0x{0:X4}'}"/>
+                        
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Frame Counter:" FontWeight="SemiBold"/>
+                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding HnmFrameCounter}"/>
+                        
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Counter 2:" FontWeight="SemiBold"/>
+                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding HnmCounter2}"/>
+                        
+                        <TextBlock Grid.Row="4" Grid.Column="0" Text="Finished Flag:" FontWeight="SemiBold"/>
+                        <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding HnmFinishedFlag, StringFormat='0x{0:X2}'}"/>
+                        
+                        <TextBlock Grid.Row="5" Grid.Column="0" Text="Resource Flag:" FontWeight="SemiBold"/>
+                        <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding CurrentHnmResourceFlag, StringFormat='0x{0:X2}'}"/>
+                        
+                        <TextBlock Grid.Row="6" Grid.Column="0" Text="File Offset:" FontWeight="SemiBold"/>
+                        <TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding HnmFileOffsetDisplay}"/>
+                        
+                        <TextBlock Grid.Row="7" Grid.Column="0" Text="File Remaining:" FontWeight="SemiBold"/>
+                        <TextBlock Grid.Row="7" Grid.Column="1" Text="{Binding HnmFileRemainDisplay}"/>
+                    </Grid>
+                </StackPanel>
+            </ScrollViewer>
+        </TabItem>
+        
+        <!-- Display/Graphics Tab -->
+        <TabItem Header="Display">
+            <ScrollViewer>
+                <StackPanel Margin="10" Spacing="15">
+                    <TextBlock Text="Display and Graphics State" FontWeight="Bold" FontSize="16"/>
+                    <TextBlock Text="Framebuffer and screen information" FontStyle="Italic" Foreground="Gray"/>
+                    
+                    <Grid ColumnDefinitions="200,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" Margin="0,10,0,0">
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Front Framebuffer:" FontWeight="SemiBold"/>
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding FramebufferFrontDisplay}"/>
+                        
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Back Framebuffer:" FontWeight="SemiBold"/>
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding FramebufferBackDisplay}"/>
+                        
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Active Framebuffer:" FontWeight="SemiBold"/>
+                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding FramebufferActiveDisplay}"/>
+                        
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Screen Buffer:" FontWeight="SemiBold"/>
+                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding ScreenBufferDisplay}"/>
+                        
+                        <TextBlock Grid.Row="4" Grid.Column="0" Text="Transition Bitmask:" FontWeight="SemiBold"/>
+                        <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding TransitionBitmaskDisplay}"/>
+                    </Grid>
+                </StackPanel>
+            </ScrollViewer>
+        </TabItem>
+        
+        <!-- Mouse/Input Tab -->
+        <TabItem Header="Input">
+            <ScrollViewer>
+                <StackPanel Margin="10" Spacing="15">
+                    <TextBlock Text="Mouse and Input State" FontWeight="Bold" FontSize="16"/>
+                    <TextBlock Text="Cursor and input device information" FontStyle="Italic" Foreground="Gray"/>
+                    
+                    <Grid ColumnDefinitions="200,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" Margin="0,10,0,0">
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Mouse Position:" FontWeight="SemiBold"/>
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding MousePositionDisplay}"/>
+                        
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Mouse Draw Position:" FontWeight="SemiBold"/>
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding MouseDrawPositionDisplay}"/>
+                        
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Cursor Hide Counter:" FontWeight="SemiBold"/>
+                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding CursorHideCounter}"/>
+                        
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Map Cursor Type:" FontWeight="SemiBold"/>
+                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding MapCursorTypeDisplay}"/>
+                    </Grid>
+                </StackPanel>
+            </ScrollViewer>
+        </TabItem>
+        
+        <!-- Sound/MIDI Tab -->
+        <TabItem Header="Sound">
+            <ScrollViewer>
+                <StackPanel Margin="10" Spacing="15">
+                    <TextBlock Text="Sound and MIDI State" FontWeight="Bold" FontSize="16"/>
+                    <TextBlock Text="Audio subsystem information" FontStyle="Italic" Foreground="Gray"/>
+                    
+                    <Grid ColumnDefinitions="200,*" RowDefinitions="Auto,Auto" Margin="0,10,0,0">
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Sound Present:" FontWeight="SemiBold"/>
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding IsSoundPresentDisplay}"/>
+                        
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="MIDI Func5 Return:" FontWeight="SemiBold"/>
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding MidiFunc5ReturnBxDisplay}"/>
+                    </Grid>
+                </StackPanel>
+            </ScrollViewer>
+        </TabItem>
+        
+        <!-- Memory Regions Tab -->
+        <TabItem Header="Memory Regions">
+            <ScrollViewer>
+                <StackPanel Margin="10" Spacing="15">
+                    <TextBlock Text="Dune Memory Layout" FontWeight="Bold" FontSize="16"/>
+                    <TextBlock Text="Based on seg000:B427 (sub_1B427_create_save_in_memory)" FontStyle="Italic" Foreground="Gray"/>
+                    
+                    <Border BorderBrush="Gray" BorderThickness="1" Padding="10" Margin="0,10,0,0">
+                        <StackPanel Spacing="5">
+                            <TextBlock Text="Savegame Memory Regions:" FontWeight="SemiBold"/>
+                            <TextBlock Text="• DS:[DCFE] - 12671 bytes (2 bits per byte for next 50684 bytes)" FontFamily="Consolas"/>
+                            <TextBlock Text="• CS:00AA - 162 bytes (includes some code)" FontFamily="Consolas"/>
+                            <TextBlock Text="• DS:AA76 - 4600 bytes (location/sietch data)" FontFamily="Consolas"/>
+                            <TextBlock Text="• DS:0000 - 4705 bytes (core game state)" FontFamily="Consolas"/>
+                        </StackPanel>
+                    </Border>
+                    
+                    <Border BorderBrush="Gray" BorderThickness="1" Padding="10" Margin="0,10,0,0">
+                        <StackPanel Spacing="5">
+                            <TextBlock Text="Data Structure Offsets (Uncompressed Savegame):" FontWeight="SemiBold"/>
+                            <TextBlock Text="• 0x0000 - Date &amp; Time (LOAD/SAVE screen)" FontFamily="Consolas"/>
+                            <TextBlock Text="• 0x4448 - Charisma" FontFamily="Consolas"/>
+                            <TextBlock Text="• 0x4449 - Game Stage" FontFamily="Consolas"/>
+                            <TextBlock Text="• 0x44BF - Spice" FontFamily="Consolas"/>
+                            <TextBlock Text="• 0x451F - Sietchs structure" FontFamily="Consolas"/>
+                            <TextBlock Text="• 0x4CC9 - Troops structure" FontFamily="Consolas"/>
+                            <TextBlock Text="• 0x5593 - Date &amp; Time (in-game)" FontFamily="Consolas"/>
+                            <TextBlock Text="• 0x5595 - Contact Distance" FontFamily="Consolas"/>
+                        </StackPanel>
+                    </Border>
+                    
+                    <TextBlock Text="Note: Live memory offsets differ from savegame file offsets!" 
+                               FontWeight="Bold" Foreground="Orange" Margin="0,10,0,0"/>
+                </StackPanel>
+            </ScrollViewer>
+        </TabItem>
+        
+    </TabControl>
+    
+</Window>

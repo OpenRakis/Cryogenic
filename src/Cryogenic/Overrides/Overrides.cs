@@ -1,5 +1,6 @@
 namespace Cryogenic.Overrides;
 
+using Cryogenic.GameEngineWindow;
 using Globals;
 
 using Spice86.Core.CLI;
@@ -58,6 +59,9 @@ public partial class Overrides : CSharpOverrideHelper {
 
     /// <summary>Accessor for game global variables stored in CS segment 0x2538.</summary>
     private ExtraGlobalsOnCsSegment0x2538 globalsOnCsSegment0X2538;
+
+    /// <summary>Flag to track if the game engine window has been shown.</summary>
+    private bool _gameEngineWindowShown = false;
 
     /// <summary>
     /// Initializes the override system and registers all function replacements and hooks.
@@ -130,8 +134,27 @@ public partial class Overrides : CSharpOverrideHelper {
         DefineMemoryDumpsMapping();
         DefineMT32DriverCodeOverrides();
         
+        // Show the Game Engine Window after drivers are loaded
+        DefineGameEngineWindowTrigger();
+        
         // Generated code, crashes for various reasons
         //DefineGeneratedCodeOverrides();
+    }
+    
+    /// <summary>
+    /// Registers a hook to show the Game Engine Window after drivers are loaded.
+    /// </summary>
+    /// <remarks>
+    /// The window is shown after drivers are loaded (CS1:000C) to ensure
+    /// the memory layout is stable and all game structures are initialized.
+    /// </remarks>
+    private void DefineGameEngineWindowTrigger() {
+        DoOnTopOfInstruction(cs1, 0x000C, () => {
+            if (!_gameEngineWindowShown) {
+                _gameEngineWindowShown = true;
+                GameEngineWindowManager.ShowWindow(Memory, Machine.Cpu.State.SegmentRegisters);
+            }
+        });
     }
     
     /// <summary>

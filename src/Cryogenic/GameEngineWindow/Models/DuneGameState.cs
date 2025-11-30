@@ -9,38 +9,19 @@ using Spice86.Core.Emulator.ReverseEngineer.DataStructure;
 /// </summary>
 /// <remarks>
 /// <para>
-/// This class provides read access to key game state values from the Dune CD game.
-/// The memory offsets are based on the runtime mappings documented in the problem statement.
+/// This class provides read access to live game state values from the Dune CD game memory.
+/// The memory is read directly from the emulator at runtime, not from savegame files.
 /// </para>
 /// <para>
-/// Memory layout reference (relative to DS segment 0x10ED):
+/// Memory regions per madmoose's analysis (from seg000:B427 sub_1B427_create_save_in_memory):
+/// - From DS:[DCFE], 12671 bytes (2 bits for each byte of the next 50684 bytes)
+/// - From CS:00AA, 162 bytes (includes some code)
+/// - From DS:AA76, 4600 bytes
+/// - From DS:0000, 4705 bytes
 /// </para>
-/// <list type="table">
-/// <listheader>
-/// <term>Field Name</term>
-/// <description>Offset and Details</description>
-/// </listheader>
-/// <item>
-/// <term>Spice</term>
-/// <description>0x009F-0x00A0 (2 bytes) - Total spice in kilograms</description>
-/// </item>
-/// <item>
-/// <term>Charisma</term>
-/// <description>0x0029 (1 byte) - Player charisma value (0x01-0xFF)</description>
-/// </item>
-/// <item>
-/// <term>Contact Distance</term>
-/// <description>0x1176 (1 byte) - Distance for contacting Fremen</description>
-/// </item>
-/// <item>
-/// <term>Date &amp; Time</term>
-/// <description>0x1174 (2 bytes) - Encoded date and time</description>
-/// </item>
-/// <item>
-/// <term>Game Stage</term>
-/// <description>0x002A (1 byte) - Current game progression stage</description>
-/// </item>
-/// </list>
+/// <para>
+/// Memory layout reference (relative to DS segment):
+/// </para>
 /// </remarks>
 public class DuneGameState : MemoryBasedDataStructureWithDsBaseAddress {
     /// <summary>
@@ -52,128 +33,207 @@ public class DuneGameState : MemoryBasedDataStructureWithDsBaseAddress {
         : base(memory, segmentRegisters) {
     }
 
-    // Memory offsets are relative to DS segment base (typically 0x10ED at runtime)
-    // The offsets below map to the documented save file runtime mappings
-
-    /// <summary>
-    /// Gets the total spice amount in kilograms.
-    /// </summary>
-    /// <remarks>
-    /// Located at offset 0x009F-0x00A0 (2 bytes).
-    /// Example: 0x01E7 = 43270 kg (raw value needs conversion).
-    /// </remarks>
-    public ushort Spice => UInt16[0x009F];
-
-    /// <summary>
-    /// Gets the player's charisma level.
-    /// </summary>
-    /// <remarks>
-    /// Located at offset 0x0029 (1 byte).
-    /// Value increases as player enlists more Fremen troops.
-    /// Example: 0x50 = 25 charisma points.
-    /// </remarks>
-    public byte Charisma => UInt8[0x0029];
-
-    /// <summary>
-    /// Gets the contact distance for reaching Fremen sietches.
-    /// </summary>
-    /// <remarks>
-    /// Located at offset 0x1176 (1 byte).
-    /// Example: 0x32 = 50 distance units.
-    /// </remarks>
-    public byte ContactDistance => UInt8[0x1176];
-
-    /// <summary>
-    /// Gets the raw date and time value.
-    /// </summary>
-    /// <remarks>
-    /// Located at offset 0x1174 (2 bytes).
-    /// Encoded format: Example 0x6201 = 23rd day, 7h30.
-    /// </remarks>
-    public ushort DateTimeRaw => UInt16[0x1174];
-
-    /// <summary>
-    /// Gets the current game stage/progression.
-    /// </summary>
-    /// <remarks>
-    /// <para>Located at offset 0x002A (1 byte).</para>
-    /// <para>Known values:</para>
-    /// <list type="bullet">
-    /// <item><description>0x01: Start of game</description></item>
-    /// <item><description>0x02-0x06: Various dialogue progression states</description></item>
-    /// <item><description>0x4F: Can ride worms</description></item>
-    /// <item><description>0x50: Have ridden a worm</description></item>
-    /// </list>
-    /// </remarks>
-    public byte GameStage => UInt8[0x002A];
-
+    #region Core Game State (DS:0000 region, 4705 bytes)
+    
     /// <summary>
     /// Gets the game elapsed time from offset 0x2.
     /// </summary>
-    /// <remarks>
-    /// Located at offset 0x0002 (2 bytes).
-    /// </remarks>
     public ushort GameElapsedTime => UInt16[0x0002];
 
     /// <summary>
+    /// Gets the player's charisma level (offset 0x0029).
+    /// Value increases as player enlists more Fremen troops.
+    /// </summary>
+    public byte Charisma => UInt8[0x0029];
+
+    /// <summary>
+    /// Gets the current game stage/progression (offset 0x002A).
+    /// </summary>
+    public byte GameStage => UInt8[0x002A];
+
+    /// <summary>
+    /// Gets the total spice amount (offset 0x009F, 2 bytes).
+    /// </summary>
+    public ushort Spice => UInt16[0x009F];
+
+    /// <summary>
+    /// Gets the raw date and time value (offset 0x1174, 2 bytes).
+    /// </summary>
+    public ushort DateTimeRaw => UInt16[0x1174];
+
+    /// <summary>
+    /// Gets the contact distance for reaching Fremen sietches (offset 0x1176).
+    /// </summary>
+    public byte ContactDistance => UInt8[0x1176];
+
+    #endregion
+
+    #region HNM Video State
+    
+    /// <summary>
+    /// HNM finished flag (offset 0xDBE7).
+    /// </summary>
+    public byte HnmFinishedFlag => UInt8[0xDBE7];
+
+    /// <summary>
+    /// HNM frame counter (offset 0xDBE8, 2 bytes).
+    /// </summary>
+    public ushort HnmFrameCounter => UInt16[0xDBE8];
+
+    /// <summary>
+    /// HNM counter 2 (offset 0xDBEA, 2 bytes).
+    /// </summary>
+    public ushort HnmCounter2 => UInt16[0xDBEA];
+
+    /// <summary>
+    /// Current HNM resource flag (offset 0xDBFE).
+    /// </summary>
+    public byte CurrentHnmResourceFlag => UInt8[0xDBFE];
+
+    /// <summary>
+    /// HNM video ID (offset 0xDC00, 2 bytes).
+    /// </summary>
+    public ushort HnmVideoId => UInt16[0xDC00];
+
+    /// <summary>
+    /// HNM active video ID (offset 0xDC02, 2 bytes).
+    /// </summary>
+    public ushort HnmActiveVideoId => UInt16[0xDC02];
+
+    /// <summary>
+    /// HNM file offset (offset 0xDC04, 4 bytes).
+    /// </summary>
+    public uint HnmFileOffset => UInt32[0xDC04];
+
+    /// <summary>
+    /// HNM file remaining bytes (offset 0xDC08, 4 bytes).
+    /// </summary>
+    public uint HnmFileRemain => UInt32[0xDC08];
+
+    #endregion
+
+    #region Display and Graphics State
+    
+    /// <summary>
+    /// Front framebuffer segment (offset 0xDBD6).
+    /// </summary>
+    public ushort FramebufferFront => UInt16[0xDBD6];
+
+    /// <summary>
+    /// Screen buffer segment (offset 0xDBD8).
+    /// </summary>
+    public ushort ScreenBuffer => UInt16[0xDBD8];
+
+    /// <summary>
+    /// Active framebuffer segment (offset 0xDBDA).
+    /// </summary>
+    public ushort FramebufferActive => UInt16[0xDBDA];
+
+    /// <summary>
+    /// Back framebuffer segment (offset 0xDC32).
+    /// </summary>
+    public ushort FramebufferBack => UInt16[0xDC32];
+
+    #endregion
+
+    #region Mouse and Cursor State
+    
+    /// <summary>
+    /// Mouse Y position (offset 0xDC36).
+    /// </summary>
+    public ushort MousePosY => UInt16[0xDC36];
+
+    /// <summary>
+    /// Mouse X position (offset 0xDC38).
+    /// </summary>
+    public ushort MousePosX => UInt16[0xDC38];
+
+    /// <summary>
+    /// Mouse draw Y position (offset 0xDC42).
+    /// </summary>
+    public ushort MouseDrawPosY => UInt16[0xDC42];
+
+    /// <summary>
+    /// Mouse draw X position (offset 0xDC44).
+    /// </summary>
+    public ushort MouseDrawPosX => UInt16[0xDC44];
+
+    /// <summary>
+    /// Cursor hide counter (offset 0xDC46).
+    /// </summary>
+    public byte CursorHideCounter => UInt8[0xDC46];
+
+    /// <summary>
+    /// Map cursor type (offset 0xDC58).
+    /// </summary>
+    public ushort MapCursorType => UInt16[0xDC58];
+
+    #endregion
+
+    #region Sound State
+    
+    /// <summary>
+    /// Is sound present flag (offset 0xDBCD).
+    /// </summary>
+    public byte IsSoundPresent => UInt8[0xDBCD];
+
+    /// <summary>
+    /// MIDI func5 return Bx (offset 0xDBCE).
+    /// </summary>
+    public ushort MidiFunc5ReturnBx => UInt16[0xDBCE];
+
+    #endregion
+
+    #region Transition and Effects State
+    
+    /// <summary>
+    /// Transition bitmask (offset 0xDCE6).
+    /// </summary>
+    public byte TransitionBitmask => UInt8[0xDCE6];
+
+    #endregion
+
+    #region Helper Methods
+    
+    /// <summary>
     /// Decodes the day from the raw date/time value.
     /// </summary>
-    /// <returns>The current day number.</returns>
-    public int GetDay() {
-        // The date encoding places day in the upper byte
-        return (DateTimeRaw >> 8) & 0xFF;
-    }
+    public int GetDay() => (DateTimeRaw >> 8) & 0xFF;
 
     /// <summary>
     /// Decodes the hour from the raw date/time value.
     /// </summary>
-    /// <returns>The current hour (0-23).</returns>
-    public int GetHour() {
-        // Hour is encoded in bits 4-7 of the lower byte
-        return (DateTimeRaw & 0xF0) >> 4;
-    }
+    public int GetHour() => (DateTimeRaw & 0xF0) >> 4;
 
     /// <summary>
     /// Decodes the minutes from the raw date/time value.
     /// </summary>
-    /// <returns>The current minutes (typically 0 or 30).</returns>
-    public int GetMinutes() {
-        // Minutes are encoded in bits 0-3 of the lower byte (in 30-min increments)
-        return (DateTimeRaw & 0x0F) * 30;
-    }
+    public int GetMinutes() => (DateTimeRaw & 0x0F) * 30;
 
     /// <summary>
     /// Gets a formatted string representation of the game time.
     /// </summary>
-    /// <returns>A string like "Day 23, 07:30".</returns>
-    public string GetFormattedDateTime() {
-        return $"Day {GetDay()}, {GetHour():D2}:{GetMinutes():D2}";
-    }
+    public string GetFormattedDateTime() => $"Day {GetDay()}, {GetHour():D2}:{GetMinutes():D2}";
 
     /// <summary>
-    /// Gets the spice amount in a human-readable format with units.
+    /// Gets the spice amount in a human-readable format.
     /// </summary>
-    /// <returns>Spice amount in kilograms.</returns>
-    public string GetFormattedSpice() {
-        // The raw value appears to be in 10kg units based on the documentation
-        return $"{Spice * 10} kg";
-    }
+    public string GetFormattedSpice() => $"{Spice * 10} kg";
 
     /// <summary>
     /// Gets a description of the current game stage.
     /// </summary>
-    /// <returns>A human-readable description of the game stage.</returns>
-    public string GetGameStageDescription() {
-        return GameStage switch {
-            0x01 => "Start of game",
-            0x02 => "Learning about stillsuits",
-            0x03 => "Stillsuit explanation",
-            0x04 => "Stillsuit mechanics",
-            0x05 => "Meeting spice prospectors",
-            0x06 => "Got stillsuits",
-            0x4F => "Can ride worms",
-            0x50 => "Have ridden a worm",
-            _ => $"Stage 0x{GameStage:X2}"
-        };
-    }
+    public string GetGameStageDescription() => GameStage switch {
+        0x01 => "Start of game",
+        0x02 => "Learning about stillsuits",
+        0x03 => "Stillsuit explanation",
+        0x04 => "Stillsuit mechanics",
+        0x05 => "Meeting spice prospectors",
+        0x06 => "Got stillsuits",
+        0x4F => "Can ride worms",
+        0x50 => "Have ridden a worm",
+        _ => $"Stage 0x{GameStage:X2}"
+    };
+
+    #endregion
 }
