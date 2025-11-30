@@ -193,6 +193,234 @@ public class DuneGameState : MemoryBasedDataStructureWithDsBaseAddress {
 
     #endregion
 
+    #region Sietch/Location Data (from DS:AA76 region - around 4600 bytes)
+    
+    // Sietch structure starts around DS:AA76, each sietch entry is approximately 28 bytes
+    // Based on the savegame analysis, there are up to 70 sietches
+    private const int SIETCH_BASE_OFFSET = 0xAA76;
+    private const int SIETCH_ENTRY_SIZE = 28;
+    private const int MAX_SIETCHES = 70;
+
+    /// <summary>
+    /// Gets the status byte for a sietch at the given index.
+    /// </summary>
+    /// <param name="index">Sietch index (0-69).</param>
+    /// <returns>The status byte for the sietch.</returns>
+    public byte GetSietchStatus(int index) {
+        if (index < 0 || index >= MAX_SIETCHES) return 0;
+        return UInt8[SIETCH_BASE_OFFSET + (index * SIETCH_ENTRY_SIZE)];
+    }
+
+    /// <summary>
+    /// Gets the spice field amount at a sietch.
+    /// </summary>
+    /// <param name="index">Sietch index (0-69).</param>
+    /// <returns>The spice field amount.</returns>
+    public ushort GetSietchSpiceField(int index) {
+        if (index < 0 || index >= MAX_SIETCHES) return 0;
+        return UInt16[SIETCH_BASE_OFFSET + (index * SIETCH_ENTRY_SIZE) + 2];
+    }
+
+    /// <summary>
+    /// Gets the coordinates for a sietch.
+    /// </summary>
+    /// <param name="index">Sietch index (0-69).</param>
+    /// <returns>Tuple of (X, Y) coordinates.</returns>
+    public (ushort X, ushort Y) GetSietchCoordinates(int index) {
+        if (index < 0 || index >= MAX_SIETCHES) return (0, 0);
+        var baseOffset = SIETCH_BASE_OFFSET + (index * SIETCH_ENTRY_SIZE);
+        return (UInt16[baseOffset + 4], UInt16[baseOffset + 6]);
+    }
+
+    #endregion
+
+    #region Troops Data (following Sietches in memory)
+    
+    // Troop structure follows sietches, each troop entry is approximately 27 bytes
+    // Based on the savegame analysis, there can be up to 68 troops
+    private const int TROOP_BASE_OFFSET = 0xAA76 + (SIETCH_ENTRY_SIZE * MAX_SIETCHES); // After sietches
+    private const int TROOP_ENTRY_SIZE = 27;
+    private const int MAX_TROOPS = 68;
+
+    /// <summary>
+    /// Gets the troop type/occupation for a troop at the given index.
+    /// </summary>
+    /// <param name="index">Troop index (0-67).</param>
+    /// <returns>The troop occupation byte.</returns>
+    public byte GetTroopOccupation(int index) {
+        if (index < 0 || index >= MAX_TROOPS) return 0;
+        return UInt8[TROOP_BASE_OFFSET + (index * TROOP_ENTRY_SIZE)];
+    }
+
+    /// <summary>
+    /// Gets the troop location ID.
+    /// </summary>
+    /// <param name="index">Troop index (0-67).</param>
+    /// <returns>The location ID where the troop is stationed.</returns>
+    public byte GetTroopLocation(int index) {
+        if (index < 0 || index >= MAX_TROOPS) return 0;
+        return UInt8[TROOP_BASE_OFFSET + (index * TROOP_ENTRY_SIZE) + 1];
+    }
+
+    /// <summary>
+    /// Gets the troop motivation level.
+    /// </summary>
+    /// <param name="index">Troop index (0-67).</param>
+    /// <returns>The motivation level.</returns>
+    public byte GetTroopMotivation(int index) {
+        if (index < 0 || index >= MAX_TROOPS) return 0;
+        return UInt8[TROOP_BASE_OFFSET + (index * TROOP_ENTRY_SIZE) + 4];
+    }
+
+    /// <summary>
+    /// Gets the troop spice skill level.
+    /// </summary>
+    /// <param name="index">Troop index (0-67).</param>
+    /// <returns>The spice harvesting skill level.</returns>
+    public byte GetTroopSpiceSkill(int index) {
+        if (index < 0 || index >= MAX_TROOPS) return 0;
+        return UInt8[TROOP_BASE_OFFSET + (index * TROOP_ENTRY_SIZE) + 5];
+    }
+
+    /// <summary>
+    /// Gets the troop army skill level.
+    /// </summary>
+    /// <param name="index">Troop index (0-67).</param>
+    /// <returns>The army/combat skill level.</returns>
+    public byte GetTroopArmySkill(int index) {
+        if (index < 0 || index >= MAX_TROOPS) return 0;
+        return UInt8[TROOP_BASE_OFFSET + (index * TROOP_ENTRY_SIZE) + 6];
+    }
+
+    /// <summary>
+    /// Gets the troop ecology skill level.
+    /// </summary>
+    /// <param name="index">Troop index (0-67).</param>
+    /// <returns>The ecology skill level.</returns>
+    public byte GetTroopEcologySkill(int index) {
+        if (index < 0 || index >= MAX_TROOPS) return 0;
+        return UInt8[TROOP_BASE_OFFSET + (index * TROOP_ENTRY_SIZE) + 7];
+    }
+
+    /// <summary>
+    /// Gets the troop equipment flags.
+    /// </summary>
+    /// <param name="index">Troop index (0-67).</param>
+    /// <returns>Equipment flags byte.</returns>
+    public byte GetTroopEquipment(int index) {
+        if (index < 0 || index >= MAX_TROOPS) return 0;
+        return UInt8[TROOP_BASE_OFFSET + (index * TROOP_ENTRY_SIZE) + 8];
+    }
+
+    /// <summary>
+    /// Gets a description of the troop occupation.
+    /// </summary>
+    public static string GetTroopOccupationDescription(byte occupation) => occupation switch {
+        0 => "Idle",
+        1 => "Spice Harvesting",
+        2 => "Military",
+        3 => "Ecology",
+        4 => "Moving",
+        _ => $"Unknown (0x{occupation:X2})"
+    };
+
+    #endregion
+
+    #region NPCs/Characters Data
+    
+    // NPCs include main characters like Paul's followers
+    // These are at specific offsets in memory
+    
+    /// <summary>
+    /// Follower 1 ID (offset 0x0019).
+    /// </summary>
+    public byte Follower1Id => UInt8[0x0019];
+
+    /// <summary>
+    /// Follower 2 ID (offset 0x001A).
+    /// </summary>
+    public byte Follower2Id => UInt8[0x001A];
+
+    /// <summary>
+    /// Current room/location ID (offset 0x001B).
+    /// </summary>
+    public byte CurrentRoomId => UInt8[0x001B];
+
+    /// <summary>
+    /// World map X position (offset 0x001C).
+    /// </summary>
+    public ushort WorldPosX => UInt16[0x001C];
+
+    /// <summary>
+    /// World map Y position (offset 0x001E).
+    /// </summary>
+    public ushort WorldPosY => UInt16[0x001E];
+
+    /// <summary>
+    /// Gets the NPC name from the character ID.
+    /// </summary>
+    public static string GetNpcName(byte npcId) => npcId switch {
+        0 => "None",
+        1 => "Paul Atreides",
+        2 => "Jessica",
+        3 => "Thufir Hawat",
+        4 => "Gurney Halleck",
+        5 => "Duncan Idaho",
+        6 => "Stilgar",
+        7 => "Chani",
+        8 => "Harah",
+        9 => "Liet-Kynes",
+        10 => "Duke Leto",
+        11 => "Baron Harkonnen",
+        12 => "Feyd-Rautha",
+        _ => $"NPC #{npcId}"
+    };
+
+    #endregion
+
+    #region Player Stats
+    
+    /// <summary>
+    /// Player's water reserve (offset 0x0020, 2 bytes).
+    /// </summary>
+    public ushort WaterReserve => UInt16[0x0020];
+
+    /// <summary>
+    /// Spice reserve (personal, not total harvested) (offset 0x0022, 2 bytes).
+    /// </summary>
+    public ushort SpiceReserve => UInt16[0x0022];
+
+    /// <summary>
+    /// Money/Solaris amount (offset 0x0024, 4 bytes).
+    /// </summary>
+    public uint Money => UInt32[0x0024];
+
+    /// <summary>
+    /// Military strength indicator (offset 0x002B).
+    /// </summary>
+    public byte MilitaryStrength => UInt8[0x002B];
+
+    /// <summary>
+    /// Ecological progress indicator (offset 0x002C).
+    /// </summary>
+    public byte EcologyProgress => UInt8[0x002C];
+
+    #endregion
+
+    #region Dialogue State
+    
+    /// <summary>
+    /// Current dialogue speaker ID (offset 0xDC8C).
+    /// </summary>
+    public byte CurrentSpeakerId => UInt8[0xDC8C];
+
+    /// <summary>
+    /// Dialogue state/flags (offset 0xDC8E).
+    /// </summary>
+    public ushort DialogueState => UInt16[0xDC8E];
+
+    #endregion
+
     #region Helper Methods
     
     /// <summary>
@@ -234,6 +462,28 @@ public class DuneGameState : MemoryBasedDataStructureWithDsBaseAddress {
         0x50 => "Have ridden a worm",
         _ => $"Stage 0x{GameStage:X2}"
     };
+
+    /// <summary>
+    /// Gets the number of active troops.
+    /// </summary>
+    public int GetActiveTroopCount() {
+        int count = 0;
+        for (int i = 0; i < MAX_TROOPS; i++) {
+            if (GetTroopOccupation(i) != 0) count++;
+        }
+        return count;
+    }
+
+    /// <summary>
+    /// Gets the number of discovered sietches.
+    /// </summary>
+    public int GetDiscoveredSietchCount() {
+        int count = 0;
+        for (int i = 0; i < MAX_SIETCHES; i++) {
+            if (GetSietchStatus(i) != 0) count++;
+        }
+        return count;
+    }
 
     #endregion
 }

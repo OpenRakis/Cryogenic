@@ -298,6 +298,207 @@ public class DuneGameStateViewModel : INotifyPropertyChanged, IDisposable {
 
     #endregion
 
+    #region Sietch/Location Properties
+
+    /// <summary>
+    /// Gets the number of discovered sietches.
+    /// </summary>
+    public int DiscoveredSietchCount => _gameState.GetDiscoveredSietchCount();
+
+    /// <summary>
+    /// Gets the sietch count display string.
+    /// </summary>
+    public string DiscoveredSietchCountDisplay => $"{DiscoveredSietchCount} / 70";
+
+    /// <summary>
+    /// Gets sietch status at index.
+    /// </summary>
+    public byte GetSietchStatus(int index) => _gameState.GetSietchStatus(index);
+
+    /// <summary>
+    /// Gets sietch spice field at index.
+    /// </summary>
+    public ushort GetSietchSpiceField(int index) => _gameState.GetSietchSpiceField(index);
+
+    /// <summary>
+    /// Gets sietch coordinates at index.
+    /// </summary>
+    public (ushort X, ushort Y) GetSietchCoordinates(int index) => _gameState.GetSietchCoordinates(index);
+
+    #endregion
+
+    #region Troops Properties
+
+    /// <summary>
+    /// Gets the number of active troops.
+    /// </summary>
+    public int ActiveTroopCount => _gameState.GetActiveTroopCount();
+
+    /// <summary>
+    /// Gets the troop count display string.
+    /// </summary>
+    public string ActiveTroopCountDisplay => $"{ActiveTroopCount} / 68";
+
+    /// <summary>
+    /// Gets troop occupation at index.
+    /// </summary>
+    public byte GetTroopOccupation(int index) => _gameState.GetTroopOccupation(index);
+
+    /// <summary>
+    /// Gets troop location at index.
+    /// </summary>
+    public byte GetTroopLocation(int index) => _gameState.GetTroopLocation(index);
+
+    /// <summary>
+    /// Gets troop motivation at index.
+    /// </summary>
+    public byte GetTroopMotivation(int index) => _gameState.GetTroopMotivation(index);
+
+    /// <summary>
+    /// Gets troop spice skill at index.
+    /// </summary>
+    public byte GetTroopSpiceSkill(int index) => _gameState.GetTroopSpiceSkill(index);
+
+    /// <summary>
+    /// Gets troop army skill at index.
+    /// </summary>
+    public byte GetTroopArmySkill(int index) => _gameState.GetTroopArmySkill(index);
+
+    /// <summary>
+    /// Gets troop ecology skill at index.
+    /// </summary>
+    public byte GetTroopEcologySkill(int index) => _gameState.GetTroopEcologySkill(index);
+
+    /// <summary>
+    /// Gets troop equipment at index.
+    /// </summary>
+    public byte GetTroopEquipment(int index) => _gameState.GetTroopEquipment(index);
+
+    #endregion
+
+    #region NPC/Character Properties
+
+    /// <summary>
+    /// Gets the first follower ID.
+    /// </summary>
+    public byte Follower1Id => _gameState.Follower1Id;
+
+    /// <summary>
+    /// Gets the first follower name.
+    /// </summary>
+    public string Follower1Name => DuneGameState.GetNpcName(Follower1Id);
+
+    /// <summary>
+    /// Gets the second follower ID.
+    /// </summary>
+    public byte Follower2Id => _gameState.Follower2Id;
+
+    /// <summary>
+    /// Gets the second follower name.
+    /// </summary>
+    public string Follower2Name => DuneGameState.GetNpcName(Follower2Id);
+
+    /// <summary>
+    /// Gets the current room ID.
+    /// </summary>
+    public byte CurrentRoomId => _gameState.CurrentRoomId;
+
+    /// <summary>
+    /// Gets the current room display string.
+    /// </summary>
+    public string CurrentRoomDisplay => $"Room #{CurrentRoomId} (0x{CurrentRoomId:X2})";
+
+    /// <summary>
+    /// Gets the world X position.
+    /// </summary>
+    public ushort WorldPosX => _gameState.WorldPosX;
+
+    /// <summary>
+    /// Gets the world Y position.
+    /// </summary>
+    public ushort WorldPosY => _gameState.WorldPosY;
+
+    /// <summary>
+    /// Gets the world position display string.
+    /// </summary>
+    public string WorldPositionDisplay => $"({WorldPosX}, {WorldPosY})";
+
+    /// <summary>
+    /// Gets the current dialogue speaker ID.
+    /// </summary>
+    public byte CurrentSpeakerId => _gameState.CurrentSpeakerId;
+
+    /// <summary>
+    /// Gets the current dialogue speaker name.
+    /// </summary>
+    public string CurrentSpeakerName => DuneGameState.GetNpcName(CurrentSpeakerId);
+
+    /// <summary>
+    /// Gets the dialogue state.
+    /// </summary>
+    public ushort DialogueState => _gameState.DialogueState;
+
+    /// <summary>
+    /// Gets the dialogue state display string.
+    /// </summary>
+    public string DialogueStateDisplay => $"0x{DialogueState:X4}";
+
+    #endregion
+
+    #region Player Stats Properties
+
+    /// <summary>
+    /// Gets the water reserve.
+    /// </summary>
+    public ushort WaterReserve => _gameState.WaterReserve;
+
+    /// <summary>
+    /// Gets the water reserve display string.
+    /// </summary>
+    public string WaterReserveDisplay => $"{WaterReserve} units";
+
+    /// <summary>
+    /// Gets the spice reserve.
+    /// </summary>
+    public ushort SpiceReserve => _gameState.SpiceReserve;
+
+    /// <summary>
+    /// Gets the spice reserve display string.
+    /// </summary>
+    public string SpiceReserveDisplay => $"{SpiceReserve} kg";
+
+    /// <summary>
+    /// Gets the money/solaris amount.
+    /// </summary>
+    public uint Money => _gameState.Money;
+
+    /// <summary>
+    /// Gets the money display string.
+    /// </summary>
+    public string MoneyDisplay => $"{Money:N0} solaris";
+
+    /// <summary>
+    /// Gets the military strength.
+    /// </summary>
+    public byte MilitaryStrength => _gameState.MilitaryStrength;
+
+    /// <summary>
+    /// Gets the military strength display string.
+    /// </summary>
+    public string MilitaryStrengthDisplay => $"{MilitaryStrength} (0x{MilitaryStrength:X2})";
+
+    /// <summary>
+    /// Gets the ecology progress.
+    /// </summary>
+    public byte EcologyProgress => _gameState.EcologyProgress;
+
+    /// <summary>
+    /// Gets the ecology progress display string.
+    /// </summary>
+    public string EcologyProgressDisplay => $"{EcologyProgress}% (0x{EcologyProgress:X2})";
+
+    #endregion
+
     #region Refresh Timer
 
     private void OnRefreshTimerElapsed(object? sender, ElapsedEventArgs e) {
@@ -365,6 +566,39 @@ public class DuneGameStateViewModel : INotifyPropertyChanged, IDisposable {
         OnPropertyChanged(nameof(IsSoundPresentDisplay));
         OnPropertyChanged(nameof(MidiFunc5ReturnBx));
         OnPropertyChanged(nameof(MidiFunc5ReturnBxDisplay));
+        
+        // Sietch/Troop counts
+        OnPropertyChanged(nameof(DiscoveredSietchCount));
+        OnPropertyChanged(nameof(DiscoveredSietchCountDisplay));
+        OnPropertyChanged(nameof(ActiveTroopCount));
+        OnPropertyChanged(nameof(ActiveTroopCountDisplay));
+        
+        // NPC/Character state
+        OnPropertyChanged(nameof(Follower1Id));
+        OnPropertyChanged(nameof(Follower1Name));
+        OnPropertyChanged(nameof(Follower2Id));
+        OnPropertyChanged(nameof(Follower2Name));
+        OnPropertyChanged(nameof(CurrentRoomId));
+        OnPropertyChanged(nameof(CurrentRoomDisplay));
+        OnPropertyChanged(nameof(WorldPosX));
+        OnPropertyChanged(nameof(WorldPosY));
+        OnPropertyChanged(nameof(WorldPositionDisplay));
+        OnPropertyChanged(nameof(CurrentSpeakerId));
+        OnPropertyChanged(nameof(CurrentSpeakerName));
+        OnPropertyChanged(nameof(DialogueState));
+        OnPropertyChanged(nameof(DialogueStateDisplay));
+        
+        // Player stats
+        OnPropertyChanged(nameof(WaterReserve));
+        OnPropertyChanged(nameof(WaterReserveDisplay));
+        OnPropertyChanged(nameof(SpiceReserve));
+        OnPropertyChanged(nameof(SpiceReserveDisplay));
+        OnPropertyChanged(nameof(Money));
+        OnPropertyChanged(nameof(MoneyDisplay));
+        OnPropertyChanged(nameof(MilitaryStrength));
+        OnPropertyChanged(nameof(MilitaryStrengthDisplay));
+        OnPropertyChanged(nameof(EcologyProgress));
+        OnPropertyChanged(nameof(EcologyProgressDisplay));
     }
 
     /// <summary>
