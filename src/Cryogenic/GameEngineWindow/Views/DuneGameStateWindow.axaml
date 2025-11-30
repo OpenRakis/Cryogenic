@@ -4,20 +4,16 @@
         x:Class="Cryogenic.GameEngineWindow.Views.DuneGameStateWindow"
         x:DataType="vm:DuneGameStateViewModel"
         Title="Dune Game Engine - Live Memory View"
-        Width="900"
-        Height="700"
+        Width="1000"
+        Height="800"
         WindowStartupLocation="CenterScreen">
 
     <TabControl Margin="10">
         
-        <!-- Player Stats Tab -->
         <TabItem Header="Player Stats">
             <ScrollViewer>
-                <StackPanel Margin="10" Spacing="15">
-                    <TextBlock Text="Player Statistics &amp; Resources" FontWeight="Bold" FontSize="16"/>
-                    <TextBlock Text="Live player state from memory" FontStyle="Italic" Foreground="Gray"/>
-                    
-                    <Grid ColumnDefinitions="200,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" Margin="0,10,0,0">
+                <StackPanel Margin="10" Spacing="10">
+                    <Grid ColumnDefinitions="200,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" Margin="0,10,0,0">
                         <TextBlock Grid.Row="0" Grid.Column="0" Text="Date &amp; Time:" FontWeight="SemiBold"/>
                         <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding DateTimeDisplay}"/>
                         
@@ -50,156 +46,98 @@
                         
                         <TextBlock Grid.Row="10" Grid.Column="0" Text="Game Stage:" FontWeight="SemiBold"/>
                         <TextBlock Grid.Row="10" Grid.Column="1" Text="{Binding GameStageDisplay}"/>
+                        
+                        <TextBlock Grid.Row="11" Grid.Column="0" Text="Discovered Sietches:" FontWeight="SemiBold"/>
+                        <TextBlock Grid.Row="11" Grid.Column="1" Text="{Binding DiscoveredSietchCountDisplay}"/>
+                        
+                        <TextBlock Grid.Row="12" Grid.Column="0" Text="Active Troops:" FontWeight="SemiBold"/>
+                        <TextBlock Grid.Row="12" Grid.Column="1" Text="{Binding ActiveTroopCountDisplay}"/>
                     </Grid>
                 </StackPanel>
             </ScrollViewer>
         </TabItem>
 
-        <!-- NPCs/Followers Tab -->
         <TabItem Header="NPCs &amp; Followers">
             <ScrollViewer>
-                <StackPanel Margin="10" Spacing="15">
-                    <TextBlock Text="NPCs and Current Followers" FontWeight="Bold" FontSize="16"/>
-                    <TextBlock Text="Characters and party information" FontStyle="Italic" Foreground="Gray"/>
-                    
-                    <Border BorderBrush="Gray" BorderThickness="1" Padding="10" Margin="0,10,0,0">
-                        <StackPanel Spacing="5">
-                            <TextBlock Text="Current Party:" FontWeight="SemiBold"/>
-                            <Grid ColumnDefinitions="150,*" RowDefinitions="Auto,Auto">
-                                <TextBlock Grid.Row="0" Grid.Column="0" Text="Follower 1:"/>
-                                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding Follower1Name}"/>
-                                
-                                <TextBlock Grid.Row="1" Grid.Column="0" Text="Follower 2:"/>
-                                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Follower2Name}"/>
-                            </Grid>
-                        </StackPanel>
-                    </Border>
-                    
-                    <Border BorderBrush="Gray" BorderThickness="1" Padding="10" Margin="0,10,0,0">
-                        <StackPanel Spacing="5">
-                            <TextBlock Text="Current Location:" FontWeight="SemiBold"/>
-                            <Grid ColumnDefinitions="150,*" RowDefinitions="Auto,Auto">
-                                <TextBlock Grid.Row="0" Grid.Column="0" Text="Room:"/>
-                                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding CurrentRoomDisplay}"/>
-                                
-                                <TextBlock Grid.Row="1" Grid.Column="0" Text="World Position:"/>
-                                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding WorldPositionDisplay}"/>
-                            </Grid>
-                        </StackPanel>
-                    </Border>
-                    
-                    <Border BorderBrush="Gray" BorderThickness="1" Padding="10" Margin="0,10,0,0">
-                        <StackPanel Spacing="5">
-                            <TextBlock Text="Dialogue State:" FontWeight="SemiBold"/>
-                            <Grid ColumnDefinitions="150,*" RowDefinitions="Auto,Auto">
-                                <TextBlock Grid.Row="0" Grid.Column="0" Text="Current Speaker:"/>
-                                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding CurrentSpeakerName}"/>
-                                
-                                <TextBlock Grid.Row="1" Grid.Column="0" Text="Dialogue Flags:"/>
-                                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding DialogueStateDisplay}"/>
-                            </Grid>
-                        </StackPanel>
-                    </Border>
-                    
-                    <Border BorderBrush="Gray" BorderThickness="1" Padding="10" Margin="0,10,0,0">
-                        <StackPanel Spacing="5">
-                            <TextBlock Text="Known Characters (NPC IDs):" FontWeight="SemiBold"/>
-                            <TextBlock Text="1: Paul Atreides" FontFamily="Consolas"/>
-                            <TextBlock Text="2: Jessica" FontFamily="Consolas"/>
-                            <TextBlock Text="3: Thufir Hawat" FontFamily="Consolas"/>
-                            <TextBlock Text="4: Gurney Halleck" FontFamily="Consolas"/>
-                            <TextBlock Text="5: Duncan Idaho" FontFamily="Consolas"/>
-                            <TextBlock Text="6: Stilgar" FontFamily="Consolas"/>
-                            <TextBlock Text="7: Chani" FontFamily="Consolas"/>
-                            <TextBlock Text="8: Harah" FontFamily="Consolas"/>
-                            <TextBlock Text="9: Liet-Kynes" FontFamily="Consolas"/>
-                            <TextBlock Text="10: Duke Leto" FontFamily="Consolas"/>
-                            <TextBlock Text="11: Baron Harkonnen" FontFamily="Consolas"/>
-                            <TextBlock Text="12: Feyd-Rautha" FontFamily="Consolas"/>
-                        </StackPanel>
-                    </Border>
+                <StackPanel Margin="10" Spacing="10">
+                    <Grid ColumnDefinitions="200,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" Margin="0,10,0,0">
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Follower 1 ID:" FontWeight="SemiBold"/>
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding Follower1Id, StringFormat='0x{0:X2}'}"/>
+                        
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Follower 1 Name:" FontWeight="SemiBold"/>
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Follower1Name}"/>
+                        
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Follower 2 ID:" FontWeight="SemiBold"/>
+                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding Follower2Id, StringFormat='0x{0:X2}'}"/>
+                        
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Follower 2 Name:" FontWeight="SemiBold"/>
+                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding Follower2Name}"/>
+                        
+                        <TextBlock Grid.Row="4" Grid.Column="0" Text="Current Room:" FontWeight="SemiBold"/>
+                        <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding CurrentRoomDisplay}"/>
+                        
+                        <TextBlock Grid.Row="5" Grid.Column="0" Text="World Position X:" FontWeight="SemiBold"/>
+                        <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding WorldPosX}"/>
+                        
+                        <TextBlock Grid.Row="6" Grid.Column="0" Text="World Position Y:" FontWeight="SemiBold"/>
+                        <TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding WorldPosY}"/>
+                        
+                        <TextBlock Grid.Row="7" Grid.Column="0" Text="Current Speaker ID:" FontWeight="SemiBold"/>
+                        <TextBlock Grid.Row="7" Grid.Column="1" Text="{Binding CurrentSpeakerId, StringFormat='0x{0:X2}'}"/>
+                        
+                        <TextBlock Grid.Row="8" Grid.Column="0" Text="Current Speaker:" FontWeight="SemiBold"/>
+                        <TextBlock Grid.Row="8" Grid.Column="1" Text="{Binding CurrentSpeakerName}"/>
+                        
+                        <TextBlock Grid.Row="9" Grid.Column="0" Text="Dialogue State:" FontWeight="SemiBold"/>
+                        <TextBlock Grid.Row="9" Grid.Column="1" Text="{Binding DialogueStateDisplay}"/>
+                    </Grid>
                 </StackPanel>
             </ScrollViewer>
         </TabItem>
         
-        <!-- Sietches Tab -->
         <TabItem Header="Sietches">
-            <ScrollViewer>
-                <StackPanel Margin="10" Spacing="15">
-                    <TextBlock Text="Sietch/Location Data" FontWeight="Bold" FontSize="16"/>
-                    <TextBlock Text="Discovered locations and their status" FontStyle="Italic" Foreground="Gray"/>
-                    
-                    <Grid ColumnDefinitions="200,*" RowDefinitions="Auto" Margin="0,10,0,0">
-                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Discovered Sietches:" FontWeight="SemiBold"/>
-                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding DiscoveredSietchCountDisplay}"/>
-                    </Grid>
-                    
-                    <Border BorderBrush="Gray" BorderThickness="1" Padding="10" Margin="0,10,0,0">
-                        <StackPanel Spacing="5">
-                            <TextBlock Text="Sietch Memory Structure:" FontWeight="SemiBold"/>
-                            <TextBlock Text="• Base Address: DS:AA76" FontFamily="Consolas"/>
-                            <TextBlock Text="• Entry Size: ~28 bytes per sietch" FontFamily="Consolas"/>
-                            <TextBlock Text="• Max Sietches: 70" FontFamily="Consolas"/>
-                            <TextBlock Text="• Fields: Status, Spice Field, Coordinates, ..." FontFamily="Consolas"/>
-                        </StackPanel>
-                    </Border>
-                    
-                    <TextBlock Text="Note: Individual sietch details require further memory analysis." 
-                               FontStyle="Italic" Foreground="Orange" Margin="0,10,0,0"/>
+            <Grid RowDefinitions="Auto,*">
+                <StackPanel Grid.Row="0" Margin="10">
+                    <TextBlock Text="{Binding DiscoveredSietchCountDisplay, StringFormat='Discovered: {0}'}" FontWeight="SemiBold"/>
                 </StackPanel>
-            </ScrollViewer>
+                <DataGrid Grid.Row="1" ItemsSource="{Binding Sietches}" AutoGenerateColumns="False" IsReadOnly="True" Margin="10">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Index" Binding="{Binding Index}" Width="60"/>
+                        <DataGridTextColumn Header="Status" Binding="{Binding Status, StringFormat='0x{0:X2}'}" Width="80"/>
+                        <DataGridCheckBoxColumn Header="Discovered" Binding="{Binding IsDiscovered}" Width="80"/>
+                        <DataGridTextColumn Header="Spice Field" Binding="{Binding SpiceField}" Width="100"/>
+                        <DataGridTextColumn Header="X" Binding="{Binding X}" Width="80"/>
+                        <DataGridTextColumn Header="Y" Binding="{Binding Y}" Width="80"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
         </TabItem>
         
-        <!-- Troops Tab -->
         <TabItem Header="Troops">
-            <ScrollViewer>
-                <StackPanel Margin="10" Spacing="15">
-                    <TextBlock Text="Fremen Troops Data" FontWeight="Bold" FontSize="16"/>
-                    <TextBlock Text="Troop status and skills" FontStyle="Italic" Foreground="Gray"/>
-                    
-                    <Grid ColumnDefinitions="200,*" RowDefinitions="Auto" Margin="0,10,0,0">
-                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Active Troops:" FontWeight="SemiBold"/>
-                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding ActiveTroopCountDisplay}"/>
-                    </Grid>
-                    
-                    <Border BorderBrush="Gray" BorderThickness="1" Padding="10" Margin="0,10,0,0">
-                        <StackPanel Spacing="5">
-                            <TextBlock Text="Troop Memory Structure:" FontWeight="SemiBold"/>
-                            <TextBlock Text="• Follows Sietch data in memory" FontFamily="Consolas"/>
-                            <TextBlock Text="• Entry Size: ~27 bytes per troop" FontFamily="Consolas"/>
-                            <TextBlock Text="• Max Troops: 68" FontFamily="Consolas"/>
-                            <TextBlock Text="• Fields per troop:" FontFamily="Consolas"/>
-                            <TextBlock Text="  - Occupation (Idle/Harvesting/Military/Ecology)" FontFamily="Consolas"/>
-                            <TextBlock Text="  - Location ID (which sietch)" FontFamily="Consolas"/>
-                            <TextBlock Text="  - Motivation level" FontFamily="Consolas"/>
-                            <TextBlock Text="  - Spice skill" FontFamily="Consolas"/>
-                            <TextBlock Text="  - Army skill" FontFamily="Consolas"/>
-                            <TextBlock Text="  - Ecology skill" FontFamily="Consolas"/>
-                            <TextBlock Text="  - Equipment flags" FontFamily="Consolas"/>
-                        </StackPanel>
-                    </Border>
-                    
-                    <Border BorderBrush="Gray" BorderThickness="1" Padding="10" Margin="0,10,0,0">
-                        <StackPanel Spacing="5">
-                            <TextBlock Text="Troop Occupations:" FontWeight="SemiBold"/>
-                            <TextBlock Text="0: Idle" FontFamily="Consolas"/>
-                            <TextBlock Text="1: Spice Harvesting" FontFamily="Consolas"/>
-                            <TextBlock Text="2: Military (Army)" FontFamily="Consolas"/>
-                            <TextBlock Text="3: Ecology (Planting)" FontFamily="Consolas"/>
-                            <TextBlock Text="4: Moving/Travelling" FontFamily="Consolas"/>
-                        </StackPanel>
-                    </Border>
+            <Grid RowDefinitions="Auto,*">
+                <StackPanel Grid.Row="0" Margin="10">
+                    <TextBlock Text="{Binding ActiveTroopCountDisplay, StringFormat='Active: {0}'}" FontWeight="SemiBold"/>
                 </StackPanel>
-            </ScrollViewer>
+                <DataGrid Grid.Row="1" ItemsSource="{Binding Troops}" AutoGenerateColumns="False" IsReadOnly="True" Margin="10">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Index" Binding="{Binding Index}" Width="60"/>
+                        <DataGridTextColumn Header="Occupation" Binding="{Binding Occupation, StringFormat='0x{0:X2}'}" Width="80"/>
+                        <DataGridTextColumn Header="Type" Binding="{Binding OccupationName}" Width="120"/>
+                        <DataGridCheckBoxColumn Header="Active" Binding="{Binding IsActive}" Width="60"/>
+                        <DataGridTextColumn Header="Location" Binding="{Binding Location, StringFormat='0x{0:X2}'}" Width="80"/>
+                        <DataGridTextColumn Header="Motivation" Binding="{Binding Motivation}" Width="80"/>
+                        <DataGridTextColumn Header="Spice" Binding="{Binding SpiceSkill}" Width="60"/>
+                        <DataGridTextColumn Header="Army" Binding="{Binding ArmySkill}" Width="60"/>
+                        <DataGridTextColumn Header="Ecology" Binding="{Binding EcologySkill}" Width="70"/>
+                        <DataGridTextColumn Header="Equipment" Binding="{Binding Equipment, StringFormat='0x{0:X2}'}" Width="80"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
         </TabItem>
         
-        <!-- HNM Video Tab -->
         <TabItem Header="HNM Video">
             <ScrollViewer>
-                <StackPanel Margin="10" Spacing="15">
-                    <TextBlock Text="HNM Video Playback State" FontWeight="Bold" FontSize="16"/>
-                    <TextBlock Text="Live video playback information" FontStyle="Italic" Foreground="Gray"/>
-                    
+                <StackPanel Margin="10" Spacing="10">
                     <Grid ColumnDefinitions="200,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" Margin="0,10,0,0">
                         <TextBlock Grid.Row="0" Grid.Column="0" Text="Video ID:" FontWeight="SemiBold"/>
                         <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding HnmVideoIdDisplay}"/>
@@ -229,13 +167,9 @@
             </ScrollViewer>
         </TabItem>
         
-        <!-- Display/Graphics Tab -->
         <TabItem Header="Display">
             <ScrollViewer>
-                <StackPanel Margin="10" Spacing="15">
-                    <TextBlock Text="Display and Graphics State" FontWeight="Bold" FontSize="16"/>
-                    <TextBlock Text="Framebuffer and screen information" FontStyle="Italic" Foreground="Gray"/>
-                    
+                <StackPanel Margin="10" Spacing="10">
                     <Grid ColumnDefinitions="200,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" Margin="0,10,0,0">
                         <TextBlock Grid.Row="0" Grid.Column="0" Text="Front Framebuffer:" FontWeight="SemiBold"/>
                         <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding FramebufferFrontDisplay}"/>
@@ -256,37 +190,35 @@
             </ScrollViewer>
         </TabItem>
         
-        <!-- Mouse/Input Tab -->
         <TabItem Header="Input">
             <ScrollViewer>
-                <StackPanel Margin="10" Spacing="15">
-                    <TextBlock Text="Mouse and Input State" FontWeight="Bold" FontSize="16"/>
-                    <TextBlock Text="Cursor and input device information" FontStyle="Italic" Foreground="Gray"/>
-                    
-                    <Grid ColumnDefinitions="200,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" Margin="0,10,0,0">
-                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Mouse Position:" FontWeight="SemiBold"/>
-                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding MousePositionDisplay}"/>
+                <StackPanel Margin="10" Spacing="10">
+                    <Grid ColumnDefinitions="200,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto" Margin="0,10,0,0">
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Mouse Position X:" FontWeight="SemiBold"/>
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding MousePosX}"/>
                         
-                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Mouse Draw Position:" FontWeight="SemiBold"/>
-                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding MouseDrawPositionDisplay}"/>
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Mouse Position Y:" FontWeight="SemiBold"/>
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding MousePosY}"/>
                         
-                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Cursor Hide Counter:" FontWeight="SemiBold"/>
-                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding CursorHideCounter}"/>
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Mouse Draw X:" FontWeight="SemiBold"/>
+                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding MouseDrawPosX}"/>
                         
-                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Map Cursor Type:" FontWeight="SemiBold"/>
-                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding MapCursorTypeDisplay}"/>
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Mouse Draw Y:" FontWeight="SemiBold"/>
+                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding MouseDrawPosY}"/>
+                        
+                        <TextBlock Grid.Row="4" Grid.Column="0" Text="Cursor Hide Counter:" FontWeight="SemiBold"/>
+                        <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding CursorHideCounter}"/>
+                        
+                        <TextBlock Grid.Row="5" Grid.Column="0" Text="Map Cursor Type:" FontWeight="SemiBold"/>
+                        <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding MapCursorTypeDisplay}"/>
                     </Grid>
                 </StackPanel>
             </ScrollViewer>
         </TabItem>
         
-        <!-- Sound/MIDI Tab -->
         <TabItem Header="Sound">
             <ScrollViewer>
-                <StackPanel Margin="10" Spacing="15">
-                    <TextBlock Text="Sound and MIDI State" FontWeight="Bold" FontSize="16"/>
-                    <TextBlock Text="Audio subsystem information" FontStyle="Italic" Foreground="Gray"/>
-                    
+                <StackPanel Margin="10" Spacing="10">
                     <Grid ColumnDefinitions="200,*" RowDefinitions="Auto,Auto" Margin="0,10,0,0">
                         <TextBlock Grid.Row="0" Grid.Column="0" Text="Sound Present:" FontWeight="SemiBold"/>
                         <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding IsSoundPresentDisplay}"/>
@@ -294,67 +226,6 @@
                         <TextBlock Grid.Row="1" Grid.Column="0" Text="MIDI Func5 Return:" FontWeight="SemiBold"/>
                         <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding MidiFunc5ReturnBxDisplay}"/>
                     </Grid>
-                </StackPanel>
-            </ScrollViewer>
-        </TabItem>
-        
-        <!-- Memory Regions Tab -->
-        <TabItem Header="Memory Regions">
-            <ScrollViewer>
-                <StackPanel Margin="10" Spacing="15">
-                    <TextBlock Text="Dune Memory Layout" FontWeight="Bold" FontSize="16"/>
-                    <TextBlock Text="Based on seg000:B427 (sub_1B427_create_save_in_memory)" FontStyle="Italic" Foreground="Gray"/>
-                    
-                    <Border BorderBrush="Gray" BorderThickness="1" Padding="10" Margin="0,10,0,0">
-                        <StackPanel Spacing="5">
-                            <TextBlock Text="Savegame Memory Regions:" FontWeight="SemiBold"/>
-                            <TextBlock Text="• DS:[DCFE] - 12671 bytes (2 bits per byte for next 50684 bytes)" FontFamily="Consolas"/>
-                            <TextBlock Text="• CS:00AA - 162 bytes (includes some code)" FontFamily="Consolas"/>
-                            <TextBlock Text="• DS:AA76 - 4600 bytes (location/sietch data)" FontFamily="Consolas"/>
-                            <TextBlock Text="• DS:0000 - 4705 bytes (core game state)" FontFamily="Consolas"/>
-                        </StackPanel>
-                    </Border>
-                    
-                    <Border BorderBrush="Gray" BorderThickness="1" Padding="10" Margin="0,10,0,0">
-                        <StackPanel Spacing="5">
-                            <TextBlock Text="Data Structure Offsets (Uncompressed Savegame):" FontWeight="SemiBold"/>
-                            <TextBlock Text="• 0x0000 - Date &amp; Time (LOAD/SAVE screen)" FontFamily="Consolas"/>
-                            <TextBlock Text="• 0x4448 - Charisma" FontFamily="Consolas"/>
-                            <TextBlock Text="• 0x4449 - Game Stage" FontFamily="Consolas"/>
-                            <TextBlock Text="• 0x44BF - Spice" FontFamily="Consolas"/>
-                            <TextBlock Text="• 0x451F - Sietchs structure" FontFamily="Consolas"/>
-                            <TextBlock Text="• 0x4CC9 - Troops structure" FontFamily="Consolas"/>
-                            <TextBlock Text="• 0x5593 - Date &amp; Time (in-game)" FontFamily="Consolas"/>
-                            <TextBlock Text="• 0x5595 - Contact Distance" FontFamily="Consolas"/>
-                        </StackPanel>
-                    </Border>
-                    
-                    <Border BorderBrush="Gray" BorderThickness="1" Padding="10" Margin="0,10,0,0">
-                        <StackPanel Spacing="5">
-                            <TextBlock Text="Live Memory Offsets (from DS segment):" FontWeight="SemiBold"/>
-                            <TextBlock Text="• 0x0002 - Game Elapsed Time" FontFamily="Consolas"/>
-                            <TextBlock Text="• 0x0019 - Follower 1 ID" FontFamily="Consolas"/>
-                            <TextBlock Text="• 0x001A - Follower 2 ID" FontFamily="Consolas"/>
-                            <TextBlock Text="• 0x001B - Current Room ID" FontFamily="Consolas"/>
-                            <TextBlock Text="• 0x001C - World Position X" FontFamily="Consolas"/>
-                            <TextBlock Text="• 0x001E - World Position Y" FontFamily="Consolas"/>
-                            <TextBlock Text="• 0x0020 - Water Reserve" FontFamily="Consolas"/>
-                            <TextBlock Text="• 0x0022 - Spice Reserve" FontFamily="Consolas"/>
-                            <TextBlock Text="• 0x0024 - Money (4 bytes)" FontFamily="Consolas"/>
-                            <TextBlock Text="• 0x0029 - Charisma" FontFamily="Consolas"/>
-                            <TextBlock Text="• 0x002A - Game Stage" FontFamily="Consolas"/>
-                            <TextBlock Text="• 0x002B - Military Strength" FontFamily="Consolas"/>
-                            <TextBlock Text="• 0x002C - Ecology Progress" FontFamily="Consolas"/>
-                            <TextBlock Text="• 0x009F - Spice Total" FontFamily="Consolas"/>
-                            <TextBlock Text="• 0x1174 - Date/Time Raw" FontFamily="Consolas"/>
-                            <TextBlock Text="• 0x1176 - Contact Distance" FontFamily="Consolas"/>
-                            <TextBlock Text="• 0xAA76 - Sietch Array Base" FontFamily="Consolas"/>
-                            <TextBlock Text="• 0xDC8C - Current Speaker ID" FontFamily="Consolas"/>
-                        </StackPanel>
-                    </Border>
-                    
-                    <TextBlock Text="Note: Live memory offsets differ from savegame file offsets!" 
-                               FontWeight="Bold" Foreground="Orange" Margin="0,10,0,0"/>
                 </StackPanel>
             </ScrollViewer>
         </TabItem>
