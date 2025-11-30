@@ -171,8 +171,12 @@ public partial class DuneGameState {
         return ReadByte(GetLocationAddress(index, 27));
     }
 
-    public (ushort X, ushort Y) GetLocationCoordinates(int index) {
+    /// <summary>
+    /// Get location map coordinates (single byte values).
+    /// Per madmoose dune-rust: map_x at offset 3, map_y at offset 4.
+    /// </summary>
+    public (byte X, byte Y) GetLocationCoordinates(int index) {
         if (index < 0 || index >= MaxLocations) return (0, 0);
-        return (ReadWord(GetLocationAddress(index, 2)), ReadWord(GetLocationAddress(index, 4)));
+        return (ReadByte(GetLocationAddress(index, 3)), ReadByte(GetLocationAddress(index, 4)));
     }
 }
