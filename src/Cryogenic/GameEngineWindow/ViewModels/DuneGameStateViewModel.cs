@@ -524,7 +524,7 @@ public class LocationViewModel : INotifyPropertyChanged {
         set { if (_status != value) { _status = value; OnPropertyChanged(); OnPropertyChanged(nameof(IsDiscovered)); } }
     }
 
-    public bool IsDiscovered => (Status & 0x80) == 0;
+    public bool IsDiscovered => (Status & DuneGameState.LocationStatusUndiscovered) == 0;
 
     private byte _appearance;
     public byte Appearance {

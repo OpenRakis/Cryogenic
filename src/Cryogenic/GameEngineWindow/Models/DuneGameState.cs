@@ -30,6 +30,14 @@ public partial class DuneGameState : MemoryBasedDataStructureWithDsBaseAddress {
     public const int LocationEntrySize = 28;
     public const int MaxLocations = 70;
     
+    // Location status flags (from odrade)
+    public const byte LocationStatusVegetation = 0x01;
+    public const byte LocationStatusInBattle = 0x02;
+    public const byte LocationStatusInventory = 0x10;
+    public const byte LocationStatusWindtrap = 0x20;
+    public const byte LocationStatusProspected = 0x40;
+    public const byte LocationStatusUndiscovered = 0x80;
+    
     // Troop array follows immediately after locations
     public const int TroopBaseOffset = LocationBaseOffset + (LocationEntrySize * MaxLocations);
     public const int TroopEntrySize = 27;
@@ -175,8 +183,8 @@ public partial class DuneGameState : MemoryBasedDataStructureWithDsBaseAddress {
         int count = 0;
         for (int i = 0; i < MaxLocations; i++) {
             byte status = GetLocationStatus(i);
-            // Location is discovered if UNDISCOVERED flag (0x80) is NOT set
-            if ((status & 0x80) == 0) count++;
+            // Location is discovered if UNDISCOVERED flag is NOT set
+            if ((status & LocationStatusUndiscovered) == 0) count++;
         }
         return count;
     }
