@@ -37,7 +37,8 @@ public class DuneGameStateViewModel : INotifyPropertyChanged, IDisposable {
         _gameState = new DuneGameState(memory, segmentRegisters);
         
         // Set up a timer to refresh the view periodically
-        _refreshTimer = new Timer(100); // Refresh every 100ms
+        // 250ms provides a good balance between responsiveness and performance
+        _refreshTimer = new Timer(250);
         _refreshTimer.Elapsed += OnRefreshTimerElapsed;
         _refreshTimer.AutoReset = true;
         _refreshTimer.Start();
@@ -300,8 +301,70 @@ public class DuneGameStateViewModel : INotifyPropertyChanged, IDisposable {
     #region Refresh Timer
 
     private void OnRefreshTimerElapsed(object? sender, ElapsedEventArgs e) {
-        // Notify that all properties have changed to refresh the UI
-        OnPropertyChanged(string.Empty);
+        // Notify key properties that are likely to change frequently
+        // This is more efficient than notifying all properties
+        NotifyGameStateProperties();
+    }
+
+    /// <summary>
+    /// Notifies listeners that game state properties have changed.
+    /// </summary>
+    private void NotifyGameStateProperties() {
+        // Core game state
+        OnPropertyChanged(nameof(GameElapsedTime));
+        OnPropertyChanged(nameof(GameElapsedTimeHex));
+        OnPropertyChanged(nameof(DateTimeRaw));
+        OnPropertyChanged(nameof(DateTimeDisplay));
+        OnPropertyChanged(nameof(Spice));
+        OnPropertyChanged(nameof(SpiceDisplay));
+        OnPropertyChanged(nameof(Charisma));
+        OnPropertyChanged(nameof(CharismaDisplay));
+        OnPropertyChanged(nameof(ContactDistance));
+        OnPropertyChanged(nameof(ContactDistanceDisplay));
+        OnPropertyChanged(nameof(GameStage));
+        OnPropertyChanged(nameof(GameStageDisplay));
+        
+        // HNM state
+        OnPropertyChanged(nameof(HnmFinishedFlag));
+        OnPropertyChanged(nameof(HnmFrameCounter));
+        OnPropertyChanged(nameof(HnmCounter2));
+        OnPropertyChanged(nameof(CurrentHnmResourceFlag));
+        OnPropertyChanged(nameof(HnmVideoId));
+        OnPropertyChanged(nameof(HnmVideoIdDisplay));
+        OnPropertyChanged(nameof(HnmActiveVideoId));
+        OnPropertyChanged(nameof(HnmFileOffset));
+        OnPropertyChanged(nameof(HnmFileOffsetDisplay));
+        OnPropertyChanged(nameof(HnmFileRemain));
+        OnPropertyChanged(nameof(HnmFileRemainDisplay));
+        
+        // Display state
+        OnPropertyChanged(nameof(FramebufferFront));
+        OnPropertyChanged(nameof(FramebufferFrontDisplay));
+        OnPropertyChanged(nameof(ScreenBuffer));
+        OnPropertyChanged(nameof(ScreenBufferDisplay));
+        OnPropertyChanged(nameof(FramebufferActive));
+        OnPropertyChanged(nameof(FramebufferActiveDisplay));
+        OnPropertyChanged(nameof(FramebufferBack));
+        OnPropertyChanged(nameof(FramebufferBackDisplay));
+        OnPropertyChanged(nameof(TransitionBitmask));
+        OnPropertyChanged(nameof(TransitionBitmaskDisplay));
+        
+        // Mouse state
+        OnPropertyChanged(nameof(MousePosX));
+        OnPropertyChanged(nameof(MousePosY));
+        OnPropertyChanged(nameof(MousePositionDisplay));
+        OnPropertyChanged(nameof(MouseDrawPosX));
+        OnPropertyChanged(nameof(MouseDrawPosY));
+        OnPropertyChanged(nameof(MouseDrawPositionDisplay));
+        OnPropertyChanged(nameof(CursorHideCounter));
+        OnPropertyChanged(nameof(MapCursorType));
+        OnPropertyChanged(nameof(MapCursorTypeDisplay));
+        
+        // Sound state
+        OnPropertyChanged(nameof(IsSoundPresent));
+        OnPropertyChanged(nameof(IsSoundPresentDisplay));
+        OnPropertyChanged(nameof(MidiFunc5ReturnBx));
+        OnPropertyChanged(nameof(MidiFunc5ReturnBxDisplay));
     }
 
     /// <summary>

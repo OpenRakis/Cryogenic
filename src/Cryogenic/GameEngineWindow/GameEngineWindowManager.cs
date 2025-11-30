@@ -42,8 +42,13 @@ public static class GameEngineWindowManager {
                 _window.Show();
                 _window.Activate();
                 return;
-            } catch {
-                // Window was closed, create a new one
+            } catch (ObjectDisposedException) {
+                // Window was disposed, create a new one
+                _viewModel?.Dispose();
+                _window = null;
+                _viewModel = null;
+            } catch (InvalidOperationException) {
+                // Window is in an invalid state, create a new one
                 _viewModel?.Dispose();
                 _window = null;
                 _viewModel = null;
