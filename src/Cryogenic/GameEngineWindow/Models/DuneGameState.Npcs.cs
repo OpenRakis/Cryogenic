@@ -4,7 +4,8 @@ namespace Cryogenic.GameEngineWindow.Models;
 /// NPC structure accessors for Dune game state.
 /// </summary>
 /// <remarks>
-/// NPC structure (8 bytes per entry + 8 bytes padding = 16 bytes total, 16 NPCs max):
+/// NPC structure (8 bytes per entry + 8 bytes padding = 16 bytes total, 16 NPCs max).
+/// NPCs follow troops in memory at TroopsBaseAddress + troops size.
 /// - Offset 0: Sprite identificator
 /// - Offset 1: Field B
 /// - Offset 2: Room location
@@ -15,29 +16,38 @@ namespace Cryogenic.GameEngineWindow.Models;
 /// - Offset 7: Field H
 /// </remarks>
 public partial class DuneGameState {
+    /// <summary>
+    /// Get the absolute address for an NPC entry.
+    /// NPCs follow troops in memory.
+    /// </summary>
+    private uint GetNpcAddress(int index, int fieldOffset = 0) {
+        uint npcsStart = TroopsBaseAddress + (uint)TroopArrayOffset + (uint)(MaxTroops * TroopEntrySize);
+        return npcsStart + (uint)(index * NpcTotalEntrySize) + (uint)fieldOffset;
+    }
+
     public byte GetNpcSpriteId(int index) {
         if (index < 0 || index >= MaxNpcs) return 0;
-        return UInt8[NpcBaseOffset + (index * NpcTotalEntrySize)];
+        return ReadByte(GetNpcAddress(index, 0));
     }
 
     public byte GetNpcRoomLocation(int index) {
         if (index < 0 || index >= MaxNpcs) return 0;
-        return UInt8[NpcBaseOffset + (index * NpcTotalEntrySize) + 2];
+        return ReadByte(GetNpcAddress(index, 2));
     }
 
     public byte GetNpcPlaceType(int index) {
         if (index < 0 || index >= MaxNpcs) return 0;
-        return UInt8[NpcBaseOffset + (index * NpcTotalEntrySize) + 3];
+        return ReadByte(GetNpcAddress(index, 3));
     }
 
     public byte GetNpcExactPlace(int index) {
         if (index < 0 || index >= MaxNpcs) return 0;
-        return UInt8[NpcBaseOffset + (index * NpcTotalEntrySize) + 5];
+        return ReadByte(GetNpcAddress(index, 5));
     }
 
     public byte GetNpcDialogueFlag(int index) {
         if (index < 0 || index >= MaxNpcs) return 0;
-        return UInt8[NpcBaseOffset + (index * NpcTotalEntrySize) + 6];
+        return ReadByte(GetNpcAddress(index, 6));
     }
 
     public static string GetNpcName(byte npcId) => npcId switch {

@@ -4,7 +4,7 @@ namespace Cryogenic.GameEngineWindow.Models;
 /// Troop structure accessors for Dune game state.
 /// </summary>
 /// <remarks>
-/// Troop structure (27 bytes per entry, 68 max troops):
+/// Troop structure (27 bytes per entry, 68 max troops at 9B05:0003):
 /// - Offset 0: Troop ID
 /// - Offset 1: Next troop ID (for chains)
 /// - Offset 2: Position in location
@@ -23,69 +23,76 @@ namespace Cryogenic.GameEngineWindow.Models;
 /// - Offset 26: Population (x10)
 /// </remarks>
 public partial class DuneGameState {
+    /// <summary>
+    /// Get the absolute address for a troop entry.
+    /// </summary>
+    private uint GetTroopAddress(int index, int fieldOffset = 0) {
+        return TroopsBaseAddress + (uint)TroopArrayOffset + (uint)(index * TroopEntrySize) + (uint)fieldOffset;
+    }
+
     public byte GetTroopId(int index) {
         if (index < 0 || index >= MaxTroops) return 0;
-        return UInt8[TroopBaseOffset + (index * TroopEntrySize)];
+        return ReadByte(GetTroopAddress(index, 0));
     }
 
     public byte GetTroopNextId(int index) {
         if (index < 0 || index >= MaxTroops) return 0;
-        return UInt8[TroopBaseOffset + (index * TroopEntrySize) + 1];
+        return ReadByte(GetTroopAddress(index, 1));
     }
 
     public byte GetTroopPosition(int index) {
         if (index < 0 || index >= MaxTroops) return 0;
-        return UInt8[TroopBaseOffset + (index * TroopEntrySize) + 2];
+        return ReadByte(GetTroopAddress(index, 2));
     }
 
     public byte GetTroopOccupation(int index) {
         if (index < 0 || index >= MaxTroops) return 0;
-        return UInt8[TroopBaseOffset + (index * TroopEntrySize) + 3];
+        return ReadByte(GetTroopAddress(index, 3));
     }
 
     public byte GetTroopDissatisfaction(int index) {
         if (index < 0 || index >= MaxTroops) return 0;
-        return UInt8[TroopBaseOffset + (index * TroopEntrySize) + 18];
+        return ReadByte(GetTroopAddress(index, 18));
     }
 
     public byte GetTroopSpeech(int index) {
         if (index < 0 || index >= MaxTroops) return 0;
-        return UInt8[TroopBaseOffset + (index * TroopEntrySize) + 19];
+        return ReadByte(GetTroopAddress(index, 19));
     }
 
     public byte GetTroopMotivation(int index) {
         if (index < 0 || index >= MaxTroops) return 0;
-        return UInt8[TroopBaseOffset + (index * TroopEntrySize) + 21];
+        return ReadByte(GetTroopAddress(index, 21));
     }
 
     public byte GetTroopSpiceSkill(int index) {
         if (index < 0 || index >= MaxTroops) return 0;
-        return UInt8[TroopBaseOffset + (index * TroopEntrySize) + 22];
+        return ReadByte(GetTroopAddress(index, 22));
     }
 
     public byte GetTroopArmySkill(int index) {
         if (index < 0 || index >= MaxTroops) return 0;
-        return UInt8[TroopBaseOffset + (index * TroopEntrySize) + 23];
+        return ReadByte(GetTroopAddress(index, 23));
     }
 
     public byte GetTroopEcologySkill(int index) {
         if (index < 0 || index >= MaxTroops) return 0;
-        return UInt8[TroopBaseOffset + (index * TroopEntrySize) + 24];
+        return ReadByte(GetTroopAddress(index, 24));
     }
 
     public byte GetTroopEquipment(int index) {
         if (index < 0 || index >= MaxTroops) return 0;
-        return UInt8[TroopBaseOffset + (index * TroopEntrySize) + 25];
+        return ReadByte(GetTroopAddress(index, 25));
     }
 
     public ushort GetTroopPopulation(int index) {
         if (index < 0 || index >= MaxTroops) return 0;
-        return (ushort)(UInt8[TroopBaseOffset + (index * TroopEntrySize) + 26] * 10);
+        return (ushort)(ReadByte(GetTroopAddress(index, 26)) * 10);
     }
 
     public byte GetTroopLocation(int index) {
         if (index < 0 || index >= MaxTroops) return 0;
-        return UInt8[TroopBaseOffset + (index * TroopEntrySize) + 2];
+        return ReadByte(GetTroopAddress(index, 2));
     }
 
     public static string GetTroopOccupationDescription(byte occupation) {

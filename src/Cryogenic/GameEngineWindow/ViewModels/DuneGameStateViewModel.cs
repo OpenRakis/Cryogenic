@@ -70,7 +70,6 @@ public class DuneGameStateViewModel : INotifyPropertyChanged, IDisposable {
 
     public void RefreshAllData() {
         RefreshLocations();
-        RefreshSietches();
         RefreshTroops();
         RefreshNpcs();
         RefreshSmugglers();
@@ -329,6 +328,8 @@ public class DuneGameStateViewModel : INotifyPropertyChanged, IDisposable {
         OnPropertyChanged(nameof(MilitaryStrengthDisplay));
         OnPropertyChanged(nameof(EcologyProgress));
         OnPropertyChanged(nameof(EcologyProgressDisplay));
+        OnPropertyChanged(nameof(DiscoveredLocationCount));
+        OnPropertyChanged(nameof(DiscoveredLocationCountDisplay));
     }
 
     protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null) {
@@ -342,11 +343,9 @@ public class DuneGameStateViewModel : INotifyPropertyChanged, IDisposable {
 
     protected virtual void Dispose(bool disposing) {
         if (!_disposed) {
-            if (disposing) {
-                if (_pauseHandler != null) {
-                    _pauseHandler.Paused -= OnEmulatorPaused;
-                    _pauseHandler.Resumed -= OnEmulatorResumed;
-                }
+            if (disposing && _pauseHandler != null) {
+                _pauseHandler.Paused -= OnEmulatorPaused;
+                _pauseHandler.Resumed -= OnEmulatorResumed;
             }
             _disposed = true;
         }

@@ -4,7 +4,7 @@ namespace Cryogenic.GameEngineWindow.Models;
 /// Location/Sietch structure accessors for Dune game state.
 /// </summary>
 /// <remarks>
-/// Location structure (28 bytes per entry, 70 max locations):
+/// Location structure (28 bytes per entry, 70 max locations at 10FC:000F):
 /// - Offset 0: Name first byte (region: 01-0C)
 /// - Offset 1: Name second byte (type: 01-0B, 0A=village)
 /// - Offset 2-7: Coordinates (6 bytes)
@@ -26,14 +26,21 @@ namespace Cryogenic.GameEngineWindow.Models;
 /// - Offset 27: Water amount
 /// </remarks>
 public partial class DuneGameState {
+    /// <summary>
+    /// Get the absolute address for a location entry.
+    /// </summary>
+    private uint GetLocationAddress(int index, int fieldOffset = 0) {
+        return LocationsBaseAddress + (uint)LocationArrayOffset + (uint)(index * LocationEntrySize) + (uint)fieldOffset;
+    }
+
     public byte GetLocationNameFirst(int index) {
         if (index < 0 || index >= MaxLocations) return 0;
-        return UInt8[LocationBaseOffset + (index * LocationEntrySize)];
+        return ReadByte(GetLocationAddress(index, 0));
     }
 
     public byte GetLocationNameSecond(int index) {
         if (index < 0 || index >= MaxLocations) return 0;
-        return UInt8[LocationBaseOffset + (index * LocationEntrySize) + 1];
+        return ReadByte(GetLocationAddress(index, 1));
     }
 
     public static string GetLocationNameStr(byte first, byte second) {
@@ -88,77 +95,76 @@ public partial class DuneGameState {
 
     public byte GetLocationAppearance(int index) {
         if (index < 0 || index >= MaxLocations) return 0;
-        return UInt8[LocationBaseOffset + (index * LocationEntrySize) + 8];
+        return ReadByte(GetLocationAddress(index, 8));
     }
 
     public byte GetLocationHousedTroopId(int index) {
         if (index < 0 || index >= MaxLocations) return 0;
-        return UInt8[LocationBaseOffset + (index * LocationEntrySize) + 9];
+        return ReadByte(GetLocationAddress(index, 9));
     }
 
     public byte GetLocationStatus(int index) {
         if (index < 0 || index >= MaxLocations) return 0;
-        return UInt8[LocationBaseOffset + (index * LocationEntrySize) + 10];
+        return ReadByte(GetLocationAddress(index, 10));
     }
 
     public byte GetLocationSpiceFieldId(int index) {
         if (index < 0 || index >= MaxLocations) return 0;
-        return UInt8[LocationBaseOffset + (index * LocationEntrySize) + 16];
+        return ReadByte(GetLocationAddress(index, 16));
     }
 
     public byte GetLocationSpiceAmount(int index) {
         if (index < 0 || index >= MaxLocations) return 0;
-        return UInt8[LocationBaseOffset + (index * LocationEntrySize) + 17];
+        return ReadByte(GetLocationAddress(index, 17));
     }
 
     public byte GetLocationSpiceDensity(int index) {
         if (index < 0 || index >= MaxLocations) return 0;
-        return UInt8[LocationBaseOffset + (index * LocationEntrySize) + 18];
+        return ReadByte(GetLocationAddress(index, 18));
     }
 
     public byte GetLocationHarvesters(int index) {
         if (index < 0 || index >= MaxLocations) return 0;
-        return UInt8[LocationBaseOffset + (index * LocationEntrySize) + 20];
+        return ReadByte(GetLocationAddress(index, 20));
     }
 
     public byte GetLocationOrnithopters(int index) {
         if (index < 0 || index >= MaxLocations) return 0;
-        return UInt8[LocationBaseOffset + (index * LocationEntrySize) + 21];
+        return ReadByte(GetLocationAddress(index, 21));
     }
 
     public byte GetLocationKrysKnives(int index) {
         if (index < 0 || index >= MaxLocations) return 0;
-        return UInt8[LocationBaseOffset + (index * LocationEntrySize) + 22];
+        return ReadByte(GetLocationAddress(index, 22));
     }
 
     public byte GetLocationLaserGuns(int index) {
         if (index < 0 || index >= MaxLocations) return 0;
-        return UInt8[LocationBaseOffset + (index * LocationEntrySize) + 23];
+        return ReadByte(GetLocationAddress(index, 23));
     }
 
     public byte GetLocationWeirdingModules(int index) {
         if (index < 0 || index >= MaxLocations) return 0;
-        return UInt8[LocationBaseOffset + (index * LocationEntrySize) + 24];
+        return ReadByte(GetLocationAddress(index, 24));
     }
 
     public byte GetLocationAtomics(int index) {
         if (index < 0 || index >= MaxLocations) return 0;
-        return UInt8[LocationBaseOffset + (index * LocationEntrySize) + 25];
+        return ReadByte(GetLocationAddress(index, 25));
     }
 
     public byte GetLocationBulbs(int index) {
         if (index < 0 || index >= MaxLocations) return 0;
-        return UInt8[LocationBaseOffset + (index * LocationEntrySize) + 26];
+        return ReadByte(GetLocationAddress(index, 26));
     }
 
     public byte GetLocationWater(int index) {
         if (index < 0 || index >= MaxLocations) return 0;
-        return UInt8[LocationBaseOffset + (index * LocationEntrySize) + 27];
+        return ReadByte(GetLocationAddress(index, 27));
     }
 
     public (ushort X, ushort Y) GetLocationCoordinates(int index) {
         if (index < 0 || index >= MaxLocations) return (0, 0);
-        var baseOffset = LocationBaseOffset + (index * LocationEntrySize);
-        return (UInt16[baseOffset + 2], UInt16[baseOffset + 4]);
+        return (ReadWord(GetLocationAddress(index, 2)), ReadWord(GetLocationAddress(index, 4)));
     }
 }
