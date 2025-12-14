@@ -78,8 +78,7 @@ public partial class DuneGameState {
     /// Checks if a troop is Fremen (vs Harkonnen).
     /// Fremen occupations are 0x00 and 0x02 (without high bit flags).
     /// </summary>
-    public bool IsTroopFremen(int index) {
-        byte occupation = GetTroopOccupation(index);
+    public static bool IsTroopFremen(byte occupation) {
         byte baseOccupation = (byte)(occupation & 0x7F);
         // Fremen occupations are 0x00 and 0x02, or slaved Fremen (occupation >= 0xA0)
         return baseOccupation == 0x00 || baseOccupation == 0x02 || occupation >= 0xA0;

@@ -100,6 +100,7 @@ public partial class DuneGameState {
     // Aliases for ViewModel compatibility
     public byte GetSietchSpiceField(int index) => GetLocationSpiceField(index);
     public (byte X, byte Y) GetSietchCoordinates(int index) => GetLocationCoordinates(index);
+    public byte GetSietchStatus(int index) => GetLocationStatus(index);
     
     // Additional location accessor methods for ViewModel
     public byte GetLocationHousedTroopId(int index) => UInt8[GetLocationOffset(index) + 9];
