@@ -247,4 +247,91 @@ public partial class DuneGameState : MemoryBasedDataStructureWithDsBaseAddress {
     /// Gets the cursor type (DS:0xDC3C).
     /// </summary>
     public byte GetCursorType() => UInt8[0xDC3C];
+    
+    // Property-style accessors for ViewModel compatibility
+    public ushort GameElapsedTime => GetGameElapsedTime();
+    public byte CharismaRaw => GetCharismaRaw();
+    public int CharismaDisplayed => GetCharismaDisplayed();
+    public byte GameStage => GetGamePhase();
+    public byte GamePhase => GetGamePhase();
+    public ushort Spice => GetSpice();
+    public ushort DateTimeRaw => GetDateTime();
+    public byte ContactDistance => GetContactDistance();
+    public byte Follower1Id => GetFollower1Id();
+    public byte Follower2Id => GetFollower2Id();
+    public byte CurrentRoomId => GetCurrentRoomId();
+    public byte CurrentSpeakerId => GetCurrentSpeakerId();
+    public ushort DialogueState => (ushort)GetDialogueState();
+    
+    // Display/HNM properties
+    public byte HnmFinishedFlag => GetHnmFinishedFlag();
+    public ushort HnmFrameCounter => GetHnmFrameCounter();
+    public uint HnmFileOffset => GetHnmFileOffset();
+    public uint HnmFileRemain => GetHnmFileRemain();
+    public ushort FramebufferFront => GetFramebufferFront();
+    public ushort FramebufferBack => GetFramebufferBack();
+    public ushort FramebufferActive => GetFramebufferActive();
+    public ushort ScreenBuffer => GetScreenBuffer();
+    public ushort MousePosX => GetMousePosX();
+    public ushort MousePosY => GetMousePosY();
+    public byte CursorType => GetCursorType();
+    public byte TransitionBitmask => (byte)GetTransitionBitmask();
+    
+    // Helper methods for formatting
+    public string GetFormattedSpice() => $"{Spice:N0} kg";
+    
+    public string GetFormattedDateTime() {
+        ushort raw = DateTimeRaw;
+        // Simple approximation: day = high byte, hour = low byte / 10
+        int day = (raw >> 8) + 1;
+        int hour = (raw & 0xFF) / 10;
+        return $"Day {day}, {hour:D2}:00";
+    }
+    
+    public string GetGameStageDescription() {
+        return GameStage switch {
+            0x01 => "Start of game",
+            0x02 => "Talked about stillsuit",
+            0x03 => "Learning about stillsuit",
+            0x04 => "Stillsuit briefing complete",
+            0x05 => "Met spice prospectors",
+            0x06 => "Got stillsuits",
+            _ => $"Stage 0x{GameStage:X2}"
+        };
+    }
+    
+    public int GetActiveTroopCount() {
+        int count = 0;
+        for (int i = 0; i < MaxTroops; i++) {
+            if (IsTroopActive(i)) count++;
+        }
+        return count;
+    }
+    
+    public int GetDiscoveredLocationCount() => GetDiscoveredSietchCount();
+    
+    // Placeholder properties that may not exist in current memory layout
+    public ushort WorldPosX => 0; // TODO: Find actual offset
+    public ushort WorldPosY => 0; // TODO: Find actual offset
+    public ushort WaterReserve => 0; // TODO: Find actual offset
+    public ushort SpiceReserve => 0; // TODO: Find actual offset
+    public uint Money => 0; // TODO: Find actual offset
+    public byte MilitaryStrength => 0; // TODO: Find actual offset
+    public byte EcologyProgress => 0; // TODO: Find actual offset
+    
+    // Additional HNM properties (placeholders)
+    public ushort HnmCounter2 => 0;
+    public byte CurrentHnmResourceFlag => 0;
+    public ushort HnmVideoId => 0;
+    public ushort HnmActiveVideoId => 0;
+    
+    // Additional mouse properties
+    public ushort MouseDrawPosX => MousePosX;
+    public ushort MouseDrawPosY => MousePosY;
+    public byte CursorHideCounter => 0;
+    public ushort MapCursorType => 0;
+    
+    // Sound property
+    public byte IsSoundPresent => 0;
+    public ushort MidiFunc5ReturnBx => 0;
 }

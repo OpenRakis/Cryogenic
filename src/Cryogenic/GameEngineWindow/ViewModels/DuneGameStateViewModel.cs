@@ -515,7 +515,19 @@ public class LocationViewModel : INotifyPropertyChanged {
     }
 
     public string Name => DuneGameState.GetLocationNameStr(NameFirst, NameSecond);
-    public string LocationType => DuneGameState.GetLocationTypeStr(NameSecond);
+    public string LocationType {
+        get {
+            byte nameSecond = NameSecond;
+            return nameSecond switch {
+                0x00 => "Atreides Palace",
+                0x01 => "Harkonnen Palace",
+                0x02 => "Village (Pyons)",
+                >= 0x03 and <= 0x09 => "Sietch",
+                0x0B => "Sietch",
+                _ => $"Unknown (0x{nameSecond:X2})"
+            };
+        }
+    }
 
     private byte _status;
     public byte Status {

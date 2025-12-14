@@ -50,4 +50,18 @@ public partial class DuneGameState {
     /// Gets the NPC dialogue state (DS:0xAC2E + index*16 + 3).
     /// </summary>
     public byte GetNpcDialogueState(int index) => UInt8[GetNpcOffset(index) + 3];
+    
+    /// <summary>
+    /// Gets a description of the NPC place type.
+    /// </summary>
+    public static string GetNpcPlaceTypeDescription(byte placeType) {
+        return placeType switch {
+            0x00 => "None",
+            0x01 => "Arrakeen",
+            0x02 => "Carthag",
+            0x03 => "Sietch",
+            0x04 => "Desert",
+            _ => $"Place 0x{placeType:X2}"
+        };
+    }
 }

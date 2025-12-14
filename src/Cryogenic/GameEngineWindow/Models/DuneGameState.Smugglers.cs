@@ -74,4 +74,11 @@ public partial class DuneGameState {
     /// Gets the smuggler haggle willingness (DS:0xAD2E + index*17 + 10).
     /// </summary>
     public byte GetSmugglerHaggleWillingness(int index) => UInt8[GetSmugglerOffset(index) + 10];
+    
+    // Alias methods for ViewModel compatibility
+    public ushort GetSmugglerHarvesterPrice(int index) => GetSmugglerPriceHarvesters(index);
+    public ushort GetSmugglerOrnithopterPrice(int index) => GetSmugglerPriceOrnithopters(index);
+    public ushort GetSmugglerKrysKnifePrice(int index) => GetSmugglerPriceWeapons(index);
+    public ushort GetSmugglerLaserGunPrice(int index) => GetSmugglerPriceWeapons(index);
+    public ushort GetSmugglerWeirdingModulePrice(int index) => GetSmugglerPriceWeapons(index);
 }

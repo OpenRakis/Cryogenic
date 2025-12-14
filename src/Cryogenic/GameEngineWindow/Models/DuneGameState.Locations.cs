@@ -92,4 +92,47 @@ public partial class DuneGameState {
             _ => $"Unknown (0x{nameSecond:X2})"
         };
     }
+    
+    /// <summary>
+    /// Gets the location appearance (DS:0x0100 + index*28 + 8).
+    /// </summary>
+    public byte GetLocationAppearance(int index) => UInt8[GetLocationOffset(index) + 8];
+    
+    /// <summary>
+    /// Gets location name as a display string.
+    /// </summary>
+    public static string GetLocationNameStr(byte first, byte second) {
+        string str = first switch {
+            0x01 => "Arrakeen",
+            0x02 => "Carthag",
+            0x03 => "Tuono",
+            0x04 => "Habbanya",
+            0x05 => "Oxtyn",
+            0x06 => "Tsympo",
+            0x07 => "Bledan",
+            0x08 => "Ergsun",
+            0x09 => "Haga",
+            0x0A => "Cielago",
+            0x0B => "Sihaya",
+            0x0C => "Celimyn",
+            _ => $"Location {first:X2}"
+        };
+        
+        string suffix = second switch {
+            0x01 => " (Atreides)",
+            0x02 => " (Harkonnen)",
+            0x03 => "-Tabr",
+            0x04 => "-Timin",
+            0x05 => "-Tuek",
+            0x06 => "-Harg",
+            0x07 => "-Clam",
+            0x08 => "-Tsymyn",
+            0x09 => "-Siet",
+            0x0A => "-Pyons",
+            0x0B => "-Pyort",
+            _ => ""
+        };
+        
+        return str + suffix;
+    }
 }
