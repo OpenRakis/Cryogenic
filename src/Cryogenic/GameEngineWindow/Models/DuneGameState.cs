@@ -97,7 +97,27 @@ public partial class DuneGameState : MemoryBasedDataStructureWithDsBaseAddress {
     public byte GetGamePhase() => UInt8[GamePhaseOffset];
     
     /// <summary>
-    /// Gets the total spice amount in kilograms (DS:0x009F).
+    /// Gets the game elapsed time (internal counter).
+    /// </summary>
+    public ushort GameElapsedTime => UInt16[GameTimeOffset];
+    
+    /// <summary>
+    /// Gets the raw charisma value.
+    /// </summary>
+    public byte CharismaRaw => GetCharismaRaw();
+    
+    /// <summary>
+    /// Gets the displayed charisma value ((raw * 2) + 1).
+    /// </summary>
+    public int CharismaDisplayed => GetCharismaDisplayed();
+    
+    /// <summary>
+    /// Gets the game phase/stage value.
+    /// </summary>
+    public byte GamePhase => GetGamePhase();
+    
+    /// <summary>
+    /// Gets the total spice amount in kilograms.
     /// </summary>
     public ushort GetSpice() => UInt16[SpiceOffset];
     
@@ -249,11 +269,7 @@ public partial class DuneGameState : MemoryBasedDataStructureWithDsBaseAddress {
     public byte GetCursorType() => UInt8[0xDC3C];
     
     // Property-style accessors for ViewModel compatibility
-    public ushort GameElapsedTime => GetGameElapsedTime();
-    public byte CharismaRaw => GetCharismaRaw();
-    public int CharismaDisplayed => GetCharismaDisplayed();
     public byte GameStage => GetGamePhase();
-    public byte GamePhase => GetGamePhase();
     public ushort Spice => GetSpice();
     public ushort DateTimeRaw => GetDateTime();
     public byte ContactDistance => GetContactDistance();

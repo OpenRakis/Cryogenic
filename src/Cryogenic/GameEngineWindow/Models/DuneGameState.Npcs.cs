@@ -64,4 +64,10 @@ public partial class DuneGameState {
             _ => $"Place 0x{placeType:X2}"
         };
     }
+    
+    // Aliases for ViewModel compatibility
+    public byte GetNpcSpriteId(int index) => GetNpcSpriteIndex(index);
+    public byte GetNpcRoomLocation(int index) => GetNpcRoomIndex(index);
+    public byte GetNpcExactPlace(int index) => GetNpcPlaceType(index);
+    public byte GetNpcDialogueFlag(int index) => GetNpcDialogueState(index);
 }

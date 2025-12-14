@@ -81,8 +81,7 @@ public partial class DuneGameState {
     /// <summary>
     /// Determines the location type based on name_second byte.
     /// </summary>
-    public string GetLocationTypeStr(int index) {
-        byte nameSecond = GetLocationNameSecond(index);
+    public static string GetLocationTypeStr(byte nameSecond) {
         return nameSecond switch {
             0x00 => "Atreides Palace",
             0x01 => "Harkonnen Palace",
@@ -97,6 +96,10 @@ public partial class DuneGameState {
     /// Gets the location appearance (DS:0x0100 + index*28 + 8).
     /// </summary>
     public byte GetLocationAppearance(int index) => UInt8[GetLocationOffset(index) + 8];
+    
+    // Aliases for ViewModel compatibility
+    public byte GetSietchSpiceField(int index) => GetLocationSpiceField(index);
+    public (byte X, byte Y) GetSietchCoordinates(int index) => GetLocationCoordinates(index);
     
     /// <summary>
     /// Gets location name as a display string.

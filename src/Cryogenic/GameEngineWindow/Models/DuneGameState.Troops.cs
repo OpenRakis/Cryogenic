@@ -124,4 +124,8 @@ public partial class DuneGameState {
             _ => $"Level {equipment}"
         };
     }
+    
+    // Aliases for ViewModel compatibility
+    public byte GetTroopId(int index) => GetTroopOccupation(index);
+    public bool IsTroopFremen(int index) => IsTroopFremen(GetTroopOccupation(index));
 }

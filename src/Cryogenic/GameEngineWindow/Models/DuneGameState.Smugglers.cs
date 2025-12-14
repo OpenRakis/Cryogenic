@@ -81,4 +81,19 @@ public partial class DuneGameState {
     public ushort GetSmugglerKrysKnifePrice(int index) => GetSmugglerPriceWeapons(index);
     public ushort GetSmugglerLaserGunPrice(int index) => GetSmugglerPriceWeapons(index);
     public ushort GetSmugglerWeirdingModulePrice(int index) => GetSmugglerPriceWeapons(index);
+    
+    public byte GetSmugglerRegion(int index) => GetSmugglerLocationIndex(index);
+    public string GetSmugglerLocationName(int index) {
+        byte locIndex = GetSmugglerLocationIndex(index);
+        if (locIndex < MaxLocations) {
+            return GetLocationNameStr(GetLocationNameFirst(locIndex), GetLocationNameSecond(locIndex));
+        }
+        return $"Location {locIndex}";
+    }
+    public byte GetSmugglerWillingnessToHaggle(int index) => GetSmugglerHaggleWillingness(index);
+    public byte GetSmugglerHarvesters(int index) => GetSmugglerInventoryHarvesters(index);
+    public byte GetSmugglerOrnithopters(int index) => GetSmugglerInventoryOrnithopters(index);
+    public byte GetSmugglerKrysKnives(int index) => GetSmugglerInventoryWeapons(index);
+    public byte GetSmugglerLaserGuns(int index) => GetSmugglerInventoryWeapons(index);
+    public byte GetSmugglerWeirdingModules(int index) => GetSmugglerInventoryWeapons(index);
 }
