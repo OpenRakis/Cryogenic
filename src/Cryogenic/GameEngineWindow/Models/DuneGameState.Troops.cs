@@ -127,5 +127,4 @@ public partial class DuneGameState {
     
     // Aliases for ViewModel compatibility
     public byte GetTroopId(int index) => GetTroopOccupation(index);
-    public bool IsTroopFremen(int index) => IsTroopFremen(GetTroopOccupation(index));
 }
