@@ -1,101 +1,77 @@
 namespace Cryogenic.GameEngineWindow.Models;
 
 /// <summary>
-/// Smuggler structure accessors for Dune game state.
+/// Partial class for Smuggler-related memory access.
 /// </summary>
 /// <remarks>
-/// Smuggler structure (14 bytes per entry + 3 bytes padding = 17 bytes total, 6 smugglers max).
-/// Smugglers follow NPCs in memory at BaseAddress + TroopArrayOffset + troops size + NPCs size.
-/// Per odrade smuggler.go:
-/// - Offset 0: Region/location byte
-/// - Offset 1: Willingness to haggle
-/// - Offset 2: Field C
-/// - Offset 3: Field D
-/// - Offset 4: Harvesters in stock
-/// - Offset 5: Ornithopters in stock
-/// - Offset 6: Krys knives in stock
-/// - Offset 7: Laser guns in stock
-/// - Offset 8: Weirding modules in stock
-/// - Offset 9: Harvester price (x10)
-/// - Offset 10: Ornithopter price (x10)
-/// - Offset 11: Krys knife price (x10)
-/// - Offset 12: Laser gun price (x10)
-/// - Offset 13: Weirding module price (x10)
+/// Smugglers array follows NPCs in memory at DS:0xAD2E (NPCs end at 0xAC2E + 16*16 = 0xAD2E).
+/// 17 bytes per entry, 6 entries max.
+/// Structure from odrade:
+/// - Offset 0: location_index (u8)
+/// - Offset 1: inventory_harvesters (u8)
+/// - Offset 2: inventory_ornithopters (u8)
+/// - Offset 3: inventory_weapons (u8)
+/// - Offset 4-5: price_harvesters (u16)
+/// - Offset 6-7: price_ornithopters (u16)
+/// - Offset 8-9: price_weapons (u16)
+/// - Offset 10: haggle_willingness (u8)
+/// - And more fields...
+/// Plus 3 bytes padding = 17 bytes total
 /// </remarks>
 public partial class DuneGameState {
+    
+    // Smugglers array DS-relative
+    public const int SmugglerArrayOffset = 0xAD2E;         // After NPCs: 0xAC2E + 16*16
+    public const int SmugglerEntrySize = 17;               // 14 bytes data + 3 bytes padding
+    public const int MaxSmugglers = 6;
+    
     /// <summary>
-    /// Get the absolute address for a smuggler entry.
-    /// Smugglers follow NPCs in memory: TroopBaseAddress + TroopArrayOffset + troops size + NPCs size.
-    /// Per problem statement: troops/NPCs/smugglers at segment 9B05.
+    /// Gets the base DS-relative offset for a smuggler entry.
     /// </summary>
-    private uint GetSmugglerAddress(int index, int fieldOffset = 0) {
-        uint npcsStart = TroopBaseAddress + (uint)TroopArrayOffset + (uint)(MaxTroops * TroopEntrySize);
-        uint smugglersStart = npcsStart + (uint)(MaxNpcs * NpcTotalEntrySize);
-        return smugglersStart + (uint)(index * SmugglerTotalEntrySize) + (uint)fieldOffset;
+    private int GetSmugglerOffset(int index) {
+        if (index < 0 || index >= MaxSmugglers)
+            throw new ArgumentOutOfRangeException(nameof(index), 
+                $"Smuggler index must be between 0 and {MaxSmugglers - 1}");
+        return SmugglerArrayOffset + (index * SmugglerEntrySize);
     }
-
-    public byte GetSmugglerRegion(int index) {
-        if (index < 0 || index >= MaxSmugglers) return 0;
-        return ReadByte(GetSmugglerAddress(index, 0));
-    }
-
-    public byte GetSmugglerWillingnessToHaggle(int index) {
-        if (index < 0 || index >= MaxSmugglers) return 0;
-        return ReadByte(GetSmugglerAddress(index, 1));
-    }
-
-    public byte GetSmugglerHarvesters(int index) {
-        if (index < 0 || index >= MaxSmugglers) return 0;
-        return ReadByte(GetSmugglerAddress(index, 4));
-    }
-
-    public byte GetSmugglerOrnithopters(int index) {
-        if (index < 0 || index >= MaxSmugglers) return 0;
-        return ReadByte(GetSmugglerAddress(index, 5));
-    }
-
-    public byte GetSmugglerKrysKnives(int index) {
-        if (index < 0 || index >= MaxSmugglers) return 0;
-        return ReadByte(GetSmugglerAddress(index, 6));
-    }
-
-    public byte GetSmugglerLaserGuns(int index) {
-        if (index < 0 || index >= MaxSmugglers) return 0;
-        return ReadByte(GetSmugglerAddress(index, 7));
-    }
-
-    public byte GetSmugglerWeirdingModules(int index) {
-        if (index < 0 || index >= MaxSmugglers) return 0;
-        return ReadByte(GetSmugglerAddress(index, 8));
-    }
-
-    public ushort GetSmugglerHarvesterPrice(int index) {
-        if (index < 0 || index >= MaxSmugglers) return 0;
-        return (ushort)(ReadByte(GetSmugglerAddress(index, 9)) * 10);
-    }
-
-    public ushort GetSmugglerOrnithopterPrice(int index) {
-        if (index < 0 || index >= MaxSmugglers) return 0;
-        return (ushort)(ReadByte(GetSmugglerAddress(index, 10)) * 10);
-    }
-
-    public ushort GetSmugglerKrysKnifePrice(int index) {
-        if (index < 0 || index >= MaxSmugglers) return 0;
-        return (ushort)(ReadByte(GetSmugglerAddress(index, 11)) * 10);
-    }
-
-    public ushort GetSmugglerLaserGunPrice(int index) {
-        if (index < 0 || index >= MaxSmugglers) return 0;
-        return (ushort)(ReadByte(GetSmugglerAddress(index, 12)) * 10);
-    }
-
-    public ushort GetSmugglerWeirdingModulePrice(int index) {
-        if (index < 0 || index >= MaxSmugglers) return 0;
-        return (ushort)(ReadByte(GetSmugglerAddress(index, 13)) * 10);
-    }
-
-    public string GetSmugglerLocationName(int index) {
-        byte region = GetSmugglerRegion(index);
-        return GetLocationNameStr(region, 0x0A);
-    }
+    
+    /// <summary>
+    /// Gets the smuggler location index (DS:0xAD2E + index*17 + 0).
+    /// </summary>
+    public byte GetSmugglerLocationIndex(int index) => UInt8[GetSmugglerOffset(index)];
+    
+    /// <summary>
+    /// Gets the smuggler harvester inventory count (DS:0xAD2E + index*17 + 1).
+    /// </summary>
+    public byte GetSmugglerInventoryHarvesters(int index) => UInt8[GetSmugglerOffset(index) + 1];
+    
+    /// <summary>
+    /// Gets the smuggler ornithopter inventory count (DS:0xAD2E + index*17 + 2).
+    /// </summary>
+    public byte GetSmugglerInventoryOrnithopters(int index) => UInt8[GetSmugglerOffset(index) + 2];
+    
+    /// <summary>
+    /// Gets the smuggler weapon inventory count (DS:0xAD2E + index*17 + 3).
+    /// </summary>
+    public byte GetSmugglerInventoryWeapons(int index) => UInt8[GetSmugglerOffset(index) + 3];
+    
+    /// <summary>
+    /// Gets the smuggler harvester price (DS:0xAD2E + index*17 + 4, u16).
+    /// </summary>
+    public ushort GetSmugglerPriceHarvesters(int index) => UInt16[GetSmugglerOffset(index) + 4];
+    
+    /// <summary>
+    /// Gets the smuggler ornithopter price (DS:0xAD2E + index*17 + 6, u16).
+    /// </summary>
+    public ushort GetSmugglerPriceOrnithopters(int index) => UInt16[GetSmugglerOffset(index) + 6];
+    
+    /// <summary>
+    /// Gets the smuggler weapon price (DS:0xAD2E + index*17 + 8, u16).
+    /// </summary>
+    public ushort GetSmugglerPriceWeapons(int index) => UInt16[GetSmugglerOffset(index) + 8];
+    
+    /// <summary>
+    /// Gets the smuggler haggle willingness (DS:0xAD2E + index*17 + 10).
+    /// </summary>
+    public byte GetSmugglerHaggleWillingness(int index) => UInt8[GetSmugglerOffset(index) + 10];
 }

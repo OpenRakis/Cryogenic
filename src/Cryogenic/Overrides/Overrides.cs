@@ -152,7 +152,7 @@ public partial class Overrides : CSharpOverrideHelper {
         DoOnTopOfInstruction(cs1, 0x000C, () => {
             if (!_gameEngineWindowShown) {
                 _gameEngineWindowShown = true;
-                GameEngineWindowManager.ShowWindow(Memory, Machine.PauseHandler);
+                GameEngineWindowManager.ShowWindow(Memory, State.SegmentRegisters, Machine.PauseHandler);
             }
         });
     }
