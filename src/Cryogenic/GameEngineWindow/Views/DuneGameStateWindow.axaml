@@ -187,39 +187,6 @@
             </Grid>
         </TabItem>
         
-        <TabItem Header="HNM Video">
-            <ScrollViewer>
-                <StackPanel Margin="10" Spacing="10">
-                    <TextBlock Text="Pause the emulator to refresh data" FontStyle="Italic" IsVisible="{Binding !IsPaused}"/>
-                    <Grid ColumnDefinitions="200,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" Margin="0,10,0,0">
-                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Video ID:" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                        <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding HnmVideoIdDisplay, Mode=OneWay}" IsReadOnly="True"/>
-                        
-                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Active Video ID:" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                        <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding HnmActiveVideoId, StringFormat='0x{0:X4}', Mode=OneWay}" IsReadOnly="True"/>
-                        
-                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Frame Counter:" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                        <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding HnmFrameCounter, Mode=OneWay}" IsReadOnly="True"/>
-                        
-                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Counter 2:" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                        <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding HnmCounter2, Mode=OneWay}" IsReadOnly="True"/>
-                        
-                        <TextBlock Grid.Row="4" Grid.Column="0" Text="Finished Flag:" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                        <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding HnmFinishedFlag, StringFormat='0x{0:X2}', Mode=OneWay}" IsReadOnly="True"/>
-                        
-                        <TextBlock Grid.Row="5" Grid.Column="0" Text="Resource Flag:" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                        <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding CurrentHnmResourceFlag, StringFormat='0x{0:X2}', Mode=OneWay}" IsReadOnly="True"/>
-                        
-                        <TextBlock Grid.Row="6" Grid.Column="0" Text="File Offset:" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                        <TextBox Grid.Row="6" Grid.Column="1" Text="{Binding HnmFileOffsetDisplay, Mode=OneWay}" IsReadOnly="True"/>
-                        
-                        <TextBlock Grid.Row="7" Grid.Column="0" Text="File Remaining:" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                        <TextBox Grid.Row="7" Grid.Column="1" Text="{Binding HnmFileRemainDisplay, Mode=OneWay}" IsReadOnly="True"/>
-                    </Grid>
-                </StackPanel>
-            </ScrollViewer>
-        </TabItem>
-        
         <TabItem Header="Display">
             <ScrollViewer>
                 <StackPanel Margin="10" Spacing="10">

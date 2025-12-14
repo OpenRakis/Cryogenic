@@ -101,6 +101,14 @@ public partial class DuneGameState {
     public byte GetSietchSpiceField(int index) => GetLocationSpiceField(index);
     public (byte X, byte Y) GetSietchCoordinates(int index) => GetLocationCoordinates(index);
     
+    // Additional location accessor methods for ViewModel
+    public byte GetLocationHousedTroopId(int index) => UInt8[GetLocationOffset(index) + 9];
+    public byte GetLocationSpiceFieldId(int index) => GetLocationSpiceField(index);
+    public byte GetLocationSpiceAmount(int index) => UInt8[GetLocationOffset(index) + 10];
+    public byte GetLocationSpiceDensity(int index) => UInt8[GetLocationOffset(index) + 11];
+    public byte GetLocationHarvesters(int index) => UInt8[GetLocationOffset(index) + 12];
+    public byte GetLocationOrnithopters(int index) => UInt8[GetLocationOffset(index) + 13];
+    
     /// <summary>
     /// Gets location name as a display string.
     /// </summary>

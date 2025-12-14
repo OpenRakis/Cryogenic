@@ -90,6 +90,10 @@ public partial class DuneGameState {
     /// </summary>
     public bool IsTroopActive(int index) => GetTroopPopulation(index) > 0;
     
+    // Additional troop accessor methods for ViewModel
+    public byte GetTroopId(int index) => UInt8[GetTroopOffset(index) + 0];
+    public byte GetTroopSpecialSkills(int index) => UInt8[GetTroopOffset(index) + 11];
+    
     /// <summary>
     /// Gets a description of the troop occupation.
     /// </summary>
