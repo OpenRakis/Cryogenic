@@ -1,47 +1,49 @@
 namespace Cryogenic.GameEngineWindow.Models;
 
-using Spice86.Core.Emulator.CPU.Registers;
 using Spice86.Core.Emulator.Memory.ReaderWriter;
 using Spice86.Core.Emulator.ReverseEngineer.DataStructure;
 
 /// <summary>
-/// Provides access to Dune game state values stored in emulated memory using DS-relative offsets.
+/// Provides access to Dune game state values stored in emulated memory at fixed DS segment address.
 /// </summary>
 /// <remarks>
 /// <para>
-/// This partial class uses MemoryBasedDataStructureWithDsBaseAddress which automatically
-/// resolves DS-relative offsets at runtime. At runtime, DS segment is typically 0x1138.
+/// This partial class uses MemoryBasedDataStructure with fixed absolute base address 0x11380
+/// (DS segment 0x1138 * 16). This is the DS value used by the main Dune code in its own code segment.
+/// Using a fixed address ensures stability even if the DS register changes during execution.
 /// </para>
 /// <para>
-/// DS-relative memory layout sources:
-/// - GlobalsOnDs.cs: Runtime-traced memory accesses
+/// Memory layout sources:
+/// - GlobalsOnDs.cs: Runtime-traced memory accesses at segment 0x1138
 /// - debrouxl/odrade: Data structure definitions
 /// - thomas.fach-pedersen.net: Memory map documentation
 /// </para>
 /// <para>
-/// Key DS-relative offsets:
-/// - Charisma (1 byte): DS:0x0029
-/// - Game Phase/Stage (1 byte): DS:0x002A
-/// - Spice (2 bytes): DS:0x009F
-/// - Locations/Sietches: DS:0x0100 (28 bytes × 70 entries)
-/// - Date &amp; Time (2 bytes): DS:0x1174
-/// - Contact Distance (1 byte): DS:0x1176
-/// - Troops: DS:0xAA76 (27 bytes × 68 entries)
-/// - NPCs: DS:0xAC2E (16 bytes × 16 entries, follows troops)
-/// - Smugglers: DS:0xAD2E (17 bytes × 6 entries, follows NPCs)
-/// - HNM video state: DS:0xDBE7+
-/// - Framebuffers: DS:0xDBD6+
-/// - Mouse position: DS:0xDC36+
+/// Key offsets from base 0x11380:
+/// - Charisma (1 byte): 0x0029
+/// - Game Phase/Stage (1 byte): 0x002A
+/// - Spice (2 bytes): 0x009F
+/// - Locations/Sietches: 0x0100 (28 bytes × 70 entries)
+/// - Date &amp; Time (2 bytes): 0x1174
+/// - Contact Distance (1 byte): 0x1176
+/// - Troops: 0xAA76 (27 bytes × 68 entries)
+/// - NPCs: 0xAC2E (16 bytes × 16 entries, follows troops)
+/// - Smugglers: 0xAD2E (17 bytes × 6 entries, follows NPCs)
 /// </para>
 /// <para>
-/// Display formulas from DuneEdit2 and in-game observations:
-/// - Charisma: displayed = (raw * 2) + 1 (e.g., 0x0C raw → 25 displayed)
+/// Display formulas:
+/// - Charisma: raw value (0 at start = 0 displayed)
 /// - Date/Time: Packed format, details in GetDateTime()
 /// </para>
 /// </remarks>
-public partial class DuneGameState : MemoryBasedDataStructureWithDsBaseAddress {
-    public DuneGameState(IByteReaderWriter memory, SegmentRegisters segmentRegisters) 
-        : base(memory, segmentRegisters) {
+public partial class DuneGameState : MemoryBasedDataStructure {
+    /// <summary>
+    /// Fixed DS segment used by main Dune code = 0x1138 (linear address 0x11380).
+    /// </summary>
+    private const uint DuneDataSegmentBase = 0x11380;
+    
+    public DuneGameState(IByteReaderWriter memory) 
+        : base(memory, DuneDataSegmentBase) {
     }
     
     // Player data DS-relative offsets
@@ -86,10 +88,9 @@ public partial class DuneGameState : MemoryBasedDataStructureWithDsBaseAddress {
     
     /// <summary>
     /// Gets the displayed charisma value.
-    /// Formula: (raw * 2) + 1
-    /// Example: 0x0C raw → 25 displayed (from screenshot)
+    /// Formula: raw value directly (0 at start = 0 displayed)
     /// </summary>
-    public int GetCharismaDisplayed() => (GetCharismaRaw() * 2) + 1;
+    public int GetCharismaDisplayed() => GetCharismaRaw();
     
     /// <summary>
     /// Gets the game phase/stage value from memory (DS:0x002A).
