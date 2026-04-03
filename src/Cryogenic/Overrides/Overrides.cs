@@ -177,7 +177,7 @@ public partial class Overrides : CSharpOverrideHelper {
         if (!Directory.Exists(dumpDirectory)) {
             Directory.CreateDirectory(dumpDirectory);
         }
-        string path = $"{dumpDirectory}/spice86dumpMemoryDump{suffix}.bin";
+        string path = Path.Combine(dumpDirectory, $"spice86dumpMemoryDump{suffix}.bin");
         new MemoryDataExporter(Memory, Machine.CallbackHandler, Configuration, _loggerService).Write(path);
     }
 
