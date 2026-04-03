@@ -36,7 +36,7 @@ public partial class Overrides {
         if (result == 0) {
             return NearJump(0x04);
         }
-        Cpu.Out16(0x330, AX);
+        Machine.IoPortDispatcher.WriteWord(0x330, AX);
         return NearJump(0x0);
     }
 

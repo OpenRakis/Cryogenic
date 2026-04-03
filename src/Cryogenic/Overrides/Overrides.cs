@@ -4,7 +4,7 @@ using Globals;
 
 using Spice86.Core.CLI;
 using Spice86.Core.Emulator.Function;
-using Spice86.Core.Emulator.Function.Dump;
+using Spice86.Core.Emulator.StateSerialization;
 using Spice86.Core.Emulator.VM;
 using Spice86.Shared.Emulator.Memory;
 using Spice86.Shared.Interfaces;
@@ -80,7 +80,7 @@ public partial class Overrides : CSharpOverrideHelper {
         this.cs4 = DriverLoadToolbox.DRIVER2_SEGMENT;
         // Bios, This does not depend on the entry segment. 
         this.cs5 = DriverLoadToolbox.INTERRUPT_HANDLER_SEGMENT;
-        globalsOnDs = new ExtraGlobalsOnDs(machine.Memory, machine.Cpu.State.SegmentRegisters);
+        globalsOnDs = new ExtraGlobalsOnDs(machine.Memory, machine.CpuState.SegmentRegisters);
         globalsOnCsSegment0X2538 = new ExtraGlobalsOnCsSegment0x2538(machine.Memory, cs2);
 
         DefineOverrides();
@@ -173,7 +173,12 @@ public partial class Overrides : CSharpOverrideHelper {
     /// </summary>
     /// <param name="suffix">Suffix to append to the dump filename for identification.</param>
     private void DumpMemoryWithSuffix(string suffix) {
-        new MemoryDataExporter(Memory, Machine.CallbackHandler, Configuration, Configuration.RecordedDataDirectory, _loggerService).DumpMemory(suffix);
+        string dumpDirectory = Configuration.RecordedDataDirectory ?? ".";
+        if (!Directory.Exists(dumpDirectory)) {
+            Directory.CreateDirectory(dumpDirectory);
+        }
+        string path = $"{dumpDirectory}/spice86dumpMemoryDump{suffix}.bin";
+        new MemoryDataExporter(Memory, Machine.CallbackHandler, Configuration, _loggerService).Write(path);
     }
 
     /// <summary>
