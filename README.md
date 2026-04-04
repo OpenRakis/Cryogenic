@@ -220,8 +220,11 @@ bin/Release/net10.0/publish/Cryogenic --Exe /path/to/DNCDPRG.EXE --Cycles 8000 -
 ![Harkonnen scene](doc/cryodune_harkonen.png)
 *Harkonnen scene*
 
-![Harkonnen scene](doc/cryodune_map.png)
+![Dune map](doc/cryodune_map.png)
 *Dune map*
+
+![Worm call](doc/cryodune_worm.png)
+*Calling a worm*
 
 </div>
 
