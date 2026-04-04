@@ -89,7 +89,7 @@ Built on .NET 10, Spice86 provides a hybrid execution model where the original D
 - 🎯 **Ghidra Integration** - Import runtime data into Ghidra for static analysis.
 - 🐛 **Advanced Debugging** - Built-in debugger with GDB remote protocol support.
 - 🎮 **Hardware Emulation** - Complete support for VGA/EGA/CGA graphics, PC Speaker, AdLib, SoundBlaster, keyboard, and mouse.
-- 🌍 **Cross-Platform** - Built on .NET 8 for Windows, macOS, and Linux.
+- 🌍 **Cross-Platform** - Built on .NET 10 for Windows, macOS, and Linux.
 
 ### How Cryogenic Uses Spice86
 
@@ -112,7 +112,7 @@ The goal is to have more and more logic written in human-readable C#, making the
 
 Before you begin, ensure you have:
 
-1. **[.NET 8 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)** - Required to build and run the project
+1. **[.NET 10 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/10.0)** - Required to build and run the project
 2. **Dune CD Version 3.7** - You must obtain `DNCDPRG.EXE` and `DUNE.DAT` separately (copyrighted material)
 
 You can verify your executable with PowerShell:
@@ -157,7 +157,7 @@ For the full experience with AdLib music and PCM sound effects:
 ```bash
 cd Cryogenic/src/Cryogenic
 dotnet publish
-bin/Release/net8.0/publish/Cryogenic --Exe C:/path/to/dunecd/DNCDPRG.EXE --UseCodeOverride true -p 4096 -a "ADL220 SBP2227"
+bin/Release/net10.0/publish/Cryogenic --Exe C:/path/to/dunecd/DNCDPRG.EXE --UseCodeOverride true -p 4096 -a "ADL220 SBP2227"
 ```
 
 ---
