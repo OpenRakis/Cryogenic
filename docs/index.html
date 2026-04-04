@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cryogenic — C# re-implementation of Cryo's Dune (1992)</title>
-    <meta name="description" content="C# re-implementation of Cryo's Dune CD (1992) running on Spice86. Replaces x86 assembly routines with C# overrides while the original executable runs in emulation.">
+    <meta name="description"
+        content="C# re-implementation of Cryo's Dune CD (1992) running on Spice86. Replaces x86 assembly routines with C# overrides while the original executable runs in emulation.">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -22,31 +24,32 @@
     </script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;600;700&display=swap');
-        
+
         .font-orbitron {
             font-family: 'Orbitron', sans-serif;
         }
-        
+
         .gradient-bg {
             background: linear-gradient(135deg, #1a1410 0%, #2d1810 50%, #1a1410 100%);
         }
-        
+
         .glow {
             box-shadow: 0 0 20px rgba(255, 107, 53, 0.3);
         }
-        
+
         .hover-glow:hover {
             box-shadow: 0 0 30px rgba(255, 107, 53, 0.5);
             transform: translateY(-2px);
             transition: all 0.3s ease;
         }
-        
+
         .code-block {
             background: #1e1e1e;
             border-left: 4px solid #FF6B35;
         }
     </style>
 </head>
+
 <body class="bg-gray-900 text-gray-100 font-sans">
     <!-- Navigation -->
     <nav class="gradient-bg border-b border-dune-orange/30 sticky top-0 z-50 backdrop-blur-sm">
@@ -61,9 +64,12 @@
                     <a href="#structure" class="hover:text-spice transition">Code</a>
                     <a href="#tech" class="hover:text-spice transition">Spice86</a>
                     <a href="#contributing" class="hover:text-spice transition">Contributing</a>
-                    <a href="https://github.com/OpenRakis/Cryogenic" target="_blank" class="hover:text-spice transition">
+                    <a href="https://github.com/OpenRakis/Cryogenic" target="_blank"
+                        class="hover:text-spice transition">
                         <svg class="w-6 h-6 inline" fill="currentColor" viewBox="0 0 24 24">
-                            <path fill-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.17 6.839 9.49.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.604-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.463-1.11-1.463-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.167 22 16.418 22 12c0-5.523-4.477-10-10-10z" clip-rule="evenodd" />
+                            <path fill-rule="evenodd"
+                                d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.17 6.839 9.49.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.604-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.463-1.11-1.463-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.167 22 16.418 22 12c0-5.523-4.477-10-10-10z"
+                                clip-rule="evenodd" />
                         </svg>
                     </a>
                 </div>
@@ -74,7 +80,8 @@
     <!-- Hero Section -->
     <section class="gradient-bg py-20 relative overflow-hidden">
         <div class="container mx-auto px-4 text-center relative z-10">
-            <h1 class="text-6xl md:text-7xl font-orbitron font-black mb-6 text-transparent bg-clip-text bg-gradient-to-r from-spice to-dune-orange">
+            <h1
+                class="text-6xl md:text-7xl font-orbitron font-black mb-6 text-transparent bg-clip-text bg-gradient-to-r from-spice to-dune-orange">
                 CRYOGENIC
             </h1>
             <p class="text-2xl md:text-3xl mb-4 text-gray-300">C# re-implementation of Cryo's Dune (CD, 1992)</p>
@@ -84,10 +91,12 @@
                 The game is fully playable with sound and music.
             </p>
             <div class="flex flex-wrap justify-center gap-4 mb-12">
-                <a href="https://github.com/OpenRakis/Cryogenic/releases" class="bg-spice hover-glow px-8 py-3 rounded-lg font-semibold transition">
+                <a href="https://github.com/OpenRakis/Cryogenic/releases"
+                    class="bg-spice hover-glow px-8 py-3 rounded-lg font-semibold transition">
                     Releases
                 </a>
-                <a href="https://github.com/OpenRakis/Cryogenic" class="border border-spice hover-glow px-8 py-3 rounded-lg font-semibold transition">
+                <a href="https://github.com/OpenRakis/Cryogenic"
+                    class="border border-spice hover-glow px-8 py-3 rounded-lg font-semibold transition">
                     Source Code
                 </a>
             </div>
@@ -111,7 +120,8 @@
             <h2 class="text-4xl font-orbitron font-bold mb-8 text-center text-spice">What This Is</h2>
             <div class="max-w-4xl mx-auto">
                 <p class="text-lg mb-6 text-gray-300 leading-relaxed">
-                    Cryogenic replaces x86 assembly routines in the DOS executable <code class="text-spice">DNCDPRG.EXE</code>
+                    Cryogenic replaces x86 assembly routines in the DOS executable <code
+                        class="text-spice">DNCDPRG.EXE</code>
                     with C# methods.
                     <a href="https://github.com/OpenRakis/Spice86" class="text-spice hover:underline">Spice86</a>
                     runs the original binary and redirects execution to the C# overrides at registered addresses.
@@ -125,7 +135,8 @@
                 </p>
                 <div class="bg-gray-900 border border-dune-orange/30 rounded-lg p-6 mb-6">
                     <p class="text-sm text-gray-400 mb-2">Required DNCDPRG.EXE SHA256 (Dune CD version 3.7):</p>
-                    <code class="text-xs text-spice break-all">5f30aeb84d67cf2e053a83c09c2890f010f2e25ee877ebec58ea15c5b30cfff9</code>
+                    <code
+                        class="text-xs text-spice break-all">5f30aeb84d67cf2e053a83c09c2890f010f2e25ee877ebec58ea15c5b30cfff9</code>
                 </div>
                 <p class="text-sm text-gray-400">
                     The game files (DNCDPRG.EXE, DUNE.DAT) are copyrighted and must be obtained separately.
@@ -140,25 +151,29 @@
             <h2 class="text-4xl font-orbitron font-bold mb-12 text-center text-spice">Screenshots</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-6xl mx-auto">
                 <div class="rounded-lg overflow-hidden shadow-lg hover-glow">
-                    <img src="https://raw.githubusercontent.com/OpenRakis/Cryogenic/main/doc/cryodune_worm.png" alt="Sandworm encounter" class="w-full h-auto">
+                    <img src="https://raw.githubusercontent.com/OpenRakis/Cryogenic/main/doc/cryodune_orni.png"
+                        alt="Orni" class="w-full h-auto">
                     <div class="bg-gray-800 p-4">
-                        <p class="text-sm text-gray-400">Sandworm encounter</p>
+                        <p class="text-sm text-gray-400">Orni</p>
                     </div>
                 </div>
                 <div class="rounded-lg overflow-hidden shadow-lg hover-glow">
-                    <img src="https://raw.githubusercontent.com/OpenRakis/Cryogenic/main/doc/cryodune_chani.png" alt="Chani dialogue" class="w-full h-auto">
+                    <img src="https://raw.githubusercontent.com/OpenRakis/Cryogenic/main/doc/cryodune_chani.png"
+                        alt="Chani dialogue" class="w-full h-auto">
                     <div class="bg-gray-800 p-4">
                         <p class="text-sm text-gray-400">Chani dialogue</p>
                     </div>
                 </div>
                 <div class="rounded-lg overflow-hidden shadow-lg hover-glow">
-                    <img src="https://raw.githubusercontent.com/OpenRakis/Cryogenic/main/doc/cryodune_send_spice.png" alt="Spice shipment screen" class="w-full h-auto">
+                    <img src="https://raw.githubusercontent.com/OpenRakis/Cryogenic/main/doc/cryodune_send_spice.png"
+                        alt="Spice shipment screen" class="w-full h-auto">
                     <div class="bg-gray-800 p-4">
                         <p class="text-sm text-gray-400">Spice shipment screen</p>
                     </div>
                 </div>
                 <div class="rounded-lg overflow-hidden shadow-lg hover-glow">
-                    <img src="https://raw.githubusercontent.com/OpenRakis/Cryogenic/main/doc/cryodune_harkonen.png" alt="Harkonnen scene" class="w-full h-auto">
+                    <img src="https://raw.githubusercontent.com/OpenRakis/Cryogenic/main/doc/cryodune_harkonen.png"
+                        alt="Harkonnen scene" class="w-full h-auto">
                     <div class="bg-gray-800 p-4">
                         <p class="text-sm text-gray-400">Harkonnen scene</p>
                     </div>
@@ -183,14 +198,44 @@
                     <div class="overflow-x-auto mb-6">
                         <table class="w-full text-left text-sm text-gray-300">
                             <thead class="text-spice border-b border-gray-700">
-                                <tr><th class="py-2 pr-4">Field</th><th class="py-2 pr-4">Value</th><th class="py-2 pr-4">Contents</th><th class="py-2">Overrides</th></tr>
+                                <tr>
+                                    <th class="py-2 pr-4">Field</th>
+                                    <th class="py-2 pr-4">Value</th>
+                                    <th class="py-2 pr-4">Contents</th>
+                                    <th class="py-2">Overrides</th>
+                                </tr>
                             </thead>
                             <tbody>
-                                <tr class="border-b border-gray-800"><td class="py-2 pr-4 font-mono">cs1</td><td class="py-2 pr-4 font-mono">0x1000</td><td class="py-2 pr-4">Main game code (DNCDPRG.EXE loaded here)</td><td class="py-2">~80 functions across most files</td></tr>
-                                <tr class="border-b border-gray-800"><td class="py-2 pr-4 font-mono">cs2</td><td class="py-2 pr-4 font-mono">0xD000</td><td class="py-2 pr-4">DNVGA &mdash; VGA graphics driver</td><td class="py-2">32 functions in VgaDriverCode.cs</td></tr>
-                                <tr class="border-b border-gray-800"><td class="py-2 pr-4 font-mono">cs3</td><td class="py-2 pr-4 font-mono">0xE000</td><td class="py-2 pr-4">DNPCS2 / DNSBP &mdash; PCM audio driver</td><td class="py-2">None (declared, unused)</td></tr>
-                                <tr class="border-b border-gray-800"><td class="py-2 pr-4 font-mono">cs4</td><td class="py-2 pr-4 font-mono">0xE000</td><td class="py-2 pr-4">MIDI driver memory-dump hooks</td><td class="py-2">2 inline hooks at 0x02DC, 0x03EE</td></tr>
-                                <tr><td class="py-2 pr-4 font-mono">cs5</td><td class="py-2 pr-4 font-mono">0x0800</td><td class="py-2 pr-4">Interrupt handlers (replaces default 0xF000)</td><td class="py-2">None (address reference)</td></tr>
+                                <tr class="border-b border-gray-800">
+                                    <td class="py-2 pr-4 font-mono">cs1</td>
+                                    <td class="py-2 pr-4 font-mono">0x1000</td>
+                                    <td class="py-2 pr-4">Main game code (DNCDPRG.EXE loaded here)</td>
+                                    <td class="py-2">~80 functions across most files</td>
+                                </tr>
+                                <tr class="border-b border-gray-800">
+                                    <td class="py-2 pr-4 font-mono">cs2</td>
+                                    <td class="py-2 pr-4 font-mono">0xD000</td>
+                                    <td class="py-2 pr-4">DNVGA &mdash; VGA graphics driver</td>
+                                    <td class="py-2">32 functions in VgaDriverCode.cs</td>
+                                </tr>
+                                <tr class="border-b border-gray-800">
+                                    <td class="py-2 pr-4 font-mono">cs3</td>
+                                    <td class="py-2 pr-4 font-mono">0xE000</td>
+                                    <td class="py-2 pr-4">DNPCS2 / DNSBP &mdash; PCM audio driver</td>
+                                    <td class="py-2">None (declared, unused)</td>
+                                </tr>
+                                <tr class="border-b border-gray-800">
+                                    <td class="py-2 pr-4 font-mono">cs4</td>
+                                    <td class="py-2 pr-4 font-mono">0xE000</td>
+                                    <td class="py-2 pr-4">MIDI driver memory-dump hooks</td>
+                                    <td class="py-2">2 inline hooks at 0x02DC, 0x03EE</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-2 pr-4 font-mono">cs5</td>
+                                    <td class="py-2 pr-4 font-mono">0x0800</td>
+                                    <td class="py-2 pr-4">Interrupt handlers (replaces default 0xF000)</td>
+                                    <td class="py-2">None (address reference)</td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -213,13 +258,44 @@
                     <div class="overflow-x-auto">
                         <table class="w-full text-left text-sm text-gray-300">
                             <thead class="text-spice border-b border-gray-700">
-                                <tr><th class="py-2 pr-4">Driver</th><th class="py-2 pr-4">Name</th><th class="py-2 pr-4">Remapped to</th><th class="py-2">Purpose</th></tr>
+                                <tr>
+                                    <th class="py-2 pr-4">Driver</th>
+                                    <th class="py-2 pr-4">Name</th>
+                                    <th class="py-2 pr-4">Remapped to</th>
+                                    <th class="py-2">Purpose</th>
+                                </tr>
                             </thead>
                             <tbody>
-                                <tr class="border-b border-gray-800"><td class="py-2 pr-4 font-mono">DNVGA</td><td class="py-2 pr-4">VGA graphics</td><td class="py-2 pr-4 font-mono">0xD000</td><td class="py-2">Display, blitting, palette, mouse cursor</td></tr>
-                                <tr class="border-b border-gray-800"><td class="py-2 pr-4 font-mono">DNPCS2</td><td class="py-2 pr-4">PC Speaker variant 2</td><td class="py-2 pr-4 font-mono">0xE000</td><td class="py-2">PCM sound effects</td></tr>
-                                <tr class="border-b border-gray-800"><td class="py-2 pr-4 font-mono">DNSBP</td><td class="py-2 pr-4">Sound Blaster Pro</td><td class="py-2 pr-4 font-mono">0xE000</td><td class="py-2">PCM sound effects</td></tr>
-                                <tr><td class="py-2 pr-4 font-mono">DNMID</td><td class="py-2 pr-4">MIDI</td><td class="py-2 pr-4 font-mono">0xF000</td><td class="py-2">Music playback (MT-32, AdLib)</td></tr>
+                                <tr class="border-b border-gray-800">
+                                    <td class="py-2 pr-4 font-mono">DNVGA</td>
+                                    <td class="py-2 pr-4">VGA graphics</td>
+                                    <td class="py-2 pr-4 font-mono">0xD000</td>
+                                    <td class="py-2">Display, blitting, palette, mouse cursor</td>
+                                </tr>
+                                <tr class="border-b border-gray-800">
+                                    <td class="py-2 pr-4 font-mono">DNPCS2</td>
+                                    <td class="py-2 pr-4">PC Speaker variant 2</td>
+                                    <td class="py-2 pr-4 font-mono">0xE000</td>
+                                    <td class="py-2">PCM sound effects</td>
+                                </tr>
+                                <tr class="border-b border-gray-800">
+                                    <td class="py-2 pr-4 font-mono">DNSBP</td>
+                                    <td class="py-2 pr-4">Sound Blaster Pro</td>
+                                    <td class="py-2 pr-4 font-mono">0xE000</td>
+                                    <td class="py-2">PCM sound effects</td>
+                                </tr>
+                                <tr class="border-b border-gray-800">
+                                    <td class="py-2 pr-4 font-mono">DNPCS</td>
+                                    <td class="py-2 pr-4">PC Speaker</td>
+                                    <td class="py-2 pr-4 font-mono">0xF000</td>
+                                    <td class="py-2">Music playback</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-2 pr-4 font-mono">DNMID</td>
+                                    <td class="py-2 pr-4">MIDI</td>
+                                    <td class="py-2 pr-4 font-mono">0xF000</td>
+                                    <td class="py-2">Music playback (MT-32, AdLib)</td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -241,24 +317,30 @@
                     <div class="bg-gray-900 rounded-lg p-6 border-l-4 border-spice">
                         <h4 class="text-lg font-bold mb-2 text-spice">VgaDriverCode.cs</h4>
                         <p class="text-gray-300 text-sm">
-                            23 functions replacing the DNVGA driver at segment 0xD000. Covers VGA mode setting, framebuffer blitting,
-                            rectangle copy, pixel write, palette loading, mouse cursor draw/restore, buffer fill, texture generation,
+                            23 functions replacing the DNVGA driver at segment 0xD000. Covers VGA mode setting,
+                            framebuffer blitting,
+                            rectangle copy, pixel write, palette loading, mouse cursor draw/restore, buffer fill,
+                            texture generation,
                             map block copy, and VGA retrace synchronization.
                         </p>
                     </div>
                     <div class="bg-gray-900 rounded-lg p-6 border-l-4 border-spice">
                         <h4 class="text-lg font-bold mb-2 text-spice">MenuCode.cs</h4>
                         <p class="text-gray-300 text-sm">
-                            14 menu-type constants as hex offsets (MENU_TYPE_DIALOGUE&nbsp;=&nbsp;0x1F7E, MENU_TYPE_GLOBE&nbsp;=&nbsp;0x204A,
-                            MENU_TYPE_BOOK&nbsp;=&nbsp;0x2032, etc.). Two overrides handle menu animation state at CS1:D316 and
+                            14 menu-type constants as hex offsets (MENU_TYPE_DIALOGUE&nbsp;=&nbsp;0x1F7E,
+                            MENU_TYPE_GLOBE&nbsp;=&nbsp;0x204A,
+                            MENU_TYPE_BOOK&nbsp;=&nbsp;0x2032, etc.). Two overrides handle menu animation state at
+                            CS1:D316 and
                             current menu-type selection at CS1:D41B.
                         </p>
                     </div>
                     <div class="bg-gray-900 rounded-lg p-6 border-l-4 border-spice">
                         <h4 class="text-lg font-bold mb-2 text-spice">DialoguesCode.cs</h4>
                         <p class="text-gray-300 text-sm">
-                            3 functions: incrementing a dialogue counter at DS:47A8 (CS1:A1E8), initializing dialogue state
-                            including video index and face-zoom timing (CS1:C85B), and converting the low nibble of AL to
+                            3 functions: incrementing a dialogue counter at DS:47A8 (CS1:A1E8), initializing dialogue
+                            state
+                            including video index and face-zoom timing (CS1:C85B), and converting the low nibble of AL
+                            to
                             an ASCII hex digit (CS1:A8B1).
                         </p>
                     </div>
@@ -266,14 +348,16 @@
                         <h4 class="text-lg font-bold mb-2 text-spice">DisplayCode.cs</h4>
                         <p class="text-gray-300 text-sm">
                             11 functions managing three framebuffers (front at DBD6, back at DC32, text at DBD8).
-                            Includes three font-selection functions (intro, menu, book), coordinate lookup, buffer clear,
+                            Includes three font-selection functions (intro, menu, book), coordinate lookup, buffer
+                            clear,
                             and register push/pop helpers.
                         </p>
                     </div>
                     <div class="bg-gray-900 rounded-lg p-6 border-l-4 border-spice">
                         <h4 class="text-lg font-bold mb-2 text-spice">MapCode.cs</h4>
                         <p class="text-gray-300 text-sm">
-                            5 functions and click-handler address constants for five map modes (flat map, globe, in-game,
+                            5 functions and click-handler address constants for five map modes (flat map, globe,
+                            in-game,
                             troop movement, ornithopter). Sets the active click handler, initializes map cursor type,
                             and performs an 8-byte memory copy from DS:46E3.
                         </p>
@@ -281,15 +365,18 @@
                     <div class="bg-gray-900 rounded-lg p-6 border-l-4 border-spice">
                         <h4 class="text-lg font-bold mb-2 text-spice">VideoCode.cs &amp; HnmCode.cs</h4>
                         <p class="text-gray-300 text-sm">
-                            4 functions for HNM video playback: resource flag lookup from a table at DS:33A3, playback index
-                            synchronization, completion check via the finished-flag at DBE7, and disk read into buffer through
+                            4 functions for HNM video playback: resource flag lookup from a table at DS:33A3, playback
+                            index
+                            synchronization, completion check via the finished-flag at DBE7, and disk read into buffer
+                            through
                             the DOS file manager.
                         </p>
                     </div>
                     <div class="bg-gray-900 rounded-lg p-6 border-l-4 border-spice">
                         <h4 class="text-lg font-bold mb-2 text-spice">TimeCode.cs &amp; TimerCode.cs</h4>
                         <p class="text-gray-300 text-sm">
-                            TimeCode extracts the current hour from the lower 4 bits of the game elapsed-time word at DS:0002
+                            TimeCode extracts the current hour from the lower 4 bits of the game elapsed-time word at
+                            DS:0002
                             and calculates the next sunlight-visible day. TimerCode writes a 16-bit counter value to PIT
                             channel 0 (ports 0x43/0x40) with control byte 0x36.
                         </p>
@@ -318,8 +405,10 @@
                     <div class="bg-gray-900 rounded-lg p-6 border-l-4 border-spice">
                         <h4 class="text-lg font-bold mb-2 text-spice">UnknownCode.cs</h4>
                         <p class="text-gray-300 text-sm">
-                            20 functions with observed behavior but unclear purpose. Includes bit-test operations on DBC8,
-                            multi-register shifts, 8-byte memory copies, state-flag setters, a 10-byte structure builder,
+                            20 functions with observed behavior but unclear purpose. Includes bit-test operations on
+                            DBC8,
+                            multi-register shifts, 8-byte memory copies, state-flag setters, a 10-byte structure
+                            builder,
                             a 0x5C-byte fill at DS:47F8, and three no-ops.
                         </p>
                     </div>
@@ -327,8 +416,10 @@
                         <h4 class="text-lg font-bold mb-2 text-spice">StaticDefinitions.cs</h4>
                         <p class="text-gray-300 text-sm">
                             Registers 137+ symbolic function names (e.g. <code class="text-spice">play_intro</code>,
-                            <code class="text-spice">open_dune_dat</code>, <code class="text-spice">allocator_init</code>)
-                            at their addresses for Spice86's trace output. These are not overridden; they provide readable
+                            <code class="text-spice">open_dune_dat</code>, <code
+                                class="text-spice">allocator_init</code>)
+                            at their addresses for Spice86's trace output. These are not overridden; they provide
+                            readable
                             names in execution logs.
                         </p>
                     </div>
@@ -342,7 +433,8 @@
                         <p class="text-gray-300 text-sm">
                             Entry point. Injects <code class="text-spice">ProvidedAsmHandlersSegment=0x800</code>
                             into args and calls
-                            <code class="text-spice">Spice86.Program.RunWithOverrides&lt;DuneCdOverrideSupplier&gt;</code>
+                            <code
+                                class="text-spice">Spice86.Program.RunWithOverrides&lt;DuneCdOverrideSupplier&gt;</code>
                             with the expected SHA256 checksum.
                         </p>
                     </div>
@@ -351,7 +443,8 @@
                         <p class="text-gray-300 text-sm">
                             Implements <code class="text-spice">IOverrideSupplier</code>. Its
                             <code class="text-spice">GenerateFunctionInformations</code> method instantiates
-                            <code class="text-spice">Overrides.Overrides</code>, which populates the address-to-function map.
+                            <code class="text-spice">Overrides.Overrides</code>, which populates the address-to-function
+                            map.
                         </p>
                     </div>
                     <div class="bg-gray-900 rounded-lg p-6 border border-dune-orange/20">
@@ -386,13 +479,17 @@
                 <div class="bg-gray-800 rounded-lg p-8 mb-8 border border-spice/30">
                     <h3 class="text-2xl font-bold mb-4 text-spice font-orbitron">What It Does</h3>
                     <p class="text-lg text-gray-300 mb-4 leading-relaxed">
-                        <a href="https://github.com/OpenRakis/Spice86" class="text-spice hover:underline font-semibold">Spice86</a>
-                        is a .NET 10 PC emulator for 16-bit real-mode x86 programs. It runs the original DOS binary and allows
+                        <a href="https://github.com/OpenRakis/Spice86"
+                            class="text-spice hover:underline font-semibold">Spice86</a>
+                        is a .NET 10 PC emulator for 16-bit real-mode x86 programs. It runs the original DOS binary and
+                        allows
                         C# methods to replace specific assembly routines at registered segment:offset addresses.
                     </p>
                     <p class="text-lg text-gray-300 leading-relaxed">
-                        The emulated CPU, memory, and I/O devices (VGA, AdLib, Sound Blaster, keyboard, mouse) are accessible
-                        from C# code. Overrides read and write the same memory that the assembly code uses, so both can coexist
+                        The emulated CPU, memory, and I/O devices (VGA, AdLib, Sound Blaster, keyboard, mouse) are
+                        accessible
+                        from C# code. Overrides read and write the same memory that the assembly code uses, so both can
+                        coexist
                         in the same execution.
                     </p>
                 </div>
@@ -402,15 +499,18 @@
                     <div class="bg-gray-800 rounded-lg p-6 border-l-4 border-spice">
                         <h4 class="text-lg font-bold mb-2">Function Replacement</h4>
                         <p class="text-gray-300">
-                            <code class="text-spice">DefineFunction(segment, offset, method)</code> registers a C# method
-                            at a segment:offset address. When the emulated CPU reaches that address via a CALL, the C# method
+                            <code class="text-spice">DefineFunction(segment, offset, method)</code> registers a C#
+                            method
+                            at a segment:offset address. When the emulated CPU reaches that address via a CALL, the C#
+                            method
                             runs instead.
                         </p>
                     </div>
                     <div class="bg-gray-800 rounded-lg p-6 border-l-4 border-spice">
                         <h4 class="text-lg font-bold mb-2">Inline Hooks</h4>
                         <p class="text-gray-300">
-                            <code class="text-spice">DoOnTopOfInstruction(segment, offset, method)</code> injects C# code
+                            <code class="text-spice">DoOnTopOfInstruction(segment, offset, method)</code> injects C#
+                            code
                             at an arbitrary instruction address without replacing the surrounding function.
                         </p>
                     </div>
@@ -447,20 +547,24 @@
                 <div class="bg-gray-800 rounded-lg p-8 border border-dune-orange/30">
                     <div class="space-y-4">
                         <div class="flex items-start">
-                            <div class="flex-shrink-0 w-10 h-10 rounded-full bg-spice/20 flex items-center justify-center mr-4">
+                            <div
+                                class="flex-shrink-0 w-10 h-10 rounded-full bg-spice/20 flex items-center justify-center mr-4">
                                 <span class="text-spice font-bold">1</span>
                             </div>
                             <div>
                                 <h4 class="font-bold mb-2">Program.cs</h4>
                                 <p class="text-gray-300">
-                                    Configures args (injects <code class="text-spice">ProvidedAsmHandlersSegment=0x800</code>)
-                                    and calls <code class="text-spice">Spice86.Program.RunWithOverrides&lt;DuneCdOverrideSupplier&gt;</code>
+                                    Configures args (injects <code
+                                        class="text-spice">ProvidedAsmHandlersSegment=0x800</code>)
+                                    and calls <code
+                                        class="text-spice">Spice86.Program.RunWithOverrides&lt;DuneCdOverrideSupplier&gt;</code>
                                     with the expected SHA256.
                                 </p>
                             </div>
                         </div>
                         <div class="flex items-start">
-                            <div class="flex-shrink-0 w-10 h-10 rounded-full bg-spice/20 flex items-center justify-center mr-4">
+                            <div
+                                class="flex-shrink-0 w-10 h-10 rounded-full bg-spice/20 flex items-center justify-center mr-4">
                                 <span class="text-spice font-bold">2</span>
                             </div>
                             <div>
@@ -473,7 +577,8 @@
                             </div>
                         </div>
                         <div class="flex items-start">
-                            <div class="flex-shrink-0 w-10 h-10 rounded-full bg-spice/20 flex items-center justify-center mr-4">
+                            <div
+                                class="flex-shrink-0 w-10 h-10 rounded-full bg-spice/20 flex items-center justify-center mr-4">
                                 <span class="text-spice font-bold">3</span>
                             </div>
                             <div>
@@ -485,15 +590,18 @@
                             </div>
                         </div>
                         <div class="flex items-start">
-                            <div class="flex-shrink-0 w-10 h-10 rounded-full bg-spice/20 flex items-center justify-center mr-4">
+                            <div
+                                class="flex-shrink-0 w-10 h-10 rounded-full bg-spice/20 flex items-center justify-center mr-4">
                                 <span class="text-spice font-bold">4</span>
                             </div>
                             <div>
                                 <h4 class="font-bold mb-2">Runtime</h4>
                                 <p class="text-gray-300">
-                                    The emulated CPU runs DNCDPRG.EXE. When it reaches a registered address, the C# method
+                                    The emulated CPU runs DNCDPRG.EXE. When it reaches a registered address, the C#
+                                    method
                                     executes instead of the assembly. The method ends with
-                                    <code class="text-spice">NearRet()</code> or <code class="text-spice">FarRet()</code>
+                                    <code class="text-spice">NearRet()</code> or <code
+                                        class="text-spice">FarRet()</code>
                                     to return control to the emulated program.
                                 </p>
                             </div>
@@ -512,7 +620,8 @@
                 <div class="bg-gray-900 rounded-lg p-6 border border-dune-orange/30">
                     <h3 class="text-xl font-bold mb-4 text-spice">Prerequisites</h3>
                     <ul class="list-disc list-inside text-gray-300 space-y-2">
-                        <li><a href="https://dotnet.microsoft.com/en-us/download/dotnet/10.0" class="text-spice hover:underline">.NET 10 SDK</a></li>
+                        <li><a href="https://dotnet.microsoft.com/en-us/download/dotnet/10.0"
+                                class="text-spice hover:underline">.NET 10 SDK</a></li>
                         <li>DNCDPRG.EXE and DUNE.DAT from Dune CD version 3.7 (copyrighted; obtain separately)</li>
                     </ul>
                 </div>
@@ -533,7 +642,8 @@ dotnet build</code></pre>
 dotnet run --Exe /path/to/DNCDPRG.EXE --UseCodeOverride true -p 4096</code></pre>
                     </div>
                     <p class="text-sm text-gray-400 mt-4">
-                        <code class="text-spice">--UseCodeOverride true</code> is required. Without it, no C# overrides execute.
+                        <code class="text-spice">--UseCodeOverride true</code> is required. Without it, no C# overrides
+                        execute.
                     </p>
                 </div>
 
@@ -543,7 +653,8 @@ dotnet run --Exe /path/to/DNCDPRG.EXE --UseCodeOverride true -p 4096</code></pre
                         AdLib music and Sound Blaster PCM:
                     </p>
                     <div class="code-block rounded p-4 text-sm overflow-x-auto">
-                        <pre class="text-gray-300"><code>cd Cryogenic/src/Cryogenic
+                        <pre
+                            class="text-gray-300"><code>cd Cryogenic/src/Cryogenic
 dotnet publish
 bin/Release/net10.0/publish/Cryogenic --Exe /path/to/DNCDPRG.EXE --UseCodeOverride true -p 4096 -a "ADL220 SBP2227"</code></pre>
                     </div>
@@ -560,7 +671,8 @@ bin/Release/net10.0/publish/Cryogenic --Exe /path/to/DNCDPRG.EXE --UseCodeOverri
                 <div class="bg-gray-800 rounded-lg p-8 mb-8 border border-spice/30">
                     <p class="text-lg text-gray-300 mb-4 leading-relaxed">
                         See
-                        <a href="https://github.com/OpenRakis/Cryogenic/blob/main/CONTRIBUTING.md" class="text-spice hover:underline font-semibold">CONTRIBUTING.md</a>
+                        <a href="https://github.com/OpenRakis/Cryogenic/blob/main/CONTRIBUTING.md"
+                            class="text-spice hover:underline font-semibold">CONTRIBUTING.md</a>
                         for setup instructions, coding conventions, and the override implementation workflow.
                     </p>
                 </div>
@@ -600,18 +712,21 @@ bin/Release/net10.0/publish/Cryogenic --Exe /path/to/DNCDPRG.EXE --UseCodeOverri
                 <h3 class="text-2xl font-bold mb-6 text-spice font-orbitron">Workflow</h3>
                 <div class="bg-gray-800 rounded-lg p-8 space-y-6">
                     <div class="flex items-start">
-                        <div class="flex-shrink-0 w-10 h-10 rounded-full bg-spice/20 flex items-center justify-center mr-4">
+                        <div
+                            class="flex-shrink-0 w-10 h-10 rounded-full bg-spice/20 flex items-center justify-center mr-4">
                             <span class="text-spice font-bold">1</span>
                         </div>
                         <div class="flex-1">
                             <h4 class="font-bold mb-2">Fork and clone</h4>
                             <div class="code-block rounded p-3 text-sm mt-2">
-                                <code class="text-gray-300">git clone https://github.com/YOUR-USERNAME/Cryogenic.git</code>
+                                <code
+                                    class="text-gray-300">git clone https://github.com/YOUR-USERNAME/Cryogenic.git</code>
                             </div>
                         </div>
                     </div>
                     <div class="flex items-start">
-                        <div class="flex-shrink-0 w-10 h-10 rounded-full bg-spice/20 flex items-center justify-center mr-4">
+                        <div
+                            class="flex-shrink-0 w-10 h-10 rounded-full bg-spice/20 flex items-center justify-center mr-4">
                             <span class="text-spice font-bold">2</span>
                         </div>
                         <div class="flex-1">
@@ -619,7 +734,8 @@ bin/Release/net10.0/publish/Cryogenic --Exe /path/to/DNCDPRG.EXE --UseCodeOverri
                         </div>
                     </div>
                     <div class="flex items-start">
-                        <div class="flex-shrink-0 w-10 h-10 rounded-full bg-spice/20 flex items-center justify-center mr-4">
+                        <div
+                            class="flex-shrink-0 w-10 h-10 rounded-full bg-spice/20 flex items-center justify-center mr-4">
                             <span class="text-spice font-bold">3</span>
                         </div>
                         <div class="flex-1">
@@ -627,7 +743,8 @@ bin/Release/net10.0/publish/Cryogenic --Exe /path/to/DNCDPRG.EXE --UseCodeOverri
                         </div>
                     </div>
                     <div class="flex items-start">
-                        <div class="flex-shrink-0 w-10 h-10 rounded-full bg-spice/20 flex items-center justify-center mr-4">
+                        <div
+                            class="flex-shrink-0 w-10 h-10 rounded-full bg-spice/20 flex items-center justify-center mr-4">
                             <span class="text-spice font-bold">4</span>
                         </div>
                         <div class="flex-1">
@@ -647,7 +764,9 @@ bin/Release/net10.0/publish/Cryogenic --Exe /path/to/DNCDPRG.EXE --UseCodeOverri
                 <a href="https://github.com/OpenRakis/Cryogenic" class="bg-gray-900 rounded-lg p-6 hover-glow block">
                     <div class="flex items-center mb-3">
                         <svg class="w-8 h-8 mr-3 text-spice" fill="currentColor" viewBox="0 0 24 24">
-                            <path fill-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.17 6.839 9.49.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.604-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.463-1.11-1.463-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.167 22 16.418 22 12c0-5.523-4.477-10-10-10z" clip-rule="evenodd" />
+                            <path fill-rule="evenodd"
+                                d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.17 6.839 9.49.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.604-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.463-1.11-1.463-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.167 22 16.418 22 12c0-5.523-4.477-10-10-10z"
+                                clip-rule="evenodd" />
                         </svg>
                         <h3 class="text-xl font-bold">GitHub Repository</h3>
                     </div>
@@ -655,19 +774,22 @@ bin/Release/net10.0/publish/Cryogenic --Exe /path/to/DNCDPRG.EXE --UseCodeOverri
                 </a>
                 <a href="https://github.com/OpenRakis/Spice86" class="bg-gray-900 rounded-lg p-6 hover-glow block">
                     <div class="flex items-center mb-3">
-                        <img src="https://raw.githubusercontent.com/OpenRakis/Spice86/master/src/Spice86/Views/Assets/Spice86.ico" class="w-8 h-8 mr-3" alt="Spice86">
+                        <img src="https://raw.githubusercontent.com/OpenRakis/Spice86/master/src/Spice86/Views/Assets/Spice86.ico"
+                            class="w-8 h-8 mr-3" alt="Spice86">
                         <h3 class="text-xl font-bold">Spice86</h3>
                     </div>
                     <p class="text-gray-400">The emulator and reverse-engineering toolkit</p>
                 </a>
-                <a href="https://en.wikipedia.org/wiki/Dune_(video_game)" class="bg-gray-900 rounded-lg p-6 hover-glow block">
+                <a href="https://en.wikipedia.org/wiki/Dune_(video_game)"
+                    class="bg-gray-900 rounded-lg p-6 hover-glow block">
                     <div class="flex items-center mb-3">
                         <span class="text-3xl mr-3">📖</span>
                         <h3 class="text-xl font-bold">Dune (1992) — Wikipedia</h3>
                     </div>
                     <p class="text-gray-400">Background on the original game</p>
                 </a>
-                <a href="https://github.com/OpenRakis/Cryogenic/releases" class="bg-gray-900 rounded-lg p-6 hover-glow block">
+                <a href="https://github.com/OpenRakis/Cryogenic/releases"
+                    class="bg-gray-900 rounded-lg p-6 hover-glow block">
                     <div class="flex items-center mb-3">
                         <span class="text-3xl mr-3">📦</span>
                         <h3 class="text-xl font-bold">Releases</h3>
@@ -693,17 +815,21 @@ bin/Release/net10.0/publish/Cryogenic --Exe /path/to/DNCDPRG.EXE --UseCodeOverri
             <div class="mt-6">
                 <a href="https://github.com/OpenRakis/Cryogenic" class="text-spice hover:underline mx-2">GitHub</a>
                 <span class="text-gray-600">•</span>
-                <a href="https://github.com/OpenRakis/Cryogenic/issues" class="text-spice hover:underline mx-2">Issues</a>
+                <a href="https://github.com/OpenRakis/Cryogenic/issues"
+                    class="text-spice hover:underline mx-2">Issues</a>
                 <span class="text-gray-600">•</span>
-                <a href="https://github.com/OpenRakis/Cryogenic/blob/main/CONTRIBUTING.md" class="text-spice hover:underline mx-2">Contributing</a>
+                <a href="https://github.com/OpenRakis/Cryogenic/blob/main/CONTRIBUTING.md"
+                    class="text-spice hover:underline mx-2">Contributing</a>
                 <span class="text-gray-600">•</span>
-                <a href="https://github.com/OpenRakis/Cryogenic/blob/main/LICENSE" class="text-spice hover:underline mx-2">License</a>
+                <a href="https://github.com/OpenRakis/Cryogenic/blob/main/LICENSE"
+                    class="text-spice hover:underline mx-2">License</a>
             </div>
         </div>
     </footer>
 
     <!-- Scroll to top button -->
-    <button id="scrollTop" class="fixed bottom-8 right-8 bg-spice hover-glow p-3 rounded-full shadow-lg hidden transition opacity-90 hover:opacity-100">
+    <button id="scrollTop"
+        class="fixed bottom-8 right-8 bg-spice hover-glow p-3 rounded-full shadow-lg hidden transition opacity-90 hover:opacity-100">
         <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
         </svg>
@@ -742,4 +868,5 @@ bin/Release/net10.0/publish/Cryogenic --Exe /path/to/DNCDPRG.EXE --UseCodeOverri
         });
     </script>
 </body>
+
 </html>

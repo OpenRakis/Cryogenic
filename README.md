@@ -40,6 +40,7 @@ Cryogenic replaces x86 assembly routines in the DOS executable `DNCDPRG.EXE` wit
 ### Supported Executable
 
 SHA256 of the required `DNCDPRG.EXE` (Dune CD version 3.7):
+
 ```
 5f30aeb84d67cf2e053a83c09c2890f010f2e25ee877ebec58ea15c5b30cfff9
 ```
@@ -159,6 +160,7 @@ src/Cryogenic/
 2. `DNCDPRG.EXE` and `DUNE.DAT` from Dune CD version 3.7 (copyrighted; obtain separately)
 
 Verify the executable checksum:
+
 ```bash
 # Linux/Mac
 sha256sum DNCDPRG.EXE
@@ -206,8 +208,8 @@ bin/Release/net10.0/publish/Cryogenic --Exe /path/to/DNCDPRG.EXE --UseCodeOverri
 
 <div align="center">
 
-![Sandworm encounter](doc/cryodune_worm.png)
-*Sandworm encounter*
+![Orni](doc/cryodune_orni.png)
+*Orni*
 
 ![Chani dialogue](doc/cryodune_chani.png)
 *Chani dialogue*
@@ -218,6 +220,9 @@ bin/Release/net10.0/publish/Cryogenic --Exe /path/to/DNCDPRG.EXE --UseCodeOverri
 ![Harkonnen scene](doc/cryodune_harkonen.png)
 *Harkonnen scene*
 
+![Harkonnen scene](doc/cryodune_map.png)
+*Dune map*
+
 </div>
 
 ---
@@ -227,6 +232,7 @@ bin/Release/net10.0/publish/Cryogenic --Exe /path/to/DNCDPRG.EXE --UseCodeOverri
 See [CONTRIBUTING.md](CONTRIBUTING.md) for setup instructions, coding conventions, and the override implementation workflow.
 
 Contribution areas:
+
 - **Reverse engineering** — analyze assembly, implement C# overrides, register them in `DefineOverrides()`
 - **Documentation** — add XML doc comments, document data structures, explain function behavior
 - **Testing** — run the game, compare behavior against the original, report differences
