@@ -91,7 +91,7 @@
             </h1>
             <p class="text-2xl md:text-3xl mb-4 text-gray-300">Reverse Engineering the Classic Dune Game</p>
             <p class="text-lg md:text-xl mb-8 text-gray-400 max-w-3xl mx-auto">
-                Modernizing Cryo's iconic 1992 Dune adventure through hybrid ASM/C# technology powered by Spice86
+                Rewriting Cryo's 1992 Dune game from x86 assembly into C# using the Spice86 hybrid execution model
             </p>
             <div class="flex flex-wrap justify-center gap-4 mb-12">
                 <a href="https://github.com/OpenRakis/Cryogenic/releases" class="bg-spice hover-glow px-8 py-3 rounded-lg font-semibold transition">
@@ -121,13 +121,13 @@
             <h2 class="text-4xl font-orbitron font-bold mb-8 text-center text-spice">About the Project</h2>
             <div class="max-w-4xl mx-auto">
                 <p class="text-lg mb-6 text-gray-300 leading-relaxed">
-                    Cryogenic is an ambitious reverse engineering project dedicated to understanding and modernizing 
-                    <strong>Cryo's Dune</strong> (CD Version, 1992) - one of the most atmospheric adventure games of the early 90s. 
-                    Using the powerful <a href="https://github.com/OpenRakis/Spice86" class="text-spice hover:underline">Spice86</a> 
-                    reverse engineering toolkit, we're gradually rewriting the game from x86 assembly into readable, maintainable C# code.
+                    Cryogenic is a reverse engineering project focused on understanding 
+                    <strong>Cryo's Dune</strong> (CD Version, 1992). 
+                    Using <a href="https://github.com/OpenRakis/Spice86" class="text-spice hover:underline">Spice86</a>, 
+                    a reverse engineering toolkit for 16-bit DOS programs, we're gradually rewriting the game from x86 assembly into readable, maintainable C# code.
                 </p>
                 <p class="text-lg mb-6 text-gray-300 leading-relaxed">
-                    The game is <strong>fully playable</strong> right now, complete with sound and music support. As we continue 
+                    The game is fully playable, including sound and music support. As we continue 
                     to replace assembly routines with C# implementations, the codebase becomes more accessible to modern developers 
                     while preserving the exact behavior of the original DOS executable.
                 </p>
@@ -243,13 +243,12 @@
                     <h3 class="text-2xl font-bold mb-4 text-spice font-orbitron">What is Spice86?</h3>
                     <p class="text-lg text-gray-300 mb-4 leading-relaxed">
                         <a href="https://github.com/OpenRakis/Spice86" class="text-spice hover:underline font-semibold">Spice86</a> 
-                        is a revolutionary reverse engineering toolkit and PC emulator specifically designed for 16-bit real mode x86 programs. 
-                        Unlike traditional emulators that simply run old software, Spice86 enables you to <strong>gradually modernize</strong> 
-                        legacy DOS applications by replacing assembly code with high-level C# implementations.
+                        is a reverse engineering toolkit and PC emulator designed for 16-bit real mode x86 programs. 
+                        It enables gradually replacing legacy DOS application assembly code with high-level C# implementations.
                     </p>
                     <p class="text-lg text-gray-300 leading-relaxed">
-                        Built on .NET 8, Spice86 provides a unique hybrid execution model where the original DOS executable runs 
-                        alongside your C# overrides, allowing for incremental reverse engineering and testing.
+                        Built on .NET 8, Spice86 provides a hybrid execution model where the original DOS executable runs 
+                        alongside C# overrides, allowing for incremental reverse engineering and testing.
                     </p>
                 </div>
 
