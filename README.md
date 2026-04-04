@@ -41,9 +41,9 @@
 
 ## About the Project
 
-Cryogenic is an ambitious reverse engineering project dedicated to understanding and modernizing **Cryo's Dune** (CD Version, 1992) - one of the most atmospheric adventure games of the early 90s.
+Cryogenic is a reverse engineering project dedicated to understanding **Cryo's Dune** (CD Version, 1992).
 
-Using the powerful [Spice86](https://github.com/OpenRakis/Spice86) reverse engineering toolkit, we're gradually rewriting the game from x86 assembly into readable, maintainable C# code. The game is **fully playable** right now, complete with sound and music support.
+Using [Spice86](https://github.com/OpenRakis/Spice86), a reverse engineering toolkit for 16-bit DOS programs, we're gradually rewriting the game from x86 assembly into readable, maintainable C# code. The game is fully playable, including sound and music support.
 
 As we continue to replace assembly routines with C# implementations, the codebase becomes more accessible to modern developers while preserving the exact behavior of the original DOS executable.
 
@@ -78,9 +78,9 @@ As we continue to replace assembly routines with C# implementations, the codebas
 
 ### What is Spice86?
 
-[Spice86](https://github.com/OpenRakis/Spice86) is a revolutionary reverse engineering toolkit and PC emulator specifically designed for 16-bit real mode x86 programs. Unlike traditional emulators that simply run old software, Spice86 enables you to **gradually modernize** legacy DOS applications by replacing assembly code with high-level C# implementations.
+[Spice86](https://github.com/OpenRakis/Spice86) is a reverse engineering toolkit and PC emulator designed for 16-bit real mode x86 programs. It enables gradually replacing legacy DOS application assembly code with high-level C# implementations.
 
-Built on .NET 8, Spice86 provides a unique hybrid execution model where the original DOS executable runs alongside your C# overrides, allowing for incremental reverse engineering and testing.
+Built on .NET 8, Spice86 provides a hybrid execution model where the original DOS executable runs alongside C# overrides, allowing for incremental reverse engineering and testing.
 
 ### Key Features
 
