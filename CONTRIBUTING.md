@@ -85,15 +85,31 @@ src/Cryogenic/
 
 ### Memory Segments
 
-| Field | Address | Purpose |
-|-------|---------|---------|
-| `cs1` | `0x1000` | Main game code |
-| `cs2` | `0xD000` | VGA driver (DNVGA), remapped |
-| `cs3` | `0xE000` | PCM audio driver (DNPCS2/DNSBP), remapped |
-| `cs4` | `0xE000` | MIDI music driver (DNPCS/DNMID), remapped |
-| `cs5` | `0x0800` | Interrupt handlers |
+The `Overrides` class declares five segment fields used when registering overrides:
 
-Do not change segment values without auditing all `DefineFunction` and `DoOnTopOfInstruction` calls.
+| Field | Value | Contents | Overrides registered |
+|-------|-------|----------|---------------------|
+| `cs1` | `0x1000` | Main game code (`DNCDPRG.EXE` loaded here) | ~80 functions across most override files |
+| `cs2` | `0xD000` | DNVGA — VGA graphics driver | 32 functions in `VgaDriverCode.cs`, 1 in `StaticDefinitions.cs` |
+| `cs3` | `0xE000` | DNPCS2 / DNSBP — PCM audio driver | None (declared but unused in current overrides) |
+| `cs4` | `0xE000` | Reserved for MIDI driver memory-dump hooks | 2 inline hooks for memory dumps at offsets 0x02DC and 0x03EE |
+| `cs5` | `0x0800` | Interrupt handlers (custom segment replacing default 0xF000) | None (declared for address reference) |
+
+`cs3` and `cs4` share address `0xE000`. In `DriverLoadToolbox`, PCM drivers (DNPCS2, DNSBP) load at `DRIVER2_SEGMENT = 0xE000`, and music drivers (DNPCS, DNMID) load at `DRIVER3_SEGMENT = 0xF000`. The MT-32 overrides in `MT32DriverCode.cs` use hardcoded `0xF000` (3 functions), not any `cs` field.
+
+### Driver Remapping
+
+`DriverLoadToolbox` temporarily removes the memory allocator's segment limit so drivers load at fixed addresses:
+
+| Driver | Name | Remapped to | Purpose |
+|--------|------|-------------|---------|
+| DNVGA | VGA graphics | `0xD000` | Display, blitting, palette, mouse cursor |
+| DNPCS2 | PC Speaker variant 2 | `0xE000` | PCM sound effects |
+| DNSBP | Sound Blaster Pro | `0xE000` | PCM sound effects |
+| DNPCS | PC Speaker | `0xF000` | Music playback |
+| DNMID | MIDI | `0xF000` | Music playback (MT-32, AdLib) |
+
+Drivers DN386, DNADL, DNADP, DNADG, DNSDB are not remapped.
 
 ## How Overrides Work
 

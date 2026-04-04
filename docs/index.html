@@ -177,24 +177,56 @@
                 <div class="bg-gray-900 rounded-lg p-8 mb-8 border border-dune-orange/30">
                     <h3 class="text-2xl font-bold mb-4 text-spice font-orbitron">Memory Segments</h3>
                     <p class="text-gray-300 mb-4">
-                        The override system maps five segment fields to fixed addresses.
-                        <code class="text-spice">DriverLoadToolbox</code> temporarily overrides the game's memory allocator
-                        so that VGA, PCM, and MIDI drivers load at the boundaries listed below.
+                        The <code class="text-spice">Overrides</code> class declares five segment fields used
+                        when registering overrides at specific addresses:
+                    </p>
+                    <div class="overflow-x-auto mb-6">
+                        <table class="w-full text-left text-sm text-gray-300">
+                            <thead class="text-spice border-b border-gray-700">
+                                <tr><th class="py-2 pr-4">Field</th><th class="py-2 pr-4">Value</th><th class="py-2 pr-4">Contents</th><th class="py-2">Overrides</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr class="border-b border-gray-800"><td class="py-2 pr-4 font-mono">cs1</td><td class="py-2 pr-4 font-mono">0x1000</td><td class="py-2 pr-4">Main game code (DNCDPRG.EXE loaded here)</td><td class="py-2">~80 functions across most files</td></tr>
+                                <tr class="border-b border-gray-800"><td class="py-2 pr-4 font-mono">cs2</td><td class="py-2 pr-4 font-mono">0xD000</td><td class="py-2 pr-4">DNVGA &mdash; VGA graphics driver</td><td class="py-2">32 functions in VgaDriverCode.cs</td></tr>
+                                <tr class="border-b border-gray-800"><td class="py-2 pr-4 font-mono">cs3</td><td class="py-2 pr-4 font-mono">0xE000</td><td class="py-2 pr-4">DNPCS2 / DNSBP &mdash; PCM audio driver</td><td class="py-2">None (declared, unused)</td></tr>
+                                <tr class="border-b border-gray-800"><td class="py-2 pr-4 font-mono">cs4</td><td class="py-2 pr-4 font-mono">0xE000</td><td class="py-2 pr-4">MIDI driver memory-dump hooks</td><td class="py-2">2 inline hooks at 0x02DC, 0x03EE</td></tr>
+                                <tr><td class="py-2 pr-4 font-mono">cs5</td><td class="py-2 pr-4 font-mono">0x0800</td><td class="py-2 pr-4">Interrupt handlers (replaces default 0xF000)</td><td class="py-2">None (address reference)</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p class="text-gray-400 text-sm mb-4">
+                        <code class="text-spice">cs3</code> and <code class="text-spice">cs4</code> share address
+                        0xE000. In <code class="text-spice">DriverLoadToolbox</code>, PCM drivers load at
+                        DRIVER2_SEGMENT (0xE000) and music drivers load at DRIVER3_SEGMENT (0xF000).
+                        The MT-32 overrides in <code class="text-spice">MT32DriverCode.cs</code> use hardcoded
+                        0xF000 (3 functions), not any <code class="text-spice">cs</code> field.
+                    </p>
+
+                    <h4 class="text-lg font-bold mb-3 text-spice mt-6">Driver Remapping</h4>
+                    <p class="text-gray-300 mb-4">
+                        <code class="text-spice">DriverLoadToolbox</code> temporarily removes the memory allocator's
+                        segment limit so drivers load at fixed addresses. Hooks are injected at CS1:E57B
+                        (<code class="text-spice">RemapDrivers</code>) and CS1:E593
+                        (<code class="text-spice">ResetAllocator</code>). Driver function tables are auto-detected
+                        at CS1:E589 (<code class="text-spice">ReadDriverFunctionTable</code>).
                     </p>
                     <div class="overflow-x-auto">
                         <table class="w-full text-left text-sm text-gray-300">
                             <thead class="text-spice border-b border-gray-700">
-                                <tr><th class="py-2 pr-4">Field</th><th class="py-2 pr-4">Address</th><th class="py-2">Purpose</th></tr>
+                                <tr><th class="py-2 pr-4">Driver</th><th class="py-2 pr-4">Name</th><th class="py-2 pr-4">Remapped to</th><th class="py-2">Purpose</th></tr>
                             </thead>
                             <tbody>
-                                <tr class="border-b border-gray-800"><td class="py-2 pr-4 font-mono">cs1</td><td class="py-2 pr-4 font-mono">0x1000</td><td class="py-2">Main game code</td></tr>
-                                <tr class="border-b border-gray-800"><td class="py-2 pr-4 font-mono">cs2</td><td class="py-2 pr-4 font-mono">0xD000</td><td class="py-2">VGA driver (DNVGA), remapped by DriverLoadToolbox</td></tr>
-                                <tr class="border-b border-gray-800"><td class="py-2 pr-4 font-mono">cs3</td><td class="py-2 pr-4 font-mono">0xE000</td><td class="py-2">PCM audio driver (DNPCS2/DNSBP), remapped</td></tr>
-                                <tr class="border-b border-gray-800"><td class="py-2 pr-4 font-mono">cs4</td><td class="py-2 pr-4 font-mono">0xE000</td><td class="py-2">MIDI music driver (DNPCS/DNMID), remapped</td></tr>
-                                <tr><td class="py-2 pr-4 font-mono">cs5</td><td class="py-2 pr-4 font-mono">0x0800</td><td class="py-2">Interrupt handlers</td></tr>
+                                <tr class="border-b border-gray-800"><td class="py-2 pr-4 font-mono">DNVGA</td><td class="py-2 pr-4">VGA graphics</td><td class="py-2 pr-4 font-mono">0xD000</td><td class="py-2">Display, blitting, palette, mouse cursor</td></tr>
+                                <tr class="border-b border-gray-800"><td class="py-2 pr-4 font-mono">DNPCS2</td><td class="py-2 pr-4">PC Speaker variant 2</td><td class="py-2 pr-4 font-mono">0xE000</td><td class="py-2">PCM sound effects</td></tr>
+                                <tr class="border-b border-gray-800"><td class="py-2 pr-4 font-mono">DNSBP</td><td class="py-2 pr-4">Sound Blaster Pro</td><td class="py-2 pr-4 font-mono">0xE000</td><td class="py-2">PCM sound effects</td></tr>
+                                <tr class="border-b border-gray-800"><td class="py-2 pr-4 font-mono">DNPCS</td><td class="py-2 pr-4">PC Speaker</td><td class="py-2 pr-4 font-mono">0xF000</td><td class="py-2">Music playback</td></tr>
+                                <tr><td class="py-2 pr-4 font-mono">DNMID</td><td class="py-2 pr-4">MIDI</td><td class="py-2 pr-4 font-mono">0xF000</td><td class="py-2">Music playback (MT-32, AdLib)</td></tr>
                             </tbody>
                         </table>
                     </div>
+                    <p class="text-gray-400 text-sm mt-4">
+                        Drivers DN386, DNADL, DNADP, DNADG, DNSDB are not remapped.
+                    </p>
                 </div>
 
                 <!-- Override Files -->
@@ -326,9 +358,11 @@
                     <div class="bg-gray-900 rounded-lg p-6 border border-dune-orange/20">
                         <h4 class="font-bold mb-2 text-spice">DriverLoadToolbox.cs</h4>
                         <p class="text-gray-300 text-sm">
-                            Remaps VGA/PCM/MIDI drivers to 0xD000/0xE000/0xF000 by temporarily disabling the
-                            allocator's segment limit. Also reads driver function tables and auto-registers
-                            entry points for Spice86 tracing.
+                            Remaps VGA/PCM/MIDI drivers to fixed segment addresses (0xD000/0xE000/0xF000)
+                            by temporarily disabling the allocator's segment limit at CS1:E57B and restoring
+                            it at CS1:E593. Also reads driver function tables at CS1:E589 and auto-registers
+                            entry points for Spice86 tracing. Drivers DN386, DNADL, DNADP, DNADG, DNSDB
+                            are left at their original allocations.
                         </p>
                     </div>
                     <div class="bg-gray-900 rounded-lg p-6 border border-dune-orange/20">
