@@ -76,7 +76,7 @@ The `Overrides` class declares five segment fields used when registering overrid
 | `cs4` | `0xE000` | Reserved for MIDI driver memory-dump hooks | 2 inline hooks for memory dumps at offsets 0x02DC and 0x03EE |
 | `cs5` | `0x0800` | Interrupt handlers (custom segment replacing default 0xF000) | None (declared for address reference) |
 
-`cs3` and `cs4` share address `0xE000`. In `DriverLoadToolbox`, PCM drivers (DNPCS2, DNSBP) load at `DRIVER2_SEGMENT = 0xE000`, and music drivers (DNPCS, DNMID) load at `DRIVER3_SEGMENT = 0xF000`. The MT-32 overrides in `MT32DriverCode.cs` use hardcoded `0xF000` (3 functions), not any `cs` field.
+`cs3` and `cs4` share address `0xE000`. In `DriverLoadToolbox`, PCM drivers (DNPCS2, DNSBP) load at `DRIVER2_SEGMENT = 0xE000`, and music drivers (DNMID) load at `DRIVER3_SEGMENT = 0xF000`. The MT-32 overrides in `MT32DriverCode.cs` use hardcoded `0xF000` (3 functions), not any `cs` field.
 
 ### Driver Remapping
 
@@ -87,7 +87,6 @@ The `Overrides` class declares five segment fields used when registering overrid
 | DNVGA | VGA graphics | `0xD000` | Display, blitting, palette, mouse cursor |
 | DNPCS2 | PC Speaker variant 2 | `0xE000` | PCM sound effects |
 | DNSBP | Sound Blaster Pro | `0xE000` | PCM sound effects |
-| DNPCS | PC Speaker | `0xF000` | Music playback |
 | DNMID | MIDI | `0xF000` | Music playback (MT-32, AdLib) |
 
 Drivers DN386, DNADL, DNADP, DNADG, DNSDB are not remapped. After each driver loads, `ResetAllocator` restores the original allocator state. The remapping hooks are injected at CS1:E57B (`RemapDrivers`) and CS1:E593 (`ResetAllocator`). Driver function tables are auto-detected at CS1:E589 (`ReadDriverFunctionTable`).
