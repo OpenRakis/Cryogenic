@@ -225,7 +225,7 @@
                         <div class="text-spice text-3xl mb-4">🌐</div>
                         <h3 class="text-xl font-bold mb-3 font-orbitron">Cross-Platform Support</h3>
                         <p class="text-gray-300">
-                            Leverage .NET 8's cross-platform capabilities to run the game natively on Windows, 
+                            Leverage .NET 10's cross-platform capabilities to run the game natively on Windows, 
                             macOS, and Linux without emulation layers.
                         </p>
                     </div>
@@ -247,7 +247,7 @@
                         It enables gradually replacing legacy DOS application assembly code with high-level C# implementations.
                     </p>
                     <p class="text-lg text-gray-300 leading-relaxed">
-                        Built on .NET 8, Spice86 provides a hybrid execution model where the original DOS executable runs 
+                        Built on .NET 10, Spice86 provides a hybrid execution model where the original DOS executable runs 
                         alongside C# overrides, allowing for incremental reverse engineering and testing.
                     </p>
                 </div>
@@ -292,7 +292,7 @@
                     <div class="bg-gray-800 rounded-lg p-6 border-l-4 border-spice">
                         <h4 class="text-lg font-bold mb-2">🌍 Cross-Platform</h4>
                         <p class="text-gray-300">
-                            Built on .NET 8 for Windows, macOS, and Linux. Modern, maintainable codebase 
+                            Built on .NET 10 for Windows, macOS, and Linux. Modern, maintainable codebase 
                             accessible to contemporary developers.
                         </p>
                     </div>
@@ -372,7 +372,7 @@
                 <div class="bg-gray-900 rounded-lg p-6 border border-dune-orange/30">
                     <h3 class="text-xl font-bold mb-4 text-spice">Prerequisites</h3>
                     <ul class="list-disc list-inside text-gray-300 space-y-2">
-                        <li><a href="https://dotnet.microsoft.com/en-us/download/dotnet/8.0" class="text-spice hover:underline">.NET 8 SDK</a></li>
+                        <li><a href="https://dotnet.microsoft.com/en-us/download/dotnet/10.0" class="text-spice hover:underline">.NET 10 SDK</a></li>
                         <li>Dune CD Version 3.7 (DNCDPRG.EXE and DUNE.DAT) - must be obtained separately</li>
                     </ul>
                 </div>
@@ -400,7 +400,7 @@ dotnet run --Exe C:/path/to/dunecd/DNCDPRG.EXE --UseCodeOverride true -p 4096</c
                     <div class="code-block rounded p-4 text-sm overflow-x-auto">
                         <pre class="text-gray-300"><code>cd Cryogenic/src/Cryogenic
 dotnet publish
-bin/Release/net8.0/publish/Cryogenic --Exe C:/path/to/dunecd/DNCDPRG.EXE --UseCodeOverride true -p 4096 -a "ADL220 SBP2227"</code></pre>
+bin/Release/net10.0/publish/Cryogenic --Exe C:/path/to/dunecd/DNCDPRG.EXE --UseCodeOverride true -p 4096 -a "ADL220 SBP2227"</code></pre>
                     </div>
                     <p class="text-sm text-gray-400 mt-4">
                         Note: Always use <code class="text-spice">--UseCodeOverride true</code> or your C# code won't execute!
@@ -499,7 +499,7 @@ bin/Release/net8.0/publish/Cryogenic --Exe C:/path/to/dunecd/DNCDPRG.EXE --UseCo
                         <div class="flex-1">
                             <h4 class="font-bold mb-2">Set Up Development Environment</h4>
                             <p class="text-gray-300">
-                                Install .NET 8 SDK, obtain the Dune CD files, and familiarize yourself with the 
+                                Install .NET 10 SDK, obtain the Dune CD files, and familiarize yourself with the 
                                 codebase structure.
                             </p>
                         </div>
