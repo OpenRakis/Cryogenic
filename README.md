@@ -2,7 +2,7 @@
 ![OSX](https://img.shields.io/badge/-OSX-black?logo=apple)
 ![Windows](https://img.shields.io/badge/-Windows-red?logo=windows)
 
-# CRYOGENIC
+# Cryogenic
 
 [![PR Validation](https://github.com/OpenRakis/Cryogenic/actions/workflows/pr-validation.yml/badge.svg)](https://github.com/OpenRakis/Cryogenic/actions/workflows/pr-validation.yml)
 [![Release](https://github.com/OpenRakis/Cryogenic/actions/workflows/release.yml/badge.svg)](https://github.com/OpenRakis/Cryogenic/actions/workflows/release.yml)
@@ -10,28 +10,22 @@
 [![CodeQL](https://github.com/OpenRakis/Cryogenic/actions/workflows/pr-validation.yml/badge.svg?event=push)](https://github.com/OpenRakis/Cryogenic/security/code-scanning)
 [![License](https://img.shields.io/github/license/OpenRakis/Cryogenic)](LICENSE)
 [![Latest Release](https://img.shields.io/github/v/release/OpenRakis/Cryogenic)](https://github.com/OpenRakis/Cryogenic/releases/latest)
-[![GitHub Stars](https://img.shields.io/github/stars/OpenRakis/Cryogenic?style=social)](https://github.com/OpenRakis/Cryogenic/stargazers)
-[![GitHub Forks](https://img.shields.io/github/forks/OpenRakis/Cryogenic?style=social)](https://github.com/OpenRakis/Cryogenic/network/members)
-[![GitHub Issues](https://img.shields.io/github/issues/OpenRakis/Cryogenic)](https://github.com/OpenRakis/Cryogenic/issues)
 [![.NET Version](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
 
-**Reverse Engineering the Classic Dune Game**
+C# re-implementation of Cryo's Dune (CD Version, 1992) running on [Spice86](https://github.com/OpenRakis/Spice86).
 
-📚 **[GitHub Page](https://openrakis.github.io/Cryogenic/)**
+**[Project page](https://openrakis.github.io/Cryogenic/)**
 
 ---
 
 ## Table of Contents
 
-- [About the Project](#about-the-project)
-- [Project Goals](#project-goals)
-- [Technology - Spice86](#technology---spice86)
-- [Status](#status)
+- [What This Is](#what-this-is)
+- [Current State](#current-state)
+- [How It Works](#how-it-works)
+- [Code Structure](#code-structure)
 - [Prerequisites](#prerequisites)
-- [Build & Run](#build--run)
-  - [Building](#building)
-  - [Running (Basic Mode)](#running-basic-mode)
-  - [Running with Audio](#running-with-audio)
+- [Build and Run](#build-and-run)
 - [Screenshots](#screenshots)
 - [Contributing](#contributing)
 - [Resources](#resources)
@@ -39,99 +33,146 @@
 
 ---
 
-## About the Project
+## What This Is
 
-Cryogenic is a reverse engineering project dedicated to understanding **Cryo's Dune** (CD Version, 1992).
+Cryogenic replaces x86 assembly routines in the DOS executable `DNCDPRG.EXE` with C# methods. [Spice86](https://github.com/OpenRakis/Spice86) runs the original binary and redirects execution to the C# overrides at registered addresses. Assembly and C# code share the same emulated memory, so overrides can be introduced one function at a time without breaking the rest of the program.
 
-Using [Spice86](https://github.com/OpenRakis/Spice86), a reverse engineering toolkit for 16-bit DOS programs, we're gradually rewriting the game from x86 assembly into readable, maintainable C# code. The game is fully playable, including sound and music support.
+### Supported Executable
 
-As we continue to replace assembly routines with C# implementations, the codebase becomes more accessible to modern developers while preserving the exact behavior of the original DOS executable.
-
-### Supported Version
-
-**SHA256 signature of supported DNCDPRG.EXE:**
+SHA256 of the required `DNCDPRG.EXE` (Dune CD version 3.7):
 ```
 5f30aeb84d67cf2e053a83c09c2890f010f2e25ee877ebec58ea15c5b30cfff9
 ```
 
-⚠️ **Note:** The CD release of DUNE (version 3.7, the most widely available one) must be obtained separately, as it is **copyrighted material**.
+The game files (`DNCDPRG.EXE`, `DUNE.DAT`) are copyrighted and must be obtained separately.
 
 ---
 
-## Project Goals
+## Current State
 
-🔍 **Understand the Game** - Deep dive into the inner workings of Dune's game engine, uncovering how Cryo implemented dialogue systems, resource management, and real-time strategy elements in the DOS era.
+The game is fully playable with sound and music through hybrid ASM/.NET execution.
 
-🔄 **Incremental Rewriting** - Gradually replace x86 assembly routines with clean, documented C# code while maintaining 100% behavioral compatibility with the original game.
-
-📚 **Document Everything** - Create comprehensive documentation of game mechanics, data structures, and algorithms to preserve this knowledge for future developers and gaming historians.
-
-🎮 **Preserve Gaming History** - Ensure this classic adventure game remains playable on modern systems and provide a foundation for potential future enhancements and ports.
-
-🛠️ **Educational Resource** - Serve as a reference implementation for reverse engineering techniques and demonstrate the power of hybrid emulation approaches.
-
-🌐 **Cross-Platform Support** - Leverage .NET 10's cross-platform capabilities to run the game natively on Windows, macOS, and Linux without emulation layers.
+Ongoing work converts additional assembly routines into C#. Each converted routine is registered as an override and tested by running the game.
 
 ---
 
-## Technology - Spice86
+## How It Works
 
-### What is Spice86?
+1. `Program.cs` configures command-line arguments and calls `Spice86.Program.RunWithOverrides<DuneCdOverrideSupplier>` with the expected SHA256 checksum.
+2. `DuneCdOverrideSupplier` instantiates `Overrides.Overrides`, which calls `DefineOverrides()`.
+3. `DefineOverrides()` registers C# methods at specific segment:offset addresses using `DefineFunction` (replaces CALL targets) and `DoOnTopOfInstruction` (inline hooks).
+4. At runtime, when the emulated CPU reaches a registered address, Spice86 executes the C# method instead of the original assembly. The method returns via `NearRet()` or `FarRet()` matching the original instruction.
+5. Game state is read and written through typed accessor classes (`globalsOnDs`, `globalsOnCsSegment0x2538`) that map directly to the emulated memory at the DS and CS segment bases.
 
-[Spice86](https://github.com/OpenRakis/Spice86) is a reverse engineering toolkit and PC emulator designed for 16-bit real mode x86 programs. It enables gradually replacing legacy DOS application assembly code with high-level C# implementations.
+### Memory Segments
 
-Built on .NET 10, Spice86 provides a hybrid execution model where the original DOS executable runs alongside C# overrides, allowing for incremental reverse engineering and testing.
+The `Overrides` class declares five segment fields used when registering overrides:
 
-### Key Features
+| Field | Value | Contents | Overrides registered |
+|-------|-------|----------|---------------------|
+| `cs1` | `0x1000` | Main game code (`DNCDPRG.EXE` loaded here) | ~80 functions across most override files |
+| `cs2` | `0xD000` | DNVGA — VGA graphics driver | 32 functions in `VgaDriverCode.cs`, 1 in `StaticDefinitions.cs` |
+| `cs3` | `0xE000` | DNPCS2 / DNSBP — PCM audio driver | None (declared but unused in current overrides) |
+| `cs4` | `0xE000` | Reserved for MIDI driver memory-dump hooks | 2 inline hooks for memory dumps at offsets 0x02DC and 0x03EE |
+| `cs5` | `0x0800` | Interrupt handlers (custom segment replacing default 0xF000) | None (declared for address reference) |
 
-- 🔄 **Hybrid Execution** - Run original DOS binaries while selectively replacing functions with C# implementations. Test your reverse-engineered code against the real thing in real-time.
-- 🔬 **Runtime Analysis** - Collect memory dumps, execution traces, and runtime data while the program runs.
-- 🎯 **Ghidra Integration** - Import runtime data into Ghidra for static analysis.
-- 🐛 **Advanced Debugging** - Built-in debugger with GDB remote protocol support.
-- 🎮 **Hardware Emulation** - Complete support for VGA/EGA/CGA graphics, PC Speaker, AdLib, SoundBlaster, keyboard, and mouse.
-- 🌍 **Cross-Platform** - Built on .NET 10 for Windows, macOS, and Linux.
+`cs3` and `cs4` share address `0xE000`. In `DriverLoadToolbox`, PCM drivers (DNPCS2, DNSBP) load at `DRIVER2_SEGMENT = 0xE000`, and music drivers (DNPCS, DNMID) load at `DRIVER3_SEGMENT = 0xF000`. The MT-32 overrides in `MT32DriverCode.cs` use hardcoded `0xF000` (3 functions), not any `cs` field.
 
-### How Cryogenic Uses Spice86
+### Driver Remapping
 
-1. **Override Registration** - Cryogenic registers C# function overrides in `DuneCdOverrideSupplier` that replace specific assembly routines at runtime.
-2. **Segment Management** - Memory segments (CS1=0x1000 for main code, CS2/3/4 for drivers, CS5=0xF000 for BIOS) are carefully managed.
-3. **Hybrid Execution** - When DNCDPRG.EXE calls an overridden function, Spice86 redirects execution to the C# implementation.
-4. **State Synchronization** - Global game state accessors like `globalsOnDs` ensure C# code and assembly share the same memory.
+`DriverLoadToolbox` temporarily removes the memory allocator's segment limit so drivers load at fixed addresses:
+
+| Driver | Name | Remapped to | Purpose |
+|--------|------|-------------|---------|
+| DNVGA | VGA graphics | `0xD000` | Display, blitting, palette, mouse cursor |
+| DNPCS2 | PC Speaker variant 2 | `0xE000` | PCM sound effects |
+| DNSBP | Sound Blaster Pro | `0xE000` | PCM sound effects |
+| DNPCS | PC Speaker | `0xF000` | Music playback |
+| DNMID | MIDI | `0xF000` | Music playback (MT-32, AdLib) |
+
+Drivers DN386, DNADL, DNADP, DNADG, DNSDB are not remapped. After each driver loads, `ResetAllocator` restores the original allocator state. The remapping hooks are injected at CS1:E57B (`RemapDrivers`) and CS1:E593 (`ResetAllocator`). Driver function tables are auto-detected at CS1:E589 (`ReadDriverFunctionTable`).
 
 ---
 
-## Status
+## Code Structure
 
-Thanks to the hybrid ASM / .NET mode provided by Spice86, the game is **fully playable**, including sound and music.
+```
+src/Cryogenic/
+├── Program.cs                     Entry point; configures args, launches Spice86
+├── DuneCdOverrideSupplier.cs      Implements IOverrideSupplier; creates Overrides instance
+├── DriverLoadToolbox.cs           Remaps driver segments to 0xD000/0xE000/0xF000
+├── Overrides/
+│   ├── Overrides.cs               Defines segment fields (cs1–cs5), registers all overrides
+│   ├── VgaDriverCode.cs           23 VGA functions: mode setting, blitting, palette, mouse cursor
+│   ├── MenuCode.cs                14 menu-type constants, 2 menu state overrides
+│   ├── DialoguesCode.cs           3 dialogue functions: counter, init, hex-digit conversion
+│   ├── MapCode.cs                 5 map/cursor functions and click-handler address constants
+│   ├── DisplayCode.cs             11 framebuffer and font selection functions
+│   ├── VideoCode.cs               3 HNM video playback functions
+│   ├── HnmCode.cs                 1 HNM file I/O function (disk read into buffer)
+│   ├── TimeCode.cs                2 day/night cycle and hour-of-day functions
+│   ├── TimerCode.cs               1 PIT 8254 timer configuration function
+│   ├── ScriptedSceneCode.cs       2 cutscene sequence data functions
+│   ├── DatastructuresCode.cs      2 memory structure functions (index-to-pointer, sprite lookup)
+│   ├── InitCode.cs                1 VGA state initialization function
+│   ├── MT32DriverCode.cs          3 Roland MT-32 MIDI driver functions at segment 0xF000
+│   ├── UnknownCode.cs             20 partially understood functions (bit ops, memcpy, state flags)
+│   └── StaticDefinitions.cs       137+ symbolic names for unoverridden functions (tracing only)
+├── Globals/                       Typed accessors added manually (Extra* files)
+└── Generated/                     Auto-generated memory accessors (do not edit)
+```
 
-The goal is to have more and more logic written in human-readable C#, making the codebase accessible to modern developers while preserving the classic gameplay experience.
+### Override Files in Detail
+
+**VgaDriverCode.cs** — Replaces functions in the DNVGA driver loaded at segment 0xD000. Covers VGA mode setting (`VgaFunc00SetMode`), framebuffer blitting (`VgaFunc05Blit`), rectangle copy (`VgaFunc12CopyRectangle`), pixel write (`VgaFunc21SetPixel`), palette loading (`LoadPaletteInVgaDac`), mouse cursor draw/restore (`VgaFunc03DrawMouseCursor`, `VgaFunc04RestoreImageUnderMouseCursor`), buffer fill (`VgaFunc08FillWithZeroFor64000AtES`), texture generation (`VgaFunc36GenerateTextureOutBP`), map block copy (`CopyMapBlock`), and VGA retrace synchronization (`WaitForRetrace`).
+
+**MenuCode.cs** — Defines 14 menu-type constants as hex offsets (e.g. `MENU_TYPE_DIALOGUE = 0x1F7E`, `MENU_TYPE_GLOBE = 0x204A`, `MENU_TYPE_BOOK = 0x2032`). Contains two overrides: one for menu animation state transitions at CS1:D316 and one for setting the current menu type at CS1:D41B.
+
+**DialoguesCode.cs** — Three functions: incrementing a dialogue counter at DS:47A8 (CS1:A1E8), initializing dialogue state including video index and face-zoom timing (CS1:C85B), and converting the low nibble of AL to an ASCII hex digit (CS1:A8B1).
+
+**MapCode.cs** — Defines click-handler addresses for five map modes (flat map, globe, in-game, troop movement, ornithopter). Five functions set the active click handler, initialize map cursor type, and perform an 8-byte memory copy from DS:46E3.
+
+**DisplayCode.cs** — Manages three framebuffers (front at DBD6, back at DC32, text at DBD8). Includes three font-selection functions (intro, menu, book) that set character-set addresses, plus coordinate lookup, buffer clear, and register push/pop helpers.
+
+**VideoCode.cs** — Three functions for HNM video playback: resource flag lookup from a table at DS:33A3, playback index synchronization, and completion check via the finished-flag at DBE7.
+
+**HnmCode.cs** — One function that reads HNM video data from disk through the DOS file manager, updating read offset and buffer pointers.
+
+**TimeCode.cs** — Extracts the current hour from the lower 4 bits of the game elapsed-time word at DS:0002. Calculates the next sunlight-visible day.
+
+**TimerCode.cs** — Writes a 16-bit counter value to PIT channel 0 (ports 0x43/0x40) with control byte 0x36. Called primarily on game exit.
+
+**ScriptedSceneCode.cs** — Reads 16-bit commands from the scene sequence data at DS:4854 and advances the sequence pointer.
+
+**DatastructuresCode.cs** — Converts an index table to a pointer table by adding a base offset. Retrieves sprite-sheet resource pointers by index from the table at DS:DBB0.
+
+**MT32DriverCode.cs** — Three functions at segment 0xF000 for Roland MT-32 output: a primary entry point, a MIDI byte-write to port 0x330, and an unused stub.
+
+**UnknownCode.cs** — 20 functions with observed behavior but unclear purpose. Includes bit-test operations on DBC8, multi-register shifts, 8-byte memory copies, state-flag setters, a 10-byte structure builder, a 0x5C-byte fill at DS:47F8, and three no-ops.
+
+**StaticDefinitions.cs** — Registers 137+ symbolic function names (e.g. `play_intro`, `open_dune_dat`, `allocator_init`) at their addresses for Spice86's trace output. These are not overridden; they provide readable names in execution logs.
 
 ---
 
 ## Prerequisites
 
-Before you begin, ensure you have:
+1. [.NET 10 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/10.0)
+2. `DNCDPRG.EXE` and `DUNE.DAT` from Dune CD version 3.7 (copyrighted; obtain separately)
 
-1. **[.NET 10 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/10.0)** - Required to build and run the project
-2. **Dune CD Version 3.7** - You must obtain `DNCDPRG.EXE` and `DUNE.DAT` separately (copyrighted material)
-
-You can verify your executable with PowerShell:
-```powershell
-Get-FileHash DNCDPRG.EXE -Algorithm SHA256
-```
-
-Or on Linux/Mac:
+Verify the executable checksum:
 ```bash
+# Linux/Mac
 sha256sum DNCDPRG.EXE
+
+# PowerShell
+Get-FileHash DNCDPRG.EXE -Algorithm SHA256
 ```
 
 ---
 
-## Build & Run
+## Build and Run
 
-### Building
-
-Clone the repository and build the project:
+### Build
 
 ```bash
 git clone https://github.com/OpenRakis/Cryogenic
@@ -139,25 +180,25 @@ cd Cryogenic/src
 dotnet build
 ```
 
-### Running (Basic Mode)
+### Run (no audio)
 
-Ensure that `DUNE.DAT` and `DNCDPRG.EXE` are in the same folder, then run:
+Place `DUNE.DAT` and `DNCDPRG.EXE` in the same directory, then:
 
 ```bash
 cd Cryogenic/src
-dotnet run --Exe C:/path/to/dunecd/DNCDPRG.EXE --UseCodeOverride true -p 4096
+dotnet run --Exe /path/to/DNCDPRG.EXE --UseCodeOverride true -p 4096
 ```
 
-⚠️ **Important:** Always use `--UseCodeOverride true` or your C# code won't execute!
+`--UseCodeOverride true` is required. Without it, no C# overrides execute.
 
-### Running with Audio
+### Run with audio
 
-For the full experience with AdLib music and PCM sound effects:
+AdLib music and Sound Blaster PCM:
 
 ```bash
 cd Cryogenic/src/Cryogenic
 dotnet publish
-bin/Release/net10.0/publish/Cryogenic --Exe C:/path/to/dunecd/DNCDPRG.EXE --UseCodeOverride true -p 4096 -a "ADL220 SBP2227"
+bin/Release/net10.0/publish/Cryogenic --Exe /path/to/DNCDPRG.EXE --UseCodeOverride true -p 4096 -a "ADL220 SBP2227"
 ```
 
 ---
@@ -166,17 +207,17 @@ bin/Release/net10.0/publish/Cryogenic --Exe C:/path/to/dunecd/DNCDPRG.EXE --UseC
 
 <div align="center">
 
-![Desert Worm](doc/cryodune_worm.png)
-*Encounter with the mighty sandworm*
+![Sandworm encounter](doc/cryodune_worm.png)
+*Sandworm encounter*
 
-![Chani](doc/cryodune_chani.png)
-*Meeting with Chani*
+![Chani dialogue](doc/cryodune_chani.png)
+*Chani dialogue*
 
-![Spice Management](doc/cryodune_send_spice.png)
-*Sending Spice to the Emperor*
+![Spice shipment screen](doc/cryodune_send_spice.png)
+*Spice shipment screen*
 
-![Harkonnen](doc/cryodune_harkonen.png)
-*Harkonnen confrontation*
+![Harkonnen scene](doc/cryodune_harkonen.png)
+*Harkonnen scene*
 
 </div>
 
@@ -184,43 +225,30 @@ bin/Release/net10.0/publish/Cryogenic --Exe C:/path/to/dunecd/DNCDPRG.EXE --UseC
 
 ## Contributing
 
-We welcome contributions from developers of all skill levels! Whether you're experienced in reverse engineering or just getting started, there's a place for you in this project.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for setup instructions, coding conventions, and the override implementation workflow.
 
-### Ways to Contribute
-
-- 🔍 **Reverse Engineering** - Analyze assembly code, identify functions, and create C# implementations
-- 📝 **Documentation** - Help document game mechanics, data structures, and code functionality
-- 🧪 **Testing** - Play the game, find bugs, and verify that C# overrides behave identically to the original
-- 🛠️ **Code Quality** - Improve existing C# code, refactor for clarity, and add helpful comments
-
-### Getting Started
-
-1. Fork the repository on GitHub
-2. Clone your fork locally
-3. Read the [CONTRIBUTING.md](CONTRIBUTING.md) file for detailed guidelines
-4. Pick an issue labeled `good first issue` or `help wanted`
-5. Create a feature branch for your work
-6. Make your changes and test thoroughly
-7. Submit a pull request
-
-For detailed contribution guidelines, architecture notes, and coding conventions, please see our [CONTRIBUTING.md](CONTRIBUTING.md) file.
+Contribution areas:
+- **Reverse engineering** — analyze assembly, implement C# overrides, register them in `DefineOverrides()`
+- **Documentation** — add XML doc comments, document data structures, explain function behavior
+- **Testing** — run the game, compare behavior against the original, report differences
+- **Code quality** — refactor existing overrides, improve naming, remove duplication
 
 ---
 
 ## Resources
 
-- 🌐 **[Project Website](https://openrakis.github.io/Cryogenic/)** - Comprehensive documentation
-- 🐙 **[GitHub Repository](https://github.com/OpenRakis/Cryogenic)** - Source code, issues, and releases
-- 🌶️ **[Spice86 Project](https://github.com/OpenRakis/Spice86)** - The reverse engineering toolkit powering Cryogenic
-- 📦 **[Releases](https://github.com/OpenRakis/Cryogenic/releases)** - Download the latest version
-- 📖 **[Dune (1992) - Wikipedia](https://en.wikipedia.org/wiki/Dune_(video_game))** - Learn about the original game
+- [Project page](https://openrakis.github.io/Cryogenic/)
+- [GitHub repository](https://github.com/OpenRakis/Cryogenic)
+- [Spice86](https://github.com/OpenRakis/Spice86) — the emulator and reverse-engineering toolkit used by this project
+- [Releases](https://github.com/OpenRakis/Cryogenic/releases)
+- [Dune (1992) on Wikipedia](https://en.wikipedia.org/wiki/Dune_(video_game))
 
 ---
 
 ## License
 
-Cryogenic is open-source software licensed under the **Apache License 2.0**.
+Apache License 2.0. See [LICENSE](LICENSE).
 
-© 2021-2024 Kevin Ferrare and contributors.
+Copyright 2021–2024 Kevin Ferrare and contributors.
 
-Dune is © Cryo Interactive Entertainment. This project is not affiliated with or endorsed by Cryo Interactive Entertainment or any rights holders.
+Dune is copyright Cryo Interactive Entertainment. This project is not affiliated with or endorsed by Cryo Interactive Entertainment or any rights holders.

@@ -1,298 +1,200 @@
 # Contributing to Cryogenic
 
-Thank you for your interest in contributing to Cryogenic! This document provides guidelines and information to help you contribute effectively to the project.
+Guidelines for contributing to the project.
 
 ## Table of Contents
 
-- [Code of Conduct](#code-of-conduct)
-- [Getting Started](#getting-started)
-- [Development Environment](#development-environment)
-- [Project Architecture](#project-architecture)
-- [Contributing Guidelines](#contributing-guidelines)
+- [Prerequisites](#prerequisites)
+- [Setup](#setup)
+- [Project Structure](#project-structure)
+- [How Overrides Work](#how-overrides-work)
 - [Coding Conventions](#coding-conventions)
-- [Reverse Engineering Workflow](#reverse-engineering-workflow)
-- [Testing Your Changes](#testing-your-changes)
+- [Implementing an Override](#implementing-an-override)
+- [Testing](#testing)
 - [Submitting Changes](#submitting-changes)
-- [Communication](#communication)
 
-## Code of Conduct
+## Prerequisites
 
-We are committed to providing a welcoming and inclusive environment for all contributors. Please:
+1. **.NET 10 SDK** — [dotnet.microsoft.com](https://dotnet.microsoft.com/en-us/download/dotnet/10.0)
+2. **Dune CD Version 3.7** — `DNCDPRG.EXE` and `DUNE.DAT` (copyrighted; obtain separately)
+3. **Git**
+4. **IDE** — Visual Studio, VS Code with C# extensions, or JetBrains Rider
 
-- Be respectful and constructive in all interactions
-- Welcome newcomers and help them get started
-- Focus on what is best for the community and the project
-- Show empathy towards other community members
-- Provide and gracefully accept constructive feedback
-
-## Getting Started
-
-### Prerequisites
-
-Before you begin, ensure you have:
-
-1. **.NET 8 SDK** - Download from [dotnet.microsoft.com](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)
-2. **Dune CD Version 3.7** - You must obtain DNCDPRG.EXE and DUNE.DAT separately (copyrighted material)
-3. **Git** - For version control
-4. **A code editor** - Visual Studio, VS Code, or Rider recommended
-
-### Verify Your Executable
-
-Ensure your DNCDPRG.EXE has the correct SHA256 hash:
+Verify the executable checksum:
 ```
 5f30aeb84d67cf2e053a83c09c2890f010f2e25ee877ebec58ea15c5b30cfff9
 ```
 
-You can verify with PowerShell:
-```powershell
+```bash
+# Linux/Mac
+sha256sum DNCDPRG.EXE
+
+# PowerShell
 Get-FileHash DNCDPRG.EXE -Algorithm SHA256
 ```
 
-Or on Linux/Mac:
-```bash
-sha256sum DNCDPRG.EXE
-```
+## Setup
 
-### Fork and Clone
-
-1. Fork the repository on GitHub
-2. Clone your fork locally:
+1. Fork and clone:
 ```bash
 git clone https://github.com/YOUR-USERNAME/Cryogenic.git
 cd Cryogenic
-```
-
-3. Add the upstream repository:
-```bash
 git remote add upstream https://github.com/OpenRakis/Cryogenic.git
 ```
 
-4. Build the project:
+2. Build:
 ```bash
 cd src
 dotnet build
 ```
 
-5. Test that it runs:
+3. Run:
 ```bash
 dotnet run --Exe /path/to/DNCDPRG.EXE --UseCodeOverride true -p 4096
 ```
 
-## Development Environment
+`--UseCodeOverride true` is required. Without it, no C# overrides execute.
 
-### Recommended Tools
-
-- **IDE**: Visual Studio 2022, JetBrains Rider, or VS Code with C# extensions
-- **Debugger**: Built-in IDE debugger for C# code
-- **Ghidra**: For static analysis of assembly code (optional but recommended)
-- **Hex Editor**: For examining data files (optional)
-
-### Project Structure
+## Project Structure
 
 ```
-Cryogenic/
-├── src/
-│   └── Cryogenic/
-│       ├── Program.cs                 # Entry point
-│       ├── DuneCdOverrideSupplier.cs  # Override registration
-│       ├── DriverLoadToolbox.cs       # Driver remapping utilities
-│       ├── Overrides/                 # C# implementations
-│       │   ├── Overrides.cs          # Main override class (partial)
-│       │   ├── VgaDriverCode.cs      # VGA driver overrides
-│       │   ├── MenuCode.cs           # Menu system overrides
-│       │   ├── DialoguesCode.cs      # Dialogue system overrides
-│       │   └── ...
-│       ├── Generated/                 # Auto-generated properties for globals
-│       └── Globals/                   # Game state accessors
-├── doc/                              # Documentation and screenshots
-├── dump/                             # Memory dumps and analysis configs
-└── README.md
+src/Cryogenic/
+├── Program.cs                     Entry point; configures args, launches Spice86
+├── DuneCdOverrideSupplier.cs      Implements IOverrideSupplier; creates Overrides instance
+├── DriverLoadToolbox.cs           Remaps driver segments to 0xD000/0xE000/0xF000
+├── Overrides/
+│   ├── Overrides.cs               Defines segment fields (cs1–cs5), registers all overrides
+│   ├── VgaDriverCode.cs           23 VGA functions (mode, blit, palette, cursor, retrace)
+│   ├── MenuCode.cs                14 menu-type constants, 2 menu state overrides
+│   ├── DialoguesCode.cs           3 dialogue system functions
+│   ├── MapCode.cs                 5 map/cursor functions and click-handler constants
+│   ├── DisplayCode.cs             11 framebuffer and font selection functions
+│   ├── VideoCode.cs               3 HNM video playback functions
+│   ├── HnmCode.cs                 1 HNM file I/O function
+│   ├── TimeCode.cs                2 day/night cycle functions
+│   ├── TimerCode.cs               1 PIT 8254 timer function
+│   ├── ScriptedSceneCode.cs       2 cutscene sequence functions
+│   ├── DatastructuresCode.cs      2 memory structure functions
+│   ├── InitCode.cs                1 VGA state initialization function
+│   ├── MT32DriverCode.cs          3 Roland MT-32 MIDI functions at segment 0xF000
+│   ├── UnknownCode.cs             20 partially understood functions
+│   └── StaticDefinitions.cs       137+ symbolic names for tracing (not overridden)
+├── Globals/                       Typed accessors added manually (Extra* files)
+└── Generated/                     Auto-generated memory accessors (do not edit)
 ```
 
-## Project Architecture
+### Memory Segments
 
-### How Cryogenic Works
+The `Overrides` class declares five segment fields used when registering overrides:
 
-Cryogenic uses **Spice86** to run the original DNCDPRG.EXE while selectively replacing assembly routines with C# implementations. This hybrid approach allows:
+| Field | Value | Contents | Overrides registered |
+|-------|-------|----------|---------------------|
+| `cs1` | `0x1000` | Main game code (`DNCDPRG.EXE` loaded here) | ~80 functions across most override files |
+| `cs2` | `0xD000` | DNVGA — VGA graphics driver | 32 functions in `VgaDriverCode.cs`, 1 in `StaticDefinitions.cs` |
+| `cs3` | `0xE000` | DNPCS2 / DNSBP — PCM audio driver | None (declared but unused in current overrides) |
+| `cs4` | `0xE000` | Reserved for MIDI driver memory-dump hooks | 2 inline hooks for memory dumps at offsets 0x02DC and 0x03EE |
+| `cs5` | `0x0800` | Interrupt handlers (custom segment replacing default 0xF000) | None (declared for address reference) |
 
-1. **Incremental rewriting** - Replace one function at a time
-2. **Immediate testing** - Run the game after each change
-3. **Behavioral verification** - Compare C# output with original assembly
+`cs3` and `cs4` share address `0xE000`. In `DriverLoadToolbox`, PCM drivers (DNPCS2, DNSBP) load at `DRIVER2_SEGMENT = 0xE000`, and music drivers (DNPCS, DNMID) load at `DRIVER3_SEGMENT = 0xF000`. The MT-32 overrides in `MT32DriverCode.cs` use hardcoded `0xF000` (3 functions), not any `cs` field.
 
-### Key Concepts
+### Driver Remapping
 
-#### Segments
+`DriverLoadToolbox` temporarily removes the memory allocator's segment limit so drivers load at fixed addresses:
 
-Memory segments are the foundation of address translation:
+| Driver | Name | Remapped to | Purpose |
+|--------|------|-------------|---------|
+| DNVGA | VGA graphics | `0xD000` | Display, blitting, palette, mouse cursor |
+| DNPCS2 | PC Speaker variant 2 | `0xE000` | PCM sound effects |
+| DNSBP | Sound Blaster Pro | `0xE000` | PCM sound effects |
+| DNPCS | PC Speaker | `0xF000` | Music playback |
+| DNMID | MIDI | `0xF000` | Music playback (MT-32, AdLib) |
 
-- `cs1 = 0x1000` - Main game code
-- `cs2, cs3, cs4` - Mapped driver segments
-- `cs5 = 0xF000` - BIOS/IRQ handlers
+Drivers DN386, DNADL, DNADP, DNADG, DNSDB are not remapped.
 
-**Important**: Never change segment values without auditing ALL `DefineFunction` and `DoOnTopOfInstruction` calls.
+## How Overrides Work
 
-#### Override Registration
-
-Overrides are registered in `Overrides.DefineOverrides()` using:
-
-- `DefineFunction(segment, offset, method)` - Replaces identified functions (note: Dune sometimes modifies the stack to change return addresses instead of using CALL instructions)
-- `DoOnTopOfInstruction(segment, offset, method)` - Inline hooks
-
-Example:
-```csharp
-DefineFunction(cs1, 0xC085, SetBackBufferAsActiveFrameBuffer_1000_C085_01C085, false);
-```
-
-#### Return Methods
-
-Use the correct return method based on the original assembly:
-
-- `NearRet()` - For near CALL/RET (within same segment)
-- `FarRet()` - For far CALL/RET (across segments)
-
-Using the wrong one will corrupt the stack!
-
-## Contributing Guidelines
-
-### Ways to Contribute
-
-#### 1. Reverse Engineering
-
-Analyze assembly code and create C# implementations.
-
-**Skills needed**: Assembly language, debugging, patience
-
-**Example tasks**:
-- Identify function boundaries in disassembly
-- Document function parameters and return values
-- Implement C# equivalent that produces identical behavior
-
-#### 2. Documentation
-
-Document code, game mechanics, and project processes.
-
-**Skills needed**: Technical writing, understanding of the codebase
-
-**Example tasks**:
-- Add XML doc comments to override methods
-- Document game data structures
-- Create tutorials for new contributors
-- Explain complex algorithms
-
-#### 3. Testing & Validation
-
-Play the game and verify correct behavior.
-
-**Skills needed**: Attention to detail, systematic testing
-
-**Example tasks**:
-- Test specific game scenarios
-- Verify that overrides match original behavior
-- Report discrepancies or bugs
-- Create test cases
-
-#### 4. Code Quality
-
-Improve existing C# implementations.
-
-**Skills needed**: C# programming, refactoring
-
-**Example tasks**:
-- Refactor complex methods for clarity
-- Add error handling
-- Improve performance
-- Remove code duplication
+1. `Program.cs` calls `Spice86.Program.RunWithOverrides<DuneCdOverrideSupplier>` with the expected SHA256.
+2. `DuneCdOverrideSupplier` instantiates `Overrides.Overrides`, which calls `DefineOverrides()`.
+3. `DefineOverrides()` registers C# methods at segment:offset addresses using:
+   - `DefineFunction(segment, offset, method)` — replaces CALL targets
+   - `DoOnTopOfInstruction(segment, offset, method)` — inline hooks
+4. At runtime, when the emulated CPU reaches a registered address, the C# method runs instead of the assembly.
+5. The method returns via `NearRet()` (near CALL/RET within same segment) or `FarRet()` (far CALL/RET across segments). Using the wrong one corrupts the stack.
+6. Game state is accessed through typed accessors (`globalsOnDs`, `globalsOnCsSegment0x2538`) that map to the emulated memory at DS and CS segment bases.
 
 ## Coding Conventions
 
-### C# Style
+### Method Naming
 
-Follow standard C# conventions with these project-specific rules:
+Override methods use the pattern `{FunctionName}_{Segment}_{Offset}_{LinearAddress}`:
+```csharp
+public void SetBackBufferAsActiveFrameBuffer_1000_C085_01C085()
+```
 
-1. **Keep generated naming** - Override methods use pattern `{Segment}_{Offset}_{Linear}` (e.g., `SetBackBufferAsActiveFrameBuffer_1000_C085_01C085`)
+Keep this naming convention. It maps the method back to the original assembly address.
 
-2. **Use provided accessors** - Access game state through `globalsOnDs` and `globalsOnCsSegment0x2538` instead of manual pointer math
+### Game State Access
 
-3. **Document extensively** - Explain what the override does, not just how:
-   ```csharp
-   /// <summary>
-   /// Switches the active framebuffer to the back buffer for double-buffered rendering.
-   /// Original assembly at CS1:C085.
-   /// </summary>
-   public void SetBackBufferAsActiveFrameBuffer_1000_C085_01C085() {
-       // Implementation
-       NearRet();
-   }
-   ```
+Use the provided accessor classes instead of manual pointer math:
+```csharp
+// Correct
+globalsOnDs.Set(0x47A8, value);
 
-4. **Handle edge cases** - Dune code often has surprising edge cases. Document and handle them:
-   ```csharp
-   // Original assembly has special handling for value 0xFFFF
-   if (value == 0xFFFF) {
-       // Special case logic
-   }
-   ```
+// Incorrect — bypasses synchronization
+memory.UInt16[state.DS, 0x47A8] = value;
+```
 
-5. **Logging** - Use `_loggerService.Debug` for diagnostics:
-   ```csharp
-   _loggerService.Debug("Loading dialogue {DialogueId}", dialogueId);
-   ```
+### Documentation
 
-### Override Implementation Guidelines
+Add XML doc comments stating what the function does and which original address it replaces:
+```csharp
+/// <summary>
+/// Switches the active framebuffer to the back buffer for double-buffered rendering.
+/// Original assembly at CS1:C085.
+/// </summary>
+public void SetBackBufferAsActiveFrameBuffer_1000_C085_01C085() {
+    // Implementation
+    NearRet();
+}
+```
 
-1. **Match original behavior exactly** - Dune is hand-written assembly; we must achieve identical behavior, not necessarily byte-for-byte compatibility
-2. **Test thoroughly** - Play the game and verify the override works in all scenarios
-3. **Add safety checks** - Throw `FailAsUntested` for unobserved code paths
-4. **Keep it simple** - Don't over-engineer; match the original logic
-5. **Use correct return** - `NearRet()` or `FarRet()` based on original instruction
+### Edge Cases
+
+Document edge cases found in the original assembly:
+```csharp
+// Original assembly has special handling for value 0xFFFF
+if (value == 0xFFFF) {
+    // Special case logic
+}
+```
+
+### Logging
+
+Use `_loggerService.Debug` with structured templates:
+```csharp
+_loggerService.Debug("Loading dialogue {DialogueId}", dialogueId);
+```
 
 ### File Organization
 
-- **Keep related overrides together** - VGA code in `VgaDriverCode.cs`, menu code in `MenuCode.cs`, etc.
-- **Extend partial classes** - Add new overrides to `Overrides` partial class in domain-specific files
-- **Don't edit Generated/** - Add custom code in `Globals/Extra*` or new override files
+- Group related overrides in domain-specific files (VGA in `VgaDriverCode.cs`, menus in `MenuCode.cs`, etc.)
+- Extend the `Overrides` partial class — do not create new top-level classes
+- Do not edit files in `Generated/`. Add custom accessors in `Globals/Extra*` files.
 
-## Reverse Engineering Workflow
+## Implementing an Override
 
-### Typical Process
+### Analysis
 
-1. **Identify a function** in the assembly code
-2. **Understand its behavior** through static analysis or runtime tracing
-3. **Document parameters and return values**
-4. **Implement in C#** maintaining exact behavior
-5. **Register the override** in `DefineOverrides()`
-6. **Test thoroughly** by playing the game
-7. **Document** with comments explaining the function's purpose
+Use Spice86's CFGCPU (Control Flow Graph CPU) for analyzing the assembly. It handles self-modifying code that Dune uses and integrates with C# overrides.
 
-### Tools and Techniques
+Use the Spice86 debugger to set breakpoints, inspect registers and memory, and step through execution.
 
-#### Using Spice86's CFGCPU
+Memory dumps can be captured at specific points using `DefineMemoryDumpsMapping()` with `MemoryDataExporter`.
 
-Spice86's CFGCPU (Control Flow Graph CPU) is the recommended approach for analyzing Dune's code, as it:
-- Handles self-modifying code that Dune uses
-- Works reliably with 16-bit x86 assembly
-- Is compatible with C# overrides
-- Already supports Dune and other games
+### Example
 
-**Note**: The Ghidra plugin is largely abandoned and has numerous bugs with 16-bit x86 support. CFGCPU will eventually enable automated code generation.
+Given an assembly function at CS1:1234 that clears a 256-word buffer:
 
-#### Using Spice86 Debugger
-
-1. Run with debugger enabled
-2. Set breakpoints at function entry
-3. Inspect registers and memory
-4. Step through execution
-5. Compare with your C# implementation
-
-#### Memory Dumps
-
-The project includes memory dump functionality. Enable in `DefineMemoryDumpsMapping()` to capture game state at specific points.
-
-### Example: Implementing a Simple Override
-
-Let's say you've identified a function at CS1:1234 that clears a buffer:
-
-1. **Analyze the assembly**:
 ```asm
 CS1:1234  mov cx, 0x100    ; Counter
 CS1:1237  mov di, 0x0      ; Destination offset
@@ -301,7 +203,7 @@ CS1:123C  rep stosw        ; Fill buffer
 CS1:123E  ret              ; Return
 ```
 
-2. **Implement in C#**:
+C# implementation:
 ```csharp
 /// <summary>
 /// Clears a 256-word buffer at ES:0000.
@@ -314,156 +216,85 @@ public void ClearBuffer_1000_1234_011234() {
 }
 ```
 
-3. **Register in DefineOverrides()**:
+Registration in `DefineOverrides()`:
 ```csharp
 DefineFunction(cs1, 0x1234, ClearBuffer_1000_1234_011234, false);
 ```
 
-4. **Test**: Run the game and verify the buffer is cleared at the right time
+Test by running the game and verifying the buffer is cleared at the expected time.
 
-5. **Document**: Add comments explaining when and why this is called
+### Checklist
 
-## Testing Your Changes
+- Match original behavior exactly
+- Use the correct return method (`NearRet()` or `FarRet()`)
+- Throw `FailAsUntested` for unobserved code paths
+- Add XML doc comments
+- Test in-game
 
-### Manual Testing
+## Testing
 
-1. **Build the project**:
+There are no automated tests. Validation is done by running the game.
+
+1. Build:
 ```bash
+cd src
 dotnet build
 ```
 
-2. **Run the game**:
+2. Run:
 ```bash
 dotnet run --Exe /path/to/DNCDPRG.EXE --UseCodeOverride true -p 4096
 ```
 
-3. **Test specific scenarios** that exercise your code:
+3. Exercise the relevant game scenarios:
    - Main menu navigation
+   - New game intro sequence
    - Dialogue sequences
+   - Map exploration and movement
+   - Spice collection and shipment
    - Combat
-   - Resource management
    - Save/Load
+   - Game exit
 
-4. **Compare with original**: If possible, run the original game and compare behavior
-
-### Important Test Cases
-
-- **Main menu** - Navigation, option selection
-- **New game start** - Initial setup and intro sequence
-- **Dialogue system** - Character conversations
-- **Map exploration** - Movement and interactions
-- **Resource management** - Spice collection and allocation
-- **Combat** - Battle sequences
-- **Save/Load** - Game state persistence
-
-### Debugging
-
-Use your IDE's debugger to step through C# code:
-
-1. Set breakpoints in your override methods
-2. Run with debugger attached
-3. Inspect variables and execution flow
-4. Verify behavior matches expectations
+4. Compare behavior against the unmodified game if possible.
 
 ## Submitting Changes
 
-### Before You Submit
+### Before submitting
 
-- [ ] Code builds without errors
-- [ ] Game runs and your changes work as expected
-- [ ] You've tested relevant game scenarios
-- [ ] Code follows project conventions
-- [ ] You've added appropriate comments/documentation
-- [ ] No unrelated changes or debugging code left in
+- [ ] Code builds without errors (`dotnet build`)
+- [ ] Game runs and changed scenarios work correctly
+- [ ] No unrelated changes or leftover debug code
+- [ ] XML doc comments added where appropriate
 
-### Creating a Pull Request
+### Process
 
-1. **Create a feature branch**:
+1. Create a branch:
 ```bash
 git checkout -b feature/your-feature-name
 ```
 
-2. **Make your changes and commit**:
+2. Commit and push:
 ```bash
 git add .
 git commit -m "Brief description of changes"
-```
-
-3. **Push to your fork**:
-```bash
 git push origin feature/your-feature-name
 ```
 
-4. **Open a Pull Request** on GitHub with:
-   - **Clear title** describing the change
-   - **Description** explaining what and why
-   - **Testing notes** describing how you verified it works
-   - **Screenshots** if relevant (UI changes, bug fixes)
-
-### Pull Request Template
-
-```markdown
-## Description
-Brief description of changes
-
-## Changes Made
-- List of specific changes
-- What was added/modified/removed
-
-## Testing
-- [ ] Built successfully
-- [ ] Tested in-game
-- [ ] Verified correct behavior
-
-## Testing Notes
-Describe how you tested and what scenarios work correctly
-
-## Related Issues
-Fixes #123 (if applicable)
-```
-
-### Code Review
-
-Maintainers will review your PR and may:
-- Request changes or clarifications
-- Suggest improvements
-- Merge when everything looks good
-
-Be patient and responsive to feedback!
-
-## Communication
-
-### GitHub Issues
-
-Use GitHub issues for:
-- Bug reports
-- Feature requests
-- Questions about the code
-- Proposals for significant changes
-
-### Discussions
-
-For general discussion, questions, or showing off progress, use GitHub Discussions.
+3. Open a pull request with:
+   - Title describing the change
+   - Description of what was changed and why
+   - Which game scenarios were tested
 
 ### Finding Tasks
 
-Look for issues labeled:
-- `good first issue` - Good for newcomers
-- `help wanted` - Community help needed
-- `documentation` - Documentation tasks
-- `reverse-engineering` - RE work needed
+Check the [issues page](https://github.com/OpenRakis/Cryogenic/issues) for labels:
+- `good first issue`
+- `help wanted`
+- `documentation`
+- `reverse-engineering`
 
-## Additional Resources
+## Resources
 
-- **Spice86 Documentation**: [github.com/OpenRakis/Spice86](https://github.com/OpenRakis/Spice86)
-- **Project Website**: [openrakis.github.io/Cryogenic](https://openrakis.github.io/Cryogenic)
-- **Copilot Instructions**: See `.github/copilot-instructions.md` for detailed architectural notes
-
-## Questions?
-
-If you have questions:
-1. Check existing documentation and issues
-2. Open a GitHub issue with the `question` label
-3. Reach out in GitHub Discussions
-
-Thank you for contributing to Cryogenic! Your efforts help preserve and modernize this classic game for future generations.
+- [Spice86](https://github.com/OpenRakis/Spice86)
+- [Project page](https://openrakis.github.io/Cryogenic)
