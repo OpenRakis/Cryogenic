@@ -87,7 +87,7 @@ public partial class Overrides {
     }
 
     public Action CopyMapBlock_334B_2343_0357F3(int gotoAddress) {
-        // 37 lines in ghidra
+        // 37 lines in disassembly
         ushort blockSize = CX;
         uint baseSourceAddress = MemoryUtils.ToPhysicalAddress(DS, SI);
         uint baseDestinationAddress = MemoryUtils.ToPhysicalAddress(ES, DI);
@@ -127,7 +127,7 @@ public partial class Overrides {
 
     // when disabled floors disappear in some rooms.
     public Action VgaFunc36GenerateTextureOutBP_334B_016C_03361C(int gotoAddress) {
-        // 28D69, 30 lines in ghidra
+        // 28D69, 30 lines in disassembly
         uint destinationBaseAddress = MemoryUtils.ToPhysicalAddress(ES, 0);
         ushort initialColor = AX;
         ushort colorIncrement = DI;
@@ -174,7 +174,7 @@ public partial class Overrides {
     }
 
     public Action LoadPaletteInVgaDac_334B_0B68_034018(int gotoAddress) {
-        // No jump, 49 lines in ghidra
+        // No jump, 49 lines in disassembly
         try {
             VgaCard vgaCard = Machine.VgaCard;
             uint baseAddress = MemoryUtils.ToPhysicalAddress(ES, DX);
@@ -191,7 +191,7 @@ public partial class Overrides {
                     videoState.DacRegisters.DataRegister = value;
                 }
             } else {
-                // Untested ... 25f29 in ghidra, 2538:BA9 in dosbox, probably wrong
+                // Untested ... 25f29 in disassembly, 2538:BA9 in dosbox, probably wrong
                 throw FailAsUntested("This palette code path was converted to C# but never executed...");
                 for (ushort i = 0; i < numberOfColors * 3; i += 3) {
                     byte r = (byte)(UInt8[baseAddress + i] & 0x3F);
@@ -220,7 +220,7 @@ public partial class Overrides {
     }
 
     public Action MemcpyDSToESFor64000_334B_1B7C_03502C(int gotoAddress) {
-        // No jump, 22 lines in ghidra
+        // No jump, 22 lines in disassembly
         uint sourceAddress = MemoryUtils.ToPhysicalAddress(DS, 0);
         uint destinationAddress = MemoryUtils.ToPhysicalAddress(ES, 0);
         _loggerService.Debug("memcpyDSToESFor64000 sourceAddress:{@SourceAddress},destinationAddress:{@DestinationAddress}", sourceAddress, destinationAddress);
@@ -229,7 +229,7 @@ public partial class Overrides {
     }
 
     public Action CopySquareOfPixels_334B_1B8E_03503E(int gotoAddress) {
-        // No jump, 30 instructions 67 lines in ghidra
+        // No jump, 30 instructions 67 lines in disassembly
         // warning: we dont set registers at the end but no idea if their values are used or not.
         SetDiFromXYCordsDxBx_334B_0C10_0340C0(0);
         ushort baseOffsetDi = DI;
@@ -311,7 +311,7 @@ public partial class Overrides {
     }
 
     public Action WaitForRetrace_334B_09B8_033E68(int gotoAddress) {
-        // no jump, 28 lines in ghidra, part of the function is not executed in the logs and DX is always 3DA.
+        // no jump, 28 lines in disassembly, part of the function is not executed in the logs and DX is always 3DA.
         // Wait for retrace.
         Thread.Sleep(15);
         State.CarryFlag = true;

@@ -9,8 +9,7 @@ using Spice86.Shared.Emulator.Memory;
 /// <remarks>
 /// <para>
 /// The purpose is to load the VGA, PCM, and MIDI drivers at multiples of 0x1000 (D000, E000, F000)
-/// which makes it easier to identify code locations in disassembly listings and works around
-/// Ghidra issue https://github.com/NationalSecurityAgency/ghidra/issues/981.
+/// which makes it easier to identify code locations in disassembly listings.
 /// </para>
 /// <para>
 /// The remapping process works in two phases:
