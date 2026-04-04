@@ -13,7 +13,7 @@
 [![GitHub Stars](https://img.shields.io/github/stars/OpenRakis/Cryogenic?style=social)](https://github.com/OpenRakis/Cryogenic/stargazers)
 [![GitHub Forks](https://img.shields.io/github/forks/OpenRakis/Cryogenic?style=social)](https://github.com/OpenRakis/Cryogenic/network/members)
 [![GitHub Issues](https://img.shields.io/github/issues/OpenRakis/Cryogenic)](https://github.com/OpenRakis/Cryogenic/issues)
-[![.NET Version](https://img.shields.io/badge/.NET-8.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
+[![.NET Version](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
 
 **Reverse Engineering the Classic Dune Game**
 
