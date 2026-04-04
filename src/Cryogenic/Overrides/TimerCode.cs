@@ -1,7 +1,5 @@
 namespace Cryogenic.Overrides;
 
-using Spice86.Core.Emulator.Devices.Timer;
-
 using System;
 
 /// <summary>
@@ -28,6 +26,8 @@ public partial class Overrides {
     /// <para>
     /// Sets up the system timer counter 0 with the value from AX register.
     /// The counter is configured in mode 3 (square wave generator) without BCD encoding.
+    /// Uses direct PIT port I/O: control byte 0x36 to port 0x43 (channel 0, both bytes, mode 3,
+    /// binary), then the reload value low and high bytes to port 0x40.
     /// </para>
     /// <para>
     /// This function appears to be called primarily during game shutdown to restore
@@ -39,12 +39,11 @@ public partial class Overrides {
         // Seems only called on quit
         ushort valueToSet = AX;
         _loggerService.Debug("Setting timer 0 value to {@ValueToSet}", valueToSet);
-        Timer timer = Machine.Timer;
-        Pit8254Counter counter = timer.GetCounter(0);
-        counter.ReadWritePolicy = 0;
-        counter.Mode = 3;
-        counter.Bcd = false;
-        counter.Configure(valueToSet);
+        // Control byte 0x36: channel 0 (bits 7-6 = 00), both bytes LSB then MSB (bits 5-4 = 11),
+        // mode 3 square wave (bits 3-1 = 011), binary (bit 0 = 0)
+        Machine.Timer.WriteByte(0x43, 0x36);
+        Machine.Timer.WriteByte(0x40, (byte)(valueToSet & 0xFF));
+        Machine.Timer.WriteByte(0x40, (byte)(valueToSet >> 8));
         return NearRet();
     }
 }
