@@ -194,12 +194,12 @@ dotnet run --Exe /path/to/DNCDPRG.EXE --UseCodeOverride true -p 4096
 
 ### Run with audio
 
-AdLib music and Sound Blaster PCM:
+OPL3 music and Sound Blaster PCM:
 
 ```bash
 cd Cryogenic/src/Cryogenic
 dotnet publish
-bin/Release/net10.0/publish/Cryogenic --Exe /path/to/DNCDPRG.EXE --UseCodeOverride true -p 4096 -a "ADL220 SBP2227"
+bin/Release/net10.0/publish/Cryogenic --Exe /path/to/DNCDPRG.EXE --Cycles 8000 --UseCodeOverride true -p 4096 -a "ADP330 SBP2227"
 ```
 
 ---
