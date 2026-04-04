@@ -70,7 +70,7 @@ As we continue to replace assembly routines with C# implementations, the codebas
 
 🛠️ **Educational Resource** - Serve as a reference implementation for reverse engineering techniques and demonstrate the power of hybrid emulation approaches.
 
-🌐 **Cross-Platform Support** - Leverage .NET 8's cross-platform capabilities to run the game natively on Windows, macOS, and Linux without emulation layers.
+🌐 **Cross-Platform Support** - Leverage .NET 10's cross-platform capabilities to run the game natively on Windows, macOS, and Linux without emulation layers.
 
 ---
 
@@ -80,7 +80,7 @@ As we continue to replace assembly routines with C# implementations, the codebas
 
 [Spice86](https://github.com/OpenRakis/Spice86) is a reverse engineering toolkit and PC emulator designed for 16-bit real mode x86 programs. It enables gradually replacing legacy DOS application assembly code with high-level C# implementations.
 
-Built on .NET 8, Spice86 provides a hybrid execution model where the original DOS executable runs alongside C# overrides, allowing for incremental reverse engineering and testing.
+Built on .NET 10, Spice86 provides a hybrid execution model where the original DOS executable runs alongside C# overrides, allowing for incremental reverse engineering and testing.
 
 ### Key Features
 
