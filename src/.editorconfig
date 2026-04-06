@@ -1,19 +1,31 @@
 # Remove the line below if you want to inherit .editorconfig settings from higher directories
 root = true
 
+# Global file formatting rules
+[*.{cs,csproj,sln,props,targets,json,md,yml,yaml,xml}]
+charset = utf-8-bom
+end_of_line = crlf
+indent_style = tab
+tab_width = 4
+
 # C# files
 [*.cs]
 
 #### Core EditorConfig Options ####
 
 # Indentation and spacing
-indent_size = 4
-indent_style = space
+indent_size = tab
+indent_style = tab
 tab_width = 4
 
 # New line preferences
 end_of_line = crlf
 insert_final_newline = false
+
+# Build-time enforcement for style/format
+dotnet_diagnostic.IDE0007.severity = error
+dotnet_diagnostic.IDE0008.severity = none
+dotnet_diagnostic.IDE0055.severity = error
 
 #### .NET Coding Conventions ####
 
@@ -75,9 +87,9 @@ dotnet_style_allow_statement_immediately_after_block_experimental = true
 #### C# Coding Conventions ####
 
 # var preferences
-csharp_style_var_elsewhere = false:warning
-csharp_style_var_for_built_in_types = false
-csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_style_var_elsewhere = false:error
+csharp_style_var_for_built_in_types = false:error
+csharp_style_var_when_type_is_apparent = false:error
 
 # Expression-bodied members
 csharp_style_expression_bodied_accessors = true

@@ -1,4 +1,4 @@
-namespace Cryogenic.Globals;
+﻿namespace Cryogenic.Globals;
 
 using Cryogenic.Generated;
 
@@ -14,11 +14,11 @@ using Spice86.Core.Emulator.Memory.ReaderWriter;
 /// </remarks>
 public class ExtraGlobalsOnCsSegment0x2538 : GlobalsOnCsSegment0x2538 {
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="ExtraGlobalsOnCsSegment0x2538"/> class.
-    /// </summary>
-    /// <param name="memory">The memory reader/writer interface for accessing emulated memory.</param>
-    /// <param name="baseAddress">The base address of the CS segment 0x2538 in physical memory.</param>
-    public ExtraGlobalsOnCsSegment0x2538(IByteReaderWriter memory, uint baseAddress) : base(memory, baseAddress) {
-    }
+	/// <summary>
+	/// Initializes a new instance of the <see cref="ExtraGlobalsOnCsSegment0x2538"/> class.
+	/// </summary>
+	/// <param name="memory">The memory reader/writer interface for accessing emulated memory.</param>
+	/// <param name="baseAddress">The base address of the CS segment 0x2538 in physical memory.</param>
+	public ExtraGlobalsOnCsSegment0x2538(IByteReaderWriter memory, uint baseAddress) : base(memory, baseAddress) {
+	}
 }

@@ -1,4 +1,4 @@
-namespace Cryogenic;
+﻿namespace Cryogenic;
 
 using Spice86.Core.CLI;
 using Spice86.Core.Emulator.Function;
@@ -20,36 +20,38 @@ using System.Collections.Generic;
 /// Example command line debug arguments: -e "C:\\Jeux\\ABWFR\\DUNE_CD\\C\\DNCDPRG.EXE" --UseCodeOverride true
 /// </remarks>
 public class DuneCdOverrideSupplier : IOverrideSupplier {
-    
-    /// <summary>
-    /// Generates function information mappings that tell Spice86 which addresses should be overridden
-    /// with C# implementations.
-    /// </summary>
-    /// <param name="loggerService">Service for logging debug information during override execution.</param>
-    /// <param name="configuration">Spice86 configuration containing runtime settings.</param>
-    /// <param name="programStartSegment">The segment where the DOS program was loaded in memory.</param>
-    /// <param name="machine">The emulated machine instance providing access to CPU, memory, and devices.</param>
-    /// <returns>A dictionary mapping segmented addresses to their function information and override implementations.</returns>
-    public IDictionary<SegmentedAddress, FunctionInformation> GenerateFunctionInformations(
-        ILoggerService loggerService,
-        Configuration configuration,
-        ushort programStartSegment,
-        Machine machine) {
-        Dictionary<SegmentedAddress, FunctionInformation> res = new();
-        CreateOverrides(loggerService, configuration, programStartSegment, machine, res);
-        return res;
-    }
 
-    /// <summary>
-    /// Creates and registers all override functions by instantiating the Overrides class.
-    /// </summary>
-    /// <param name="loggerService">Service for logging debug information during override execution.</param>
-    /// <param name="configuration">Spice86 configuration containing runtime settings.</param>
-    /// <param name="programStartSegment">The segment where the DOS program was loaded in memory.</param>
-    /// <param name="machine">The emulated machine instance providing access to CPU, memory, and devices.</param>
-    /// <param name="res">The dictionary to populate with override function mappings.</param>
-    private void CreateOverrides(ILoggerService loggerService, Configuration configuration, ushort programStartSegment, 
-        Machine machine, Dictionary<SegmentedAddress, FunctionInformation> res) {
-        new Overrides.Overrides(res, programStartSegment, machine, loggerService, configuration);
-    }
+	/// <summary>
+	/// Generates function information mappings that tell Spice86 which addresses should be overridden
+	/// with C# implementations.
+	/// </summary>
+	/// <param name="loggerService">Service for logging debug information during override execution.</param>
+	/// <param name="configuration">Spice86 configuration containing runtime settings.</param>
+	/// <param name="programStartAddress">The segment where the DOS program was loaded in memory.</param>
+	/// <param name="machine">The emulated machine instance providing access to CPU, memory, and devices.</param>
+	/// <returns>A dictionary mapping segmented addresses to their function information and override implementations.</returns>
+	public IDictionary<SegmentedAddress, FunctionInformation> GenerateFunctionInformations(
+		ILoggerService loggerService,
+		Configuration configuration,
+		ushort programStartAddress,
+		Machine machine) {
+		Dictionary<SegmentedAddress, FunctionInformation> res = new();
+		CreateOverrides(loggerService, configuration, programStartAddress, machine, res);
+		return res;
+	}
+
+	/// <summary>
+	/// Creates and registers all override functions by instantiating the Overrides class.
+	/// </summary>
+	/// <param name="loggerService">Service for logging debug information during override execution.</param>
+	/// <param name="configuration">Spice86 configuration containing runtime settings.</param>
+	/// <param name="programStartSegment">The segment where the DOS program was loaded in memory.</param>
+	/// <param name="machine">The emulated machine instance providing access to CPU, memory, and devices.</param>
+	/// <param name="res">The dictionary to populate with override function mappings.</param>
+	private static void CreateOverrides(ILoggerService loggerService, Configuration configuration, ushort programStartSegment,
+		Machine machine, Dictionary<SegmentedAddress, FunctionInformation> res) {
+#pragma warning disable S1848
+		new Overrides.Overrides(res, programStartSegment, machine, loggerService, configuration);
+#pragma warning restore S1848
+	}
 }
