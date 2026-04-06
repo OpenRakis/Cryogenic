@@ -145,11 +145,11 @@ Game data is stored entirely in `DUNE.DAT`, a custom archive format. Each audio 
 
 ### MT-32 MIDI + PCM Sound Effects
 ```
--p 4096 --Cycles 3000 -e "C:\path\to\DNCDPRG.EXE" -a "MID330 SBP2227" -m "C:\path\to\MT32\ROMs"
+-p 4096 --Cycles 3000 -e "C:\path\to\DNCDPRG.EXE" -a "MID330 SBP2227" -m "C:\Jeux\MT32"
 ```
 - MIDI driver at port 0x330 (MT-32 hardware or emulation)
 - PCM Sound Blaster Pro at I/O 0x220, IRQ 7, DMA 1
-- Requires MT-32 ROM files (license required)
+- MT-32 ROM path in this workspace: `C:\Jeux\MT32`
 
 ### AdLib Gold OPL3 + PCM Sound Effects
 ```
