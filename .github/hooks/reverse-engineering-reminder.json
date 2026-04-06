@@ -1,0 +1,13 @@
+{
+    "hooks": {
+        "SessionStart": [
+            {
+                "type": "command",
+                "command": "echo",
+                "args": [
+                    "Reverse engineering mode: Use '/inspect-live-spice86' prompt to gather evidence from live emulator or dumps before implementing overrides. See .github/instructions/reverse-engineering.instructions.md for implementation rules."
+                ]
+            }
+        ]
+    }
+}
