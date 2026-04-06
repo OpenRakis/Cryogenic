@@ -2,9 +2,8 @@ name: Release
 
 on:
   push:
-    branches:
-      - main
-      - master
+    tags:
+      - "v*"
 
 permissions:
   contents: write
@@ -25,18 +24,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Full history for GitVersion
+          fetch-depth: 0 # Full history for GitVersion
           fetch-tags: true
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '10.0.x'
+          dotnet-version: "10.0.x"
 
       - name: Install GitVersion
         uses: gittools/actions/gitversion/setup@v3.1.1
         with:
-          versionSpec: '6.0.x'
+          versionSpec: "6.0.x"
 
       - name: Determine Version
         id: gitversion
@@ -73,7 +72,7 @@ jobs:
       - name: Run tests
         working-directory: ./src
         run: dotnet test --configuration Release --no-build --verbosity normal
-        continue-on-error: true  # Continue if no tests exist
+        continue-on-error: true # Continue if no tests exist
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
@@ -94,7 +93,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '10.0.x'
+          dotnet-version: "10.0.x"
 
       - name: Restore dependencies
         working-directory: ./src/Cryogenic
@@ -244,8 +243,8 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ needs.build-test-scan.outputs.semver }}
-          name: Release v${{ needs.build-test-scan.outputs.semver }}
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
           body_path: release_notes.md
           draft: false
           prerelease: false

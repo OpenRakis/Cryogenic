@@ -1,0 +1,115 @@
+name: Nightly Artifacts
+
+on:
+    push:
+        branches:
+            - main
+            - master
+    workflow_dispatch:
+
+permissions:
+    contents: read
+    actions: read
+
+jobs:
+    build-and-package:
+        name: Build and Package Nightly
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+                  fetch-tags: true
+
+            - name: Setup .NET
+              uses: actions/setup-dotnet@v4
+              with:
+                  dotnet-version: "10.0.x"
+
+            - name: Install GitVersion
+              uses: gittools/actions/gitversion/setup@v3.1.1
+              with:
+                  versionSpec: "6.0.x"
+
+            - name: Determine Version
+              id: gitversion
+              uses: gittools/actions/gitversion/execute@v3.1.1
+              with:
+                  useConfigFile: true
+                  configFilePath: GitVersion.yml
+
+            - name: Restore dependencies
+              working-directory: ./src
+              run: dotnet restore
+
+            - name: Build
+              working-directory: ./src
+              run: |
+                  dotnet build --configuration Release --no-restore \
+                    /p:Version=${{ steps.gitversion.outputs.semVer }} \
+                    /p:AssemblyVersion=${{ steps.gitversion.outputs.assemblySemVer }} \
+                    /p:FileVersion=${{ steps.gitversion.outputs.assemblySemFileVer }} \
+                    /p:InformationalVersion=${{ steps.gitversion.outputs.informationalVersion }}
+
+            - name: Publish nightly targets
+              working-directory: ./src/Cryogenic
+              env:
+                  VERSION: ${{ steps.gitversion.outputs.semVer }}
+                  ASSEMBLY_VERSION: ${{ steps.gitversion.outputs.assemblySemVer }}
+                  FILE_VERSION: ${{ steps.gitversion.outputs.assemblySemFileVer }}
+                  INFORMATIONAL_VERSION: ${{ steps.gitversion.outputs.informationalVersion }}
+              run: |
+                  dotnet publish -c Release -r linux-x64 --self-contained true \
+                    -p:PublishReadyToRun=true -p:PublishSingleFile=true \
+                    -p:Version=$VERSION \
+                    -p:AssemblyVersion=$ASSEMBLY_VERSION \
+                    -p:FileVersion=$FILE_VERSION \
+                    -p:InformationalVersion=$INFORMATIONAL_VERSION \
+                    -o Nightly/linux-x64
+
+                  dotnet publish -c Release -r win-x64 --self-contained true \
+                    -p:PublishReadyToRun=true -p:PublishSingleFile=true \
+                    -p:Version=$VERSION \
+                    -p:AssemblyVersion=$ASSEMBLY_VERSION \
+                    -p:FileVersion=$FILE_VERSION \
+                    -p:InformationalVersion=$INFORMATIONAL_VERSION \
+                    -o Nightly/windows-x64
+
+                  dotnet publish -c Release -r osx-x64 --self-contained true \
+                    -p:PublishReadyToRun=true -p:PublishSingleFile=true \
+                    -p:Version=$VERSION \
+                    -p:AssemblyVersion=$ASSEMBLY_VERSION \
+                    -p:FileVersion=$FILE_VERSION \
+                    -p:InformationalVersion=$INFORMATIONAL_VERSION \
+                    -o Nightly/macos-x64
+
+                  dotnet publish -c Release -r osx-arm64 --self-contained true \
+                    -p:PublishReadyToRun=true -p:PublishSingleFile=true \
+                    -p:Version=$VERSION \
+                    -p:AssemblyVersion=$ASSEMBLY_VERSION \
+                    -p:FileVersion=$FILE_VERSION \
+                    -p:InformationalVersion=$INFORMATIONAL_VERSION \
+                    -o Nightly/macos-arm64
+
+            - name: Package nightly archives
+              working-directory: ./src/Cryogenic
+              run: |
+                  mkdir -p artifacts
+                  zip -qq -r artifacts/Cryogenic-nightly-${{ github.run_number }}-linux-x64.zip Nightly/linux-x64
+                  zip -qq -r artifacts/Cryogenic-nightly-${{ github.run_number }}-windows-x64.zip Nightly/windows-x64
+                  zip -qq -r artifacts/Cryogenic-nightly-${{ github.run_number }}-macos-x64.zip Nightly/macos-x64
+                  zip -qq -r artifacts/Cryogenic-nightly-${{ github.run_number }}-macos-arm64.zip Nightly/macos-arm64
+
+            - name: Upload nightly artifacts
+              uses: actions/upload-artifact@v4
+              with:
+                  name: Cryogenic-nightly-${{ github.run_number }}
+                  path: |
+                      ./src/Cryogenic/artifacts/Cryogenic-nightly-${{ github.run_number }}-linux-x64.zip
+                      ./src/Cryogenic/artifacts/Cryogenic-nightly-${{ github.run_number }}-windows-x64.zip
+                      ./src/Cryogenic/artifacts/Cryogenic-nightly-${{ github.run_number }}-macos-x64.zip
+                      ./src/Cryogenic/artifacts/Cryogenic-nightly-${{ github.run_number }}-macos-arm64.zip
+                  if-no-files-found: error
+                  retention-days: 14
