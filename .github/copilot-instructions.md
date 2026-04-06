@@ -38,3 +38,38 @@
 - Run with `dotnet run --Exe C:/path/to/DNCDPRG.EXE --UseCodeOverride true`; add audio arguments only when the scenario needs them.
 - The expected `DNCDPRG.EXE` SHA256 is `5F30AEB84D67CF2E053A83C09C2890F010F2E25EE877EBEC58EA15C5B30CFFF9`. Verify the checksum before debugging version-specific behavior.
 - There are no automated tests. Validate by launching the game and exercising the exact scenario you changed, comparing against observed original behavior when possible.
+
+## Audio Driver Launch Configurations
+
+Game data is stored entirely in `DUNE.DAT`, a custom archive format. Each audio configuration triggers different driver loading via `DriverLoadToolbox`.
+
+### MT-32 MIDI + PCM Sound Effects
+```
+--Cycles 3000 -e "C:\path\to\DNCDPRG.EXE" -a "MID330 SBP2227" -m "C:\path\to\MT32\ROMs"
+```
+- MIDI driver at port 0x330 (MT-32 hardware or emulation)
+- PCM Sound Blaster Pro at I/O 0x220, IRQ 7, DMA 1
+- Requires MT-32 ROM files (license required)
+
+### AdLib Gold OPL3 + PCM Sound Effects
+```
+--Cycles 3000 -e "C:\path\to\DNCDPRG.EXE" -a "ADG388 SBP2227" --OplMode Opl3Gold
+```
+- OPL3 Gold synthesis for music (AdLib Gold compatible)
+- PCM Sound Blaster Pro for effects
+- `--OplMode Opl3Gold` enables OPL3 Gold emulation
+
+### AdLib Compatible OPL3 Sound Blaster + PCM Sound Effects
+```
+--Cycles 3000 -e "C:\path\to\DNCDPRG.EXE" -a "ADP330 SBP2227" --OplMode Opl3
+```
+- Sound Blaster Pro OPL3 synthesis for music (AdLib compatible)
+- PCM Sound Blaster Pro for effects
+- `-s` silences logs if needed
+- `--OplMode Opl3` enables dual-OPL3 emulation
+
+### Driver Loading Relationship
+- Each audio driver prefix (MID, ADG, ADP) triggers different MIDI driver loading
+- PCM suffix (SBP2227) loads the Sound Blaster Pro driver for effects
+- **Without PCM driver**, the sound effects driver does not load; audio will be incomplete
+- `DriverLoadToolbox` orchestrates remapping at `CS1:E57B` (RemapDrivers) and `CS1:E593` (ResetAllocator)
