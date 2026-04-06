@@ -135,7 +135,7 @@ Call `Define{SubsystemName}CodeOverrides()` from `DefineOverrides()` in Override
 
 ## Build And Validation
 - Build from `src` with `dotnet build`.
-- Run with `dotnet run --Exe C:/path/to/DNCDPRG.EXE --UseCodeOverride true`; add audio arguments only when the scenario needs them.
+- Run with `dotnet run -p 4096 --Exe C:/path/to/DNCDPRG.EXE --UseCodeOverride true`; add audio arguments only when the scenario needs them.
 - The expected `DNCDPRG.EXE` SHA256 is `5F30AEB84D67CF2E053A83C09C2890F010F2E25EE877EBEC58EA15C5B30CFFF9`. Verify the checksum before debugging version-specific behavior.
 - There are no automated tests. Validate by launching the game and exercising the exact scenario you changed, comparing against observed original behavior when possible.
 
@@ -145,7 +145,7 @@ Game data is stored entirely in `DUNE.DAT`, a custom archive format. Each audio 
 
 ### MT-32 MIDI + PCM Sound Effects
 ```
---Cycles 3000 -e "C:\path\to\DNCDPRG.EXE" -a "MID330 SBP2227" -m "C:\path\to\MT32\ROMs"
+-p 4096 --Cycles 3000 -e "C:\path\to\DNCDPRG.EXE" -a "MID330 SBP2227" -m "C:\path\to\MT32\ROMs"
 ```
 - MIDI driver at port 0x330 (MT-32 hardware or emulation)
 - PCM Sound Blaster Pro at I/O 0x220, IRQ 7, DMA 1
@@ -153,7 +153,7 @@ Game data is stored entirely in `DUNE.DAT`, a custom archive format. Each audio 
 
 ### AdLib Gold OPL3 + PCM Sound Effects
 ```
---Cycles 3000 -e "C:\path\to\DNCDPRG.EXE" -a "ADG388 SBP2227" --OplMode Opl3Gold
+-p 4096 --Cycles 3000 -e "C:\path\to\DNCDPRG.EXE" -a "ADG388 SBP2227" --OplMode Opl3Gold
 ```
 - OPL3 Gold synthesis for music (AdLib Gold compatible)
 - PCM Sound Blaster Pro for effects
@@ -161,7 +161,7 @@ Game data is stored entirely in `DUNE.DAT`, a custom archive format. Each audio 
 
 ### AdLib Compatible OPL3 Sound Blaster + PCM Sound Effects
 ```
---Cycles 3000 -e "C:\path\to\DNCDPRG.EXE" -a "ADP330 SBP2227" --OplMode Opl3
+-p 4096 --Cycles 3000 -e "C:\path\to\DNCDPRG.EXE" -a "ADP330 SBP2227" --OplMode Opl3
 ```
 - Sound Blaster Pro OPL3 synthesis for music (AdLib compatible)
 - PCM Sound Blaster Pro for effects

@@ -1,0 +1,26 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Launch Cryogenic",
+            "type": "coreclr",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/Cryogenic/bin/Debug/net10.0/Cryogenic.dll",
+            "cwd": "${workspaceFolder}/src/Cryogenic",
+            "stopAtEntry": false,
+            "args": [
+                "-s",
+                "-p",
+                "4096",
+                "--Cycles",
+                "3000",
+                "-e",
+                "C:\\Jeux\\ABWFR\\DuneCDVF\\C\\DUNECD\\DNCDPRG.EXE",
+                "-a",
+                "ADP330 SBP2227",
+                "--UseCodeOverride",
+                "true"
+            ]
+        }
+    ]
+}
