@@ -21,6 +21,52 @@
 - Never hand-edit files under `src/Cryogenic/Generated/`; they come from Spice86 dump tooling and must stay regenerable.
 - Reuse existing helpers and constants before introducing new ones, especially in `Overrides/MenuCode.cs` and `Overrides/VgaDriverCode.cs`.
 
+## C# Coding Standards
+
+### Type Safety (No Implicit Typing)
+- **No `var` keyword**. Always write explicit types. `var` hides intent and makes reverse-engineering code harder to trace. Example: `uint address = 0x1000;` not `var address = 0x1000;`
+- **No nullable types (`string?`, `int?`)**. Use explicit, non-null types. If a value can be absent, use `Optional<T>`, a wrapper type, or guard the code path.
+- **No nullable forgiving operator (`!`)**. If you need `!`, you have a design problem. Refactor to eliminate null entirely or use a Result/Option type.
+- **Favor strongly typed code over string-based operations**. Use enums, discriminated unions, or sealed classes instead of magic string constants. Example: `enum DriverType { DNVGA, DNPCS2, DNSBP, DNMID }` not string literals like `"DNVGA"`.
+
+### Async / Sync Discipline
+- **No sync over async**. Never block async code with `.Result` or `.Wait()`.
+- **No async over sync**. Never wrap sync code in unnecessary `Task.Run` or `Task.FromResult` for convenience.
+- Match the call site requirements: if calling code is sync, be sync; if async, be async. Pin your design early.
+
+### Method Constraints
+- **Every public method must have strong documentation**. Use XML doc comments (`///`) explaining: what the method does, why it exists, pre/post conditions, and any side effects. Not overly verbose; be precise. Example:
+  ```csharp
+  /// <summary>
+  /// Remaps VGA driver to segment 0xD000 and disables allocator bounds.
+  /// Called before each driver load to ensure fixed segment addresses.
+  /// </summary>
+  public void RemapDrivers() { }
+  ```
+- **No optional arguments**. Use method overloading or a config object if you need flexibility. Optional arguments hide intent and make testing harder.
+- **No reflection**. Reflection is fragile, slow, and obscures dependencies. Favor composition, polymorphism, or code generation (Spice86 dumps) instead.
+- **No method without practical tests**. If a method is public or complex, it must be testable and have validation logic in-game. Mark unobserved code paths with `FailAsUntested` or guard them.
+
+### Game Memory Structures
+- **Represent all game structures in memory using Spice86-based classes**. Inherit from `Spice86.Core.Emulator.ReverseEngineer.DataStructure.MemoryBasedDataStructure` or `MemoryBasedDataStructureWithSegmentRegisterBaseAddress`.
+- **Never use raw pointer math**. Use the typed accessor generated or manually written in `Globals/Extra*.cs` files.
+- **Example structure definition**:
+  ```csharp
+  public class GameStateAtDs : MemoryBasedDataStructureWithSegmentRegisterBaseAddress {
+      public GameStateAtDs(IByteReaderWriter memory, SegmentRegisters segmentRegisters) 
+          : base(memory, segmentRegisters) { }
+      
+      public uint DialogueCount => UInt32[0x47A8];
+      public void SetDialogueCount(uint value) => UInt32[0x47A8] = value;
+  }
+  ```
+- Extend or create new accessor classes in `src/Cryogenic/Globals/Extra*.cs` rather than editing `Generated/`.
+
+### Code Organization
+- Group related methods and fields in domain-specific partial override files.
+- Use enums and named constants instead of magic numbers. Example: `const int MENU_TYPE_DIALOGUE = 0x1F7E;` then reference `MENU_TYPE_DIALOGUE`.
+- Minimize scope of helper methods; keep them private unless reuse is proven.
+
 ## Live Data And Dumps
 - Prefer live inspection over guessing. If the emulator is running, use Spice86 MCP, debugger, HTTP, or GDB capabilities to inspect registers, memory, stack, control flow, and structures.
 - Use dump artifacts to validate reverse-engineering decisions when live inspection is unavailable or insufficient. In particular, rely on `dump/spice86dumpExecutionFlow.json` for executed paths, `dump/spice86dumpGhidraSymbols.txt` for address naming, and `dump/CodeGeneratorConfig.json` for generated hook and patch assumptions.
