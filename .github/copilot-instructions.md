@@ -21,6 +21,60 @@
 - Never hand-edit files under `src/Cryogenic/Generated/`; they come from Spice86 dump tooling and must stay regenerable.
 - Reuse existing helpers and constants before introducing new ones, especially in `Overrides/MenuCode.cs` and `Overrides/VgaDriverCode.cs`.
 
+## Partial Class Architecture and CSharpOverrideHelper
+
+The `Overrides` class is a partial class that inherits from `Spice86.Core.Emulator.Function.CSharpOverrideHelper`. This design accommodates the original DOS code's characteristics: hand-written assembly with self-modifying code, complex control flow, and segments larger than 500 lines that are hard to navigate.
+
+**Why Partial Classes:**
+- The original game uses hand-written assembly with self-modifying code patterns that are complex to reverse-engineer
+- Splitting overrides by domain (VgaDriverCode, DialoguesCode, MapCode, etc.) keeps each file under 500 lines for IDE performance and readability
+- Each partial file focuses on one game subsystem: graphics, dialogue, maps, audio, menus, etc.
+- Larger files degrade IDE performance (Intellisense, refactoring) and readability for future maintainers
+
+**Inherited from CSharpOverrideHelper:**
+
+*Registration Methods:*
+- `DefineFunction(segment, offset, method)` — replaces CALL targets with C# methods
+- `DefineFunction(segment, offset, method, throwIfNotFound, name)` — variant with metadata
+- `DoOnTopOfInstruction(segment, offset, hookAction)` — injects inline hooks that run before/after an instruction
+
+*CPU State Access (Registers):*
+- `AX`, `BX`, `CX`, `DX`, `SI`, `DI`, `BP`, `SP` — 16-bit register access
+- `CS`, `DS`, `ES`, `SS` — segment registers
+- `DirectionFlag` — direction for string operations
+- All registers are read-write; changes take effect in the next emulated instruction
+
+*Memory and Debugging:*
+- `Memory` — access emulated memory via `Memory.UInt8[address]`, `Memory.UInt16[address]`, `Memory.MemCopy()`, `Memory.Memset8()`
+- `Machine` — emulated CPU and device state
+- `_loggerService` — structured logging via `_loggerService.Debug(...)`
+- `FailAsUntested(message)` — throw exception for unobserved code paths; prevents silent failures
+
+*Utility Methods:*
+- `NearRet()` — return Action for near CALL/RET (same segment)
+- `FarRet()` — return Action for far CALL/RET (across segments)
+
+**File Organization Pattern:**
+Each partial file groups related overrides by subsystem:
+```csharp
+public partial class Overrides {
+    public void Define{SubsystemName}CodeOverrides() {
+        DefineFunction(segment, offset, methodName);
+        // ... more registrations
+    }
+
+    /// <summary>Override for {address}.</summary>
+    public Action MethodName_Segment_Offset_Linear(int gotoAddress) {
+        // Implementation
+        return NearRet(); // or FarRet()
+    }
+    
+    // More methods...
+}
+```
+
+Call `Define{SubsystemName}CodeOverrides()` from `DefineOverrides()` in Overrides.cs to register all overrides in that file. The partial class consolidates registration in one place (main `DefineOverrides()` method) while keeping implementation split across files.
+
 ## C# Coding Standards
 
 ### Type Safety (No Implicit Typing)
