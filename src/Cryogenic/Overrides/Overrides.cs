@@ -2,6 +2,8 @@
 
 using Globals;
 
+using Mt32DriverDebug;
+
 using Spice86.Core.CLI;
 using Spice86.Core.Emulator.Function;
 using Spice86.Core.Emulator.StateSerialization;
@@ -59,6 +61,9 @@ public partial class Overrides : CSharpOverrideHelper {
 	/// <summary>Accessor for game global variables stored in CS segment 0x2538.</summary>
 	private ExtraGlobalsOnCsSegment0x2538 globalsOnCsSegment0X2538;
 
+	/// <summary>Service managing the MT-32 driver debug window.</summary>
+	private Mt32DriverWindowService mt32DriverWindowService;
+
 	/// <summary>
 	/// Initializes the override system and registers all function replacements and hooks.
 	/// </summary>
@@ -85,6 +90,11 @@ public partial class Overrides : CSharpOverrideHelper {
 
 		DefineOverrides();
 		DefineStaticDefinitionsFunctions();
+
+		// Show the MT-32 driver debug window via Spice86's AdditionalWindow API.
+		// Active regardless of whether C# MT-32 overrides are enabled.
+		mt32DriverWindowService = new Mt32DriverWindowService(machine.Memory, 0x5BAE);
+		mt32DriverWindowService.ShowWindow();
 	}
 
 	/// <summary>
@@ -126,9 +136,11 @@ public partial class Overrides : CSharpOverrideHelper {
 
 		DefineDriversRemapping();
 		DetectDriversEntryPoints();
+		// MT-32 MIDI driver is always remapped to F000 by DriverLoadToolbox hooks.
+		// Register overrides eagerly at F000 so they are active when the driver loads.
+		DefineMT32DriverCodeOverrides();
 		// Dump memory at the proper time. Too soon and drivers wont be loaded, too late and init code will be erased
 		DefineMemoryDumpsMapping();
-		DefineMT32DriverCodeOverrides();
 
 		// Generated code, crashes for various reasons
 		//DefineGeneratedCodeOverrides();
@@ -199,11 +211,12 @@ public partial class Overrides : CSharpOverrideHelper {
 	}
 
 	/// <summary>
-	/// Registers a hook to automatically detect and define driver entry point functions.
+	/// Registers a hook to parse driver entry tables for tracing only.
 	/// </summary>
 	/// <remarks>
 	/// Injects a call to <see cref="DriverLoadToolbox.ReadDriverFunctionTable"/> at CS1:E589
-	/// to parse driver export tables and register their functions for tracing.
+	/// to register driver export names for tracing/debugging. MT-32 overrides are registered
+	/// eagerly at startup, not lazily.
 	/// </remarks>
 	private void DetectDriversEntryPoints() {
 		DoOnTopOfInstruction(cs1, 0xE589, () => {

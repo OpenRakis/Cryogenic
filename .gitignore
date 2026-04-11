@@ -4,6 +4,17 @@
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
 # User-specific files
+dump/
+docs/
+OpenRakis/
+Spice86/
+*5F30AEB84D67CF2E053A83C09C2890F010F2E25EE877EBEC58EA15C5B30CFFF9/
+doc/Dune*/
+doc/dunedemo/
+_buildcheck/
+*.dll
+*.exe
+
 src/Cryogenic/Properties/
 *.rsuser
 *.suo

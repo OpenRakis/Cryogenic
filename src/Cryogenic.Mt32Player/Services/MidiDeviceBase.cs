@@ -1,0 +1,56 @@
+﻿namespace Cryogenic.Mt32Player.Services;
+
+public abstract class MidiDeviceBase : IDisposable {
+	private uint _currentMessage;
+	private uint _bytesReceived;
+	private uint _bytesExpected;
+	private byte[] _currentSysex = new byte[128];
+	private int _sysexIndex = -1;
+	private static readonly uint[] MessageLength = [3, 3, 3, 3, 2, 2, 3, 1];
+
+	public void SendByte(byte value) {
+		if (_sysexIndex == -1) {
+			if (value == 0xF0 && _bytesExpected == 0) {
+				_currentSysex[0] = 0xF0;
+				_sysexIndex = 1;
+				return;
+			}
+
+			if ((value & 0x80) != 0) {
+				_currentMessage = value;
+				_bytesReceived = 1;
+				_bytesExpected = MessageLength[(value & 0x70) >> 4];
+			} else if (_bytesReceived < _bytesExpected) {
+				_currentMessage |= (uint)(value << (int)(_bytesReceived * 8u));
+				_bytesReceived++;
+			}
+
+			if (_bytesReceived >= _bytesExpected) {
+				PlayShortMessage(_currentMessage);
+				_bytesReceived = 0;
+				_bytesExpected = 0;
+			}
+		} else {
+			if (_sysexIndex >= _currentSysex.Length) {
+				Array.Resize(ref _currentSysex, _currentSysex.Length * 2);
+			}
+
+			_currentSysex[_sysexIndex++] = value;
+			if (value == 0xF7) {
+				PlaySysex(_currentSysex.AsSpan(0, _sysexIndex));
+				_sysexIndex = -1;
+			}
+		}
+	}
+
+	public void Dispose() {
+		Dispose(true);
+		GC.SuppressFinalize(this);
+	}
+
+	protected abstract void PlayShortMessage(uint message);
+	protected abstract void PlaySysex(ReadOnlySpan<byte> data);
+
+	protected virtual void Dispose(bool disposing) {
+	}
+}

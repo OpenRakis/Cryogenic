@@ -1,5 +1,7 @@
 ﻿namespace Cryogenic;
 
+using Serilog;
+
 using Spice86.Core.Emulator.CPU;
 using Spice86.Shared.Emulator.Memory;
 
@@ -32,6 +34,8 @@ using Spice86.Shared.Emulator.Memory;
 /// </para>
 /// </remarks>
 public static class DriverLoadToolbox {
+	private static readonly ILogger Logger = Log.ForContext(typeof(DriverLoadToolbox));
+
 	/// <summary>
 	/// Segment address for interrupt handlers (0x800), freeing 0xF000 for driver3.
 	/// </summary>
@@ -78,6 +82,18 @@ public static class DriverLoadToolbox {
 	private static bool DriverOverrideHappened = false;
 
 	/// <summary>
+	/// The actual segment where the MIDI driver (DNMID/DNPCS) was loaded at runtime.
+	/// Set by <see cref="ReadDriverFunctionTable"/> when the MIDI driver is detected.
+	/// May differ from <see cref="DRIVER3_SEGMENT"/> if remapping failed.
+	/// </summary>
+	public static ushort ActualMidiSegment { get; private set; } = 0;
+
+	/// <summary>
+	/// Expected exported function offsets for the DNMID MT-32 driver.
+	/// </summary>
+	private static readonly ushort[] Mt32ExportedFunctionOffsets = [0x0100, 0x0103, 0x0106, 0x0109, 0x010C, 0x010F, 0x0112];
+
+	/// <summary>
 	/// Enumeration of driver identifiers corresponding to AX register values during driver loading.
 	/// </summary>
 	private enum DriverIndex { DNVGA, DN386, DNPCS, DNADL, DNADP, DNADG, DNMID, DNPCS2, DNSDB, DNSBP }
@@ -122,13 +138,23 @@ public static class DriverLoadToolbox {
 	/// </remarks>
 	static public void RemapDrivers(State state, IMemory memory) {
 		CurrentDriver = state.AX;
+		_driverNames.TryGetValue(CurrentDriver, out string? driverName);
+		driverName = driverName ?? "UNKNOWN";
+		Logger.Debug("RemapDrivers called. DriverId={DriverId}, DriverName={DriverName}, DS={DSHex}", CurrentDriver, driverName, $"0x{state.DS:X4}");
+
 		ushort? newSegment = ComputeNewSegment(CurrentDriver);
 		if (newSegment != null) {
 			DisableAllocatorLimit(state, memory);
 			DriverOverrideHappened = true;
 			memory.UInt16[state.DS, 0x39B9] = (ushort)(newSegment.Value + 0x10);
+			Logger.Information(
+				"Driver remap applied. DriverName={DriverName}, TargetSegment={TargetSegmentHex}, NextFreeSegmentWritten={NextFreeSegmentHex}",
+				driverName,
+				$"0x{newSegment.Value:X4}",
+				$"0x{(ushort)(newSegment.Value + 0x10):X4}");
 		} else {
 			DriverOverrideHappened = false;
+			Logger.Debug("Driver remap skipped. DriverName={DriverName}", driverName);
 		}
 	}
 
@@ -180,6 +206,12 @@ public static class DriverLoadToolbox {
 		// Backup the allocator last free segment and offset
 		InitialFreeOffset = memory.UInt16[state.DS, 0x39B7];
 		InitialFreeSegment = memory.UInt16[state.DS, 0x39B9];
+		Logger.Debug(
+			"Allocator limit disabled. DS={DSHex}, InitialFreeLimit={InitialFreeLimitHex}, InitialFreeSegment={InitialFreeSegmentHex}, InitialFreeOffset={InitialFreeOffsetHex}",
+			$"0x{state.DS:X4}",
+			$"0x{InitialFreeLimit:X4}",
+			$"0x{InitialFreeSegment:X4}",
+			$"0x{InitialFreeOffset:X4}");
 	}
 
 	/// <summary>
@@ -195,6 +227,7 @@ public static class DriverLoadToolbox {
 	/// </remarks>
 	public static void ResetAllocator(State state, IMemory memory) {
 		if (!DriverOverrideHappened) {
+			Logger.Debug("ResetAllocator skipped because no driver override happened.");
 			return;
 		}
 
@@ -202,6 +235,12 @@ public static class DriverLoadToolbox {
 		memory.UInt16[state.DS, 0xce68] = InitialFreeLimit;
 		memory.UInt16[state.DS, 0x39B7] = InitialFreeOffset;
 		memory.UInt16[state.DS, 0x39B9] = InitialFreeSegment;
+		Logger.Debug(
+			"Allocator state restored. DS={DSHex}, FreeLimit={FreeLimitHex}, FreeSegment={FreeSegmentHex}, FreeOffset={FreeOffsetHex}",
+			$"0x{state.DS:X4}",
+			$"0x{InitialFreeLimit:X4}",
+			$"0x{InitialFreeSegment:X4}",
+			$"0x{InitialFreeOffset:X4}");
 	}
 
 	/// <summary>
@@ -229,6 +268,7 @@ public static class DriverLoadToolbox {
 	public static void ReadDriverFunctionTable(State state, IMemory memory, CSharpOverrideHelper cSharpOverrideHelper) {
 		_driverNames.TryGetValue(CurrentDriver, out string? driverName);
 		if (driverName == null) {
+			Logger.Warning("ReadDriverFunctionTable called with unknown CurrentDriver={CurrentDriver}", CurrentDriver);
 			return;
 		}
 
@@ -236,9 +276,20 @@ public static class DriverLoadToolbox {
 		// -2 because SI points to the first segment but we want the offset.
 		ushort functionTableEntryOffset = (ushort)(state.SI - 2);
 		int numberOfFunctions = state.CX;
+		Logger.Information(
+			"Reading driver function table. DriverName={DriverName}, Segment={SegmentHex}, TableOffset={TableOffsetHex}, FunctionCount={FunctionCount}",
+			driverName,
+			$"0x{segment:X4}",
+			$"0x{functionTableEntryOffset:X4}",
+			numberOfFunctions);
+		if (IsMt32DriverFunctionTable(memory, state.DS, functionTableEntryOffset, numberOfFunctions)) {
+			ActualMidiSegment = segment;
+			Logger.Information("Detected MT-32 driver function table. ActualMidiSegment set to {ActualMidiSegmentHex}", $"0x{ActualMidiSegment:X4}");
+		}
 		for (int i = 0; i < numberOfFunctions; i++) {
 			ushort pointerTableOffset = memory.UInt16[state.DS, (ushort)(functionTableEntryOffset + i * 4)];
 			SegmentedAddress entryAddress = new SegmentedAddress(segment, pointerTableOffset);
+			Logger.Debug("Registering driver export. DriverName={DriverName}, Index={Index}, EntryAddress={EntryAddress}", driverName, i, entryAddress.ToString());
 			DefineFunctionIfNotPresent(entryAddress, $"{driverName}_entry_{i.ToString("D2", System.Globalization.CultureInfo.InvariantCulture)}", cSharpOverrideHelper);
 			// Parse the jump to create the target function address in the driver
 			SegmentedAddress? jumpTargetAddress = null;
@@ -262,6 +313,36 @@ public static class DriverLoadToolbox {
 	}
 
 	/// <summary>
+	/// Determines whether the currently parsed driver export table matches the DNMID MT-32 signature.
+	/// </summary>
+	/// <param name="memory">Memory interface for reading the function table.</param>
+	/// <param name="ds">Data segment where the driver table pointer array resides.</param>
+	/// <param name="functionTableEntryOffset">Offset of the first far pointer entry in the table.</param>
+	/// <param name="numberOfFunctions">Number of exported functions reported by the loader.</param>
+	/// <returns><c>true</c> when the export table matches DNMID; otherwise <c>false</c>.</returns>
+	public static bool IsMt32DriverFunctionTable(IMemory memory, ushort ds, ushort functionTableEntryOffset, int numberOfFunctions) {
+		if (numberOfFunctions != Mt32ExportedFunctionOffsets.Length) {
+			Logger.Debug("MT-32 signature mismatch by function count. Actual={ActualCount}, Expected={ExpectedCount}", numberOfFunctions, Mt32ExportedFunctionOffsets.Length);
+			return false;
+		}
+
+		for (int i = 0; i < Mt32ExportedFunctionOffsets.Length; i++) {
+			ushort exportedOffset = memory.UInt16[ds, (ushort)(functionTableEntryOffset + i * 4)];
+			if (exportedOffset != Mt32ExportedFunctionOffsets[i]) {
+				Logger.Debug(
+					"MT-32 signature mismatch at index {Index}. ActualOffset={ActualOffsetHex}, ExpectedOffset={ExpectedOffsetHex}",
+					i,
+					$"0x{exportedOffset:X4}",
+					$"0x{Mt32ExportedFunctionOffsets[i]:X4}");
+				return false;
+			}
+		}
+
+		Logger.Information("MT-32 driver signature matched export table offsets.");
+		return true;
+	}
+
+	/// <summary>
 	/// Defines a function in Spice86's function information database if it doesn't already exist.
 	/// </summary>
 	/// <param name="address">The segmented address of the function, or null to skip registration.</param>
@@ -274,12 +355,16 @@ public static class DriverLoadToolbox {
 	private static void DefineFunctionIfNotPresent(SegmentedAddress? address, string name,
 		CSharpOverrideHelper cSharpOverrideHelper) {
 		if (address == null) {
+			Logger.Debug("Skipped function registration because target address is null. Name={FunctionName}", name);
 			return;
 		}
 
 		if (cSharpOverrideHelper.FunctionInformations.ContainsKey(address.Value)) {
+			Logger.Debug("Skipped function registration because address already exists. Name={FunctionName}, Address={Address}", name, address.Value.ToString());
 			return;
 		}
+
+		Logger.Debug("Registering function information. Name={FunctionName}, Address={Address}", name, address.Value.ToString());
 		cSharpOverrideHelper.DefineFunction(address.Value.Segment, address.Value.Offset, name);
 	}
 }
