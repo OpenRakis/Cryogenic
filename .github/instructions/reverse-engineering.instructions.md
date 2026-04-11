@@ -45,6 +45,15 @@ The chosen return must match the original instruction:
 
 Wrong choice silently corrupts the emulated stack. If unsure, inspect the original assembly via Ghidra or the GDB disassembly view.
 
+### Register/Flags Contract
+- Preserve the original register and FLAGS post-state at function exit. In this codebase, callers may rely on side effects rather than explicit parameters/returns.
+- Validate whether modified outputs are consumed by callers (AX/BX/CX/DX/SI/DI/BP/SP and FLAGS). If consumed, your override must expose identical post-state.
+- If a computed value is not consumed by any caller, it may remain internal to the override. If consumed, return it through the same register/FLAGS channel as the original function.
+- Pay special attention to SI/DI advancement patterns used by callers as implicit iterators/byte counters.
+- Treat stack traffic as observable contract, not implementation detail: mirror assembly PUSH/POP ordering and temporary stack usage exactly when it affects register restoration or call flow.
+- For assembly `PUSHF`/`POPF` sequences, use stack-based FLAGS preservation (`Stack.Push16(State.Flags.FlagRegister16)` and restore from `Stack.Pop16()` into `State.Flags.FlagRegister`) to keep emulator-wide FLAGS semantics consistent.
+- Do not replace `PUSHF`/`POPF` with ad-hoc per-flag snapshots unless runtime evidence proves complete equivalence for that exact call path.
+
 ### Segment Field Anchors
 Never change `cs1`, `cs2`, `cs3`, `cs4`, or `cs5` without auditing all existing `DefineFunction` and `DoOnTopOfInstruction` registrations. These are immutable anchors for the entire override table. See [Overrides.cs](./Overrides.cs) line numbers where each is declared.
 
@@ -58,6 +67,9 @@ Never change `cs1`, `cs2`, `cs3`, `cs4`, or `cs5` without auditing all existing 
 - [ ] Behavior matches the original assembly exactly (check via step-through or test in-game)
 - [ ] Method name follows `{FunctionName}_{Segment}_{Offset}_{LinearAddress}` pattern
 - [ ] Return type chosen and validated: `NearRet()` or `FarRet()`
+- [ ] Register/FLAGS side effects at function exit match original behavior
+- [ ] PUSH/POP and PUSHF/POPF stack effects match original behavior (ordering and restore points)
+- [ ] Caller audit done for post-call register/FLAGS usage; consumed outputs are preserved
 - [ ] All state access uses `globalsOnDs`/`globalsOnCsSegment0x2538` accessors
 - [ ] Edge cases from the original assembly are documented
 - [ ] Unobserved code paths throw `FailAsUntested` or are guarded; never guess

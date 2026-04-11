@@ -17,9 +17,21 @@
 - Register new behavior through `DefineFunction` for call replacements and `DoOnTopOfInstruction` for inline hooks. Do not bypass those registration APIs.
 - Keep the existing method naming pattern `{FunctionName}_{Segment}_{Offset}_{LinearAddress}` so each override remains traceable to the DOS disassembly.
 - Return with `NearRet()` or `FarRet()` to match the original instruction. Getting this wrong corrupts the emulated stack.
+- Treat stack operations as observable behavior: when original assembly uses `PUSH`/`POP` (including temporary register saves), preserve equivalent stack/register effects in overrides (prefer `Stack.Push16`/`Stack.Pop16` where practical).
+- Preserve `PUSHF`/`POPF` semantics as well (full FLAGS contract), not only `InterruptFlag`, unless live evidence proves the extra flags are caller-ignored.
+- Implement `PUSHF`/`POPF` through the real stack/flags path (`Stack.Push16(State.Flags.FlagRegister16)` and restore popped value into `State.Flags.FlagRegister`) so non-overridden code observes identical FLAGS behavior.
+- Do not substitute manual per-flag snapshots for `PUSHF`/`POPF` unless a targeted runtime trace proves strict equivalence for that routine.
+- Preserve the original function side effects on registers and flags at function exit. Do not treat AX/BX/CX/DX/SI/DI/BP/SP or FLAGS as scratch unless runtime evidence proves they are caller-ignored.
+- Audit caller expectations before changing a function contract: if callers read modified SI/DI/FLAGS (or other registers) after return, the override must expose the same post-state.
+- If a computed value is not consumed by any caller, keep it internal to the override; if it is consumed, it must be returned through the same register/flags channel as the original code.
 - Use `globalsOnDs` and `globalsOnCsSegment0x2538` accessors for state instead of raw pointer math. Extend `src/Cryogenic/Globals/Extra*.cs` when you need new manual accessors.
 - Never hand-edit files under `src/Cryogenic/Generated/`; they come from Spice86 dump tooling and must stay regenerable.
 - Reuse existing helpers and constants before introducing new ones, especially in `Overrides/MenuCode.cs` and `Overrides/VgaDriverCode.cs`.
+- **Disassembly from memory is suspect.** This game uses self-modifying code: bytes at rest may differ from bytes as executed. Never treat a static memory snapshot as a reliable instruction stream.
+- **`Bytes=0000` is never valid code.** x86 decodes zero bytes as `add byte ptr DS:[BX+SI],AL` — this is decoder noise from uninitialized or data-region memory. Discard immediately from any disassembly analysis.
+- **The CFG CPU graph is the oracle for real code.** `mcp_cfg_cpu_graph.json` (or `dump/spice86dumpExecutionFlow.json`) only contains addresses that were actually executed. If an address is absent from the CFG it was not observed running; treat as data or unverified cold path.
+- **Code and data are not clearly separated** in this binary. Treat boundaries between code and data as soft: confirm with live CFG evidence before assuming any byte range is exclusively code or exclusively data.
+- **The game performs constant stack editing.** Manual SP arithmetic and self-patching routines produce misleading stack snapshots in logs. Treat suspicious stack log entries as driver internals, not corruption, unless CFG/live evidence contradicts that.
 
 ## Partial Class Architecture and CSharpOverrideHelper
 

@@ -1,0 +1,4 @@
+[*.cs]
+
+# Ignore duplicate switch case warning
+dotnet_diagnostic.S1871.severity = suggestion
