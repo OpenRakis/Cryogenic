@@ -337,7 +337,7 @@ public static class CryogenicMcpTools {
 				Mt32CallCounters[entryPoint] = updatedCount;
 			}
 		}
-		Logger.Debug("Recorded MT-32 override call. EntryPoint={EntryPoint}, Count={Count}", entryPoint, updatedCount);
+		//Logger.Debug("Recorded MT-32 override call. EntryPoint={EntryPoint}, Count={Count}", entryPoint, updatedCount);
 	}
 
 	/// <summary>
