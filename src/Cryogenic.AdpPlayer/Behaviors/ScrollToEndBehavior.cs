@@ -1,4 +1,4 @@
-﻿namespace Cryogenic.Mt32Player.Behaviors;
+﻿namespace Cryogenic.AdpPlayer.Behaviors;
 
 using Avalonia;
 using Avalonia.Controls;

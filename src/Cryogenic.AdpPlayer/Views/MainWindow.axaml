@@ -1,0 +1,396 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Cryogenic.AdpPlayer.ViewModels"
+        xmlns:v="using:Cryogenic.AdpPlayer.Views"
+        xmlns:b="using:Cryogenic.AdpPlayer.Behaviors"
+        x:Class="Cryogenic.AdpPlayer.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Title="Cryogenic ADP Player"
+        Width="1440"
+        Height="920"
+        MinWidth="1100"
+        MinHeight="700"
+        Background="#0D1117"
+        WindowStartupLocation="CenterScreen">
+
+  <Window.Styles>
+    <!-- Monospace text helper -->
+    <Style Selector="TextBlock.mono">
+      <Setter Property="FontFamily" Value="Cascadia Mono, Consolas, Courier New" />
+      <Setter Property="FontSize" Value="12" />
+    </Style>
+    <!-- Dim label -->
+    <Style Selector="TextBlock.label">
+      <Setter Property="Foreground" Value="#8B949E" />
+    </Style>
+    <!-- Transport icon buttons -->
+    <Style Selector="Button.transport">
+      <Setter Property="Width" Value="44" />
+      <Setter Property="Height" Value="44" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="CornerRadius" Value="22" />
+      <Setter Property="Background" Value="#21262D" />
+      <Setter Property="Foreground" Value="#E6EDF3" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.transport:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="#30363D" />
+    </Style>
+    <Style Selector="Button.transport-primary">
+      <Setter Property="Width" Value="52" />
+      <Setter Property="Height" Value="52" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="CornerRadius" Value="26" />
+      <Setter Property="Background" Value="#1F6FEB" />
+      <Setter Property="Foreground" Value="#FFFFFF" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.transport-primary:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="#388BFD" />
+    </Style>
+    <!-- Panel headers -->
+    <Style Selector="TextBlock.panel-header">
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="#8B949E" />
+      <Setter Property="Margin" Value="0,0,0,6" />
+    </Style>
+    <!-- Listbox items: no selection highlight, transparent bg -->
+    <Style Selector="ListBox">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="ListBoxItem">
+      <Setter Property="Padding" Value="2,1" />
+      <Setter Property="MinHeight" Value="0" />
+    </Style>
+  </Window.Styles>
+
+  <Grid RowDefinitions="Auto,Auto,150,Auto,Auto,*,Auto" Margin="18,14,18,10">
+
+    <!-- ═══ Row 0: Title ═══ -->
+    <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="10" Margin="0,0,0,10">
+      <TextBlock Text="♪" FontSize="22" Foreground="#58A6FF" VerticalAlignment="Center" />
+      <TextBlock Text="Cryogenic ADP Player" FontSize="20" FontWeight="SemiBold" Foreground="#E6EDF3" VerticalAlignment="Center" />
+      <TextBlock Text="OPL2 / NukedOPL3Sharp" FontSize="12" Foreground="#484F58" VerticalAlignment="Center" Margin="8,4,0,0" />
+    </StackPanel>
+
+    <!-- ═══ Row 1: File path ═══ -->
+    <Grid Grid.Row="1" ColumnDefinitions="72,*,Auto" ColumnSpacing="8" Margin="0,0,0,10">
+      <TextBlock Grid.Column="0" Text="Song File" Classes="label" VerticalAlignment="Center" />
+      <TextBox Grid.Column="1" Text="{Binding SongPath}" Watermark="Select a Dune .HSQ / .AGD / .M32 file" FontSize="12" />
+      <Button Grid.Column="2" Content="Browse" Command="{Binding BrowseSongCommand}" MinWidth="80" FontSize="12" />
+    </Grid>
+
+    <!-- ═══ Row 2: Waveform (prominent) ═══ -->
+    <Border Grid.Row="2" CornerRadius="8" ClipToBounds="True" Background="#080C10"
+            BorderBrush="#1B2030" BorderThickness="1">
+      <v:WaveformControl Name="Waveform" />
+    </Border>
+
+    <!-- ═══ Row 3: Transport bar ═══ -->
+    <Grid Grid.Row="3" Margin="0,10,0,8" RowDefinitions="Auto,Auto" RowSpacing="4">
+
+      <!-- Top line: buttons + timeline + volume -->
+      <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,*,Auto">
+
+        <!-- Transport buttons -->
+        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <Button Content="Load" Command="{Binding LoadCommand}" MinWidth="64" FontSize="12"
+                  Background="#21262D" Foreground="#C9D1D9" CornerRadius="6" />
+          <!-- Play = primary large button -->
+          <Button Classes="transport-primary" Command="{Binding PlayCommand}" ToolTip.Tip="Play">
+            <PathIcon Width="22" Height="22" Foreground="White"
+                      Data="M 6,3 L 18,10 L 6,17 Z" />
+          </Button>
+          <!-- Pause toggle -->
+          <Button Classes="transport" Command="{Binding TogglePauseCommand}" ToolTip.Tip="Pause / Resume">
+            <PathIcon Width="18" Height="18" Foreground="#E6EDF3"
+                      Data="M 4,3 H 7 V 17 H 4 Z M 13,3 H 16 V 17 H 13 Z" />
+          </Button>
+          <!-- Stop -->
+          <Button Classes="transport" Command="{Binding StopCommand}" ToolTip.Tip="Stop">
+            <PathIcon Width="16" Height="16" Foreground="#E6EDF3"
+                      Data="M 3,3 H 17 V 17 H 3 Z" />
+          </Button>
+          <!-- Status -->
+          <TextBlock VerticalAlignment="Center" Margin="10,0,0,0" FontSize="13" Foreground="#3FB950"
+                     IsVisible="{Binding IsPlaying}"
+                     Text="▶ Playing" />
+          <TextBlock VerticalAlignment="Center" Margin="10,0,0,0" FontSize="13" Foreground="#D29922"
+                     IsVisible="{Binding IsPaused}"
+                     Text="⏸ Paused" />
+        </StackPanel>
+
+        <!-- Transport time -->
+        <TextBlock Grid.Column="1" Margin="16,0,8,0" Text="{Binding TransportInfo}" Classes="mono"
+                   Foreground="#8B949E" VerticalAlignment="Center" />
+
+        <!-- Timeline progress bar -->
+        <ProgressBar Grid.Column="2" Minimum="0" Maximum="1" Value="{Binding TimelineProgress}"
+                     Height="6" CornerRadius="3" VerticalAlignment="Center"
+                     Foreground="#1F6FEB" Background="#21262D" />
+
+        <!-- Volume / gain / peak -->
+        <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Margin="12,0,0,0">
+          <TextBlock Text="Vol" Classes="label" FontSize="11" VerticalAlignment="Center" />
+          <Slider Minimum="0" Maximum="127" Value="{Binding MasterVolume}" Width="80" VerticalAlignment="Center" />
+          <TextBlock Text="Gain" Classes="label" FontSize="11" VerticalAlignment="Center" />
+          <Slider Minimum="0" Maximum="2" Value="{Binding OutputGain}" TickFrequency="0.05" Width="70" VerticalAlignment="Center" />
+          <ProgressBar Minimum="0" Maximum="1" Value="{Binding AudioPeak}" Width="50" Height="10"
+                       CornerRadius="2" VerticalAlignment="Center"
+                       Foreground="#3FB950" Background="#21262D" />
+          <TextBlock Text="{Binding AudioPeak, StringFormat={}{0:F3}}" Classes="mono" Foreground="#484F58" FontSize="10" VerticalAlignment="Center" />
+        </StackPanel>
+      </Grid>
+
+      <!-- Bottom line: tick details -->
+      <TextBlock Grid.Row="1" Text="{Binding TickInfo}" Classes="mono" Foreground="#484F58" FontSize="10"
+                 TextTrimming="CharacterEllipsis" />
+    </Grid>
+
+    <!-- ═══ Row 4: Song header (color-coded) ═══ -->
+    <Border Grid.Row="4" Padding="12,8" CornerRadius="8" Background="#161B22"
+            BorderBrush="#21262D" BorderThickness="1" Margin="0,0,0,8">
+      <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="3">
+        <TextBlock Grid.Row="0" Text="SONG HEADER" Classes="panel-header" />
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8">
+          <TextBlock Text="File:" Classes="mono label" />
+          <TextBlock Text="{Binding HeaderFileName}" Classes="mono" Foreground="#E3B341" FontWeight="SemiBold" />
+        </StackPanel>
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="8">
+          <TextBlock Text="Size:" Classes="mono label" />
+          <TextBlock Text="{Binding HeaderFileSize}" Classes="mono" Foreground="#79C0FF" />
+        </StackPanel>
+        <StackPanel Grid.Row="3" Orientation="Horizontal" Spacing="8">
+          <TextBlock Text="Timing:" Classes="mono label" />
+          <TextBlock Text="{Binding HeaderTiming}" Classes="mono" Foreground="#3FB950" />
+        </StackPanel>
+        <StackPanel Grid.Row="4" Orientation="Horizontal" Spacing="8">
+          <TextBlock Text="Layout:" Classes="mono label" />
+          <TextBlock Text="{Binding HeaderStructure}" Classes="mono" Foreground="#C9D1D9" />
+          <TextBlock Text="{Binding HeaderChannels}" Classes="mono" Foreground="#484F58" FontSize="11" TextWrapping="Wrap" />
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <!-- ═══ Row 5: Tabbed panels (Player / OPL Test) ═══ -->
+    <TabControl Grid.Row="5" Background="Transparent" Padding="0">
+      <TabControl.Styles>
+        <Style Selector="TabItem">
+          <Setter Property="FontSize" Value="13" />
+          <Setter Property="Foreground" Value="#8B949E" />
+          <Setter Property="Padding" Value="12,6" />
+        </Style>
+        <Style Selector="TabItem:selected">
+          <Setter Property="Foreground" Value="#58A6FF" />
+        </Style>
+      </TabControl.Styles>
+
+      <!-- ─── Tab 1: Player ─── -->
+      <TabItem Header="Player">
+        <Grid ColumnDefinitions="0.9*,1.2*,1.4*" ColumnSpacing="8" Margin="0,6,0,0">
+
+          <!-- Tracker -->
+          <Border Grid.Column="0" Padding="8,6" CornerRadius="8" Background="#161B22"
+                  BorderBrush="#21262D" BorderThickness="1">
+            <Grid RowDefinitions="Auto,*" RowSpacing="4">
+              <TextBlock Grid.Row="0" Text="TRACKER" Classes="panel-header" />
+              <DataGrid Grid.Row="1"
+                        ItemsSource="{Binding TrackerRows}"
+                        IsReadOnly="True"
+                        GridLinesVisibility="Horizontal"
+                        AutoGenerateColumns="False"
+                        HeadersVisibility="Column"
+                        CanUserSortColumns="False"
+                        FontFamily="Cascadia Mono, Consolas, Courier New"
+                        FontSize="11"
+                        Background="Transparent"
+                        BorderThickness="0">
+                <DataGrid.Columns>
+                  <DataGridTextColumn Header="Ch" Binding="{Binding ChannelIndex}" Width="28" />
+                  <DataGridTextColumn Header="Wait" Binding="{Binding Wait}" Width="52" />
+                  <DataGridTextColumn Header="Ptr" Binding="{Binding Pointer}" Width="52" />
+                  <DataGridTextColumn Header="Last Event" Binding="{Binding LastEvent}" Width="*" />
+                </DataGrid.Columns>
+              </DataGrid>
+            </Grid>
+          </Border>
+
+          <!-- Event Flow -->
+          <Border Grid.Column="1" Padding="8,6" CornerRadius="8" Background="#0D1117"
+                  BorderBrush="#21262D" BorderThickness="1">
+            <Grid RowDefinitions="Auto,*" RowSpacing="4">
+              <TextBlock Grid.Row="0" Text="EVENT FLOW" Classes="panel-header" Foreground="#F0883E" />
+              <ListBox Grid.Row="1" ItemsSource="{Binding EventFlow}" ScrollViewer.VerticalScrollBarVisibility="Auto">
+                <Interaction.Behaviors>
+                  <b:ScrollToEndBehavior />
+                </Interaction.Behaviors>
+                <ListBox.ItemTemplate>
+                  <DataTemplate x:DataType="vm:EventFlowDisplayItem">
+                    <StackPanel Orientation="Horizontal" Spacing="5">
+                      <TextBlock Text="{Binding Position}" Foreground="#8B949E"
+                                 FontFamily="Cascadia Mono, Consolas, Courier New" FontSize="11" />
+                      <TextBlock Text="{Binding ChannelLabel}" Foreground="{Binding ChannelBrush}" FontWeight="Bold"
+                                 FontFamily="Cascadia Mono, Consolas, Courier New" FontSize="11" />
+                      <TextBlock Text="{Binding Kind}" Foreground="{Binding KindBrush}" FontWeight="SemiBold"
+                                 FontFamily="Cascadia Mono, Consolas, Courier New" FontSize="11" />
+                      <TextBlock Text="{Binding Detail}" Foreground="#C9D1D9"
+                                 FontFamily="Cascadia Mono, Consolas, Courier New" FontSize="11" />
+                      <TextBlock Text="{Binding DeltaLabel}" Foreground="#484F58"
+                                 FontFamily="Cascadia Mono, Consolas, Courier New" FontSize="11" />
+                    </StackPanel>
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
+            </Grid>
+          </Border>
+
+          <!-- Logs -->
+          <Border Grid.Column="2" Padding="8,6" CornerRadius="8" Background="#0D1117"
+                  BorderBrush="#21262D" BorderThickness="1">
+            <Grid RowDefinitions="Auto,*" RowSpacing="4">
+              <TextBlock Grid.Row="0" Text="LOGS" Classes="panel-header" />
+              <ListBox Grid.Row="1" ItemsSource="{Binding Logs}" ScrollViewer.VerticalScrollBarVisibility="Auto">
+                <Interaction.Behaviors>
+                  <b:ScrollToEndBehavior />
+                </Interaction.Behaviors>
+                <ListBox.ItemTemplate>
+                  <DataTemplate x:DataType="vm:LogDisplayItem">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                      <TextBlock Text="{Binding Timestamp}" Foreground="{Binding TimestampBrush}"
+                                 FontFamily="Cascadia Mono, Consolas, Courier New" FontSize="11" />
+                      <TextBlock Text="{Binding Message}" Foreground="{Binding MessageBrush}"
+                                 FontFamily="Cascadia Mono, Consolas, Courier New" FontSize="11" />
+                    </StackPanel>
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
+            </Grid>
+          </Border>
+        </Grid>
+      </TabItem>
+
+      <!-- ─── Tab 2: OPL Test ─── -->
+      <TabItem Header="OPL Test">
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="16" Margin="0,6,0,0">
+
+          <!-- Left: Controls -->
+          <Border Grid.Column="0" Padding="16,12" CornerRadius="8" Background="#161B22"
+                  BorderBrush="#21262D" BorderThickness="1" MinWidth="340">
+            <StackPanel Spacing="14">
+              <TextBlock Text="OPL2 DIRECT TEST" Classes="panel-header" Foreground="#58A6FF" />
+              <TextBlock Text="Bypasses engine — writes raw OPL registers to test the audio stack."
+                         Foreground="#484F58" FontSize="11" TextWrapping="Wrap" />
+
+              <!-- Panic beep (biggest, most visible) -->
+              <Button Content="🔊 PANIC BEEP (500ms)" Command="{Binding PanicBeepCommand}"
+                      FontSize="14" FontWeight="Bold" Padding="16,10"
+                      Background="#DA3633" Foreground="White" CornerRadius="8"
+                      HorizontalAlignment="Stretch" />
+
+              <!-- Chord test -->
+              <Button Content="🎵 Play C Major Chord" Command="{Binding PlayTestChordCommand}"
+                      FontSize="12" Padding="12,8"
+                      Background="#1F6FEB" Foreground="White" CornerRadius="6"
+                      HorizontalAlignment="Stretch" />
+
+              <Button Content="Stop All Test Tones" Command="{Binding StopAllTestTonesCommand}"
+                      FontSize="12" Padding="12,8"
+                      Background="#21262D" Foreground="#C9D1D9" CornerRadius="6"
+                      HorizontalAlignment="Stretch" />
+
+              <Separator Background="#21262D" Margin="0,4" />
+
+              <!-- Individual channel test -->
+              <TextBlock Text="SINGLE CHANNEL TEST" Classes="panel-header" />
+
+              <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="8" ColumnSpacing="10">
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="Channel (0-8)" Classes="mono label" VerticalAlignment="Center" />
+                <NumericUpDown Grid.Row="0" Grid.Column="1" Minimum="0" Maximum="8"
+                               Value="{Binding TestChannel}" FormatString="0"
+                               Background="#0D1117" Foreground="#C9D1D9" />
+
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Note (0-95)" Classes="mono label" VerticalAlignment="Center" />
+                <NumericUpDown Grid.Row="1" Grid.Column="1" Minimum="0" Maximum="95"
+                               Value="{Binding TestNote}" FormatString="0"
+                               Background="#0D1117" Foreground="#C9D1D9" />
+
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="Vol (0=max)" Classes="mono label" VerticalAlignment="Center" />
+                <NumericUpDown Grid.Row="2" Grid.Column="1" Minimum="0" Maximum="63"
+                               Value="{Binding TestVolume}" FormatString="0"
+                               Background="#0D1117" Foreground="#C9D1D9" />
+              </Grid>
+
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <Button Content="▶ Tone On" Command="{Binding PlayTestToneCommand}"
+                        FontSize="12" Padding="12,8" MinWidth="100"
+                        Background="#238636" Foreground="White" CornerRadius="6" />
+                <Button Content="■ Tone Off" Command="{Binding StopTestToneCommand}"
+                        FontSize="12" Padding="12,8" MinWidth="100"
+                        Background="#21262D" Foreground="#C9D1D9" CornerRadius="6" />
+              </StackPanel>
+
+              <Separator Background="#21262D" Margin="0,4" />
+
+              <!-- Audio stack info -->
+              <TextBlock Text="AUDIO STACK STATUS" Classes="panel-header" />
+              <StackPanel Spacing="3">
+                <StackPanel Orientation="Horizontal" Spacing="5">
+                  <TextBlock Text="Peak:" Classes="mono label" />
+                  <TextBlock Text="{Binding AudioPeak, StringFormat={}{0:F4}}" Classes="mono" Foreground="#3FB950" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="5">
+                  <TextBlock Text="Gain:" Classes="mono label" />
+                  <TextBlock Text="{Binding OutputGain, StringFormat={}{0:F2}}" Classes="mono" Foreground="#79C0FF" />
+                </StackPanel>
+              </StackPanel>
+            </StackPanel>
+          </Border>
+
+          <!-- Right: Logs (shared) -->
+          <Border Grid.Column="1" Padding="8,6" CornerRadius="8" Background="#0D1117"
+                  BorderBrush="#21262D" BorderThickness="1">
+            <Grid RowDefinitions="Auto,*" RowSpacing="4">
+              <TextBlock Grid.Row="0" Text="LOGS" Classes="panel-header" />
+              <ListBox Grid.Row="1" ItemsSource="{Binding Logs}" ScrollViewer.VerticalScrollBarVisibility="Auto">
+                <Interaction.Behaviors>
+                  <b:ScrollToEndBehavior />
+                </Interaction.Behaviors>
+                <ListBox.ItemTemplate>
+                  <DataTemplate x:DataType="vm:LogDisplayItem">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                      <TextBlock Text="{Binding Timestamp}" Foreground="{Binding TimestampBrush}"
+                                 FontFamily="Cascadia Mono, Consolas, Courier New" FontSize="11" />
+                      <TextBlock Text="{Binding Message}" Foreground="{Binding MessageBrush}"
+                                 FontFamily="Cascadia Mono, Consolas, Courier New" FontSize="11" />
+                    </StackPanel>
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
+            </Grid>
+          </Border>
+        </Grid>
+      </TabItem>
+    </TabControl>
+
+    <!-- ═══ Row 6: Status bar ═══ -->
+    <Border Grid.Row="6" Margin="0,8,0,0" Padding="12,6" CornerRadius="8" Background="#161B22"
+            BorderBrush="#21262D" BorderThickness="1">
+      <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto" ColumnSpacing="8">
+        <TextBlock Grid.Column="0" Text="{Binding Status}" Foreground="#8B949E" FontSize="12"
+                   VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+        <TextBlock Grid.Column="1" Text="Target Vol" Classes="label" FontSize="11" VerticalAlignment="Center" />
+        <Slider Grid.Column="2" Minimum="0" Maximum="127" Value="{Binding TargetVolume}" Width="90" VerticalAlignment="Center" />
+        <TextBlock Grid.Column="3" Text="{Binding ServerEndpoint}" Classes="mono" Foreground="#484F58" FontSize="11" VerticalAlignment="Center" />
+        <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="4">
+          <Button Content="MCP ▶" Command="{Binding StartControlServerCommand}" FontSize="11"
+                  MinWidth="60" Padding="8,4" CornerRadius="4" Background="#21262D" Foreground="#8B949E" />
+          <Button Content="MCP ■" Command="{Binding StopControlServerCommand}" FontSize="11"
+                  MinWidth="60" Padding="8,4" CornerRadius="4" Background="#21262D" Foreground="#8B949E" />
+        </StackPanel>
+      </Grid>
+    </Border>
+  </Grid>
+</Window>

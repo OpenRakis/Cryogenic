@@ -1,4 +1,4 @@
-﻿namespace Cryogenic.Mt32Player.ViewModels;
+﻿namespace Cryogenic.AdpPlayer.ViewModels;
 
 using Avalonia.Media;
 

@@ -1,4 +1,4 @@
-﻿namespace Cryogenic.Mt32Player.ViewModels;
+﻿namespace Cryogenic.AdpPlayer.ViewModels;
 
 using Avalonia.Media;
 
@@ -17,21 +17,16 @@ public sealed class EventFlowDisplayItem {
 		new SolidColorBrush(Color.FromRgb(0x98, 0xD8, 0xC8)),  // ch6  sage
 		new SolidColorBrush(Color.FromRgb(0xF7, 0xDC, 0x6F)),  // ch7  amber
 		new SolidColorBrush(Color.FromRgb(0xBB, 0x8F, 0xCE)),  // ch8  violet
-		new SolidColorBrush(Color.FromRgb(0xE8, 0x8D, 0x67)),  // ch9  tangerine
-		new SolidColorBrush(Color.FromRgb(0x7F, 0xDB, 0xDA)),  // ch10 cyan
-		new SolidColorBrush(Color.FromRgb(0xA3, 0xDE, 0x83)),  // ch11 lime
-		new SolidColorBrush(Color.FromRgb(0xF4, 0xA4, 0xC0)),  // ch12 pink
-		new SolidColorBrush(Color.FromRgb(0xD4, 0xC5, 0xA9)),  // ch13 sand
-		new SolidColorBrush(Color.FromRgb(0x82, 0xAA, 0xE3)),  // ch14 periwinkle
-		new SolidColorBrush(Color.FromRgb(0xC9, 0xB1, 0xFF)),  // ch15 lavender
 	];
 
 	private static readonly IBrush DefaultChannelBrush = new SolidColorBrush(Color.FromRgb(0xC0, 0xC0, 0xC0));
-	private static readonly IBrush Kind3B = new SolidColorBrush(Color.FromRgb(0x5C, 0xDB, 0x95));
-	private static readonly IBrush KindCC = new SolidColorBrush(Color.FromRgb(0xFF, 0xD9, 0x3D));
-	private static readonly IBrush Kind2B = new SolidColorBrush(Color.FromRgb(0x6C, 0x5C, 0xE7));
+	private static readonly IBrush KindNoteOn = new SolidColorBrush(Color.FromRgb(0x5C, 0xDB, 0x95));
+	private static readonly IBrush KindNoteOff = new SolidColorBrush(Color.FromRgb(0xFF, 0x6B, 0x6B));
+	private static readonly IBrush KindProgChg = new SolidColorBrush(Color.FromRgb(0xFF, 0xD9, 0x3D));
+	private static readonly IBrush KindVolMod = new SolidColorBrush(Color.FromRgb(0x6C, 0x5C, 0xE7));
+	private static readonly IBrush KindPitchBend = new SolidColorBrush(Color.FromRgb(0x45, 0xB7, 0xD1));
 	private static readonly IBrush KindDO = new SolidColorBrush(Color.FromRgb(0x63, 0x6E, 0x72));
-	private static readonly IBrush KindSPEC = new SolidColorBrush(Color.FromRgb(0xFF, 0x6B, 0x6B));
+	private static readonly IBrush KindEOT = new SolidColorBrush(Color.FromRgb(0xFF, 0x6B, 0x6B));
 	private static readonly IBrush KindDefault = new SolidColorBrush(Color.FromRgb(0xC0, 0xC0, 0xC0));
 
 	public required string Position { get; init; }
@@ -46,11 +41,13 @@ public sealed class EventFlowDisplayItem {
 		: DefaultChannelBrush;
 
 	public IBrush KindBrush => Kind switch {
-		"3B" => Kind3B,
-		"CC" => KindCC,
-		"2B" => Kind2B,
+		"NON" => KindNoteOn,
+		"NOF" => KindNoteOff,
+		"PRG" => KindProgChg,
+		"VOL" => KindVolMod,
+		"PB" => KindPitchBend,
 		"DO" => KindDO,
-		"SPEC" => KindSPEC,
+		"EOT" => KindEOT,
 		_ => KindDefault,
 	};
 }
