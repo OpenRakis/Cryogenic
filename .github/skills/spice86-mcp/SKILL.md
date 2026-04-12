@@ -9,10 +9,12 @@ description: "Use when connecting to the Spice86 MCP server for live emulator in
 
 | Property | Value |
 |---|---|
-| Protocol | JSON-RPC 2.0 over SSE (Server-Sent Events) |
+| Protocol | JSON-RPC 2.0 over Streamable HTTP (POST to /mcp, SSE response) |
 | Default URL | `http://127.0.0.1:8081/mcp` |
 | Health check | `GET http://127.0.0.1:8081/health` |
-| Transport | HTTP POST for requests, SSE `data:` lines for responses |
+| Transport | POST JSON-RPC to `/mcp`, response is SSE `event: message\ndata: {json}` |
+
+**Note:** `/mcp` only accepts POST (GET returns 405). There is no `/sse` endpoint. This is Streamable HTTP transport, not classic SSE.
 
 ### Handshake Sequence
 
