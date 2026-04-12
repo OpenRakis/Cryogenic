@@ -690,7 +690,7 @@ public partial class Overrides {
 			cl = (byte)(0 - (byte)(cl - 4));
 			scaleAl = (byte)(scaleAl >> cl);
 			byte reg = (byte)(Lo8(bx) & 0x3F);
-			reg = (byte)(reg - scaleAl);
+			reg = reg >= scaleAl ? (byte)(reg - scaleAl) : (byte)0;
 			byte flags = (byte)(Lo8(bx) & 0xC0);
 			byte outAh = (byte)(reg | flags);
 			byte oplReg = (byte)(AdpByte((ushort)(0x0171 + DX)) + 0x40);
@@ -707,7 +707,7 @@ public partial class Overrides {
 			byte shr = (byte)(4 - ch);
 			scaleAl = (byte)(scaleAl >> shr);
 			byte reg = (byte)(Hi8(bx) & 0x3F);
-			reg = (byte)(reg - scaleAl);
+			reg = reg >= scaleAl ? (byte)(reg - scaleAl) : (byte)0;
 			byte flags = (byte)(Hi8(bx) & 0xC0);
 			byte outAh = (byte)(reg | flags);
 			byte oplReg = (byte)(AdpByte((ushort)(0x017A + DX)) + 0x40);
@@ -895,10 +895,10 @@ public partial class Overrides {
 			}
 		}
 		byte block = (byte)(octave << 2);
-		byte freqHi = (byte)(Hi8(freq) | block | 0x20);
+		byte freqHi = (byte)(Hi8(freq) | block);
 		ushort outWord = Make16(Lo8(freq), freqHi);
 		AdpWordSet((ushort)(0x015F + DX * 2), outWord);
-		AX = outWord;
+		AX = (ushort)(outWord | 0x2000);
 		AdpOplFrequencyWrite_5BAE_0A8F_05C5AF(0);
 		return NearRet();
 	}
