@@ -17,6 +17,7 @@ public partial class Overrides {
 	private static readonly ILogger AdpLogger = Log.ForContext("Subsystem", "ADPDriver");
 	private static bool EnableAdpCSharpFunctionReplacement = true;
 	private ushort _adpSegment = 0x5BAE;
+	private int _adpTickIndex;
 
 	private const ushort AdpDefaultSegment = 0x5BAE;
 	private const ushort AdpChannelTableBase = 0x01A2;
@@ -138,30 +139,38 @@ public partial class Overrides {
 	}
 
 	public Action AdpInit_5BAE_0100_05BBE0(int gotoAddress) {
+		CryogenicMcpTools.RecordAdpCall("5BAE:0100_Init");
 		return AdpInitInternal_5BAE_02D8_05BDF8(0);
 	}
 
 	public Action AdpOpen_5BAE_0103_05BBE3(int gotoAddress) {
+		CryogenicMcpTools.RecordAdpCall("5BAE:0103_OpenSong");
+		CryogenicMcpTools.RecordAdpSongOpen(ES, SI);
 		return AdpOpenInternal_5BAE_03B2_05BED2(0);
 	}
 
 	public Action AdpReset_5BAE_0106_05BBE6(int gotoAddress) {
+		CryogenicMcpTools.RecordAdpCall("5BAE:0106_Reset");
 		return AdpResetInternal_5BAE_02FE_05BE1E(0);
 	}
 
 	public Action AdpSetTickEnabled_5BAE_0109_05BBE9(int gotoAddress) {
+		CryogenicMcpTools.RecordAdpCall("5BAE:0109_SetTickEnabled");
 		return AdpSetTimerTickFlag_5BAE_039C_05BEBC(0);
 	}
 
 	public Action AdpSetDynamics_5BAE_010C_05BBEC(int gotoAddress) {
+		CryogenicMcpTools.RecordAdpCall("5BAE:010C_SetDynamics");
 		return AdpSetDynamicsInternal_5BAE_035B_05BE7B(0);
 	}
 
 	public Action AdpTick_5BAE_010F_05BBEF(int gotoAddress) {
+		CryogenicMcpTools.RecordAdpCall("5BAE:010F_Tick");
 		return AdpTickInternal_5BAE_0473_05BF93(0);
 	}
 
 	public Action AdpSetVolume_5BAE_0112_05BBF2(int gotoAddress) {
+		CryogenicMcpTools.RecordAdpCall("5BAE:0112_SetVolume");
 		return AdpSetVolumeInternal_5BAE_0348_05BE68(0);
 	}
 
@@ -218,7 +227,9 @@ public partial class Overrides {
 	public Action AdpVolumeScale_5BAE_030B_05BE2B(int gotoAddress) {
 		byte al = Lo8(AX);
 		byte ah = Hi8(AX);
-		al = (byte)(al >> 3);
+		al = (byte)(al >> 1);
+		al = (byte)(al >> 1);
+		al = (byte)(al >> 1);
 		byte dl = al;
 		byte dh = ah;
 		byte bl = 0x78;
@@ -226,26 +237,46 @@ public partial class Overrides {
 		if (ah > bl) {
 			ah = bl;
 		}
+
+		// xor al,al; div bh  -> unsigned divide AX by BH, quotient in AL, remainder in AH
 		al = 0;
-		al = (byte)(al / bh);
+		ushort axDiv = Make16(al, ah);
+		al = (byte)(axDiv / bh);
+		ah = (byte)(axDiv % bh);
+
+		// mul dl -> AX = AL * DL
 		ushort mul1 = (ushort)(al * dl);
-		dh = (byte)(mul1 & 0xFF);
-		ah = (byte)((mul1 >> 8) & 0xFF);
-		byte t = dh;
-		dh = ah;
-		ah = t;
+		al = Lo8(mul1);
+		ah = Hi8(mul1);
+
+		// xchg ah,dh
+		byte temp = ah;
+		ah = dh;
+		dh = temp;
+
 		ah = (byte)(ah - bh);
 		ah = (byte)(0 - ah);
 		if (ah > bl) {
 			ah = bl;
 		}
+
+		// xor al,al; div bh
 		al = 0;
-		al = (byte)(al / bh);
-		ushort mul2 = (ushort)(al * dl);
-		ushort ax2 = mul2;
-		ax2 = (ushort)(ax2 >> 4);
+		axDiv = Make16(al, ah);
+		al = (byte)(axDiv / bh);
+		ah = (byte)(axDiv % bh);
+
+		// mul dl; shr ax,1 x4
+		ushort axOut = (ushort)(al * dl);
+		axOut = (ushort)(axOut >> 1);
+		axOut = (ushort)(axOut >> 1);
+		axOut = (ushort)(axOut >> 1);
+		axOut = (ushort)(axOut >> 1);
+
+		// mov ah,dh; and ax,0x0FF0; or al,ah
 		ah = dh;
-		AX = (ushort)((ax2 & 0x0FF0) | ah);
+		axOut = (ushort)(axOut & 0x0FF0);
+		AX = (ushort)(axOut | ah);
 		return NearRet();
 	}
 
@@ -359,6 +390,8 @@ public partial class Overrides {
 	}
 
 	public Action AdpTickInternal_5BAE_0473_05BF93(int gotoAddress) {
+		_adpTickIndex++;
+		CryogenicMcpTools.RecordAdpCall("5BAE:0473_TickInternal");
 		ushort oldDs = DS;
 		DS = CS;
 		byte status = AdpByte(0x019A);
@@ -412,6 +445,7 @@ public partial class Overrides {
 	}
 
 	public Action AdpProcessTick_5BAE_04D3_05BFF3(int gotoAddress) {
+		CryogenicMcpTools.RecordAdpCall("5BAE:04D3_ProcessTick");
 		ushort songOff = AdpWord(0x0115);
 		ushort songSeg = AdpWord(0x0117);
 		ushort tempoWord = SegWord(songSeg, (ushort)(songOff + 0x30));
@@ -484,6 +518,7 @@ public partial class Overrides {
 			AdpByteSet(0x0121, 0x60);
 			AdpWordSet(0x011F, (ushort)(AdpWord(0x011F) + 1));
 		}
+		CryogenicMcpTools.RecordAdpSchedulerState(AdpWord(0x011F), AdpWord(0x0121));
 		return NearRet();
 	}
 
@@ -549,9 +584,11 @@ public partial class Overrides {
 		AdpWordSet((ushort)(DI + 0x5A), Make16(0, Lo8(ax)));
 
 		DX = (ushort)((DI - AdpChannelTableBase) >> 1);
+		ushort oldDs = DS;
 		SI = (ushort)(instTableOff + 2);
 		DS = instTableSeg;
 		AdpInstrumentWrite_5BAE_09AB_05C4CB(0);
+		DS = oldDs;
 		return NearRet();
 	}
 
@@ -607,7 +644,6 @@ public partial class Overrides {
 		}
 		if ((tickFlag & 0x80) != 0) {
 			AdpByteSet(0x019B, (byte)(tickFlag + 1));
-			return NearRet();
 		}
 		AdpWordSet(0x011F, 1);
 		AdpWordSet(0x0121, 0x60);
@@ -647,7 +683,7 @@ public partial class Overrides {
 		if (Lo8(cx) != 0) {
 			byte cl = Lo8(cx);
 			byte scaleAl = al;
-			if ((scaleAl & 0x80) != 0) {
+			if ((cl & 0x80) != 0) {
 				cl = (byte)(0 - cl);
 				scaleAl = ah;
 			}
@@ -664,7 +700,7 @@ public partial class Overrides {
 		if (Hi8(cx) != 0) {
 			byte ch = Hi8(cx);
 			byte scaleAl = al;
-			if ((scaleAl & 0x80) != 0) {
+			if ((ch & 0x80) != 0) {
 				ch = (byte)(0 - ch);
 				scaleAl = ah;
 			}
@@ -682,7 +718,7 @@ public partial class Overrides {
 		if (Lo8(cx) != 0) {
 			byte cl = Lo8(cx);
 			byte scaleAl = al;
-			if ((scaleAl & 0x80) != 0) {
+			if ((cl & 0x80) != 0) {
 				cl = (byte)(0 - cl);
 				scaleAl = ah;
 			}
@@ -709,7 +745,7 @@ public partial class Overrides {
 		if (Lo8(cx) != 0) {
 			byte cl = Lo8(cx);
 			byte scaleAl = al;
-			if ((scaleAl & 0x80) != 0) {
+			if ((cl & 0x80) != 0) {
 				cl = (byte)(0 - cl);
 				scaleAl = ah;
 			}
@@ -729,7 +765,7 @@ public partial class Overrides {
 		if (Hi8(cx) != 0) {
 			byte ch = Hi8(cx);
 			byte scaleAl = al;
-			if ((scaleAl & 0x80) != 0) {
+			if ((ch & 0x80) != 0) {
 				ch = (byte)(0 - ch);
 				scaleAl = ah;
 			}
@@ -754,7 +790,7 @@ public partial class Overrides {
 		}
 		byte cl2 = Lo8(cx);
 		byte scale = al;
-		if ((scale & 0x80) != 0) {
+		if ((cl2 & 0x80) != 0) {
 			cl2 = (byte)(0 - cl2);
 			scale = ah;
 		}
@@ -800,6 +836,7 @@ public partial class Overrides {
 			int centered = pitch - 0x40;
 			if (centered < 0) {
 				centered = -centered;
+				int fracMul = (centered & 0x1F) << 3;
 				centered >>= 5;
 				if (key < centered) {
 					key = (byte)(key + 12 - centered);
@@ -810,18 +847,20 @@ public partial class Overrides {
 					key = (byte)(key - centered);
 				}
 				byte frac = AdpByte((ushort)(0x0183 + key));
-				byte bend = (byte)((frac * (byte)(centered & 0xFF)) >> 8);
+				byte bend = (byte)((frac * fracMul) >> 8);
 				freq = AdpWord((ushort)(0x0147 + key * 2));
 				freq = (ushort)(freq - bend);
 			} else {
-				centered = (centered + 1) >> 5;
+				centered = centered + 1;
+				int fracMul = (centered & 0x1F) << 3;
+				centered >>= 5;
 				key = (byte)(key + centered);
 				if (key >= 12) {
 					key -= 12;
 					octave++;
 				}
 				byte frac = AdpByte((ushort)(0x0184 + key));
-				byte bend = (byte)((frac * (byte)(centered & 0xFF)) >> 8);
+				byte bend = (byte)((frac * fracMul) >> 8);
 				freq = AdpWord((ushort)(0x0147 + key * 2));
 				freq = (ushort)(freq + bend);
 			}
@@ -957,9 +996,12 @@ public partial class Overrides {
 	public Action AdpMixerWrite_5BAE_0982_05C4A2(int gotoAddress) {
 		byte volume = AdpByte(0x019C);
 		ushort port = AdpWord(0x02B3);
+		if (port == 0) {
+			port = 0x0388;
+		}
 		port = (ushort)(port + 4);
-		Machine.IoPortDispatcher.WriteByte((byte)port, 0x26);
-		Machine.IoPortDispatcher.WriteByte((byte)(port + 1), volume);
+		Machine.IoPortDispatcher.WriteByte(port, 0x26);
+		Machine.IoPortDispatcher.WriteByte((ushort)(port + 1), volume);
 		AX = Make16(volume, Hi8(AX));
 		return NearRet();
 	}
@@ -1091,15 +1133,19 @@ public partial class Overrides {
 	public Action AdpOplRegisterWrite_5BAE_0AA2_05C5C2(int gotoAddress) {
 		byte register = Lo8(AX);
 		byte value = Hi8(AX);
+		CryogenicMcpTools.RecordAdpOplWrite(register, value, State.Cycles, _adpTickIndex);
 		ushort basePort = AdpWord(0x02B3);
-		Machine.IoPortDispatcher.WriteByte((byte)basePort, register);
+		if (basePort == 0) {
+			basePort = 0x0388;
+		}
+		Machine.IoPortDispatcher.WriteByte(basePort, register);
 		for (int i = 0; i < 7; i++) {
-			_ = Machine.IoPortDispatcher.ReadByte((byte)basePort);
+			_ = Machine.IoPortDispatcher.ReadByte(basePort);
 		}
 		ushort dataPort = (ushort)(basePort + 1);
-		Machine.IoPortDispatcher.WriteByte((byte)dataPort, value);
+		Machine.IoPortDispatcher.WriteByte(dataPort, value);
 		for (int i = 0; i < 35; i++) {
-			_ = Machine.IoPortDispatcher.ReadByte((byte)dataPort);
+			_ = Machine.IoPortDispatcher.ReadByte(dataPort);
 		}
 		return NearRet();
 	}
