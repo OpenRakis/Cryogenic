@@ -303,6 +303,26 @@
 
               <Separator Background="#21262D" Margin="0,4" />
 
+              <!-- Mixer thread diagnostic -->
+              <TextBlock Text="MIXER THREAD DIAGNOSTIC" Classes="panel-header" Foreground="#F0883E" />
+              <TextBlock Text="If this tone sounds but songs don't → engine data issue. If silent → mixer write path issue."
+                         Foreground="#484F58" FontSize="10" TextWrapping="Wrap" />
+              <Button Content="🔬 Test Tone FROM Mixer Thread" Command="{Binding MixerThreadTestToneCommand}"
+                      FontSize="12" Padding="12,8"
+                      Background="#6E40C9" Foreground="White" CornerRadius="6"
+                      HorizontalAlignment="Stretch" />
+
+              <Separator Background="#21262D" Margin="0,4" />
+
+              <!-- Engine instrument override diagnostic -->
+              <TextBlock Text="ENGINE DATA DIAGNOSTIC" Classes="panel-header" Foreground="#F85149" />
+              <TextBlock Text="Replaces all song instruments with the test tone instrument. If you hear sound with this ON, the instrument data parsing is wrong."
+                         Foreground="#484F58" FontSize="10" TextWrapping="Wrap" />
+              <CheckBox Content="Use Test Instruments" IsChecked="{Binding UseTestInstruments}"
+                        Foreground="#F85149" FontWeight="Bold" />
+
+              <Separator Background="#21262D" Margin="0,4" />
+
               <!-- Individual channel test -->
               <TextBlock Text="SINGLE CHANNEL TEST" Classes="panel-header" />
 

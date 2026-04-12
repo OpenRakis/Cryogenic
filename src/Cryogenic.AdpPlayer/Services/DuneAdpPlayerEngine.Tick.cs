@@ -21,6 +21,8 @@ public sealed partial class DuneAdpPlayerEngine {
 	private int _tickIndex;
 
 	private int _advanceSamplesCallCount;
+	private int _instrumentLoadCount;
+	private int _noteOnCount;
 
 	/// <summary>
 	/// Called from the audio render callback with the number of audio frames
@@ -66,10 +68,9 @@ public sealed partial class DuneAdpPlayerEngine {
 			if (_channelNote[ch] == 0) {
 				continue;
 			}
-			// OPL total level is inverted: 0 = max volume, 0x3F = silence.
-			// Channel volume from DNADP is 0..0x3F in the song data.
+			// DNADP volume from song data: 0 = silent, 0x7F = loudest.
 			byte vol = _channelVolume[ch];
-			float normalized = 1.0f - (vol / 63.0f);
+			float normalized = vol / 127.0f;
 			if (normalized > maxLevel) {
 				maxLevel = normalized;
 			}
@@ -149,6 +150,9 @@ public sealed partial class DuneAdpPlayerEngine {
 		CheckSongEnd();
 
 		for (int ch = 0; ch < _activeChannelCount; ch++) {
+			if (_channelWait[ch] == 0xFFFF) {
+				continue;
+			}
 			_channelWait[ch]--;
 			if (_channelWait[ch] != 0) {
 				continue;
@@ -164,44 +168,46 @@ public sealed partial class DuneAdpPlayerEngine {
 
 	/// <summary>
 	/// Processes events for a single channel until a non-zero wait is obtained.
-	/// DNADP dispatch: read event byte, extract bits 4-6 for handler class,
-	/// dispatch to handler. Handler reads data + calls wait decoder (0x08E1).
+	/// DNADP dispatch: read event word (LODSW), extract bits 4-6 from low byte,
+	/// dispatch to handler with high byte as payload. Handler then calls wait decoder.
 	/// Loop if wait is zero (multiple events per tick).
 	/// </summary>
 	private void ProcessChannel(int ch) {
 		int safetyLimit = 2000;
 		while (safetyLimit-- > 0) {
 			ushort pointer = _channelEventPointer[ch];
-			if (pointer >= _songData.Length) {
+			if (pointer + 1 >= _songData.Length) {
 				_channelWait[ch] = 0xFFFF;
 				AddRecentEvent($"ch{ch}: pointer 0x{pointer:X4} past end, parking");
 				return;
 			}
 
-			byte eventByte = _songData[pointer];
-			_channelEventPointer[ch] = (ushort)(pointer + 1);
+			ushort eventWord = (ushort)(_songData[pointer] | (_songData[pointer + 1] << 8));
+			_channelEventPointer[ch] = (ushort)(pointer + 2);
+			byte eventLow = (byte)(eventWord & 0xFF);
+			byte eventData = (byte)(eventWord >> 8);
 
-			int handlerClass = (eventByte >> 4) & 0x07;
+			int handlerClass = (eventLow >> 4) & 0x07;
 
 			switch (handlerClass) {
 				case 0: // Note Off (0x8x)
-					HandleNoteOff(ch);
+					HandleNoteOff(ch, eventData);
 					break;
 				case 1: // Note On (0x9x)
-					HandleNoteOn(ch);
+					HandleNoteOn(ch, eventData);
 					break;
 				case 2: // Wait (0xAx)
 				case 3: // Wait (0xBx) — same handler
-					HandleWait(ch);
+					HandleWait(ch, eventData);
 					break;
 				case 4: // Program Change (0xCx)
-					HandleProgramChange(ch);
+					HandleProgramChange(ch, eventData);
 					break;
 				case 5: // Volume Modulation (0xDx)
-					HandleVolumeModulation(ch);
+					HandleVolumeModulation(ch, eventData);
 					break;
 				case 6: // Pitch Bend (0xEx)
-					HandlePitchBend(ch);
+					HandlePitchBend(ch, eventData);
 					break;
 				case 7: // End of Track (0xFx)
 					HandleEndOfTrack(ch);
@@ -218,14 +224,20 @@ public sealed partial class DuneAdpPlayerEngine {
 	/// Note Off handler (class 0, 0x8x). Mirrors 0x065B:
 	/// Clears key-on bit for the channel, then reads wait.
 	/// </summary>
-	private void HandleNoteOff(int ch) {
-		OplNoteOff(ch);
-		_channelNote[ch] = 0;
+	private void HandleNoteOff(int ch, byte noteData) {
+		SkipChannelBytes(ch, 1);
+		if (_channelWait[ch] == 0xFFFF) {
+			return;
+		}
+		byte noteWithTranspose = (byte)(noteData + _channelTranspose[ch]);
+		if (_channelNote[ch] == noteWithTranspose) {
+			OplNoteOff(ch);
+			_channelNote[ch] = 0;
+		}
 
 		ushort delta = ReadWaitValue(ch);
 		_channelWait[ch] = delta;
 
-		RecordGoldenCaptureEvent("tick", "NOF", 0, 0, (byte)ch, "NOF", ch, delta);
 		_lastEventPerChannel[Math.Min(ch, _lastEventPerChannel.Length - 1)] = $"NOF d={delta}";
 		EmitEventFlow(ch, "NOF", "", delta, _channelEventPointer[ch]);
 	}
@@ -237,14 +249,13 @@ public sealed partial class DuneAdpPlayerEngine {
 	/// 3. Store note, add transpose, compute freq, write OPL registers
 	/// 4. Read wait
 	/// </summary>
-	private void HandleNoteOn(int ch) {
-		ushort pointer = _channelEventPointer[ch];
-		if (pointer >= _songData.Length) {
-			_channelWait[ch] = 0xFFFF;
+	private void HandleNoteOn(int ch, byte noteData) {
+		byte noteOnShapeByte;
+		if (!TryReadAndSkipChannelByte(ch, out noteOnShapeByte)) {
 			return;
 		}
-		byte note = _songData[pointer];
-		_channelEventPointer[ch] = (ushort)(pointer + 1);
+		ApplyNoteOnShaping0740(ch, noteOnShapeByte);
+		byte note = (byte)(noteData + _channelTranspose[ch]);
 
 		// If a note is already sounding on this channel, turn it off first
 		if (_channelNote[ch] != 0) {
@@ -252,12 +263,27 @@ public sealed partial class DuneAdpPlayerEngine {
 		}
 
 		_channelNote[ch] = note;
+
+		// Log first note-ons with full OPL context
+		if (_noteOnCount < 20) {
+			int adjusted = note - 0x18;
+			if (adjusted < 0 || adjusted >= 96) {
+				adjusted = 0;
+			}
+			int octave = adjusted / 12;
+			int semitone = adjusted % 12;
+			ushort fnum = FrequencyTable[semitone];
+			EmitLog($"NON ch{ch} note={note} trans={_channelTranspose[ch]} adj={adjusted} " +
+				$"oct={octave} semi={semitone} fnum=0x{fnum:X3} " +
+				$"inst={_channelInstrument[ch]} vol={_channelVolume[ch]} masterVol={_currentVolume}");
+			_noteOnCount++;
+		}
+
 		OplNoteOn(ch, note);
 
 		ushort delta = ReadWaitValue(ch);
 		_channelWait[ch] = delta;
 
-		RecordGoldenCaptureEvent("tick", "NON", note, 0, (byte)ch, "NON", ch, delta);
 		_lastEventPerChannel[Math.Min(ch, _lastEventPerChannel.Length - 1)] = $"NON n={note} d={delta}";
 		EmitEventFlow(ch, "NON", $"n={note}", delta, _channelEventPointer[ch]);
 	}
@@ -266,11 +292,10 @@ public sealed partial class DuneAdpPlayerEngine {
 	/// Wait handler (class 2/3, 0xAx/0xBx). Mirrors 0x08E1:
 	/// Pure delta — no side effects, just reads the next wait value.
 	/// </summary>
-	private void HandleWait(int ch) {
+	private void HandleWait(int ch, byte waitSeed) {
 		ushort delta = ReadWaitValue(ch);
 		_channelWait[ch] = delta;
 
-		RecordGoldenCaptureEvent("tick", "DO", 0, 0, (byte)ch, "DO", ch, delta);
 		_lastEventPerChannel[Math.Min(ch, _lastEventPerChannel.Length - 1)] = $"DO d={delta}";
 		EmitEventFlow(ch, "DO", "", delta, _channelEventPointer[ch]);
 	}
@@ -279,22 +304,32 @@ public sealed partial class DuneAdpPlayerEngine {
 	/// Program Change handler (class 4, 0xCx). Mirrors 0x05AA:
 	/// Reads instrument number, loads 40-byte instrument definition into OPL registers.
 	/// </summary>
-	private void HandleProgramChange(int ch) {
-		ushort pointer = _channelEventPointer[ch];
-		if (pointer >= _songData.Length) {
-			_channelWait[ch] = 0xFFFF;
-			return;
-		}
-		byte instrument = _songData[pointer];
-		_channelEventPointer[ch] = (ushort)(pointer + 1);
+	private void HandleProgramChange(int ch, byte instrument) {
 
 		_channelInstrument[ch] = instrument;
+
+		// Dump raw instrument bytes for the first few loads to diagnose silence
+		if (_instrumentLoadCount < 10) {
+			int instOffset = _eventBaseOffset + instrument * 40;
+			if (instOffset + 40 <= _songData.Length) {
+				byte[] raw = _songData[instOffset..(instOffset + 40)];
+				EmitLog($"PRG ch{ch} inst#{instrument} @0x{instOffset:X4}: " +
+					$"modKSL=0x{raw[0]:X2} modChar=0x{raw[1]:X2} fb=0x{raw[2]:X2} " +
+					$"modAD=0x{raw[3]:X2} modSR=0x{raw[4]:X2} modAMVIB=0x{raw[5]:X2} " +
+					$"carAD=0x{raw[6]:X2} carSR=0x{raw[7]:X2} carKSL=0x{raw[8]:X2} " +
+					$"carAMVIB=0x{raw[9]:X2} modKSR=0x{raw[0xA]:X2} carMULT=0x{raw[0xB]:X2} " +
+					$"conn=0x{raw[0xC]:X2} wfMod=0x{raw[0x1A]:X2} wfCar=0x{raw[0x1B]:X2}");
+			} else {
+				EmitLog($"PRG ch{ch} inst#{instrument}: INVALID offset 0x{instOffset:X4} (songLen=0x{_songData.Length:X4})");
+			}
+			_instrumentLoadCount++;
+		}
+
 		OplWriteInstrument(ch, instrument);
 
 		ushort delta = ReadWaitValue(ch);
 		_channelWait[ch] = delta;
 
-		RecordGoldenCaptureEvent("tick", "PRG", instrument, 0, (byte)ch, "PRG", ch, delta);
 		_lastEventPerChannel[Math.Min(ch, _lastEventPerChannel.Length - 1)] = $"PRG i={instrument} d={delta}";
 		EmitEventFlow(ch, "PRG", $"i={instrument}", delta, _channelEventPointer[ch]);
 	}
@@ -303,22 +338,15 @@ public sealed partial class DuneAdpPlayerEngine {
 	/// Volume/Envelope Modulation handler (class 5, 0xDx). Mirrors 0x06A8:
 	/// Reads volume byte, updates carrier operator total level.
 	/// </summary>
-	private void HandleVolumeModulation(int ch) {
-		ushort pointer = _channelEventPointer[ch];
-		if (pointer >= _songData.Length) {
-			_channelWait[ch] = 0xFFFF;
-			return;
-		}
-		byte volume = _songData[pointer];
-		_channelEventPointer[ch] = (ushort)(pointer + 1);
+	private void HandleVolumeModulation(int ch, byte volumeData) {
+		byte volume = (byte)(0x80 - volumeData);
 
 		_channelVolume[ch] = volume;
-		OplSetVolume(ch, volume);
+		ApplyVolumeShaping06A8(ch, volumeData);
 
 		ushort delta = ReadWaitValue(ch);
 		_channelWait[ch] = delta;
 
-		RecordGoldenCaptureEvent("tick", "VOL", volume, 0, (byte)ch, "VOL", ch, delta);
 		_lastEventPerChannel[Math.Min(ch, _lastEventPerChannel.Length - 1)] = $"VOL v={volume} d={delta}";
 		EmitEventFlow(ch, "VOL", $"v={volume}", delta, _channelEventPointer[ch]);
 	}
@@ -327,23 +355,38 @@ public sealed partial class DuneAdpPlayerEngine {
 	/// Pitch Bend handler (class 6, 0xEx). Mirrors 0x07EA:
 	/// Reads pitch bend value, adjusts frequency registers.
 	/// </summary>
-	private void HandlePitchBend(int ch) {
-		ushort pointer = _channelEventPointer[ch];
-		if (pointer >= _songData.Length) {
-			_channelWait[ch] = 0xFFFF;
-			return;
-		}
-		byte pitchBend = _songData[pointer];
-		_channelEventPointer[ch] = (ushort)(pointer + 1);
+	private void HandlePitchBend(int ch, byte pitchBend) {
 
 		OplPitchBend(ch, pitchBend);
 
 		ushort delta = ReadWaitValue(ch);
 		_channelWait[ch] = delta;
 
-		RecordGoldenCaptureEvent("tick", "PB", pitchBend, 0, (byte)ch, "PB", ch, delta);
 		_lastEventPerChannel[Math.Min(ch, _lastEventPerChannel.Length - 1)] = $"PB pb={pitchBend} d={delta}";
 		EmitEventFlow(ch, "PB", $"pb={pitchBend}", delta, _channelEventPointer[ch]);
+	}
+
+	private void SkipChannelBytes(int ch, int count) {
+		ushort pointer = _channelEventPointer[ch];
+		if (pointer + count > _songData.Length) {
+			_channelEventPointer[ch] = (ushort)_songData.Length;
+			_channelWait[ch] = 0xFFFF;
+			return;
+		}
+		_channelEventPointer[ch] = (ushort)(pointer + count);
+	}
+
+	private bool TryReadAndSkipChannelByte(int ch, out byte value) {
+		value = 0;
+		ushort pointer = _channelEventPointer[ch];
+		if (pointer >= _songData.Length) {
+			_channelEventPointer[ch] = (ushort)_songData.Length;
+			_channelWait[ch] = 0xFFFF;
+			return false;
+		}
+		value = _songData[pointer];
+		_channelEventPointer[ch] = (ushort)(pointer + 1);
+		return true;
 	}
 
 	/// <summary>
@@ -353,8 +396,9 @@ public sealed partial class DuneAdpPlayerEngine {
 	/// </summary>
 	private void HandleEndOfTrack(int ch) {
 		_channelWait[ch] = 0xFFFF;
+		ushort pointer = _channelEventPointer[ch];
+		_channelEventPointer[ch] = pointer >= 2 ? (ushort)(pointer - 2) : (ushort)0;
 
-		RecordGoldenCaptureEvent("tick", "EOT", 0, 0, (byte)ch, "EOT", ch, 0xFFFF);
 		_lastEventPerChannel[Math.Min(ch, _lastEventPerChannel.Length - 1)] = "EOT";
 		AddRecentEvent($"ch{ch}: EOT");
 		EmitEventFlow(ch, "EOT", "", 0xFFFF, _channelEventPointer[ch]);
@@ -380,38 +424,80 @@ public sealed partial class DuneAdpPlayerEngine {
 			_tickFlag++;
 		}
 
-		// Reset scheduler and re-check song end
+		// Reset scheduler (driver path 0x066F -> 0x019B)
 		ResetSchedulerState();
-		CheckSongEnd();
 
-		if (_channelWait[0] > 0) {
+		if (_channelWait[0] > 0 && _channelWait[0] != 0xFFFF) {
 			_channelWait[0]--;
 		}
 	}
 
 	/// <summary>
-	/// Reads a variable-length wait/delta value from the channel event stream.
-	/// Mirrors the DNADP wait decoder at 0x08E1.
+	/// Reads a wait/delta value from the channel event stream.
+	/// Mirrors DNADP decoder 0x08E1.
 	///
-	/// Uses standard VLQ encoding (same as DNMID) since both share
-	/// the same song container format.
+	/// The driver does: push ax; xor ax,ax; es lodsb — clearing AH before
+	/// entering the multi-byte loop. CX is also zeroed. The original AX is
+	/// saved/restored across the call (push/pop) and has NO effect on the
+	/// wait decode. All state is derived purely from the stream bytes.
 	/// </summary>
 	private ushort ReadWaitValue(int ch) {
 		ushort pos = _channelEventPointer[ch];
-		ushort result = 0;
-		while (pos < _songData.Length) {
-			byte b = _songData[pos++];
-			result = (ushort)((result << 7) | (b & 0x7F));
-			if ((b & 0x80) == 0) {
-				break;
-			}
-			if (result > 0x3FFF) {
-				result = 0xFFFF;
-				break;
-			}
+		if (pos >= _songData.Length) {
+			_channelEventPointer[ch] = (ushort)_songData.Length;
+			return 0xFFFF;
 		}
-		_channelEventPointer[ch] = pos;
-		return result;
+
+		byte first = _songData[pos++];
+		if ((first & 0x80) == 0) {
+			_channelEventPointer[ch] = pos;
+			return first;
+		}
+
+		// Multi-byte variable-length encoding.
+		// Driver state at entry to loop: AH=0 (from xor ax,ax), CX=0 (from xor cx,cx).
+		// Bytes shift through CH←CL←AH←AL until a byte without bit7 is found.
+		byte chReg = 0;
+		byte clReg = 0;
+		byte ahReg = first;
+		byte alReg;
+
+		while (true) {
+			if (pos >= _songData.Length) {
+				_channelEventPointer[ch] = (ushort)_songData.Length;
+				return 0xFFFF;
+			}
+
+			alReg = _songData[pos++];
+			if ((alReg & 0x80) != 0) {
+				chReg = clReg;
+				clReg = ahReg;
+				ahReg = alReg;
+				continue;
+			}
+
+			ushort ax = (ushort)((ahReg << 8) | alReg);
+			ushort cx = (ushort)((chReg << 8) | clReg);
+			ax &= 0x7F7F;
+			cx &= 0x7F7F;
+
+			cx = (ushort)((cx & 0xFF00) | (((cx & 0x00FF) << 1) & 0x00FF)); // shl cl,1
+			cx = (ushort)(cx >> 1); // shr cx,1
+
+			ax = (ushort)((ax & 0xFF00) | (((ax & 0x00FF) << 1) & 0x00FF)); // shl al,1
+			ax = (ushort)((ax << 1) & 0xFFFF); // shl ax,1
+
+			int carry = cx & 0x0001;
+			cx = (ushort)(cx >> 1); // shr cx,1
+			ax = (ushort)(((carry << 15) | (ax >> 1)) & 0xFFFF); // rcr ax,1
+
+			carry = cx & 0x0001;
+			cx = (ushort)(cx >> 1); // shr cx,1
+			ax = (ushort)(((carry << 15) | (ax >> 1)) & 0xFFFF); // rcr ax,1
+
+			_channelEventPointer[ch] = pos;
+			return cx == 0 ? ax : (ushort)0xFFFF;
+		}
 	}
 
 	/// <summary>
@@ -420,7 +506,7 @@ public sealed partial class DuneAdpPlayerEngine {
 	/// relative to songDataOffset. Then reads first VLQ delta for each active channel.
 	/// </summary>
 	private void BuildChannelTable() {
-		_activeChannelCount = 0;
+		_activeChannelCount = 9;
 		_measure = 1;
 		_subdivision = 0x60;
 
@@ -436,12 +522,18 @@ public sealed partial class DuneAdpPlayerEngine {
 			_channelTranspose[i] = 0;
 			_channelInstrument[i] = 0;
 			_channelStoredFreq[i] = 0;
+			_channelReg90[i] = 0;
+			_channelReg48[i] = 0;
+			_channelReg7E[i] = 0;
+			_channelRegA2[i] = 0;
+			_channelRegC6[i] = 0;
+			_channelRegB4[i] = 0;
+			_channelRegD8[i] = 0;
 
 			if (channelOffset != 0) {
-				_activeChannelCount++;
 				ushort absOffset = (ushort)(SongDataOffset + channelOffset);
-				_channelEventPointer[_activeChannelCount - 1] = absOffset;
-				_channelStartOffset[_activeChannelCount - 1] = absOffset;
+				_channelEventPointer[i] = absOffset;
+				_channelStartOffset[i] = absOffset;
 			}
 		}
 
@@ -449,8 +541,8 @@ public sealed partial class DuneAdpPlayerEngine {
 	}
 
 	/// <summary>
-	/// Reads initial VLQ deltas for all 9 channel slots from _channelStartOffset.
-	/// wait = delta + 1 on first load.
+	/// Initializes all 9 channel waits and pointers from start offsets.
+	/// Mirrors DNADP 0x0444: wait is set via 0x08E1 decode, then incremented by 1.
 	/// </summary>
 	private void InitChannelDeltas() {
 		for (int i = 0; i < 9; i++) {
@@ -459,16 +551,12 @@ public sealed partial class DuneAdpPlayerEngine {
 			_channelWait[i] = 0xFFFF;
 
 			if (startOffset != 0) {
-				ushort pos = startOffset;
-				ushort result = 0;
-				while (pos < _songData.Length) {
-					byte b = _songData[pos++];
-					result = (ushort)((result << 7) | (b & 0x7F));
-					if ((b & 0x80) == 0) { break; }
-					if (result > 0x3FFF) { result = 0xFFFF; break; }
+				ushort delta = ReadWaitValue(i);
+				if (delta == 0xFFFF) {
+					_channelWait[i] = 0xFFFF;
+				} else {
+					_channelWait[i] = (ushort)(delta + 1);
 				}
-				_channelWait[i] = (ushort)(result + 1);
-				_channelEventPointer[i] = pos;
 			}
 		}
 	}

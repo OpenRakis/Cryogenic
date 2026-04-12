@@ -253,6 +253,10 @@ Contribution areas:
 
 ---
 
+## graphify
+
+How to build the graph: type the /graphify invocation in Copilot Chat or GitHub Copilot CLI pointed at docs/ dnadp_full_disasm.asm AdpDriverCode.cs Services --directed --mode deep. Query it afterward with python -m graphify query "..." --graph graphify-out/graph.json.
+
 ## License
 
 Apache License 2.0. See [LICENSE](LICENSE).

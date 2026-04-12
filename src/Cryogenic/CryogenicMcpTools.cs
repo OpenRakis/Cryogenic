@@ -855,4 +855,321 @@ public static class CryogenicMcpTools {
 			};
 		}
 	}
+
+	// ═══════════════════════════════════════════════════════════════════
+	// DNADP (AdLib Pro / OPL2) driver diagnostics
+	// ═══════════════════════════════════════════════════════════════════
+
+	private static readonly Lock AdpCallCounterLock = new();
+	private static readonly Lock AdpOplCaptureLock = new();
+	private static readonly Dictionary<string, int> AdpCallCounters = new(StringComparer.Ordinal);
+	private static readonly List<OplCaptureEvent> AdpOplCaptureEvents = [];
+	private static bool AdpOplCaptureEnabled;
+	private static int AdpOplCaptureMaxEvents = 50000;
+	private static int AdpOplCaptureDroppedEvents;
+	private static long AdpOplCaptureStartTimestamp;
+	private static int AdpOplCaptureSequence;
+	private static DateTimeOffset AdpOplCaptureStartedUtc;
+	private static DateTimeOffset? AdpOplCaptureStoppedUtc;
+	private static ushort AdpLastSongSegment;
+	private static ushort AdpLastSongOffset;
+	private static ushort AdpLastMeasure;
+	private static ushort AdpLastSubdivision;
+
+	/// <summary>
+	/// Records that a DNADP entry point or internal function was invoked.
+	/// </summary>
+	public static void RecordAdpCall(string entryPoint) {
+		lock (AdpCallCounterLock) {
+			if (AdpCallCounters.TryGetValue(entryPoint, out int current)) {
+				AdpCallCounters[entryPoint] = current + 1;
+			} else {
+				AdpCallCounters[entryPoint] = 1;
+			}
+		}
+	}
+
+	/// <summary>
+	/// Records a song open event with the ES:SI pointer to song data.
+	/// </summary>
+	public static void RecordAdpSongOpen(ushort segment, ushort offset) {
+		lock (AdpCallCounterLock) {
+			AdpLastSongSegment = segment;
+			AdpLastSongOffset = offset;
+		}
+	}
+
+	/// <summary>
+	/// Records the current scheduler position (measure and subdivision).
+	/// </summary>
+	public static void RecordAdpSchedulerState(ushort measure, ushort subdivision) {
+		lock (AdpCallCounterLock) {
+			AdpLastMeasure = measure;
+			AdpLastSubdivision = subdivision;
+		}
+	}
+
+	/// <summary>
+	/// Records an OPL register write from the DNADP driver.
+	/// Shape matches the player-side OplCaptureEvent for mechanical diffing.
+	/// </summary>
+	public static void RecordAdpOplWrite(byte register, byte data, long cycles, int tickIndex) {
+		lock (AdpOplCaptureLock) {
+			if (!AdpOplCaptureEnabled) {
+				return;
+			}
+			if (AdpOplCaptureEvents.Count >= AdpOplCaptureMaxEvents) {
+				AdpOplCaptureDroppedEvents++;
+				return;
+			}
+			long elapsedTicks = cycles - AdpOplCaptureStartTimestamp;
+			long elapsedUs = elapsedTicks * 1_000_000 / Stopwatch.Frequency;
+
+			byte timerState = 0;
+			if (register == 0x02 || register == 0x03 || register == 0x04) {
+				timerState = data;
+			}
+
+			AdpOplCaptureEvents.Add(new OplCaptureEvent {
+				Sequence = AdpOplCaptureSequence++,
+				Type = OplCaptureEventType.RegisterWrite,
+				TimestampUs = elapsedUs,
+				Port = 0x389,
+				Register = register,
+				Value = data,
+				Channel = OplRegisterToChannel(register),
+				Measure = AdpLastMeasure,
+				Subdivision = AdpLastSubdivision,
+				TickIndex = tickIndex,
+				TimerState = timerState,
+				AudioPeak = 0f
+			});
+		}
+	}
+
+	/// <summary>
+	/// Records an OPL status read (IN 0x388) from the DNADP driver.
+	/// </summary>
+	public static void RecordAdpOplStatusRead(byte statusByte, long cycles, int tickIndex) {
+		lock (AdpOplCaptureLock) {
+			if (!AdpOplCaptureEnabled) {
+				return;
+			}
+			if (AdpOplCaptureEvents.Count >= AdpOplCaptureMaxEvents) {
+				AdpOplCaptureDroppedEvents++;
+				return;
+			}
+			long elapsedTicks = cycles - AdpOplCaptureStartTimestamp;
+			long elapsedUs = elapsedTicks * 1_000_000 / Stopwatch.Frequency;
+
+			AdpOplCaptureEvents.Add(new OplCaptureEvent {
+				Sequence = AdpOplCaptureSequence++,
+				Type = OplCaptureEventType.StatusRead,
+				TimestampUs = elapsedUs,
+				Port = 0x388,
+				Register = 0,
+				Value = statusByte,
+				Channel = -1,
+				Measure = AdpLastMeasure,
+				Subdivision = AdpLastSubdivision,
+				TickIndex = tickIndex,
+				TimerState = statusByte,
+				AudioPeak = 0f
+			});
+		}
+	}
+
+	/// <summary>
+	/// Derives the OPL channel (0-8) from a register address, or -1 if not channel-specific.
+	/// Identical logic to the player-side OplRegisterToChannel.
+	/// </summary>
+	private static int OplRegisterToChannel(byte register) {
+		int low = register & 0xFF;
+		if (low is >= 0xA0 and <= 0xA8) {
+			return low - 0xA0;
+		}
+		if (low is >= 0xB0 and <= 0xB8) {
+			return low - 0xB0;
+		}
+		if (low is >= 0xC0 and <= 0xC8) {
+			return low - 0xC0;
+		}
+		if (low is (>= 0x20 and <= 0x35) or (>= 0x40 and <= 0x55) or (>= 0x60 and <= 0x75) or (>= 0x80 and <= 0x95) or (>= 0xE0 and <= 0xF5)) {
+			int opOffset = low & 0x1F;
+			ReadOnlySpan<byte> op1Map = [0x00, 0x01, 0x02, 0x08, 0x09, 0x0A, 0x10, 0x11, 0x12];
+			ReadOnlySpan<byte> op2Map = [0x03, 0x04, 0x05, 0x0B, 0x0C, 0x0D, 0x13, 0x14, 0x15];
+			for (int ch = 0; ch < 9; ch++) {
+				if (op1Map[ch] == opOffset || op2Map[ch] == opOffset) {
+					return ch;
+				}
+			}
+		}
+		return -1;
+	}
+
+	/// <summary>
+	/// OPL capture event type for FM synthesis golden capture.
+	/// Same enum on both player and override sides.
+	/// </summary>
+	public enum OplCaptureEventType : byte {
+		/// <summary>OPL register write (OUT 0x388 address, OUT 0x389 data).</summary>
+		RegisterWrite = 0,
+		/// <summary>OPL status read (IN 0x388 returns timer status byte).</summary>
+		StatusRead = 1,
+		/// <summary>Periodic audio sample snapshot (peak amplitude).</summary>
+		AudioSample = 2
+	}
+
+	/// <summary>
+	/// Single OPL capture event. Shape identical to player-side OplCaptureEvent.
+	/// </summary>
+	public sealed class OplCaptureEvent {
+		public required int Sequence { get; init; }
+		public required OplCaptureEventType Type { get; init; }
+		public required long TimestampUs { get; init; }
+		public required ushort Port { get; init; }
+		public required byte Register { get; init; }
+		public required byte Value { get; init; }
+		public required int Channel { get; init; }
+		public required ushort Measure { get; init; }
+		public required ushort Subdivision { get; init; }
+		public required int TickIndex { get; init; }
+		public required byte TimerState { get; init; }
+		public required float AudioPeak { get; init; }
+	}
+
+	/// <summary>
+	/// Structured response for DNADP call count queries.
+	/// </summary>
+	public sealed class AdpCallCountsResponse {
+		public required IReadOnlyDictionary<string, int> Entries { get; init; }
+		public required ushort LastSongSegment { get; init; }
+		public required ushort LastSongOffset { get; init; }
+		public required ushort LastMeasure { get; init; }
+		public required ushort LastSubdivision { get; init; }
+	}
+
+	/// <summary>
+	/// Structured response for DNADP OPL capture dump.
+	/// Shape matches player-side OplCaptureDump.
+	/// </summary>
+	public sealed class AdpOplCaptureDumpResponse {
+		public required bool IsCapturing { get; init; }
+		public required int EventCount { get; init; }
+		public required int ReturnedEventCount { get; init; }
+		public required int Offset { get; init; }
+		public required int Limit { get; init; }
+		public required int DroppedEvents { get; init; }
+		public required DateTimeOffset StartedUtc { get; init; }
+		public DateTimeOffset? StoppedUtc { get; init; }
+		public required IReadOnlyList<OplCaptureEvent> Events { get; init; }
+	}
+
+	/// <summary>
+	/// Returns call counts for all observed DNADP entry points and internal functions.
+	/// </summary>
+	[McpServerTool(Name = "cryogenic_adp_call_counts", UseStructuredContent = true)]
+	public static AdpCallCountsResponse AdpCallCounts() {
+		Logger.Information("MCP tool invoked: cryogenic_adp_call_counts");
+		lock (AdpCallCounterLock) {
+			return new AdpCallCountsResponse {
+				Entries = new Dictionary<string, int>(AdpCallCounters, StringComparer.Ordinal),
+				LastSongSegment = AdpLastSongSegment,
+				LastSongOffset = AdpLastSongOffset,
+				LastMeasure = AdpLastMeasure,
+				LastSubdivision = AdpLastSubdivision
+			};
+		}
+	}
+
+	/// <summary>
+	/// Resets all DNADP call counters to zero.
+	/// </summary>
+	[McpServerTool(Name = "cryogenic_adp_reset_call_counts", UseStructuredContent = true)]
+	public static string AdpResetCallCounts() {
+		Logger.Information("MCP tool invoked: cryogenic_adp_reset_call_counts");
+		lock (AdpCallCounterLock) {
+			AdpCallCounters.Clear();
+			AdpLastSongSegment = 0;
+			AdpLastSongOffset = 0;
+			AdpLastMeasure = 0;
+			AdpLastSubdivision = 0;
+		}
+		return "DNADP call counters reset.";
+	}
+
+	/// <summary>
+	/// Starts capturing OPL register writes from the DNADP driver.
+	/// </summary>
+	[McpServerTool(Name = "cryogenic_adp_opl_capture_start", UseStructuredContent = true)]
+	public static string AdpOplCaptureStart(
+		[Description("Maximum OPL write events to capture before dropping. Default 50000.")]
+		int maxEvents = 50000) {
+		Logger.Information("MCP tool invoked: cryogenic_adp_opl_capture_start maxEvents={MaxEvents}", maxEvents);
+		lock (AdpOplCaptureLock) {
+			AdpOplCaptureEvents.Clear();
+			AdpOplCaptureDroppedEvents = 0;
+			AdpOplCaptureSequence = 0;
+			AdpOplCaptureMaxEvents = maxEvents;
+			AdpOplCaptureStartTimestamp = Stopwatch.GetTimestamp();
+			AdpOplCaptureStartedUtc = DateTimeOffset.UtcNow;
+			AdpOplCaptureStoppedUtc = null;
+			AdpOplCaptureEnabled = true;
+		}
+		return $"DNADP OPL capture started. Max events: {maxEvents}";
+	}
+
+	/// <summary>
+	/// Stops the DNADP OPL capture.
+	/// </summary>
+	[McpServerTool(Name = "cryogenic_adp_opl_capture_stop", UseStructuredContent = true)]
+	public static string AdpOplCaptureStop() {
+		Logger.Information("MCP tool invoked: cryogenic_adp_opl_capture_stop");
+		lock (AdpOplCaptureLock) {
+			AdpOplCaptureEnabled = false;
+			AdpOplCaptureStoppedUtc = DateTimeOffset.UtcNow;
+		}
+		return "DNADP OPL capture stopped.";
+	}
+
+	/// <summary>
+	/// Resets the DNADP OPL capture buffer.
+	/// </summary>
+	[McpServerTool(Name = "cryogenic_adp_opl_capture_reset", UseStructuredContent = true)]
+	public static string AdpOplCaptureReset() {
+		Logger.Information("MCP tool invoked: cryogenic_adp_opl_capture_reset");
+		lock (AdpOplCaptureLock) {
+			AdpOplCaptureEnabled = false;
+			AdpOplCaptureEvents.Clear();
+			AdpOplCaptureDroppedEvents = 0;
+			AdpOplCaptureSequence = 0;
+			AdpOplCaptureStoppedUtc = null;
+		}
+		return "DNADP OPL capture buffer reset.";
+	}
+
+	/// <summary>
+	/// Dumps captured DNADP OPL register writes with timeline context.
+	/// </summary>
+	[McpServerTool(Name = "cryogenic_adp_opl_capture_dump", UseStructuredContent = true)]
+	public static AdpOplCaptureDumpResponse AdpOplCaptureDump(
+		[Description("Number of events to return from the start. Default 500.")]
+		int take = 500) {
+		Logger.Information("MCP tool invoked: cryogenic_adp_opl_capture_dump take={Take}", take);
+		lock (AdpOplCaptureLock) {
+			int count = Math.Min(take, AdpOplCaptureEvents.Count);
+			List<OplCaptureEvent> page = AdpOplCaptureEvents.Take(count).ToList();
+			return new AdpOplCaptureDumpResponse {
+				IsCapturing = AdpOplCaptureEnabled,
+				EventCount = AdpOplCaptureEvents.Count,
+				ReturnedEventCount = page.Count,
+				Offset = 0,
+				Limit = take,
+				DroppedEvents = AdpOplCaptureDroppedEvents,
+				StartedUtc = AdpOplCaptureStartedUtc,
+				StoppedUtc = AdpOplCaptureStoppedUtc,
+				Events = page
+			};
+		}
+	}
 }

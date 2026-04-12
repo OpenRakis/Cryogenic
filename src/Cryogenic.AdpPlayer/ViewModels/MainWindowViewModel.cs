@@ -54,7 +54,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 	private int _targetVolume = 127;
 
 	[ObservableProperty]
-	private double _outputGain = 2.0;
+	private double _outputGain = 1.0;
 
 	[ObservableProperty]
 	private double _audioPeak;
@@ -74,6 +74,9 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 
 	[ObservableProperty]
 	private int _testVolume;
+
+	[ObservableProperty]
+	private bool _useTestInstruments;
 
 	// Header panel structured properties
 	[ObservableProperty]
@@ -135,6 +138,13 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 		if (_player is not null) {
 			int clamped = Math.Clamp(value, 0, 127);
 			_player.SetTargetVolume((byte)clamped);
+		}
+	}
+
+	partial void OnUseTestInstrumentsChanged(bool value) {
+		if (_player is not null) {
+			_player.UseTestInstruments = value;
+			AddLog(value ? "UseTestInstruments ON — all PRG events write test instrument." : "UseTestInstruments OFF — using song instrument data.");
 		}
 	}
 
@@ -246,6 +256,34 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 		AddLog("Playback stopped.");
 	}
 
+	/// <summary>
+	/// Pauses playback. Called from MCP pause tool.
+	/// </summary>
+	private void PauseMcp() {
+		if (_player is null || !_player.IsPlaying || _player.IsPaused) {
+			return;
+		}
+		_player.Pause();
+		IsPlaying = false;
+		IsPaused = true;
+		Status = "Paused.";
+		AddLog("Playback paused (MCP).");
+	}
+
+	/// <summary>
+	/// Resumes playback. Called from MCP resume tool.
+	/// </summary>
+	private void ResumeMcp() {
+		if (_player is null || !_player.IsPaused) {
+			return;
+		}
+		_player.Resume();
+		IsPlaying = true;
+		IsPaused = false;
+		Status = "Playing.";
+		AddLog("Playback resumed (MCP).");
+	}
+
 	[RelayCommand]
 	private void StartControlServer() {
 		try {
@@ -254,6 +292,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 				getState: BuildState,
 				play: Play,
 				stop: Stop,
+				pause: PauseMcp,
+				resume: ResumeMcp,
 				load: LoadFromPath,
 				setOutputGain: SetOutputGain,
 				setMasterVolume: SetMasterVolume,
@@ -337,6 +377,16 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 			_synth.StopTestTone(i);
 		}
 		AddLog("All test tones OFF.");
+	}
+
+	[RelayCommand]
+	private void MixerThreadTestTone() {
+		EnsurePlayerInitialized();
+		if (_synth is null) {
+			return;
+		}
+		_synth.PlayTestToneFromMixerThread();
+		AddLog("Mixer-thread test tone scheduled. If heard → engine data issue. If silent → mixer write path issue.");
 	}
 
 	private void EnsurePlayerInitialized() {
@@ -551,7 +601,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 
 	private object StartGoldenCapture(int maxEvents) {
 		EnsurePlayerInitialized();
-		GoldenCaptureDump dump = _player!.StartGoldenCapture(maxEvents);
+		OplCaptureDump dump = _player!.StartGoldenCapture(maxEvents);
 		AddLog($"Golden capture started (maxEvents={dump.MaxEvents}).");
 		return dump;
 	}
@@ -577,7 +627,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 			};
 		}
 
-		GoldenCaptureDump dump = _player.ResetGoldenCapture();
+		OplCaptureDump dump = _player.ResetGoldenCapture();
 		AddLog("Golden capture reset.");
 		return dump;
 	}
@@ -593,7 +643,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 		return _player.GetGoldenCaptureSummary();
 	}
 
-	private object DumpGoldenCapture(int offset, int limit, string sourceFilter, string kindFilter) {
+	private object DumpGoldenCapture(int offset, int limit) {
 		if (_player is null) {
 			return new {
 				ready = false,
@@ -601,7 +651,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 			};
 		}
 
-		return _player.GetGoldenCaptureDump(offset, limit, sourceFilter, kindFilter);
+		return _player.GetGoldenCaptureDump(offset, limit);
 	}
 
 	private object DiagnoseGoldenCapture(int sampleSize) {
@@ -609,7 +659,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 			return new { ready = false, reason = "Player not initialized." };
 		}
 
-		GoldenCaptureDiagnostics diagnostics = _player.GetGoldenCaptureDiagnostics(sampleSize);
+		OplCaptureDiagnostics diagnostics = _player.GetGoldenCaptureDiagnostics(sampleSize);
 		return new {
 			ready = true,
 			diagnostics

@@ -25,14 +25,15 @@ public sealed partial class DuneAdpPlayerEngine {
 	private readonly string[] _recentEvents = new string[32];
 	private int _recentEventIndex;
 
-	// Golden capture state
+	// OPL golden capture state
 	private bool _isCapturing;
 	private DateTimeOffset _captureStartedUtc;
 	private DateTimeOffset? _captureStoppedUtc;
 	private int _captureMaxEvents;
 	private int _captureDroppedEvents;
 	private int _captureSequence;
-	private List<GoldenCaptureEvent> _captureBuffer = new();
+	private long _captureStartTicks;
+	private List<OplCaptureEvent> _captureBuffer = new();
 
 	/// <summary>
 	/// Tracks an OPL2 register write for debug counters.
@@ -141,52 +142,69 @@ public sealed partial class DuneAdpPlayerEngine {
 	}
 
 	/// <summary>
-	/// Starts golden capture, recording up to maxEvents OPL events.
+	/// Starts OPL golden capture, recording up to maxEvents port I/O events.
 	/// </summary>
-	public GoldenCaptureDump StartGoldenCapture(int maxEvents) {
-		_captureBuffer = new List<GoldenCaptureEvent>(Math.Min(maxEvents, 100000));
+	public OplCaptureDump StartGoldenCapture(int maxEvents) {
+		_captureBuffer = new List<OplCaptureEvent>(Math.Min(maxEvents, 100000));
 		_captureMaxEvents = maxEvents;
 		_captureDroppedEvents = 0;
 		_captureSequence = 0;
+		_captureStartTicks = System.Diagnostics.Stopwatch.GetTimestamp();
 		_captureStartedUtc = DateTimeOffset.UtcNow;
 		_captureStoppedUtc = null;
 		_isCapturing = true;
-		return BuildCaptureDump(0, maxEvents, "", "");
+		return BuildCaptureDump(0, 0);
 	}
 
 	/// <summary>
-	/// Stops golden capture and returns either a summary or full dump.
+	/// Stops OPL golden capture and returns either a summary or full dump.
 	/// </summary>
-	public GoldenCaptureDump StopGoldenCapture(bool includeEvents) {
+	public OplCaptureDump StopGoldenCapture(bool includeEvents) {
 		_isCapturing = false;
 		_captureStoppedUtc = DateTimeOffset.UtcNow;
-		return BuildCaptureDump(0, includeEvents ? _captureBuffer.Count : 0, "", "");
+		return BuildCaptureDump(0, includeEvents ? _captureBuffer.Count : 0);
 	}
 
 	/// <summary>
-	/// Clears the golden capture buffer and returns an empty dump.
+	/// Clears the OPL golden capture buffer.
 	/// </summary>
-	public GoldenCaptureDump ResetGoldenCapture() {
+	public OplCaptureDump ResetGoldenCapture() {
 		_captureBuffer.Clear();
 		_captureDroppedEvents = 0;
 		_captureSequence = 0;
 		_isCapturing = false;
 		_captureStoppedUtc = null;
 		_captureStartedUtc = DateTimeOffset.UtcNow;
-		return BuildCaptureDump(0, 0, "", "");
+		return BuildCaptureDump(0, 0);
 	}
 
 	/// <summary>
-	/// Returns summary statistics of the golden capture without full event list.
+	/// Returns summary statistics of the OPL capture session.
 	/// </summary>
-	public GoldenCaptureSummary GetGoldenCaptureSummary() {
-		Dictionary<string, int> sourceHist = new();
-		Dictionary<string, int> kindHist = new();
-		foreach (GoldenCaptureEvent e in _captureBuffer) {
-			sourceHist[e.Source] = sourceHist.GetValueOrDefault(e.Source) + 1;
-			kindHist[e.EventKind] = kindHist.GetValueOrDefault(e.EventKind) + 1;
+	public OplCaptureSummary GetGoldenCaptureSummary() {
+		int regWriteCount = 0;
+		int statusReadCount = 0;
+		int audioSampleCount = 0;
+		Dictionary<byte, int> regHist = new();
+		Dictionary<int, int> chanHist = new();
+		foreach (OplCaptureEvent e in _captureBuffer) {
+			switch (e.Type) {
+				case OplCaptureEventType.RegisterWrite:
+					regWriteCount++;
+					regHist[e.Register] = regHist.GetValueOrDefault(e.Register) + 1;
+					if (e.Channel >= 0) {
+						chanHist[e.Channel] = chanHist.GetValueOrDefault(e.Channel) + 1;
+					}
+					break;
+				case OplCaptureEventType.StatusRead:
+					statusReadCount++;
+					break;
+				case OplCaptureEventType.AudioSample:
+					audioSampleCount++;
+					break;
+			}
 		}
-		return new GoldenCaptureSummary {
+		return new OplCaptureSummary {
 			IsCapturing = _isCapturing,
 			StartedUtc = _captureStartedUtc,
 			StoppedUtc = _captureStoppedUtc,
@@ -195,39 +213,41 @@ public sealed partial class DuneAdpPlayerEngine {
 			DroppedEvents = _captureDroppedEvents,
 			CurrentSongName = _currentSongName,
 			CurrentSongPath = _currentSongPath,
-			SourceHistogram = sourceHist,
-			KindHistogram = kindHist
+			RegisterWriteCount = regWriteCount,
+			StatusReadCount = statusReadCount,
+			AudioSampleCount = audioSampleCount,
+			RegisterHistogram = regHist,
+			ChannelHistogram = chanHist
 		};
 	}
 
 	/// <summary>
-	/// Returns a paginated, filtered dump of golden capture events.
+	/// Returns a paginated dump of OPL capture events.
 	/// </summary>
-	public GoldenCaptureDump GetGoldenCaptureDump(int offset, int limit, string sourceFilter, string kindFilter) {
-		return BuildCaptureDump(offset, limit, sourceFilter, kindFilter);
+	public OplCaptureDump GetGoldenCaptureDump(int offset, int limit) {
+		return BuildCaptureDump(offset, limit);
 	}
 
 	/// <summary>
-	/// Returns OPL event analysis: kind histogram, signature hash, first N signatures.
+	/// Returns OPL capture diagnostics with signature hash for cross-side comparison.
 	/// </summary>
-	public GoldenCaptureDiagnostics GetGoldenCaptureDiagnostics(int sampleSize) {
-		Dictionary<string, int> kindHist = new();
-		int noteOnCount = 0;
-		int noteOffCount = 0;
+	public OplCaptureDiagnostics GetGoldenCaptureDiagnostics(int sampleSize) {
+		Dictionary<byte, int> regHist = new();
+		int regWriteCount = 0;
+		int statusReadCount = 0;
 		int clampedSample = Math.Clamp(sampleSize, 1, 500);
 		List<string> signatures = new();
 
-		foreach (GoldenCaptureEvent e in _captureBuffer) {
-			kindHist[e.EventKind] = kindHist.GetValueOrDefault(e.EventKind) + 1;
-
-			if (string.Equals(e.EventKind, "NON", StringComparison.Ordinal)) {
-				noteOnCount++;
-			} else if (string.Equals(e.EventKind, "NOF", StringComparison.Ordinal)) {
-				noteOffCount++;
+		foreach (OplCaptureEvent e in _captureBuffer) {
+			if (e.Type == OplCaptureEventType.RegisterWrite) {
+				regWriteCount++;
+				regHist[e.Register] = regHist.GetValueOrDefault(e.Register) + 1;
+			} else if (e.Type == OplCaptureEventType.StatusRead) {
+				statusReadCount++;
 			}
 
 			if (signatures.Count < clampedSample) {
-				signatures.Add($"{e.EventKind}:{e.OplRegister:X2}:{e.OplValue:X2}");
+				signatures.Add($"{e.Type}:{e.Register:X2}:{e.Value:X2}");
 			}
 		}
 
@@ -235,23 +255,21 @@ public sealed partial class DuneAdpPlayerEngine {
 		byte[] hashBytes = SHA256.HashData(Encoding.UTF8.GetBytes(sigConcat));
 		string hash = Convert.ToHexString(hashBytes)[..16];
 
-		return new GoldenCaptureDiagnostics {
+		return new OplCaptureDiagnostics {
 			EventCount = _captureBuffer.Count,
-			OplWriteCount = _totalOplWrites,
-			NoteOnCount = noteOnCount,
-			NoteOffCount = noteOffCount,
-			EventKindHistogram = kindHist,
+			RegisterWriteCount = regWriteCount,
+			StatusReadCount = statusReadCount,
+			RegisterHistogram = regHist,
 			SignatureHash = hash,
 			FirstEventSignatures = signatures
 		};
 	}
 
 	/// <summary>
-	/// Records a high-level engine event into the golden capture buffer.
-	/// Parameters map to GoldenCaptureEvent's OPL-centric fields:
-	///   data1 → OplRegister, data2 → OplValue, channel → OplChannel
+	/// Records an OPL register write into the capture buffer.
+	/// Called from <see cref="Opl2Synth.WriteRegister"/> path.
 	/// </summary>
-	private void RecordGoldenCaptureEvent(string source, string kind, byte data1, byte data2, byte channelByte, string eventKind, int channel, int delta) {
+	private void RecordOplRegisterWrite(byte register, byte value, int channel) {
 		if (!_isCapturing) {
 			return;
 		}
@@ -260,41 +278,67 @@ public sealed partial class DuneAdpPlayerEngine {
 			return;
 		}
 
-		GoldenCaptureEvent evt = new() {
+		long elapsedTicks = System.Diagnostics.Stopwatch.GetTimestamp() - _captureStartTicks;
+		long elapsedUs = elapsedTicks * 1_000_000 / System.Diagnostics.Stopwatch.Frequency;
+
+		byte timerState = 0;
+		if (register == 0x02 || register == 0x03 || register == 0x04) {
+			timerState = value;
+		}
+
+		_captureBuffer.Add(new OplCaptureEvent {
 			Sequence = _captureSequence++,
-			Source = source,
-			Kind = kind,
-			ElapsedMilliseconds = (long)(_tickIndex * 1000.0 * PitReloadValue / PitInputClock),
-			TickIndex = _tickIndex,
+			Type = OplCaptureEventType.RegisterWrite,
+			TimestampUs = elapsedUs,
+			Port = 0x389,
+			Register = register,
+			Value = value,
+			Channel = channel,
 			Measure = _measure,
 			Subdivision = _subdivision,
-			RepeatCounter = _repeatCounter,
-			TimelineTick = _tickIndex,
-			OplRegister = data1,
-			OplValue = data2,
-			OplChannel = channel,
-			EventKind = eventKind,
-			StreamPointer = channel >= 0 && channel < _channelEventPointer.Length ? _channelEventPointer[channel] : -1,
-			EventType = 0
-		};
-		_captureBuffer.Add(evt);
+			TickIndex = _tickIndex,
+			TimerState = timerState,
+			AudioPeak = 0f
+		});
 	}
 
-	private GoldenCaptureDump BuildCaptureDump(int offset, int limit, string sourceFilter, string kindFilter) {
-		IEnumerable<GoldenCaptureEvent> filtered = _captureBuffer;
-		if (!string.IsNullOrEmpty(sourceFilter)) {
-			filtered = filtered.Where(e => string.Equals(e.Source, sourceFilter, StringComparison.OrdinalIgnoreCase));
+	/// <summary>
+	/// Records a periodic audio sample snapshot into the capture buffer.
+	/// </summary>
+	private void RecordOplAudioSample(float peak) {
+		if (!_isCapturing) {
+			return;
 		}
-		if (!string.IsNullOrEmpty(kindFilter)) {
-			filtered = filtered.Where(e => string.Equals(e.Kind, kindFilter, StringComparison.OrdinalIgnoreCase));
+		if (_captureBuffer.Count >= _captureMaxEvents) {
+			_captureDroppedEvents++;
+			return;
 		}
 
-		List<GoldenCaptureEvent> filteredList = filtered.ToList();
-		int clampedOffset = Math.Clamp(offset, 0, Math.Max(0, filteredList.Count - 1));
+		long elapsedTicks = System.Diagnostics.Stopwatch.GetTimestamp() - _captureStartTicks;
+		long elapsedUs = elapsedTicks * 1_000_000 / System.Diagnostics.Stopwatch.Frequency;
+
+		_captureBuffer.Add(new OplCaptureEvent {
+			Sequence = _captureSequence++,
+			Type = OplCaptureEventType.AudioSample,
+			TimestampUs = elapsedUs,
+			Port = 0,
+			Register = 0,
+			Value = 0,
+			Channel = -1,
+			Measure = _measure,
+			Subdivision = _subdivision,
+			TickIndex = _tickIndex,
+			TimerState = 0,
+			AudioPeak = peak
+		});
+	}
+
+	private OplCaptureDump BuildCaptureDump(int offset, int limit) {
+		int clampedOffset = Math.Clamp(offset, 0, Math.Max(0, _captureBuffer.Count - 1));
 		int clampedLimit = Math.Clamp(limit, 0, 10000);
-		List<GoldenCaptureEvent> page = filteredList.Skip(clampedOffset).Take(clampedLimit).ToList();
+		List<OplCaptureEvent> page = _captureBuffer.Skip(clampedOffset).Take(clampedLimit).ToList();
 
-		return new GoldenCaptureDump {
+		return new OplCaptureDump {
 			IsCapturing = _isCapturing,
 			StartedUtc = _captureStartedUtc,
 			StoppedUtc = _captureStoppedUtc,
@@ -303,8 +347,6 @@ public sealed partial class DuneAdpPlayerEngine {
 			ReturnedEventCount = page.Count,
 			Offset = clampedOffset,
 			Limit = clampedLimit,
-			SourceFilter = sourceFilter ?? "",
-			KindFilter = kindFilter ?? "",
 			DroppedEvents = _captureDroppedEvents,
 			CurrentSongName = _currentSongName,
 			CurrentSongPath = _currentSongPath,

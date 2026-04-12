@@ -35,6 +35,8 @@ public sealed partial class DuneAdpPlayerEngine : IDisposable {
 	// Threshold for audio-driven tick: one PIT tick = SampleRate * PitReloadValue ticks of PitInputClock.
 	private const long SamplesPerTickThreshold = (long)SampleRate * PitReloadValue;
 
+
+
 	// Offset 2 into the file, matching driver's songDataOffset = SI + 2.
 	private const int SongDataOffset = 2;
 
@@ -60,6 +62,13 @@ public sealed partial class DuneAdpPlayerEngine : IDisposable {
 	private readonly ushort[] _channelStoredFreq = new ushort[9];
 	private readonly byte[] _channelVolume = new byte[9];
 	private readonly byte[] _channelCarrierKsl = new byte[9];
+	private readonly ushort[] _channelReg90 = new ushort[9];
+	private readonly byte[] _channelReg48 = new byte[9];
+	private readonly ushort[] _channelReg7E = new ushort[9];
+	private readonly ushort[] _channelRegA2 = new ushort[9];
+	private readonly ushort[] _channelRegC6 = new ushort[9];
+	private readonly ushort[] _channelRegB4 = new ushort[9];
+	private readonly ushort[] _channelRegD8 = new ushort[9];
 
 	private ushort _activeChannelCount;
 	private ushort _accumulator;
@@ -115,6 +124,12 @@ public sealed partial class DuneAdpPlayerEngine : IDisposable {
 	public byte TargetVolume => _targetVolume;
 
 	/// <summary>
+	/// When true, replaces all song instrument data with a known-good test instrument.
+	/// If sound appears during playback with this enabled, the instrument data parsing is wrong.
+	/// </summary>
+	public bool UseTestInstruments { get; set; }
+
+	/// <summary>
 	/// Loads a song file (optionally HSQ-compressed) and prepares driver state.
 	/// </summary>
 	public void Load(string path) {
@@ -133,8 +148,9 @@ public sealed partial class DuneAdpPlayerEngine : IDisposable {
 
 		_tickFlag = 1;
 
-		// Event base offset: file[0..1] = offset relative to file start
-		_eventBaseOffset = ReadU16(0);
+		// Event base offset: file[0..1] stores raw offset; the driver subtracts 0x20
+		// before using it (verified via MCP: far pointer at [0x0119] = file_value - 0x20).
+		_eventBaseOffset = (ushort)(ReadU16(0) - 0x20);
 
 		// Header fields at songDataOffset-relative offsets:
 		_endMeasure = ReadU16(SongDataOffset + 0x2A);
@@ -163,6 +179,9 @@ public sealed partial class DuneAdpPlayerEngine : IDisposable {
 		_isLoaded = true;
 		_tickIndex = 0;
 		_processTickCount = 0;
+		_instrumentLoadCount = 0;
+		_noteOnCount = 0;
+		_advanceSamplesCallCount = 0;
 
 		ResetAudioDebug();
 		for (int i = 0; i < _lastEventPerChannel.Length; i++) {

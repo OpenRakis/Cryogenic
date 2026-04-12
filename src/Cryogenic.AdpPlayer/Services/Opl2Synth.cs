@@ -53,6 +53,8 @@ public sealed partial class Opl2Synth : IDisposable {
 	/// </summary>
 	public Action<int>? OnBeforeRender { get; set; }
 
+
+
 	/// <summary>
 	/// Gets or sets the output gain (0.0 .. 2.0). Default 1.5 matches emulator OPL gain.
 	/// </summary>
@@ -93,19 +95,19 @@ public sealed partial class Opl2Synth : IDisposable {
 		AddressReadWriteBreakpoints breakpoints = new();
 		_ioPortDispatcher = new IOPortDispatcher(breakpoints, _state, _loggerService, false);
 
-		// Register the clock pump channel BEFORE Opl3Fm so it is iterated
-		// first by MixSamples (Dictionary preserves insertion order in .NET).
-		// Its handler advances engine ticks, which write OPL registers,
-		// which feed Opl3Fm's FIFO via RenderUpToNow.
+		// Create OPL BEFORE registering the clock pump channel, because the
+		// mixer thread can fire callbacks as soon as AddChannel is called.
+		OplConfig config = new(OplMode.Opl2, 0x388, false);
+		_opl = new Opl3Fm(config, _mixer, _state, _clock, _ioPortDispatcher, false, _loggerService);
+
+		// Register the clock pump channel AFTER Opl3Fm so _opl is available
+		// when the mixer thread fires ClockChannelCallback.
 		_clockChannel = _mixer.AddChannel(
 			ClockChannelCallback,
 			48000,
 			"EngineClock",
 			new HashSet<ChannelFeature>());
 		_clockChannel.Enable(true);
-
-		OplConfig config = new(OplMode.Opl2, 0x388, false);
-		_opl = new Opl3Fm(config, _mixer, _state, _clock, _ioPortDispatcher, false, _loggerService);
 
 		// SoftwareMixer.AddChannel defaults to Enable(false) for uncached channels.
 		// Opl3Fm relies on its Sleep/WakeUp mechanism, but that skips FIFO rendering
@@ -125,11 +127,6 @@ public sealed partial class Opl2Synth : IDisposable {
 	/// Also computes estimated peak amplitude from current engine state.
 	/// </summary>
 	private void ClockChannelCallback(int framesRequested) {
-		// Advance the sample-driven clock BEFORE engine ticks so that
-		// Opl3Fm.WriteByte → RenderUpToNow sees the correct "now" and
-		// renders the right number of FIFO frames for this block.
-		_clock.Advance(framesRequested);
-
 		// Keep the OPL channel alive: the Sleeper's MaybeSleep (runs at end of
 		// MixSamples) can disable the channel after 500ms of undetected signal.
 		// Re-enabling here ensures AudioCallback always runs on the next iteration.
@@ -147,8 +144,25 @@ public sealed partial class Opl2Synth : IDisposable {
 				_clockCallbackCount, framesRequested, _clock.ElapsedTimeMs, OnBeforeRender is not null, _opl.MixerChannel.IsEnabled);
 		}
 
-		// Advance the engine (PIT ticks → OPL register writes → Opl3Fm FIFO fills).
+		// Handle mixer-thread test tone diagnostic
+		if (_pendingMixerTestTone) {
+			_pendingMixerTestTone = false;
+			((ILogger)_loggerService).Debug("MixerTestTone: writing from mixer thread at clockMs={ClockMs:F1}", _clock.ElapsedTimeMs);
+			PlayTestTone(0, 60, 0x00);
+		}
+
+		// Advance engine ticks. OPL register writes happen here but the clock
+		// is NOT advanced per-tick — we advance it all at once afterward.
+		// This is intentional: because the OPL AudioCallback runs BEFORE this
+		// clock callback (mixer dictionary insertion order), per-tick FIFO
+		// frames would be consumed one block late, producing stale audio.
+		// Advancing the clock after all writes lets AudioCallback render
+		// everything live with the latest OPL state.
 		OnBeforeRender?.Invoke(framesRequested);
+
+		// Advance the clock by the full block time.
+		double totalBlockMs = framesRequested * (1000.0 / 48000.0);
+		_clock.AdvanceMs(totalBlockMs);
 
 		// Produce silence so the mixer is satisfied.
 		Span<float> silence = stackalloc float[2];
@@ -159,6 +173,7 @@ public sealed partial class Opl2Synth : IDisposable {
 
 	private int _clockCallbackCount;
 	private int _writeRegisterCount;
+	private volatile bool _pendingMixerTestTone;
 
 	/// <summary>
 	/// Writes an OPL2 register. Equivalent to:
@@ -171,10 +186,15 @@ public sealed partial class Opl2Synth : IDisposable {
 			return;
 		}
 		_writeRegisterCount++;
-		if (_writeRegisterCount <= 20 || (_writeRegisterCount % 200) == 0) {
+
+		// Always log key-on/off (0xB0-0xB8) and carrier volume (0x40-0x55) writes
+		bool isKeyEvent = register >= 0xB0 && register <= 0xB8;
+		bool isCarrierVol = register >= 0x40 && register <= 0x55;
+		if (_writeRegisterCount <= 200 || (_writeRegisterCount % 500) == 0 || isKeyEvent) {
+			string tag = isKeyEvent ? ((value & 0x20) != 0 ? " [KEY-ON]" : " [key-off]") : "";
 			((ILogger)_loggerService).Debug(
-				"OPL WriteReg #{Count}: reg=0x{Reg:X2} val=0x{Val:X2} clockMs={ClockMs:F1}",
-				_writeRegisterCount, register, value, _clock.ElapsedTimeMs);
+				"OPL WriteReg #{Count}: reg=0x{Reg:X2} val=0x{Val:X2} clockMs={ClockMs:F1}{Tag}",
+				_writeRegisterCount, register, value, _clock.ElapsedTimeMs, tag);
 		}
 		_opl.WriteByte(0x388, register);
 		_opl.WriteByte(0x389, value);
@@ -189,6 +209,8 @@ public sealed partial class Opl2Synth : IDisposable {
 		_lastPeak = peak;
 		AudioPeakComputed?.Invoke(peak);
 	}
+
+
 
 	/// <summary>
 	/// Notifies subscribers with rendered audio samples for waveform display.
@@ -264,6 +286,15 @@ public sealed partial class Opl2Synth : IDisposable {
 	public void PlayTestBeep() {
 		PlayTestTone(0, 60, 0x00); // Middle C, full volume on channel 0
 		Task.Delay(500, CancellationToken.None).ContinueWith(_ => StopTestTone(0));
+	}
+
+	/// <summary>
+	/// Schedules a test tone to play from within the mixer thread on the next callback.
+	/// If this produces sound but normal playback doesn't, the engine data path is wrong.
+	/// If this also produces no sound, the mixer-thread write path has a timing issue.
+	/// </summary>
+	public void PlayTestToneFromMixerThread() {
+		_pendingMixerTestTone = true;
 	}
 
 	// Mini frequency table for test tones (same as engine's)

@@ -70,6 +70,15 @@ public sealed partial class Opl2Synth {
 			_elapsedMs += frames * MsPerFrame;
 		}
 
+		/// <summary>
+		/// Advances the clock by an exact number of milliseconds.
+		/// Used by the engine to advance time between individual PIT ticks,
+		/// matching dosbox's time-driven PIT model (TIMER_AddTick in dosbox.cpp).
+		/// </summary>
+		public void AdvanceMs(double ms) {
+			_elapsedMs += ms;
+		}
+
 		public void OnPause() {
 			_isPaused = true;
 		}

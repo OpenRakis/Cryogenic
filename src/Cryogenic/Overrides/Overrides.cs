@@ -139,6 +139,9 @@ public partial class Overrides : CSharpOverrideHelper {
 		// MT-32 MIDI driver is always remapped to F000 by DriverLoadToolbox hooks.
 		// Register overrides eagerly at F000 so they are active when the driver loads.
 		DefineMT32DriverCodeOverrides();
+		// DNADP (AdLib Pro) driver observation hooks on the live segment (0x5BAE).
+		// Phase 1: observation-only (call counters, OPL traces, scheduler state).
+		DefineAdpDriverCodeOverrides();
 		// Dump memory at the proper time. Too soon and drivers wont be loaded, too late and init code will be erased
 		DefineMemoryDumpsMapping();
 

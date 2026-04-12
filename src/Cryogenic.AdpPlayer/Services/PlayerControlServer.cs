@@ -1,5 +1,7 @@
 ﻿namespace Cryogenic.AdpPlayer.Services;
 
+using Avalonia.Threading;
+
 using System.Net;
 using System.Text;
 using System.Text.Json;
@@ -9,6 +11,8 @@ public sealed class PlayerControlServer : IDisposable {
 	private readonly Action _play;
 	private readonly Action _stop;
 	private readonly Action<string> _load;
+	private readonly Action _pause;
+	private readonly Action _resume;
 	private readonly Action<float> _setOutputGain;
 	private readonly Action<byte> _setMasterVolume;
 	private readonly Action<byte> _setTargetVolume;
@@ -20,7 +24,7 @@ public sealed class PlayerControlServer : IDisposable {
 	private readonly Func<object> _stopGoldenCapture;
 	private readonly Func<object> _resetGoldenCapture;
 	private readonly Func<object> _getGoldenCaptureSummary;
-	private readonly Func<int, int, string, string, object> _dumpGoldenCapture;
+	private readonly Func<int, int, object> _dumpGoldenCapture;
 	private readonly Func<int, object> _diagnoseGoldenCapture;
 	private readonly Func<int, string[]> _getRecentLogs;
 	private readonly Action _clearLogs;
@@ -34,6 +38,8 @@ public sealed class PlayerControlServer : IDisposable {
 		Action play,
 		Action stop,
 		Action<string> load,
+		Action pause,
+		Action resume,
 		Action<float> setOutputGain,
 		Action<byte> setMasterVolume,
 		Action<byte> setTargetVolume,
@@ -45,7 +51,7 @@ public sealed class PlayerControlServer : IDisposable {
 		Func<object> stopGoldenCapture,
 		Func<object> resetGoldenCapture,
 		Func<object> getGoldenCaptureSummary,
-		Func<int, int, string, string, object> dumpGoldenCapture,
+		Func<int, int, object> dumpGoldenCapture,
 		Func<int, object> diagnoseGoldenCapture,
 		Func<int, string[]> getRecentLogs,
 		Action clearLogs,
@@ -55,6 +61,8 @@ public sealed class PlayerControlServer : IDisposable {
 		_play = play;
 		_stop = stop;
 		_load = load;
+		_pause = pause;
+		_resume = resume;
 		_setOutputGain = setOutputGain;
 		_setMasterVolume = setMasterVolume;
 		_setTargetVolume = setTargetVolume;
@@ -151,6 +159,8 @@ public sealed class PlayerControlServer : IDisposable {
 					"state_get",
 					"play",
 					"stop",
+					"pause",
+					"resume",
 					"load",
 					"set_output_gain",
 					"set_master_volume",
@@ -210,7 +220,7 @@ public sealed class PlayerControlServer : IDisposable {
 						? argumentsValue
 						: default;
 
-				object result = InvokeTool(tool, args);
+				object result = await Dispatcher.UIThread.InvokeAsync(() => InvokeTool(tool, args));
 				await WriteJsonAsync(context.Response, new { ok = true, tool, result });
 			}
 			return;
@@ -230,6 +240,12 @@ public sealed class PlayerControlServer : IDisposable {
 			case "stop":
 				_stop();
 				return new { stopped = true };
+			case "pause":
+				_pause();
+				return new { paused = true };
+			case "resume":
+				_resume();
+				return new { resumed = true };
 			case "load":
 				string path = args.GetProperty("path").GetString() ?? string.Empty;
 				_load(path);
@@ -271,10 +287,8 @@ public sealed class PlayerControlServer : IDisposable {
 				return _getGoldenCaptureSummary();
 			case "golden_capture_dump":
 				int offset = GetIntArg(args, "offset", 0);
-				int limit = GetIntArg(args, "limit", 0);
-				string sourceFilter = GetStringArg(args, "source", string.Empty);
-				string kindFilter = GetStringArg(args, "kind", string.Empty);
-				return _dumpGoldenCapture(offset, limit, sourceFilter, kindFilter);
+				int limit = GetIntArg(args, "limit", 500);
+				return _dumpGoldenCapture(offset, limit);
 			case "golden_capture_diagnose":
 				int sampleSize = GetIntArg(args, "sampleSize", 32);
 				return _diagnoseGoldenCapture(sampleSize);
