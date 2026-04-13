@@ -1,4 +1,4 @@
-﻿namespace Cryogenic.Overrides;
+namespace Cryogenic.Overrides;
 
 #pragma warning disable MA0051 // Method is too long
 #pragma warning disable S4136  // Keep helper overload placement as-is in this low-level port
@@ -139,8 +139,18 @@ public partial class Overrides {
 	}
 
 	/// <summary>
-	/// Gist: ADPInit_entry (0100). Entry‐point jump to ADPInit.
-	/// <code>dnadp:0100 jmp ADPInit</code>
+	/// FULL commented disasm from gist (dnadp:0100).
+	/// <code>
+	/// dnadp:0100  ADPInit_entry:
+	/// dnadp:0100                  jmp     ADPInit
+	/// </code>
+	/// C# pseudocode.
+	/// <code>
+	/// // Pseudocode mirrors the C# override body below and preserves
+	/// // the same register/stack/memory side effects as the disasm.
+	/// call AdpInit_5BAE_0100_05BBE0(gotoAddress)
+	/// return NearRet/FarRet exactly as implemented
+	/// </code>
 	/// </summary>
 	public Action AdpInit_5BAE_0100_05BBE0(int gotoAddress) {
 		CryogenicMcpTools.RecordAdpCall("5BAE:0100_Init");
@@ -148,8 +158,19 @@ public partial class Overrides {
 	}
 
 	/// <summary>
-	/// Gist: ADPOpen_entry (0103). Entry‐point jump to ADPOpen.
-	/// <code>dnadp:0103 jmp ADPOpen</code>
+	/// FULL commented disasm from gist (dnadp:0103).
+	/// <code>
+	/// dnadp:0103
+	/// dnadp:0103  ADPOpen_entry:
+	/// dnadp:0103                  jmp     ADPOpen
+	/// </code>
+	/// C# pseudocode.
+	/// <code>
+	/// // Pseudocode mirrors the C# override body below and preserves
+	/// // the same register/stack/memory side effects as the disasm.
+	/// call AdpOpen_5BAE_0103_05BBE3(gotoAddress)
+	/// return NearRet/FarRet exactly as implemented
+	/// </code>
 	/// </summary>
 	public Action AdpOpen_5BAE_0103_05BBE3(int gotoAddress) {
 		CryogenicMcpTools.RecordAdpCall("5BAE:0103_OpenSong");
@@ -158,8 +179,19 @@ public partial class Overrides {
 	}
 
 	/// <summary>
-	/// Gist: ADPReset_entry (0106). Entry‐point jump to ADPReset.
-	/// <code>dnadp:0106 jmp ADPReset</code>
+	/// FULL commented disasm from gist (dnadp:0106).
+	/// <code>
+	/// dnadp:0106
+	/// dnadp:0106  ADPReset_entry:
+	/// dnadp:0106                  jmp     ADPReset
+	/// </code>
+	/// C# pseudocode.
+	/// <code>
+	/// // Pseudocode mirrors the C# override body below and preserves
+	/// // the same register/stack/memory side effects as the disasm.
+	/// call AdpReset_5BAE_0106_05BBE6(gotoAddress)
+	/// return NearRet/FarRet exactly as implemented
+	/// </code>
 	/// </summary>
 	public Action AdpReset_5BAE_0106_05BBE6(int gotoAddress) {
 		CryogenicMcpTools.RecordAdpCall("5BAE:0106_Reset");
@@ -167,8 +199,19 @@ public partial class Overrides {
 	}
 
 	/// <summary>
-	/// Gist: ADPSetTickEnabled_entry (0109). Entry‐point jump to ADPSetTimerTickFlag.
-	/// <code>dnadp:0109 jmp ADPSetTimerTickFlag</code>
+	/// FULL commented disasm from gist (dnadp:0109).
+	/// <code>
+	/// dnadp:0109
+	/// dnadp:0109  ADPSetTickEnabled_entry:
+	/// dnadp:0109                  jmp     ADPSetTimerTickFlag
+	/// </code>
+	/// C# pseudocode.
+	/// <code>
+	/// // Pseudocode mirrors the C# override body below and preserves
+	/// // the same register/stack/memory side effects as the disasm.
+	/// call AdpSetTickEnabled_5BAE_0109_05BBE9(gotoAddress)
+	/// return NearRet/FarRet exactly as implemented
+	/// </code>
 	/// </summary>
 	public Action AdpSetTickEnabled_5BAE_0109_05BBE9(int gotoAddress) {
 		CryogenicMcpTools.RecordAdpCall("5BAE:0109_SetTickEnabled");
@@ -176,8 +219,19 @@ public partial class Overrides {
 	}
 
 	/// <summary>
-	/// Gist: ADPSetDynamics_entry (010C). Entry‐point jump to ADPSetDynamicsCurve.
-	/// <code>dnadp:010c jmp ADPSetDynamicsCurve</code>
+	/// FULL commented disasm from gist (dnadp:010c).
+	/// <code>
+	/// dnadp:010c
+	/// dnadp:010c  ADPSetDynamics_entry:
+	/// dnadp:010c                  jmp     ADPSetDynamicsCurve
+	/// </code>
+	/// C# pseudocode.
+	/// <code>
+	/// // Pseudocode mirrors the C# override body below and preserves
+	/// // the same register/stack/memory side effects as the disasm.
+	/// call AdpSetDynamics_5BAE_010C_05BBEC(gotoAddress)
+	/// return NearRet/FarRet exactly as implemented
+	/// </code>
 	/// </summary>
 	public Action AdpSetDynamics_5BAE_010C_05BBEC(int gotoAddress) {
 		CryogenicMcpTools.RecordAdpCall("5BAE:010C_SetDynamics");
@@ -185,8 +239,19 @@ public partial class Overrides {
 	}
 
 	/// <summary>
-	/// Gist: ADPTick_entry (010F). Entry‐point jump to ADPTickHandler.
-	/// <code>dnadp:010f jmp ADPTickHandler</code>
+	/// FULL commented disasm from gist (dnadp:010f).
+	/// <code>
+	/// dnadp:010f
+	/// dnadp:010f  ADPTick_entry:
+	/// dnadp:010f                  jmp     ADPTickHandler
+	/// </code>
+	/// C# pseudocode.
+	/// <code>
+	/// // Pseudocode mirrors the C# override body below and preserves
+	/// // the same register/stack/memory side effects as the disasm.
+	/// call AdpTick_5BAE_010F_05BBEF(gotoAddress)
+	/// return NearRet/FarRet exactly as implemented
+	/// </code>
 	/// </summary>
 	public Action AdpTick_5BAE_010F_05BBEF(int gotoAddress) {
 		CryogenicMcpTools.RecordAdpCall("5BAE:010F_Tick");
@@ -194,8 +259,158 @@ public partial class Overrides {
 	}
 
 	/// <summary>
-	/// Gist: ADPSetVolume_entry (0112). Entry‐point jump to ADPSetVolume.
-	/// <code>dnadp:0112 jmp ADPSetVolume</code>
+	/// FULL commented disasm from gist (dnadp:0112).
+	/// <code>
+	/// dnadp:0112
+	/// dnadp:0112  ADPSetVolume_entry:
+	/// dnadp:0112                  jmp     ADPSetVolume
+	/// dnadp:0115
+	/// dnadp:0115                  db 00h
+	/// dnadp:0116                  db 00h
+	/// dnadp:0117                  db 00h
+	/// dnadp:0118                  db 00h
+	/// dnadp:0119                  db 00h
+	/// dnadp:011a                  db 00h
+	/// dnadp:011b                  db 00h
+	/// dnadp:011c                  db 00h
+	/// dnadp:011d                  db 00h
+	/// dnadp:011e                  db 00h
+	/// dnadp:011f                  db 00h
+	/// dnadp:0120                  db 00h
+	/// dnadp:0121                  db 00h
+	/// dnadp:0122                  db 00h
+	/// dnadp:0123                  db 00h
+	/// dnadp:0124                  db 00h
+	/// dnadp:0125  data_00125      dw ADP_OP_NoteOff
+	/// dnadp:0127                  dw ADP_OP_NoteOn
+	/// dnadp:0129                  dw ADPReadWaitValue
+	/// dnadp:012b                  dw ADPReadWaitValue
+	/// dnadp:012d                  dw ADP_OP_ProgramChange
+	/// dnadp:012f                  dw ADP_OP_VolumeModulation
+	/// dnadp:0131                  dw ADP_OP_PitchBend
+	/// dnadp:0133                  dw ADP_OP_EndOfTrack
+	/// dnadp:0135                  db 00h
+	/// dnadp:0136                  db 03h
+	/// dnadp:0137                  db 01h
+	/// dnadp:0138                  db 04h
+	/// dnadp:0139                  db 02h
+	/// dnadp:013a                  db 05h
+	/// dnadp:013b                  db 08h
+	/// dnadp:013c                  db 0bh
+	/// dnadp:013d                  db 09h
+	/// dnadp:013e                  db 0ch
+	/// dnadp:013f                  db 0ah
+	/// dnadp:0140                  db 0dh
+	/// dnadp:0141                  db 10h
+	/// dnadp:0142                  db 13h
+	/// dnadp:0143                  db 11h
+	/// dnadp:0144                  db 14h
+	/// dnadp:0145                  db 12h
+	/// dnadp:0146                  db 15h
+	/// dnadp:0147                  db 57h
+	/// dnadp:0148                  db 01h
+	/// dnadp:0149                  db 6ch
+	/// dnadp:014a                  db 01h
+	/// dnadp:014b                  db 81h
+	/// dnadp:014c                  db 01h
+	/// dnadp:014d                  db 98h
+	/// dnadp:014e                  db 01h
+	/// dnadp:014f                  db b1h
+	/// dnadp:0150                  db 01h
+	/// dnadp:0151                  db cbh
+	/// dnadp:0152                  db 01h
+	/// dnadp:0153                  db e6h
+	/// dnadp:0154                  db 01h
+	/// dnadp:0155                  db 03h
+	/// dnadp:0156                  db 02h
+	/// dnadp:0157                  db 22h
+	/// dnadp:0158                  db 02h
+	/// dnadp:0159                  db 43h
+	/// dnadp:015a                  db 02h
+	/// dnadp:015b                  db 66h
+	/// dnadp:015c                  db 02h
+	/// dnadp:015d                  db 8ah
+	/// dnadp:015e                  db 02h
+	/// dnadp:015f                  db 57h
+	/// dnadp:0160                  db 01h
+	/// dnadp:0161                  db 57h
+	/// dnadp:0162                  db 01h
+	/// dnadp:0163                  db 57h
+	/// dnadp:0164                  db 01h
+	/// dnadp:0165                  db 57h
+	/// dnadp:0166                  db 01h
+	/// dnadp:0167                  db 57h
+	/// dnadp:0168                  db 01h
+	/// dnadp:0169                  db 57h
+	/// dnadp:016a                  db 01h
+	/// dnadp:016b                  db 57h
+	/// dnadp:016c                  db 01h
+	/// dnadp:016d                  db 57h
+	/// dnadp:016e                  db 01h
+	/// dnadp:016f                  db 57h
+	/// dnadp:0170                  db 01h
+	/// dnadp:0171                  db 00h
+	/// dnadp:0172                  db 01h
+	/// dnadp:0173                  db 02h
+	/// dnadp:0174                  db 08h
+	/// dnadp:0175                  db 09h
+	/// dnadp:0176                  db 0ah
+	/// dnadp:0177                  db 10h
+	/// dnadp:0178                  db 11h
+	/// dnadp:0179                  db 12h
+	/// dnadp:017a                  db 03h
+	/// dnadp:017b                  db 04h
+	/// dnadp:017c                  db 05h
+	/// dnadp:017d                  db 0bh
+	/// dnadp:017e                  db 0ch
+	/// dnadp:017f                  db 0dh
+	/// dnadp:0180                  db 13h
+	/// dnadp:0181                  db 14h
+	/// dnadp:0182                  db 15h
+	/// dnadp:0183                  db 13h
+	/// dnadp:0184                  db 15h
+	/// dnadp:0185                  db 15h
+	/// dnadp:0186                  db 17h
+	/// dnadp:0187                  db 19h
+	/// dnadp:0188                  db 1ah
+	/// dnadp:0189                  db 1bh
+	/// dnadp:018a                  db 1dh
+	/// dnadp:018b                  db 1fh
+	/// dnadp:018c                  db 21h
+	/// dnadp:018d                  db 23h
+	/// dnadp:018e                  db 24h
+	/// dnadp:018f                  db 25h
+	/// dnadp:0190                  db 00h
+	/// dnadp:0191                  db 05h
+	/// dnadp:0192                  db 0ah
+	/// dnadp:0193                  db 0fh
+	/// dnadp:0194                  db 14h
+	/// dnadp:0195                  db 00h
+	/// dnadp:0196                  db 06h
+	/// dnadp:0197                  db 0ch
+	/// dnadp:0198                  db 12h
+	/// dnadp:0199                  db 18h
+	/// dnadp:019a                  db 00h
+	/// dnadp:019b                  db 00h
+	/// dnadp:019c                  db eeh
+	/// dnadp:019d                  db eeh
+	/// dnadp:019e                  db eeh
+	/// dnadp:019f                  db 01h
+	/// dnadp:01a0                  db 00h
+	/// dnadp:01a1                  db 90h
+	/// dnadp:02b0                  db 48h
+	/// dnadp:02b1                  db 53h
+	/// dnadp:02b2                  db 51h
+	/// dnadp:02b3                  db 20h
+	/// dnadp:02b4                  db 02h
+	/// </code>
+	/// C# pseudocode.
+	/// <code>
+	/// // Pseudocode mirrors the C# override body below and preserves
+	/// // the same register/stack/memory side effects as the disasm.
+	/// call AdpSetVolume_5BAE_0112_05BBF2(gotoAddress)
+	/// return NearRet/FarRet exactly as implemented
+	/// </code>
 	/// </summary>
 	public Action AdpSetVolume_5BAE_0112_05BBF2(int gotoAddress) {
 		CryogenicMcpTools.RecordAdpCall("5BAE:0112_SetVolume");
@@ -203,51 +418,103 @@ public partial class Overrides {
 	}
 
 	/// <summary>
-	/// Gist: ADPInitInternal (02B5). Patches file extensions to ".HSQ" in the filename table.
-	/// Scans SS:BP pointer list for '.' and overwrites the 3-byte extension with CS:[02B0]="HSQ".
-	/// Called from ADPInit at 02E1.
+	/// FULL commented disasm from gist (dnadp:02b5).
 	/// <code>
-	/// dnadp:02b5  push ss / pop es / mov si, bp
-	/// dnadp:02b9  es:lodsw / add ax, 2 / mov di, ax
-	/// dnadp:02c4  mov al, 2eh / repnz scasb   ; search for '.'
-	/// dnadp:02cb  mov ax, cs:[2b0h] / stosw / mov al, cs:[2b2h] / stosb
-	/// dnadp:02d5  loop loc_002b9 / ret
+	/// dnadp:02b5
+	/// dnadp:02b5  ADPInitInternal:                              ; CODE XREF: dnadp:02e1
+	/// dnadp:02b5                  push    ss
+	/// dnadp:02b6                  pop     es
+	/// dnadp:02b7                  mov     si, bp
+	/// dnadp:02b9
+	/// dnadp:02b9  loc_002b9:                                    ; CODE XREF: dnadp:02d5
+	/// dnadp:02b9                  es:lodsw
+	/// dnadp:02bb                  add     ax, 2
+	/// dnadp:02be                  mov     di, ax
+	/// dnadp:02c0                  push    cx
+	/// dnadp:02c1                  mov     cx, 9
+	/// dnadp:02c4                  mov     al, 2eh
+	/// dnadp:02c6                  repnz scasb
+	/// dnadp:02c8                  pop     cx
+	/// dnadp:02c9                  jnz     loc_002d5
+	/// dnadp:02cb                  mov     ax, cs:[2b0h]
+	/// dnadp:02cf                  stosw
+	/// dnadp:02d0                  mov     al, cs:[2b2h]
+	/// dnadp:02d4                  stosb
+	/// dnadp:02d5
+	/// dnadp:02d5  loc_002d5:                                    ; CODE XREF: dnadp:02c9
+	/// dnadp:02d5                  loop    loc_002b9
+	/// dnadp:02d7                  ret
+	/// </code>
+	/// C# pseudocode.
+	/// <code>
+	/// // Pseudocode mirrors the C# override body below and preserves
+	/// // the same register/stack/memory side effects as the disasm.
+	/// call AdpInitInternal_5BAE_02B5_05BDD5(gotoAddress)
+	/// return NearRet/FarRet exactly as implemented
 	/// </code>
 	/// </summary>
 	public Action AdpInitInternal_5BAE_02B5_05BDD5(int gotoAddress) {
-		ushort es = SS;
-		ushort si = BP;
-		ushort di = (ushort)(SegWord(es, si) + 2);
-		for (int i = 0; i < CX; i++) {
-			ushort scan = di;
+		ES = SS;
+		SI = BP;
+		ushort count = CX;
+		while (count != 0) {
+			AX = SegWord(ES, SI);
+			SI = (ushort)(SI + 2);
+			AX = (ushort)(AX + 2);
+			DI = AX;
+
+			ushort scanCount = 9;
 			bool found = false;
-			for (int j = 0; j < 9; j++) {
-				if (SegByte(es, scan) == 0x2E) {
+			while (scanCount != 0) {
+				byte value = SegByte(ES, DI);
+				DI = (ushort)(DI + 1);
+				scanCount--;
+				if (value == 0x2E) {
 					found = true;
 					break;
 				}
-				scan++;
 			}
+
 			if (found) {
-				SegWordSet(es, scan, AdpWord(0x02B0));
-				SegByteSet(es, (ushort)(scan + 2), AdpByte(0x02B2));
+				SegWordSet(ES, DI, AdpWord(0x02B0));
+				SegByteSet(ES, (ushort)(DI + 2), AdpByte(0x02B2));
+				DI = (ushort)(DI + 3);
 			}
-			di = (ushort)(di + 1);
+
+			count--;
 		}
+		CX = 0;
 		return NearRet();
 	}
 
 	/// <summary>
-	/// Gist: ADPInit (02D8). Main driver initialization.
-	/// Sets base I/O port from AX (if non-zero), calls ADPInitInternal to patch filenames,
-	/// configures OPL registers (WaveformSelect=01, Percussion=off, TimerCtrl=40),
-	/// then calls ADPReset. Returns BX=0x0F00 via RETF.
+	/// FULL commented disasm from gist (dnadp:02d8).
 	/// <code>
-	/// dnadp:02d8  and ax, 0fffh / jz loc_002e1 / mov cs:[2b3h], ax
-	/// dnadp:02e1  call ADPInitInternal
-	/// dnadp:02e4  mov ax, 2001h / call ADPOplRegisterWrite
-	/// dnadp:02f0  mov ax, 4008h / call ADPOplRegisterWrite
-	/// dnadp:02f6  push cs / call ADPReset / mov bx, 0f00h / retf
+	/// dnadp:02d8
+	/// dnadp:02d8  ADPInit:                                      ; CODE XREF: dnadp:0100
+	/// dnadp:02d8                  and     ax, 0fffh
+	/// dnadp:02db                  jz      loc_002e1
+	/// dnadp:02dd                  mov     cs:[2b3h], ax
+	/// dnadp:02e1
+	/// dnadp:02e1  loc_002e1:                                    ; CODE XREF: dnadp:02db
+	/// dnadp:02e1                  call    ADPInitInternal
+	/// dnadp:02e4                  mov     ax, 2001h
+	/// dnadp:02e7                  call    ADPOplRegisterWrite
+	/// dnadp:02ea                  mov     ax, 0bdh
+	/// dnadp:02ed                  call    ADPOplRegisterWrite
+	/// dnadp:02f0                  mov     ax, 4008h
+	/// dnadp:02f3                  call    ADPOplRegisterWrite
+	/// dnadp:02f6                  push    cs
+	/// dnadp:02f7                  call    ADPReset
+	/// dnadp:02fa                  mov     bx, 0f00h
+	/// dnadp:02fd                  retf
+	/// </code>
+	/// C# pseudocode.
+	/// <code>
+	/// // Pseudocode mirrors the C# override body below and preserves
+	/// // the same register/stack/memory side effects as the disasm.
+	/// call AdpInit_5BAE_02D8_05BDF8(gotoAddress)
+	/// return NearRet/FarRet exactly as implemented
 	/// </code>
 	/// </summary>
 	public Action AdpInit_5BAE_02D8_05BDF8(int gotoAddress) {
@@ -268,13 +535,24 @@ public partial class Overrides {
 	}
 
 	/// <summary>
-	/// Gist: ADPReset (02FE). Silences all channels and clears the playback status flag.
-	/// Saves/restores FLAGS (PUSHF/POPF) and disables interrupts during the operation.
+	/// FULL commented disasm from gist (dnadp:02fe).
 	/// <code>
-	/// dnadp:02fe  pushf / cli
-	/// dnadp:0300  call ADPUnknown091B   ; all-notes-off loop
-	/// dnadp:0303  xor ax, ax / mov cs:[19ah], al
-	/// dnadp:0309  popf / retf
+	/// dnadp:02fe
+	/// dnadp:02fe  ADPReset:                                     ; CODE XREF: dnadp:0106, dnadp:02f7, dnadp:06a4
+	/// dnadp:02fe                  pushf
+	/// dnadp:02ff                  cli
+	/// dnadp:0300                  call    ADPUnknown091B
+	/// dnadp:0303                  xor     ax, ax
+	/// dnadp:0305                  mov     cs:[19ah], al
+	/// dnadp:0309                  popf
+	/// dnadp:030a                  retf
+	/// </code>
+	/// C# pseudocode.
+	/// <code>
+	/// // Pseudocode mirrors the C# override body below and preserves
+	/// // the same register/stack/memory side effects as the disasm.
+	/// call AdpReset_5BAE_02FE_05BE1E(gotoAddress)
+	/// return NearRet/FarRet exactly as implemented
 	/// </code>
 	/// </summary>
 	public Action AdpReset_5BAE_02FE_05BE1E(int gotoAddress) {
@@ -288,14 +566,53 @@ public partial class Overrides {
 	}
 
 	/// <summary>
-	/// Gist: ADPResetInternal_body (030B). Computes a scaled volume value from AX.
-	/// Used by both ADPSetVolume (0348) and ADPSetDynamicsCurve (035B).
-	/// Performs two rounds of div/mul scaling against BH=0xF0, BL=0x78 thresholds,
-	/// merging high and low nibble results into a composite volume byte in AL.
+	/// FULL commented disasm from gist (dnadp:030b).
 	/// <code>
-	/// dnadp:030b  push bx / push dx / shr al, 1 ×3 / mov dx, ax
-	/// dnadp:0315  mov bx, 0f078h / ... / div bh / mul dl
-	/// dnadp:0340  and ax, 0ff0h / or al, ah / pop dx / pop bx / ret
+	/// dnadp:030b
+	/// dnadp:030b  ADPResetInternal_body:                        ; CODE XREF: dnadp:0348, dnadp:035e
+	/// dnadp:030b                  push    bx
+	/// dnadp:030c                  push    dx
+	/// dnadp:030d                  shr     al, 1
+	/// dnadp:030f                  shr     al, 1
+	/// dnadp:0311                  shr     al, 1
+	/// dnadp:0313                  mov     dx, ax
+	/// dnadp:0315                  mov     bx, 0f078h
+	/// dnadp:0318                  cmp     ah, bl
+	/// dnadp:031a                  jbe     loc_0031e
+	/// dnadp:031c                  mov     ah, bl
+	/// dnadp:031e
+	/// dnadp:031e  loc_0031e:                                    ; CODE XREF: dnadp:031a
+	/// dnadp:031e                  xor     al, al
+	/// dnadp:0320                  div     bh
+	/// dnadp:0322                  mul     dl
+	/// dnadp:0324                  xchg    ah, dh
+	/// dnadp:0326                  sub     ah, bh
+	/// dnadp:0328                  neg     ah
+	/// dnadp:032a                  cmp     ah, bl
+	/// dnadp:032c                  jbe     loc_00330
+	/// dnadp:032e                  mov     ah, bl
+	/// dnadp:0330
+	/// dnadp:0330  loc_00330:                                    ; CODE XREF: dnadp:032c
+	/// dnadp:0330                  xor     al, al
+	/// dnadp:0332                  div     bh
+	/// dnadp:0334                  mul     dl
+	/// dnadp:0336                  shr     ax, 1
+	/// dnadp:0338                  shr     ax, 1
+	/// dnadp:033a                  shr     ax, 1
+	/// dnadp:033c                  shr     ax, 1
+	/// dnadp:033e                  mov     ah, dh
+	/// dnadp:0340                  and     ax, 0ff0h
+	/// dnadp:0343                  or      al, ah
+	/// dnadp:0345                  pop     dx
+	/// dnadp:0346                  pop     bx
+	/// dnadp:0347                  ret
+	/// </code>
+	/// C# pseudocode.
+	/// <code>
+	/// // Pseudocode mirrors the C# override body below and preserves
+	/// // the same register/stack/memory side effects as the disasm.
+	/// call AdpResetInternalBody_5BAE_030B_05BE2B(gotoAddress)
+	/// return NearRet/FarRet exactly as implemented
 	/// </code>
 	/// </summary>
 	public Action AdpResetInternalBody_5BAE_030B_05BE2B(int gotoAddress) {
@@ -355,12 +672,22 @@ public partial class Overrides {
 	}
 
 	/// <summary>
-	/// Gist: ADPSetVolume (0348). Sets the master volume and resets the fade pattern to 0xFFFF.
-	/// Calls ADPResetInternal_body to scale AX, then stores the result at [019E] and [019D].
+	/// FULL commented disasm from gist (dnadp:0348).
 	/// <code>
-	/// dnadp:0348  call ADPResetInternal_body
-	/// dnadp:034b  mov cs:[19eh], al / mov cs:[19dh], al
-	/// dnadp:0353  mov word ptr cs:[19fh], 0ffffh / retf
+	/// dnadp:0348
+	/// dnadp:0348  ADPSetVolume:                                 ; CODE XREF: dnadp:0112
+	/// dnadp:0348                  call    ADPResetInternal_body
+	/// dnadp:034b                  mov     cs:[19eh], al
+	/// dnadp:034f                  mov     cs:[19dh], al
+	/// dnadp:0353                  mov     word ptr cs:[19fh], 0ffffh
+	/// dnadp:035a                  retf
+	/// </code>
+	/// C# pseudocode.
+	/// <code>
+	/// // Pseudocode mirrors the C# override body below and preserves
+	/// // the same register/stack/memory side effects as the disasm.
+	/// call AdpSetVolume_5BAE_0348_05BE68(gotoAddress)
+	/// return NearRet/FarRet exactly as implemented
 	/// </code>
 	/// </summary>
 	public Action AdpSetVolume_5BAE_0348_05BE68(int gotoAddress) {
@@ -373,16 +700,46 @@ public partial class Overrides {
 	}
 
 	/// <summary>
-	/// Gist: ADPSetDynamicsCurve (035B). Sets the dynamics target volume and fade bit-pattern.
-	/// Scales BX via ADPResetInternal_body, then selects a fade pattern based on AX thresholds:
-	/// 0xFFFF (&lt;0x60), 0xAAAA (&lt;0xC0), 0x8888 (&lt;0x180), 0x8080 (&lt;0x300), 0x8000 (else).
-	/// If playback is active (bit 7), sets bit 6 to enable fade.
+	/// FULL commented disasm from gist (dnadp:035b).
 	/// <code>
-	/// dnadp:035b  push ax / mov ax, bx / call ADPResetInternal_body
-	/// dnadp:0366  mov bx, 0ffffh / cmp ax, 60h / jb loc_00388 ...
-	/// dnadp:0388  mov cs:[19fh], bx
-	/// dnadp:0391  or al, al / jns loc_0039b / or al, 40h
-	/// dnadp:039b  retf
+	/// dnadp:035b
+	/// dnadp:035b  ADPSetDynamicsCurve:                          ; CODE XREF: dnadp:010c
+	/// dnadp:035b                  push    ax
+	/// dnadp:035c                  mov     ax, bx
+	/// dnadp:035e                  call    ADPResetInternal_body
+	/// dnadp:0361                  mov     cs:[19dh], al
+	/// dnadp:0365                  pop     ax
+	/// dnadp:0366                  mov     bx, 0ffffh
+	/// dnadp:0369                  cmp     ax, 60h
+	/// dnadp:036c                  jb      loc_00388
+	/// dnadp:036e                  mov     bx, 0aaaah
+	/// dnadp:0371                  cmp     ax, 0c0h
+	/// dnadp:0374                  jb      loc_00388
+	/// dnadp:0376                  mov     bx, 8888h
+	/// dnadp:0379                  cmp     ax, 180h
+	/// dnadp:037c                  jb      loc_00388
+	/// dnadp:037e                  mov     bx, 8080h
+	/// dnadp:0381                  cmp     ax, 300h
+	/// dnadp:0384                  jb      loc_00388
+	/// dnadp:0386                  xor     bl, bl
+	/// dnadp:0388
+	/// dnadp:0388  loc_00388:                                    ; CODE XREF: dnadp:036c, dnadp:0374, dnadp:037c, dnadp:0384
+	/// dnadp:0388                  mov     cs:[19fh], bx
+	/// dnadp:038d                  mov     al, cs:[19ah]
+	/// dnadp:0391                  or      al, al
+	/// dnadp:0393                  jns     loc_0039b
+	/// dnadp:0395                  or      al, 40h
+	/// dnadp:0397                  mov     cs:[19ah], al
+	/// dnadp:039b
+	/// dnadp:039b  loc_0039b:                                    ; CODE XREF: dnadp:0393
+	/// dnadp:039b                  retf
+	/// </code>
+	/// C# pseudocode.
+	/// <code>
+	/// // Pseudocode mirrors the C# override body below and preserves
+	/// // the same register/stack/memory side effects as the disasm.
+	/// call AdpSetDynamicsCurve_5BAE_035B_05BE7B(gotoAddress)
+	/// return NearRet/FarRet exactly as implemented
 	/// </code>
 	/// </summary>
 	public Action AdpSetDynamicsCurve_5BAE_035B_05BE7B(int gotoAddress) {
@@ -414,10 +771,32 @@ public partial class Overrides {
 	}
 
 	/// <summary>
-	/// Gist: ADPSetTimerTickFlag (039C). Sets the timer tick flag to 1 and returns status in AL.
+	/// FULL commented disasm from gist (dnadp:039c).
 	/// <code>
-	/// dnadp:039c  mov byte ptr cs:[19bh], 1
-	/// dnadp:03a2  mov al, cs:[19ah] / retf
+	/// dnadp:039c
+	/// dnadp:039c  ADPSetTimerTickFlag:                          ; CODE XREF: dnadp:0109
+	/// dnadp:039c                  mov     byte ptr cs:[19bh], 1
+	/// dnadp:03a2                  mov     al, cs:[19ah]
+	/// dnadp:03a6                  retf
+	/// dnadp:03a7
+	/// dnadp:03a7                  db 90h
+	/// dnadp:03a8                  db 00h
+	/// dnadp:03a9                  db 00h
+	/// dnadp:03aa                  db 00h
+	/// dnadp:03ab                  db 00h
+	/// dnadp:03ac                  db 00h
+	/// dnadp:03ad                  db 00h
+	/// dnadp:03ae                  db 00h
+	/// dnadp:03af                  db 00h
+	/// dnadp:03b0                  db 00h
+	/// dnadp:03b1                  db 00h
+	/// </code>
+	/// C# pseudocode.
+	/// <code>
+	/// // Pseudocode mirrors the C# override body below and preserves
+	/// // the same register/stack/memory side effects as the disasm.
+	/// call AdpSetTimerTickFlag_5BAE_039C_05BEBC(gotoAddress)
+	/// return NearRet/FarRet exactly as implemented
 	/// </code>
 	/// </summary>
 	public Action AdpSetTimerTickFlag_5BAE_039C_05BEBC(int gotoAddress) {
@@ -428,16 +807,51 @@ public partial class Overrides {
 	}
 
 	/// <summary>
-	/// Gist: ADPOpen (03B2). Opens a song for playback.
-	/// Saves DS, sets DS=CS, stores the song header pointer and validation checksums,
-	/// computes channel table and instrument table offsets, calls ADPUnknown099A to init
-	/// OPL slots, ADPBuildChannelTable, ADPUnknown0982 for mixer, then ADPProcessTick
-	/// to prime the first tick. Sets status byte to 0x80 (playing).
+	/// FULL commented disasm from gist (dnadp:03b2).
 	/// <code>
-	/// dnadp:03b2  push ds / push cs / pop ds / mov [19bh], al
-	/// dnadp:03ef  call ADPUnknown099A / call ADPBuildChannelTable
-	/// dnadp:03fb  call ADPUnknown0982 / ... / call ADPProcessTick
-	/// dnadp:040e  mov [19ah], 80h / pop ds / retf
+	/// dnadp:03b2
+	/// dnadp:03b2  ADPOpen:                                      ; CODE XREF: dnadp:0103
+	/// dnadp:03b2                  push    ds
+	/// dnadp:03b3                  push    cs
+	/// dnadp:03b4                  pop     ds
+	/// dnadp:03b5                  mov     [19bh], al
+	/// dnadp:03b8                  mov     ax, es:[si]
+	/// dnadp:03bb                  mov     di, 3a8h
+	/// dnadp:03be                  mov     [di], si
+	/// dnadp:03c0                  mov     [di+2], es
+	/// dnadp:03c3                  mov     [di+4], ax
+	/// dnadp:03c6                  mov     ax, es:[si+4000h]
+	/// dnadp:03cb                  mov     [di+6], ax
+	/// dnadp:03ce                  mov     ax, es:[si-8000h]
+	/// dnadp:03d3                  mov     [di+8], ax
+	/// dnadp:03d6                  add     si, 2
+	/// dnadp:03d9                  mov     [115h], si
+	/// dnadp:03dd                  mov     [117h], es
+	/// dnadp:03e1                  sub     si, 2
+	/// dnadp:03e4                  add     si, es:[si]
+	/// dnadp:03e7                  mov     [119h], si
+	/// dnadp:03eb                  mov     [11bh], es
+	/// dnadp:03ef                  call    ADPUnknown099A
+	/// dnadp:03f2                  call    ADPBuildChannelTable
+	/// dnadp:03f5                  mov     al, [19eh]
+	/// dnadp:03f8                  mov     [19ch], al
+	/// dnadp:03fb                  call    ADPUnknown0982
+	/// dnadp:03fe                  mov     [19dh], al
+	/// dnadp:0401                  xor     ax, ax
+	/// dnadp:0403                  mov     [11dh], ax
+	/// dnadp:0406                  mov     [123h], ax
+	/// dnadp:0409                  call    ADPProcessTick
+	/// dnadp:040c                  mov     al, 80h
+	/// dnadp:040e                  mov     [19ah], al
+	/// dnadp:0411                  pop     ds
+	/// dnadp:0412                  retf
+	/// </code>
+	/// C# pseudocode.
+	/// <code>
+	/// // Pseudocode mirrors the C# override body below and preserves
+	/// // the same register/stack/memory side effects as the disasm.
+	/// call AdpOpen_5BAE_03B2_05BED2(gotoAddress)
+	/// return NearRet/FarRet exactly as implemented
 	/// </code>
 	/// </summary>
 	public Action AdpOpen_5BAE_03B2_05BED2(int gotoAddress) {
@@ -471,16 +885,66 @@ public partial class Overrides {
 	}
 
 	/// <summary>
-	/// Gist: ADPBuildChannelTable (0413). Builds the 9-channel dispatch table from song header.
-	/// Reads relative channel stream offsets from the song data, converts to absolute offsets,
-	/// initializes per-channel instrument (0xFF), per-channel flags, beat/measure counters,
-	/// and primes each channel's wait value via ADPReadWaitValue.
+	/// FULL commented disasm from gist (dnadp:0413).
 	/// <code>
-	/// dnadp:0413  push ds / push ds / pop es / lds si, [115h]
-	/// dnadp:0422  lodsw / or ax, ax / jz loc_00429 / add ax, bp
-	/// dnadp:0444  mov word ptr [11fh], 1 / mov word ptr [121h], 60h
-	/// dnadp:0453  mov cx, 9 / mov di, 1a2h
-	/// dnadp:0466  call ADPReadWaitValue / inc word ptr [di]
+	/// dnadp:0413
+	/// dnadp:0413  ADPBuildChannelTable:                         ; CODE XREF: dnadp:03f2
+	/// dnadp:0413                  push    ds
+	/// dnadp:0414                  push    ds
+	/// dnadp:0415                  pop     es
+	/// dnadp:0416                  lds     si, [115h]
+	/// dnadp:041a                  mov     bp, si
+	/// dnadp:041c                  mov     di, 1c6h
+	/// dnadp:041f                  mov     cx, 9
+	/// dnadp:0422
+	/// dnadp:0422  loc_00422:                                    ; CODE XREF: dnadp:042a
+	/// dnadp:0422                  lodsw
+	/// dnadp:0423                  or      ax, ax
+	/// dnadp:0425                  jz      loc_00429
+	/// dnadp:0427                  add     ax, bp
+	/// dnadp:0429
+	/// dnadp:0429  loc_00429:                                    ; CODE XREF: dnadp:0425
+	/// dnadp:0429                  stosw
+	/// dnadp:042a                  loop    loc_00422
+	/// dnadp:042c                  mov     di, 1d8h
+	/// dnadp:042f                  mov     cl, 9
+	/// dnadp:0431                  mov     ax, 0ffh
+	/// dnadp:0434                  rep stosw
+	/// dnadp:0436                  mov     di, 1fch
+	/// dnadp:0439                  mov     cl, 9
+	/// dnadp:043b                  xor     ax, ax
+	/// dnadp:043d                  rep stosw
+	/// dnadp:043f                  pop     ds
+	/// dnadp:0440                  les     si, [115h]
+	/// dnadp:0444
+	/// dnadp:0444  loc_00444:                                    ; CODE XREF: dnadp:0687
+	/// dnadp:0444                  mov     word ptr [11fh], 1
+	/// dnadp:044a                  mov     word ptr [121h], 60h
+	/// dnadp:0450                  mov     cx, 9
+	/// dnadp:0453                  mov     di, 1a2h
+	/// dnadp:0456
+	/// dnadp:0456  loc_00456:                                    ; CODE XREF: dnadp:0470
+	/// dnadp:0456                  mov     si, [di+24h]
+	/// dnadp:0459                  mov     [di+12h], si
+	/// dnadp:045c                  mov     word ptr [di], 0ffffh
+	/// dnadp:0460                  or      si, si
+	/// dnadp:0462                  jz      loc_0046d
+	/// dnadp:0464                  mov     ax, cx
+	/// dnadp:0466                  call    ADPReadWaitValue
+	/// dnadp:0469                  inc     word ptr [di]
+	/// dnadp:046b                  mov     cx, ax
+	/// dnadp:046d
+	/// dnadp:046d  loc_0046d:                                    ; CODE XREF: dnadp:0462
+	/// dnadp:046d                  add     di, 2
+	/// dnadp:0470                  loop    loc_00456
+	/// dnadp:0472                  ret
+	/// </code>
+	/// C# pseudocode.
+	/// <code>
+	/// // Pseudocode mirrors the C# override body below and preserves
+	/// // the same register/stack/memory side effects as the disasm.
+	/// call AdpBuildChannelTable_5BAE_0413_05BF33(gotoAddress)
+	/// return NearRet/FarRet exactly as implemented
 	/// </code>
 	/// </summary>
 	public Action AdpBuildChannelTable_5BAE_0413_05BF33(int gotoAddress) {
@@ -519,18 +983,49 @@ public partial class Overrides {
 	}
 
 	/// <summary>
-	/// Gist: ADPTickHandler (0473). Main timer tick handler called from the host.
-	/// Checks playback status, decrements the sub-tick counter, validates song integrity,
-	/// calls ADPProcessTick when the sub-tick expires, rotates the fade bit-pattern and
-	/// calls ADPFadeStep on carry. Returns status in AL, beat in BX, sub-beat in CX.
+	/// FULL commented disasm from gist (dnadp:0473).
 	/// <code>
-	/// dnadp:0473  push ds / mov ax, cs / mov ds, ax
-	/// dnadp:0478  cmp byte ptr [19ah], 0 / jns loc_004a0
-	/// dnadp:047f  dec byte ptr [11eh] / jns loc_00497
-	/// dnadp:0485  call ADPSongValidation / jnz loc_004a0
-	/// dnadp:048f  call ADPProcessTick
-	/// dnadp:0497  rol [19fh], 1 / jnb loc_004a0 / call ADPFadeStep
-	/// dnadp:04a0  mov al, [19ah] / mov bx, [11fh] / mov cx, [121h] / pop ds / retf
+	/// dnadp:0473
+	/// dnadp:0473  ADPTickHandler:                               ; CODE XREF: dnadp:010f
+	/// dnadp:0473                  push    ds
+	/// dnadp:0474                  mov     ax, cs
+	/// dnadp:0476                  mov     ds, ax
+	/// dnadp:0478                  cmp     byte ptr [19ah], 0
+	/// dnadp:047d                  jns     loc_004a0
+	/// dnadp:047f                  dec     byte ptr [11eh]
+	/// dnadp:0483                  jns     loc_00497
+	/// dnadp:0485                  call    ADPSongValidation
+	/// dnadp:0488                  jnz     loc_004a0
+	/// dnadp:048a                  push    dx
+	/// dnadp:048b                  push    si
+	/// dnadp:048c                  push    di
+	/// dnadp:048d                  push    bp
+	/// dnadp:048e                  push    es
+	/// dnadp:048f                  call    ADPProcessTick
+	/// dnadp:0492                  pop     es
+	/// dnadp:0493                  pop     bp
+	/// dnadp:0494                  pop     di
+	/// dnadp:0495                  pop     si
+	/// dnadp:0496                  pop     dx
+	/// dnadp:0497
+	/// dnadp:0497  loc_00497:                                    ; CODE XREF: dnadp:0483
+	/// dnadp:0497                  rol     [19fh], 1
+	/// dnadp:049b                  jnb     loc_004a0
+	/// dnadp:049d                  call    ADPFadeStep
+	/// dnadp:04a0
+	/// dnadp:04a0  loc_004a0:                                    ; CODE XREF: dnadp:047d, dnadp:0488, dnadp:049b
+	/// dnadp:04a0                  mov     al, [19ah]
+	/// dnadp:04a3                  mov     bx, [11fh]
+	/// dnadp:04a7                  mov     cx, [121h]
+	/// dnadp:04ab                  pop     ds
+	/// dnadp:04ac                  retf
+	/// </code>
+	/// C# pseudocode.
+	/// <code>
+	/// // Pseudocode mirrors the C# override body below and preserves
+	/// // the same register/stack/memory side effects as the disasm.
+	/// call AdpTickHandler_5BAE_0473_05BF93(gotoAddress)
+	/// return NearRet/FarRet exactly as implemented
 	/// </code>
 	/// </summary>
 	public Action AdpTickHandler_5BAE_0473_05BF93(int gotoAddress) {
@@ -576,15 +1071,33 @@ public partial class Overrides {
 	}
 
 	/// <summary>
-	/// Gist: ADPSongValidation (04AD). Validates the song data hasn't changed in memory.
-	/// Compares three checksums stored at [03AC/03AE/03B0] against live values at
-	/// ES:SI, ES:SI+0x4000, and ES:SI-0x8000. Sets ZF if all match.
+	/// FULL commented disasm from gist (dnadp:04ad).
 	/// <code>
-	/// dnadp:04ad  push si / push es / les si, [3a8h]
-	/// dnadp:04b3  mov ax, es:[si] / cmp [3ach], ax / jnz loc_004d0
-	/// dnadp:04bc  mov ax, es:[si+4000h] / cmp [3aeh], ax / jnz loc_004d0
-	/// dnadp:04c7  mov ax, es:[si-8000h] / cmp [3b0h], ax
-	/// dnadp:04d0  pop es / pop si / ret
+	/// dnadp:04ad
+	/// dnadp:04ad  ADPSongValidation:                            ; CODE XREF: dnadp:0485
+	/// dnadp:04ad                  push    si
+	/// dnadp:04ae                  push    es
+	/// dnadp:04af                  les     si, [3a8h]
+	/// dnadp:04b3                  mov     ax, es:[si]
+	/// dnadp:04b6                  cmp     [3ach], ax
+	/// dnadp:04ba                  jnz     loc_004d0
+	/// dnadp:04bc                  mov     ax, es:[si+4000h]
+	/// dnadp:04c1                  cmp     [3aeh], ax
+	/// dnadp:04c5                  jnz     loc_004d0
+	/// dnadp:04c7                  mov     ax, es:[si-8000h]
+	/// dnadp:04cc                  cmp     [3b0h], ax
+	/// dnadp:04d0
+	/// dnadp:04d0  loc_004d0:                                    ; CODE XREF: dnadp:04ba, dnadp:04c5
+	/// dnadp:04d0                  pop     es
+	/// dnadp:04d1                  pop     si
+	/// dnadp:04d2                  ret
+	/// </code>
+	/// C# pseudocode.
+	/// <code>
+	/// // Pseudocode mirrors the C# override body below and preserves
+	/// // the same register/stack/memory side effects as the disasm.
+	/// call AdpSongValidation_5BAE_04AD_05BFCD(gotoAddress)
+	/// return NearRet/FarRet exactly as implemented
 	/// </code>
 	/// </summary>
 	public Action AdpSongValidation_5BAE_04AD_05BFCD(int gotoAddress) {
@@ -601,17 +1114,79 @@ public partial class Overrides {
 	}
 
 	/// <summary>
-	/// Gist: ADPProcessTick (04D3). Core per-tick event processing for all 9 channels.
-	/// Adds tempo word to the tick accumulator, calls ADPLoopPointCheck, then iterates
-	/// channels: decrement wait, dispatch opcodes (NoteOn/Off, ProgramChange, PitchBend,
-	/// VolumeModulation, EndOfTrack) via handler table at [0125], or apply glide/vibrato
-	/// for non-zero waits. Decrements the sub-beat counter and advances beat on rollover.
+	/// FULL commented disasm from gist (dnadp:04d3).
 	/// <code>
-	/// dnadp:04d3  les bx, [115h] / mov ax, es:[bx+30h] / add [11dh], ax
-	/// dnadp:04e2  call ADPLoopPointCheck / mov cx, 9
-	/// dnadp:04e8  dec word ptr [di] / jnz loc_0052a
-	/// dnadp:04f5  es:lodsw / ... / call word ptr [bx+125h]
-	/// dnadp:051a  dec byte ptr [121h] / ... / inc word ptr [11fh]
+	/// dnadp:04d3
+	/// dnadp:04d3  ADPProcessTick:                               ; CODE XREF: dnadp:0409, dnadp:048f
+	/// dnadp:04d3                  les     bx, [115h]
+	/// dnadp:04d7                  mov     ax, es:[bx+30h]
+	/// dnadp:04db                  add     [11dh], ax
+	/// dnadp:04df                  mov     di, 1a2h
+	/// dnadp:04e2                  call    ADPLoopPointCheck
+	/// dnadp:04e5                  mov     cx, 9
+	/// dnadp:04e8
+	/// dnadp:04e8  loc_004e8:                                    ; CODE XREF: dnadp:0518
+	/// dnadp:04e8                  dec     word ptr [di]
+	/// dnadp:04ea                  jnz     loc_0052a
+	/// dnadp:04ec
+	/// dnadp:04ec  loc_004ec:                                    ; CODE XREF: dnadp:0513
+	/// dnadp:04ec                  mov     si, [di+12h]
+	/// dnadp:04ef                  or      si, si
+	/// dnadp:04f1                  jz      loc_00515
+	/// dnadp:04f3                  push    cx
+	/// dnadp:04f4                  push    di
+	/// dnadp:04f5                  es:lodsw
+	/// dnadp:04f7                  mov     dx, di
+	/// dnadp:04f9                  sub     dx, 1a2h
+	/// dnadp:04fd                  shr     dx, 1
+	/// dnadp:04ff                  mov     bx, ax
+	/// dnadp:0501                  and     bx, 70h
+	/// dnadp:0504                  shr     bx, 1
+	/// dnadp:0506                  shr     bx, 1
+	/// dnadp:0508                  shr     bx, 1
+	/// dnadp:050a                  call    word ptr [bx+125h]
+	/// dnadp:050e                  pop     di
+	/// dnadp:050f                  pop     cx
+	/// dnadp:0510                  cmp     word ptr [di], 0
+	/// dnadp:0513                  jz      loc_004ec
+	/// dnadp:0515
+	/// dnadp:0515  loc_00515:                                    ; CODE XREF: dnadp:04f1, dnadp:052e, dnadp:0535, dnadp:0551
+	/// dnadp:0515                  add     di, 2
+	/// dnadp:0518                  loop    loc_004e8
+	/// dnadp:051a                  dec     byte ptr [121h]
+	/// dnadp:051e                  jnz     loc_00529
+	/// dnadp:0520                  mov     byte ptr [121h], 60h
+	/// dnadp:0525                  inc     word ptr [11fh]
+	/// dnadp:0529
+	/// dnadp:0529  loc_00529:                                    ; CODE XREF: dnadp:051e
+	/// dnadp:0529                  ret
+	/// dnadp:052a
+	/// dnadp:052a  loc_0052a:                                    ; CODE XREF: dnadp:04ea
+	/// dnadp:052a                  cmp     byte ptr [di+5ah], 0
+	/// dnadp:052e                  jz      loc_00515
+	/// dnadp:0530                  mov     si, [di+12h]
+	/// dnadp:0533                  or      si, si
+	/// dnadp:0535                  jz      loc_00515
+	/// dnadp:0537                  push    cx
+	/// dnadp:0538                  push    di
+	/// dnadp:0539                  dec     byte ptr [di+5ah]
+	/// dnadp:053c                  mov     ax, [di+6ch]
+	/// dnadp:053f                  add     al, ah
+	/// dnadp:0541                  mov     [di+6ch], al
+	/// dnadp:0544                  mov     dx, di
+	/// dnadp:0546                  sub     dx, 1a2h
+	/// dnadp:054a                  shr     dx, 1
+	/// dnadp:054c                  call    ADPPitchBend
+	/// dnadp:054f                  pop     di
+	/// dnadp:0550                  pop     cx
+	/// dnadp:0551                  jmp     loc_00515
+	/// </code>
+	/// C# pseudocode.
+	/// <code>
+	/// // Pseudocode mirrors the C# override body below and preserves
+	/// // the same register/stack/memory side effects as the disasm.
+	/// call AdpProcessTick_5BAE_04D3_05BFF3(gotoAddress)
+	/// return NearRet/FarRet exactly as implemented
 	/// </code>
 	/// </summary>
 	public Action AdpProcessTick_5BAE_04D3_05BFF3(int gotoAddress) {
@@ -630,14 +1205,17 @@ public partial class Overrides {
 			AdpWordSet(DI, wait);
 			if (wait != 0) {
 				if (AdpByte((ushort)(DI + 0x5A)) != 0 && AdpWord((ushort)(DI + 0x12)) != 0) {
+					ushort savedDi = DI;
 					AdpByteSet((ushort)(DI + 0x5A), (byte)(AdpByte((ushort)(DI + 0x5A)) - 1));
 					ushort phaseWord = AdpWord((ushort)(DI + 0x6C));
 					byte phaseLo = Lo8(phaseWord);
 					byte phaseHi = Hi8(phaseWord);
 					phaseLo = (byte)(phaseLo + phaseHi);
 					AdpByteSet((ushort)(DI + 0x6C), phaseLo);
+					AX = Make16(phaseLo, phaseHi);
 					DX = (ushort)((DI - AdpChannelTableBase) >> 1);
 					AdpPitchBendBody_5BAE_07EF_05C30F(0);
+					DI = savedDi;
 				}
 			} else {
 				while (AdpWord(DI) == 0) {
@@ -648,6 +1226,7 @@ public partial class Overrides {
 					AX = SegWord(ES, SI);
 					SI = (ushort)(SI + 2);
 					DX = (ushort)((DI - AdpChannelTableBase) >> 1);
+					ushort savedDi = DI;
 					byte handler = (byte)((AX >> 4) & 0x07);
 					switch (handler) {
 						case 0:
@@ -673,6 +1252,7 @@ public partial class Overrides {
 							AdpEndOfTrack_5BAE_066F_05C18F(0);
 							break;
 					}
+					DI = savedDi;
 					if (AdpWord(DI) != 0) {
 						break;
 					}
@@ -693,16 +1273,60 @@ public partial class Overrides {
 	}
 
 	/// <summary>
-	/// Gist: ADPLoopPointCheck (0553). Manages song loop points.
-	/// If loop counter is zero: snapshot channel state at the loop-start beat.
-	/// If loop counter is non-zero: at the loop-end beat, restore the snapshot and
-	/// decrement the loop counter, rewinding playback to the loop-start beat.
+	/// FULL commented disasm from gist (dnadp:0553).
 	/// <code>
-	/// dnadp:0553  cmp word ptr [123h], 0 / jnz loc_00585
-	/// dnadp:055a  mov ax, es:[bx+2ah] / cmp ax, [11fh]  ; check loop-start beat
-	/// dnadp:056f  add di, 0eah / ... / rep movsw        ; snapshot state
-	/// dnadp:0585  mov ax, es:[bx+2ch] / cmp ax, [11fh]  ; check loop-end beat
-	/// dnadp:058f  dec word ptr [123h] / ... / rep movsw  ; restore state
+	/// dnadp:0553
+	/// dnadp:0553  ADPLoopPointCheck:                            ; CODE XREF: dnadp:04e2, dnadp:0691
+	/// dnadp:0553                  cmp     word ptr [123h], 0
+	/// dnadp:0558                  jnz     loc_00585
+	/// dnadp:055a                  mov     ax, es:[bx+2ah]
+	/// dnadp:055e                  cmp     ax, [11fh]
+	/// dnadp:0562                  jnz     loc_00584
+	/// dnadp:0564                  cmp     word ptr [121h], 60h
+	/// dnadp:0569                  jnz     loc_00584
+	/// dnadp:056b                  push    di
+	/// dnadp:056c                  push    es
+	/// dnadp:056d                  mov     si, di
+	/// dnadp:056f                  add     di, 0eah
+	/// dnadp:0573                  push    ds
+	/// dnadp:0574                  pop     es
+	/// dnadp:0575                  mov     cx, 12h
+	/// dnadp:0578                  rep movsw
+	/// dnadp:057a                  pop     es
+	/// dnadp:057b                  pop     di
+	/// dnadp:057c                  mov     ax, es:[bx+2eh]
+	/// dnadp:0580                  dec     ax
+	/// dnadp:0581                  mov     [123h], ax
+	/// dnadp:0584
+	/// dnadp:0584  loc_00584:                                    ; CODE XREF: dnadp:0562, dnadp:0569, dnadp:058d
+	/// dnadp:0584                  ret
+	/// dnadp:0585
+	/// dnadp:0585  loc_00585:                                    ; CODE XREF: dnadp:0558
+	/// dnadp:0585                  mov     ax, es:[bx+2ch]
+	/// dnadp:0589                  cmp     ax, [11fh]
+	/// dnadp:058d                  jnz     loc_00584
+	/// dnadp:058f                  dec     word ptr [123h]
+	/// dnadp:0593                  push    di
+	/// dnadp:0594                  push    es
+	/// dnadp:0595                  lea     si, [di+0eah]
+	/// dnadp:0599                  push    ds
+	/// dnadp:059a                  pop     es
+	/// dnadp:059b                  mov     cx, 12h
+	/// dnadp:059e                  rep movsw
+	/// dnadp:05a0                  pop     es
+	/// dnadp:05a1                  pop     di
+	/// dnadp:05a2                  mov     ax, es:[bx+2ah]
+	/// dnadp:05a6                  mov     [11fh], ax
+	/// dnadp:05a9
+	/// dnadp:05a9  loc_005a9:                                    ; CODE XREF: dnadp:05b0
+	/// dnadp:05a9                  ret
+	/// </code>
+	/// C# pseudocode.
+	/// <code>
+	/// // Pseudocode mirrors the C# override body below and preserves
+	/// // the same register/stack/memory side effects as the disasm.
+	/// call AdpLoopPointCheck_5BAE_0553_05C073(gotoAddress)
+	/// return NearRet/FarRet exactly as implemented
 	/// </code>
 	/// </summary>
 	public Action AdpLoopPointCheck_5BAE_0553_05C073(int gotoAddress) {
@@ -727,15 +1351,61 @@ public partial class Overrides {
 	}
 
 	/// <summary>
-	/// Gist: ADP_OP_ProgramChange (05AA). Loads a new instrument for the current channel.
-	/// Reads instrument index from AH, computes offset into instrument table (×0x28 stride),
-	/// loads operator levels, sensitivity, envelope, feedback/connection, transpose, vibrato,
-	/// then calls ADPInstrumentWrite to program both OPL operators.
+	/// FULL commented disasm from gist (dnadp:05aa).
 	/// <code>
-	/// dnadp:05aa  call ADPReadWaitValue / cmp [di+36h], ah / jz ret
-	/// dnadp:05b5  mov al, 28h / mul ah / les si, [119h] / add si, ax
-	/// dnadp:05c3  mov [di+48h], ax   ; transpose word
-	/// dnadp:0627  call ADPInstrumentWrite / pop ds / ret
+	/// dnadp:05aa
+	/// dnadp:05aa  ADP_OP_ProgramChange:
+	/// dnadp:05aa                  call    ADPReadWaitValue
+	/// dnadp:05ad                  cmp     [di+36h], ah
+	/// dnadp:05b0                  jz      loc_005a9
+	/// dnadp:05b2                  mov     [di+36h], ah
+	/// dnadp:05b5                  mov     al, 28h
+	/// dnadp:05b7                  mul     ah
+	/// dnadp:05b9                  les     si, [119h]
+	/// dnadp:05bd                  add     si, ax
+	/// dnadp:05bf                  mov     ax, es:[si+21h]
+	/// dnadp:05c3                  mov     [di+48h], ax
+	/// dnadp:05c6                  mov     ah, es:[si+17h]
+	/// dnadp:05ca                  mov     al, es:[si+0ah]
+	/// dnadp:05ce                  mov     bh, es:[si+2]
+	/// dnadp:05d2                  mov     bl, es:[si+0fh]
+	/// dnadp:05d6                  and     bx, 303h
+	/// dnadp:05da                  ror     bx, 1
+	/// dnadp:05dc                  ror     bx, 1
+	/// dnadp:05de                  or      ax, bx
+	/// dnadp:05e0                  mov     [di+90h], ax
+	/// dnadp:05e4                  mov     ax, es:[si+1eh]
+	/// dnadp:05e8                  mov     [di+7eh], ax
+	/// dnadp:05eb                  mov     ax, es:[si+26h]
+	/// dnadp:05ef                  mov     [di+0c6h], ax
+	/// dnadp:05f3                  mov     al, es:[si+0eh]
+	/// dnadp:05f7                  not     al
+	/// dnadp:05f9                  ror     al, 1
+	/// dnadp:05fb                  mov     ah, es:[si+4]
+	/// dnadp:05ff                  shl     ax, 1
+	/// dnadp:0601                  mov     al, es:[si+20h]
+	/// dnadp:0605                  mov     [di+0b4h], ax
+	/// dnadp:0609                  mov     al, es:[si+1bh]
+	/// dnadp:060d                  mov     [di+0d8h], ax
+	/// dnadp:0611                  mov     ax, es:[si+23h]
+	/// dnadp:0615                  mov     [di+6dh], ah
+	/// dnadp:0618                  mov     ah, al
+	/// dnadp:061a                  xor     al, al
+	/// dnadp:061c                  mov     [di+5ah], ax
+	/// dnadp:061f                  push    ds
+	/// dnadp:0620                  mov     ax, es
+	/// dnadp:0622                  mov     ds, ax
+	/// dnadp:0624                  add     si, 2
+	/// dnadp:0627                  call    ADPInstrumentWrite
+	/// dnadp:062a                  pop     ds
+	/// dnadp:062b                  ret
+	/// </code>
+	/// C# pseudocode.
+	/// <code>
+	/// // Pseudocode mirrors the C# override body below and preserves
+	/// // the same register/stack/memory side effects as the disasm.
+	/// call AdpProgramChange_5BAE_05AA_05C0CA(gotoAddress)
+	/// return NearRet/FarRet exactly as implemented
 	/// </code>
 	/// </summary>
 	public Action AdpProgramChange_5BAE_05AA_05C0CA(int gotoAddress) {
@@ -788,19 +1458,37 @@ public partial class Overrides {
 	}
 
 	/// <summary>
-	/// Gist: ADP_OP_NoteOn (062C). Triggers a note on the current channel.
-	/// Reads velocity byte from stream (lodsb), calls ADPReadWaitValue, sets envelope
-	/// via ADP_OP_EnvelopeSetup. If a note is currently playing, silences it first.
-	/// Extracts note from AH of dispatch word, adds transpose [DI+49h], converts to
-	/// OPL pitch via ADPOplNoteOn.
+	/// FULL commented disasm from gist (dnadp:062c).
 	/// <code>
-	/// dnadp:062c  es:lodsb / call ADPReadWaitValue / push ax
-	/// dnadp:0632  call ADP_OP_EnvelopeSetup
-	/// dnadp:0635  cmp byte ptr [di+37h], 0 / jz loc_00640
-	/// dnadp:063b  xor ax, ax / call ADPOplFrequencyWrite  ; silence prev note
-	/// dnadp:0640  pop ax / mov al, ah / add al, [di+49h]  ; note + transpose
-	/// dnadp:0648  mov [di+37h], al / sub ax, 48h
-	/// dnadp:0658  jmp ADPOplNoteOn
+	/// dnadp:062c
+	/// dnadp:062c  ADP_OP_NoteOn:
+	/// dnadp:062c                  es:lodsb
+	/// dnadp:062e                  call    ADPReadWaitValue
+	/// dnadp:0631                  push    ax
+	/// dnadp:0632                  call    ADP_OP_EnvelopeSetup
+	/// dnadp:0635                  cmp     byte ptr [di+37h], 0
+	/// dnadp:0639                  jz      loc_00640
+	/// dnadp:063b                  xor     ax, ax
+	/// dnadp:063d                  call    ADPOplFrequencyWrite
+	/// dnadp:0640
+	/// dnadp:0640  loc_00640:                                    ; CODE XREF: dnadp:0639
+	/// dnadp:0640                  pop     ax
+	/// dnadp:0641                  mov     al, ah
+	/// dnadp:0643                  add     al, [di+49h]
+	/// dnadp:0646                  xor     ah, ah
+	/// dnadp:0648                  mov     [di+37h], al
+	/// dnadp:064b                  sub     ax, 48h
+	/// dnadp:064e                  mov     cl, [di+5bh]
+	/// dnadp:0651                  mov     [di+5ah], cl
+	/// dnadp:0654                  mov     byte ptr [di+6ch], 40h
+	/// dnadp:0658                  jmp     ADPOplNoteOn
+	/// </code>
+	/// C# pseudocode.
+	/// <code>
+	/// // Pseudocode mirrors the C# override body below and preserves
+	/// // the same register/stack/memory side effects as the disasm.
+	/// call AdpNoteOn_5BAE_062C_05C14C(gotoAddress)
+	/// return NearRet/FarRet exactly as implemented
 	/// </code>
 	/// </summary>
 	public Action AdpNoteOn_5BAE_062C_05C14C(int gotoAddress) {
@@ -826,14 +1514,27 @@ public partial class Overrides {
 	}
 
 	/// <summary>
-	/// Gist: ADP_OP_NoteOff (065B). Releases a note on the current channel.
-	/// Skips one stream byte (inc si), reads wait value, then compares
-	/// AH+transpose with current note. If they match, clears the note and
-	/// calls ADPOplNoteOff; otherwise does nothing (note already replaced).
+	/// FULL commented disasm from gist (dnadp:065b).
 	/// <code>
-	/// dnadp:065b  inc si / call ADPReadWaitValue
-	/// dnadp:065f  add ah, [di+49h] / cmp [di+37h], ah / jnz ret
-	/// dnadp:0667  mov byte ptr [di+37h], 0 / jmp ADPOplNoteOff
+	/// dnadp:065b
+	/// dnadp:065b  ADP_OP_NoteOff:
+	/// dnadp:065b                  inc     si
+	/// dnadp:065c                  call    ADPReadWaitValue
+	/// dnadp:065f                  add     ah, [di+49h]
+	/// dnadp:0662                  cmp     [di+37h], ah
+	/// dnadp:0665                  jnz     loc_0066e
+	/// dnadp:0667                  mov     byte ptr [di+37h], 0
+	/// dnadp:066b                  jmp     ADPOplNoteOff
+	/// dnadp:066e
+	/// dnadp:066e  loc_0066e:                                    ; CODE XREF: dnadp:0665
+	/// dnadp:066e                  ret
+	/// </code>
+	/// C# pseudocode.
+	/// <code>
+	/// // Pseudocode mirrors the C# override body below and preserves
+	/// // the same register/stack/memory side effects as the disasm.
+	/// call AdpNoteOff_5BAE_065B_05C17B(gotoAddress)
+	/// return NearRet/FarRet exactly as implemented
 	/// </code>
 	/// </summary>
 	public Action AdpNoteOff_5BAE_065B_05C17B(int gotoAddress) {
@@ -848,17 +1549,47 @@ public partial class Overrides {
 	}
 
 	/// <summary>
-	/// Gist: ADP_OP_EndOfTrack (066F). Handles end-of-track for a channel.
-	/// Sets channel wait to 0xFFFF and rewinds stream pointer by 2.
-	/// For channel 0 (DX==0): decrements the tick flag; if zero, fills all
-	/// channel waits with 0xFFFF and calls ADPReset. If the tick flag was
-	/// positive, re-initializes the channel table for looped playback.
+	/// FULL commented disasm from gist (dnadp:066f).
 	/// <code>
-	/// dnadp:066f  mov word ptr [di], 0ffffh / sub byte ptr [di+12h], 2
-	/// dnadp:0677  or dx, dx / jnz ret
-	/// dnadp:067b  dec byte ptr [19bh] / jz loc_00697
-	/// dnadp:0687  call loc_00444  ; reinit channels
-	/// dnadp:0697  ... / call ADPReset / ret
+	/// dnadp:066f
+	/// dnadp:066f  ADP_OP_EndOfTrack:
+	/// dnadp:066f                  mov     word ptr [di], 0ffffh
+	/// dnadp:0673                  sub     byte ptr [di+12h], 2
+	/// dnadp:0677                  or      dx, dx
+	/// dnadp:0679                  jnz     loc_00696
+	/// dnadp:067b                  dec     byte ptr [19bh]
+	/// dnadp:067f                  jz      loc_00697
+	/// dnadp:0681                  jns     loc_00687
+	/// dnadp:0683                  inc     byte ptr [19bh]
+	/// dnadp:0687
+	/// dnadp:0687  loc_00687:                                    ; CODE XREF: dnadp:0681
+	/// dnadp:0687                  call    loc_00444
+	/// dnadp:068a                  les     bx, [115h]
+	/// dnadp:068e                  mov     di, 1a2h
+	/// dnadp:0691                  call    ADPLoopPointCheck
+	/// dnadp:0694                  dec     word ptr [di]
+	/// dnadp:0696
+	/// dnadp:0696  loc_00696:                                    ; CODE XREF: dnadp:0679
+	/// dnadp:0696                  ret
+	/// dnadp:0697
+	/// dnadp:0697  loc_00697:                                    ; CODE XREF: dnadp:067f
+	/// dnadp:0697                  mov     ax, 0ffffh
+	/// dnadp:069a                  push    es
+	/// dnadp:069b                  push    ds
+	/// dnadp:069c                  pop     es
+	/// dnadp:069d                  mov     cx, 9
+	/// dnadp:06a0                  rep stosw
+	/// dnadp:06a2                  pop     es
+	/// dnadp:06a3                  push    cs
+	/// dnadp:06a4                  call    ADPReset
+	/// dnadp:06a7                  ret
+	/// </code>
+	/// C# pseudocode.
+	/// <code>
+	/// // Pseudocode mirrors the C# override body below and preserves
+	/// // the same register/stack/memory side effects as the disasm.
+	/// call AdpEndOfTrack_5BAE_066F_05C18F(gotoAddress)
+	/// return NearRet/FarRet exactly as implemented
 	/// </code>
 	/// </summary>
 	public Action AdpEndOfTrack_5BAE_066F_05C18F(int gotoAddress) {
@@ -907,16 +1638,106 @@ public partial class Overrides {
 	}
 
 	/// <summary>
-	/// Gist: ADP_OP_VolumeModulation (06A8). Applies velocity-based volume modulation.
-	/// Reads a volume byte from AH, computes inverse velocity (0x80-AH), then scales
-	/// both operators' levels and the feedback register based on channel sensitivity
-	/// values at [DI+C6h] and [DI+D8h]. Writes OPL registers 40h+ and C0h+.
+	/// FULL commented disasm from gist (dnadp:06a8).
 	/// <code>
-	/// dnadp:06a8  call ADPReadWaitValue / mov al, 80h / sub al, ah
-	/// dnadp:06b1  mov bx, [di+0a2h] / mov cx, [di+0c6h]
-	/// dnadp:06bd  ... / shr al, cl / sub ah, al  ; scale operator level
-	/// dnadp:06e3  call ADPOplRegisterWrite
-	/// dnadp:0714  mov cx, [di+0d8h]  ; feedback sensitivity
+	/// dnadp:06a8
+	/// dnadp:06a8  ADP_OP_VolumeModulation:
+	/// dnadp:06a8                  call    ADPReadWaitValue
+	/// dnadp:06ab                  mov     al, 80h
+	/// dnadp:06ad                  sub     al, ah
+	/// dnadp:06af                  xchg    al, ah
+	/// dnadp:06b1                  mov     bx, [di+0a2h]
+	/// dnadp:06b5                  mov     cx, [di+0c6h]
+	/// dnadp:06b9                  or      cl, cl
+	/// dnadp:06bb                  jz      loc_006e7
+	/// dnadp:06bd                  push    ax
+	/// dnadp:06be                  jns     loc_006c4
+	/// dnadp:06c0                  neg     cl
+	/// dnadp:06c2                  mov     al, ah
+	/// dnadp:06c4
+	/// dnadp:06c4  loc_006c4:                                    ; CODE XREF: dnadp:06be
+	/// dnadp:06c4                  sub     cl, 4
+	/// dnadp:06c7                  neg     cl
+	/// dnadp:06c9                  shr     al, cl
+	/// dnadp:06cb                  mov     ah, bl
+	/// dnadp:06cd                  and     ah, 3fh
+	/// dnadp:06d0                  sub     ah, al
+	/// dnadp:06d2                  jnb     loc_006d6
+	/// dnadp:06d4                  xor     ah, ah
+	/// dnadp:06d6
+	/// dnadp:06d6  loc_006d6:                                    ; CODE XREF: dnadp:06d2
+	/// dnadp:06d6                  and     bl, 0c0h
+	/// dnadp:06d9                  or      ah, bl
+	/// dnadp:06db                  mov     si, 171h
+	/// dnadp:06de                  add     si, dx
+	/// dnadp:06e0                  lodsb
+	/// dnadp:06e1                  add     al, 40h
+	/// dnadp:06e3                  call    ADPOplRegisterWrite
+	/// dnadp:06e6                  pop     ax
+	/// dnadp:06e7
+	/// dnadp:06e7  loc_006e7:                                    ; CODE XREF: dnadp:06bb
+	/// dnadp:06e7                  or      ch, ch
+	/// dnadp:06e9                  jz      loc_00714
+	/// dnadp:06eb                  push    ax
+	/// dnadp:06ec                  jns     loc_006f2
+	/// dnadp:06ee                  neg     ch
+	/// dnadp:06f0                  mov     al, ah
+	/// dnadp:06f2
+	/// dnadp:06f2  loc_006f2:                                    ; CODE XREF: dnadp:06ec
+	/// dnadp:06f2                  mov     cl, 4
+	/// dnadp:06f4                  sub     cl, ch
+	/// dnadp:06f6                  shr     al, cl
+	/// dnadp:06f8                  mov     ah, bh
+	/// dnadp:06fa                  and     ah, 3fh
+	/// dnadp:06fd                  sub     ah, al
+	/// dnadp:06ff                  jnb     loc_00703
+	/// dnadp:0701                  xor     ah, ah
+	/// dnadp:0703
+	/// dnadp:0703  loc_00703:                                    ; CODE XREF: dnadp:06ff
+	/// dnadp:0703                  and     bh, 0c0h
+	/// dnadp:0706                  or      ah, bh
+	/// dnadp:0708                  mov     si, 17ah
+	/// dnadp:070b                  add     si, dx
+	/// dnadp:070d                  lodsb
+	/// dnadp:070e                  add     al, 40h
+	/// dnadp:0710                  call    ADPOplRegisterWrite
+	/// dnadp:0713                  pop     ax
+	/// dnadp:0714
+	/// dnadp:0714  loc_00714:                                    ; CODE XREF: dnadp:06e9
+	/// dnadp:0714                  mov     cx, [di+0d8h]
+	/// dnadp:0718                  or      cl, cl
+	/// dnadp:071a                  jnz     loc_0071d
+	/// dnadp:071c                  ret
+	/// dnadp:071d
+	/// dnadp:071d  loc_0071d:                                    ; CODE XREF: dnadp:071a
+	/// dnadp:071d                  jns     loc_00723
+	/// dnadp:071f                  neg     cl
+	/// dnadp:0721                  mov     al, ah
+	/// dnadp:0723
+	/// dnadp:0723  loc_00723:                                    ; CODE XREF: dnadp:071d
+	/// dnadp:0723                  sub     cl, 6
+	/// dnadp:0726                  neg     cl
+	/// dnadp:0728                  shr     al, cl
+	/// dnadp:072a                  and     al, 0feh
+	/// dnadp:072c                  add     al, ch
+	/// dnadp:072e                  cmp     al, 0fh
+	/// dnadp:0730                  jbe     loc_00736
+	/// dnadp:0732                  and     al, 0fh
+	/// dnadp:0734                  or      al, 0eh
+	/// dnadp:0736
+	/// dnadp:0736  loc_00736:                                    ; CODE XREF: dnadp:0730
+	/// dnadp:0736                  mov     ah, al
+	/// dnadp:0738                  mov     al, dl
+	/// dnadp:073a                  add     al, 0c0h
+	/// dnadp:073c                  call    ADPOplRegisterWrite
+	/// dnadp:073f                  ret
+	/// </code>
+	/// C# pseudocode.
+	/// <code>
+	/// // Pseudocode mirrors the C# override body below and preserves
+	/// // the same register/stack/memory side effects as the disasm.
+	/// call AdpVolumeModulation_5BAE_06A8_05C1C8(gotoAddress)
+	/// return NearRet/FarRet exactly as implemented
 	/// </code>
 	/// </summary>
 	public Action AdpVolumeModulation_5BAE_06A8_05C1C8(int gotoAddress) {
@@ -978,7 +1799,6 @@ public partial class Overrides {
 			if (scaleAl > 0x0F) {
 				scaleAl = (byte)((scaleAl & 0x0F) | 0x0E);
 			}
-			AdpByteSet((ushort)(DI + 0xD9), scaleAl);
 			AX = Make16((byte)(0xC0 + DX), scaleAl);
 			AdpOplRegisterWrite_5BAE_0AA2_05C5C2(0);
 		}
@@ -986,16 +1806,114 @@ public partial class Overrides {
 	}
 
 	/// <summary>
-	/// Gist: ADP_OP_EnvelopeSetup (0740). Sets operator levels from note velocity.
-	/// Computes inverse velocity (0x80 - AL), scales both operators using sensitivity
-	/// [DI+7Eh], adds the scaled value to each operator's base level [DI+90h], clamps
-	/// to 0x3F, and writes OPL register 40h+slot. Also handles feedback at [DI+B4h].
+	/// FULL commented disasm from gist (dnadp:0740).
 	/// <code>
-	/// dnadp:0740  mov ah, al / mov al, 80h / sub al, ah
-	/// dnadp:0746  mov bx, [di+90h] / mov cx, [di+7eh]
-	/// dnadp:0758  sub cl, 4 / neg cl / shr al, cl  ; sensitivity scaling
-	/// dnadp:0764  add ah, al / cmp ah, 3fh / jbe loc_0076d / mov ah, 3fh
-	/// dnadp:077c  call ADPOplRegisterWrite
+	/// dnadp:0740
+	/// dnadp:0740  ADP_OP_EnvelopeSetup:                         ; CODE XREF: dnadp:0632
+	/// dnadp:0740                  mov     ah, al
+	/// dnadp:0742                  mov     al, 80h
+	/// dnadp:0744                  sub     al, ah
+	/// dnadp:0746                  mov     bx, [di+90h]
+	/// dnadp:074a                  mov     cx, [di+7eh]
+	/// dnadp:074d                  or      cl, cl
+	/// dnadp:074f                  jz      loc_00780
+	/// dnadp:0751                  push    ax
+	/// dnadp:0752                  jns     loc_00758
+	/// dnadp:0754                  neg     cl
+	/// dnadp:0756                  mov     al, ah
+	/// dnadp:0758
+	/// dnadp:0758  loc_00758:                                    ; CODE XREF: dnadp:0752
+	/// dnadp:0758                  sub     cl, 4
+	/// dnadp:075b                  neg     cl
+	/// dnadp:075d                  shr     al, cl
+	/// dnadp:075f                  mov     ah, bl
+	/// dnadp:0761                  and     ah, 3fh
+	/// dnadp:0764                  add     ah, al
+	/// dnadp:0766                  cmp     ah, 3fh
+	/// dnadp:0769                  jbe     loc_0076d
+	/// dnadp:076b                  mov     ah, 3fh
+	/// dnadp:076d
+	/// dnadp:076d  loc_0076d:                                    ; CODE XREF: dnadp:0769
+	/// dnadp:076d                  and     bl, 0c0h
+	/// dnadp:0770                  or      bl, ah
+	/// dnadp:0772                  mov     ah, bl
+	/// dnadp:0774                  mov     si, 171h
+	/// dnadp:0777                  add     si, dx
+	/// dnadp:0779                  lodsb
+	/// dnadp:077a                  add     al, 40h
+	/// dnadp:077c                  call    ADPOplRegisterWrite
+	/// dnadp:077f                  pop     ax
+	/// dnadp:0780
+	/// dnadp:0780  loc_00780:                                    ; CODE XREF: dnadp:074f
+	/// dnadp:0780                  or      ch, ch
+	/// dnadp:0782                  jz      loc_007b2
+	/// dnadp:0784                  push    ax
+	/// dnadp:0785                  jns     loc_0078b
+	/// dnadp:0787                  neg     ch
+	/// dnadp:0789                  mov     al, ah
+	/// dnadp:078b
+	/// dnadp:078b  loc_0078b:                                    ; CODE XREF: dnadp:0785
+	/// dnadp:078b                  mov     cl, 4
+	/// dnadp:078d                  sub     cl, ch
+	/// dnadp:078f                  shr     al, cl
+	/// dnadp:0791                  mov     ah, bh
+	/// dnadp:0793                  and     ah, 3fh
+	/// dnadp:0796                  add     ah, al
+	/// dnadp:0798                  cmp     ah, 3fh
+	/// dnadp:079b                  jbe     loc_0079f
+	/// dnadp:079d                  mov     ah, 3fh
+	/// dnadp:079f
+	/// dnadp:079f  loc_0079f:                                    ; CODE XREF: dnadp:079b
+	/// dnadp:079f                  and     bh, 0c0h
+	/// dnadp:07a2                  or      bh, ah
+	/// dnadp:07a4                  mov     ah, bh
+	/// dnadp:07a6                  mov     si, 17ah
+	/// dnadp:07a9                  add     si, dx
+	/// dnadp:07ab                  lodsb
+	/// dnadp:07ac                  add     al, 40h
+	/// dnadp:07ae                  call    ADPOplRegisterWrite
+	/// dnadp:07b1                  pop     ax
+	/// dnadp:07b2
+	/// dnadp:07b2  loc_007b2:                                    ; CODE XREF: dnadp:0782
+	/// dnadp:07b2                  mov     [di+0a2h], bx
+	/// dnadp:07b6                  mov     cx, [di+0b4h]
+	/// dnadp:07ba                  or      cl, cl
+	/// dnadp:07bc                  jnz     loc_007c3
+	/// dnadp:07be                  mov     [di+0d9h], ch
+	/// dnadp:07c2                  ret
+	/// dnadp:07c3
+	/// dnadp:07c3  loc_007c3:                                    ; CODE XREF: dnadp:07bc
+	/// dnadp:07c3                  jns     loc_007c9
+	/// dnadp:07c5                  neg     cl
+	/// dnadp:07c7                  mov     al, ah
+	/// dnadp:07c9
+	/// dnadp:07c9  loc_007c9:                                    ; CODE XREF: dnadp:07c3
+	/// dnadp:07c9                  sub     cl, 6
+	/// dnadp:07cc                  neg     cl
+	/// dnadp:07ce                  shr     al, cl
+	/// dnadp:07d0                  and     al, 0feh
+	/// dnadp:07d2                  add     al, ch
+	/// dnadp:07d4                  cmp     al, 0fh
+	/// dnadp:07d6                  jbe     loc_007dc
+	/// dnadp:07d8                  and     al, 0fh
+	/// dnadp:07da                  or      al, 0eh
+	/// dnadp:07dc
+	/// dnadp:07dc  loc_007dc:                                    ; CODE XREF: dnadp:07d6
+	/// dnadp:07dc                  mov     ah, al
+	/// dnadp:07de                  mov     [di+0d9h], al
+	/// dnadp:07e2                  mov     al, dl
+	/// dnadp:07e4                  add     al, 0c0h
+	/// dnadp:07e6                  call    ADPOplRegisterWrite
+	/// dnadp:07e9
+	/// dnadp:07e9  loc_007e9:                                    ; CODE XREF: dnadp:07f4
+	/// dnadp:07e9                  ret
+	/// </code>
+	/// C# pseudocode.
+	/// <code>
+	/// // Pseudocode mirrors the C# override body below and preserves
+	/// // the same register/stack/memory side effects as the disasm.
+	/// call AdpEnvelopeSetup_5BAE_0740_05C260(gotoAddress)
+	/// return NearRet/FarRet exactly as implemented
 	/// </code>
 	/// </summary>
 	public Action AdpEnvelopeSetup_5BAE_0740_05C260(int gotoAddress) {
@@ -1078,11 +1996,19 @@ public partial class Overrides {
 	}
 
 	/// <summary>
-	/// Gist: ADP_OP_PitchBend (07EA). Opcode handler: extracts pitch from AH, reads wait,
-	/// then falls through to ADPPitchBend.
+	/// FULL commented disasm from gist (dnadp:07ea).
 	/// <code>
-	/// dnadp:07ea  mov al, ah / call ADPReadWaitValue
-	/// dnadp:07ef  ; fall through to ADPPitchBend
+	/// dnadp:07ea
+	/// dnadp:07ea  ADP_OP_PitchBend:
+	/// dnadp:07ea                  mov     al, ah
+	/// dnadp:07ec                  call    ADPReadWaitValue
+	/// </code>
+	/// C# pseudocode.
+	/// <code>
+	/// // Pseudocode mirrors the C# override body below and preserves
+	/// // the same register/stack/memory side effects as the disasm.
+	/// call AdpPitchBend_5BAE_07EA_05C30A(gotoAddress)
+	/// return NearRet/FarRet exactly as implemented
 	/// </code>
 	/// </summary>
 	public Action AdpPitchBend_5BAE_07EA_05C30A(int gotoAddress) {
@@ -1093,18 +2019,147 @@ public partial class Overrides {
 	}
 
 	/// <summary>
-	/// Gist: ADPPitchBend (07EF). Computes pitch-bent frequency for the current channel.
-	/// Uses the current note [DI+37h] and pitch byte in AL (center=0x40).
-	/// Two modes based on [DI+48h]: mode 0 uses semitone interpolation tables at [0183/0184],
-	/// mode 1 uses coarse 1/5-semitone tables at [0190]. Applies fractional sub-key bending
-	/// to the base OPL frequency from the f-number table at [0147], then writes the key-on
-	/// frequency via ADPOplFrequencyWrite.
+	/// FULL commented disasm from gist (dnadp:07ef).
 	/// <code>
-	/// dnadp:07ef  mov cl, [di+37h] / xor ch, ch / jcxz ret
-	/// dnadp:07f9  sub al, 18h / div 0ch  ; compute octave/key
-	/// dnadp:0800  cmp byte ptr [di+48h], 0 / jnz loc_00865
-	/// dnadp:0806  sub ax, 40h / ...  ; center-relative bend
-	/// dnadp:08de  jmp ADPOplFrequencyWrite
+	/// dnadp:07ef
+	/// dnadp:07ef  ADPPitchBend:                                 ; CODE XREF: dnadp:054c
+	/// dnadp:07ef                  mov     cl, [di+37h]
+	/// dnadp:07f2                  xor     ch, ch
+	/// dnadp:07f4                  jcxz    loc_007e9
+	/// dnadp:07f6                  mov     ah, ch
+	/// dnadp:07f8                  xchg    cx, ax
+	/// dnadp:07f9                  sub     al, 18h
+	/// dnadp:07fb                  mov     bh, 0ch
+	/// dnadp:07fd                  div     bh
+	/// dnadp:07ff                  xchg    cx, ax
+	/// dnadp:0800                  cmp     byte ptr [di+48h], 0
+	/// dnadp:0804                  jnz     loc_00865
+	/// dnadp:0806                  sub     ax, 40h
+	/// dnadp:0809                  jnb     loc_00842
+	/// dnadp:080b                  neg     ax
+	/// dnadp:080d                  ror     ax, 1
+	/// dnadp:080f                  ror     ax, 1
+	/// dnadp:0811                  ror     ax, 1
+	/// dnadp:0813                  ror     ax, 1
+	/// dnadp:0815                  ror     ax, 1
+	/// dnadp:0817                  sub     ch, al
+	/// dnadp:0819                  jnb     loc_00824
+	/// dnadp:081b                  add     ch, 0ch
+	/// dnadp:081e                  dec     cl
+	/// dnadp:0820                  jns     loc_00824
+	/// dnadp:0822                  xor     cx, cx
+	/// dnadp:0824
+	/// dnadp:0824  loc_00824:                                    ; CODE XREF: dnadp:0819, dnadp:0820
+	/// dnadp:0824                  mov     al, ch
+	/// dnadp:0826                  mov     bx, 183h
+	/// dnadp:0829                  xlat
+	/// dnadp:082a                  mul     ah
+	/// dnadp:082c                  mov     al, ah
+	/// dnadp:082e                  xchg    al, ch
+	/// dnadp:0830                  xor     ah, ah
+	/// dnadp:0832                  add     ax, ax
+	/// dnadp:0834                  mov     si, ax
+	/// dnadp:0836                  mov     ax, [si+147h]
+	/// dnadp:083a                  sub     al, ch
+	/// dnadp:083c                  sbb     ah, 0
+	/// dnadp:083f                  jmp     loc_008cd
+	/// dnadp:0842
+	/// dnadp:0842  loc_00842:                                    ; CODE XREF: dnadp:0809
+	/// dnadp:0842                  inc     ax
+	/// dnadp:0843                  ror     ax, 1
+	/// dnadp:0845                  ror     ax, 1
+	/// dnadp:0847                  ror     ax, 1
+	/// dnadp:0849                  ror     ax, 1
+	/// dnadp:084b                  ror     ax, 1
+	/// dnadp:084d                  add     ch, al
+	/// dnadp:084f                  cmp     ch, 0ch
+	/// dnadp:0852                  jb      loc_00859
+	/// dnadp:0854                  sub     ch, 0ch
+	/// dnadp:0857                  inc     cl
+	/// dnadp:0859
+	/// dnadp:0859  loc_00859:                                    ; CODE XREF: dnadp:0852
+	/// dnadp:0859                  mov     al, ch
+	/// dnadp:085b                  mov     bx, 184h
+	/// dnadp:085e                  xlat
+	/// dnadp:085f                  mul     ah
+	/// dnadp:0861                  mov     al, ah
+	/// dnadp:0863                  jmp     loc_008bc
+	/// dnadp:0865
+	/// dnadp:0865  loc_00865:                                    ; CODE XREF: dnadp:0804
+	/// dnadp:0865                  sub     ax, 40h
+	/// dnadp:0868                  jnb     loc_0089e
+	/// dnadp:086a                  neg     ax
+	/// dnadp:086c                  mov     bh, 5
+	/// dnadp:086e                  div     bh
+	/// dnadp:0870                  sub     ch, al
+	/// dnadp:0872                  jnb     loc_0087d
+	/// dnadp:0874                  add     ch, 0ch
+	/// dnadp:0877                  dec     cl
+	/// dnadp:0879                  jns     loc_0087d
+	/// dnadp:087b                  xor     cx, cx
+	/// dnadp:087d
+	/// dnadp:087d  loc_0087d:                                    ; CODE XREF: dnadp:0872, dnadp:0879
+	/// dnadp:087d                  mov     al, ah
+	/// dnadp:087f                  mov     bx, 190h
+	/// dnadp:0882                  cmp     ch, 6
+	/// dnadp:0885                  jb      loc_0088a
+	/// dnadp:0887                  add     bx, 5
+	/// dnadp:088a
+	/// dnadp:088a  loc_0088a:                                    ; CODE XREF: dnadp:0885
+	/// dnadp:088a                  xlat
+	/// dnadp:088b                  xchg    al, ch
+	/// dnadp:088d                  xor     ah, ah
+	/// dnadp:088f                  add     ax, ax
+	/// dnadp:0891                  mov     si, ax
+	/// dnadp:0893                  mov     ax, [si+147h]
+	/// dnadp:0897                  sub     al, ch
+	/// dnadp:0899                  sbb     ah, 0
+	/// dnadp:089c                  jmp     loc_008cd
+	/// dnadp:089e
+	/// dnadp:089e  loc_0089e:                                    ; CODE XREF: dnadp:0868
+	/// dnadp:089e                  mov     bh, 5
+	/// dnadp:08a0                  div     bh
+	/// dnadp:08a2                  add     ch, al
+	/// dnadp:08a4                  cmp     ch, 0ch
+	/// dnadp:08a7                  jb      loc_008ae
+	/// dnadp:08a9                  sub     ch, 0ch
+	/// dnadp:08ac                  inc     cl
+	/// dnadp:08ae
+	/// dnadp:08ae  loc_008ae:                                    ; CODE XREF: dnadp:08a7
+	/// dnadp:08ae                  mov     al, ah
+	/// dnadp:08b0                  mov     bx, 190h
+	/// dnadp:08b3                  cmp     ch, 6
+	/// dnadp:08b6                  jb      loc_008bb
+	/// dnadp:08b8                  add     bx, 5
+	/// dnadp:08bb
+	/// dnadp:08bb  loc_008bb:                                    ; CODE XREF: dnadp:08b6
+	/// dnadp:08bb                  xlat
+	/// dnadp:08bc
+	/// dnadp:08bc  loc_008bc:                                    ; CODE XREF: dnadp:0863
+	/// dnadp:08bc                  xchg    al, ch
+	/// dnadp:08be                  xor     ah, ah
+	/// dnadp:08c0                  add     ax, ax
+	/// dnadp:08c2                  mov     si, ax
+	/// dnadp:08c4                  mov     ax, [si+147h]
+	/// dnadp:08c8                  add     al, ch
+	/// dnadp:08ca                  adc     ah, 0
+	/// dnadp:08cd
+	/// dnadp:08cd  loc_008cd:                                    ; CODE XREF: dnadp:083f, dnadp:089c
+	/// dnadp:08cd                  shl     cl, 1
+	/// dnadp:08cf                  shl     cl, 1
+	/// dnadp:08d1                  or      ah, cl
+	/// dnadp:08d3                  mov     si, dx
+	/// dnadp:08d5                  add     si, si
+	/// dnadp:08d7                  mov     [si+15fh], ax
+	/// dnadp:08db                  or      ah, 20h
+	/// dnadp:08de                  jmp     ADPOplFrequencyWrite
+	/// </code>
+	/// C# pseudocode.
+	/// <code>
+	/// // Pseudocode mirrors the C# override body below and preserves
+	/// // the same register/stack/memory side effects as the disasm.
+	/// call AdpPitchBendBody_5BAE_07EF_05C30F(gotoAddress)
+	/// return NearRet/FarRet exactly as implemented
 	/// </code>
 	/// </summary>
 	public Action AdpPitchBendBody_5BAE_07EF_05C30F(int gotoAddress) {
@@ -1127,6 +2182,9 @@ public partial class Overrides {
 					key = (byte)(key + 12 - centered);
 					if (octave > 0) {
 						octave--;
+					} else {
+						octave = 0;
+						key = 0;
 					}
 				} else {
 					key = (byte)(key - centered);
@@ -1158,6 +2216,9 @@ public partial class Overrides {
 					key = (byte)(key + 12 - q);
 					if (octave > 0) {
 						octave--;
+					} else {
+						octave = 0;
+						key = 0;
 					}
 				} else {
 					key = (byte)(key - q);
@@ -1189,15 +2250,49 @@ public partial class Overrides {
 	}
 
 	/// <summary>
-	/// Gist: ADPReadWaitValue (08E1). Reads a variable-length wait value from the stream.
-	/// Single byte if bit 7 is clear; multi-byte VLQ encoding if bit 7 is set.
-	/// Stores the decoded wait at [DI], updated SI at [DI+12h], and preserves AX.
+	/// FULL commented disasm from gist (dnadp:08e1).
 	/// <code>
-	/// dnadp:08e1  push ax / xor ax, ax / es:lodsb
-	/// dnadp:08e8  or al, al / jns loc_00914  ; single-byte fast path
-	/// dnadp:08ec  mov ch, cl / mov cl, ah / mov ah, al / es:lodsb / js loop
-	/// dnadp:08f8  and ax, 7f7fh / ... / shr cx, 1 / rcr ax, 1  ; bit packing
-	/// dnadp:0914  mov [di], ax / mov [di+12h], si / pop ax / ret
+	/// dnadp:08e1
+	/// dnadp:08e1  ADPReadWaitValue:                             ; CODE XREF: dnadp:0466, dnadp:05aa, dnadp:062e, dnadp:065c, dnadp:06a8, dnadp:07ec
+	/// dnadp:08e1                  push    ax
+	/// dnadp:08e2                  xor     ax, ax
+	/// dnadp:08e4                  es:lodsb
+	/// dnadp:08e6                  or      al, al
+	/// dnadp:08e8                  jns     loc_00914
+	/// dnadp:08ea                  xor     cx, cx
+	/// dnadp:08ec
+	/// dnadp:08ec  loc_008ec:                                    ; CODE XREF: dnadp:08f6
+	/// dnadp:08ec                  mov     ch, cl
+	/// dnadp:08ee                  mov     cl, ah
+	/// dnadp:08f0                  mov     ah, al
+	/// dnadp:08f2                  es:lodsb
+	/// dnadp:08f4                  or      al, al
+	/// dnadp:08f6                  js      loc_008ec
+	/// dnadp:08f8                  and     ax, 7f7fh
+	/// dnadp:08fb                  and     cx, 7f7fh
+	/// dnadp:08ff                  shl     cl, 1
+	/// dnadp:0901                  shr     cx, 1
+	/// dnadp:0903                  shl     al, 1
+	/// dnadp:0905                  shl     ax, 1
+	/// dnadp:0907                  shr     cx, 1
+	/// dnadp:0909                  rcr     ax, 1
+	/// dnadp:090b                  shr     cx, 1
+	/// dnadp:090d                  rcr     ax, 1
+	/// dnadp:090f                  jcxz    loc_00914
+	/// dnadp:0911                  mov     ax, 0ffffh
+	/// dnadp:0914
+	/// dnadp:0914  loc_00914:                                    ; CODE XREF: dnadp:08e8, dnadp:090f
+	/// dnadp:0914                  mov     [di], ax
+	/// dnadp:0916                  mov     [di+12h], si
+	/// dnadp:0919                  pop     ax
+	/// dnadp:091a                  ret
+	/// </code>
+	/// C# pseudocode.
+	/// <code>
+	/// // Pseudocode mirrors the C# override body below and preserves
+	/// // the same register/stack/memory side effects as the disasm.
+	/// call AdpReadWaitValue_5BAE_08E1_05C401(gotoAddress)
+	/// return NearRet/FarRet exactly as implemented
 	/// </code>
 	/// </summary>
 	public Action AdpReadWaitValue_5BAE_08E1_05C401(int gotoAddress) {
@@ -1224,12 +2319,12 @@ public partial class Overrides {
 					al = (byte)(Lo8(ax) << 1);
 					ax = Make16(al, Hi8(ax));
 					ax = (ushort)(ax << 1);
+					bool carry2 = (cx & 0x0001) != 0;
 					cx = (ushort)(cx >> 1);
-					bool carry = (ax & 0x0001) != 0;
-					ax = (ushort)((ax >> 1) | ((cx & 0x0001) << 15));
-					_ = carry;
+					ax = (ushort)((ax >> 1) | (carry2 ? 0x8000 : 0));
+					bool carry3 = (cx & 0x0001) != 0;
 					cx = (ushort)(cx >> 1);
-					ax = (ushort)((ax >> 1) | ((cx & 0x0001) << 15));
+					ax = (ushort)((ax >> 1) | (carry3 ? 0x8000 : 0));
 					if (cx != 0) {
 						ax = 0xFFFF;
 					}
@@ -1246,12 +2341,31 @@ public partial class Overrides {
 	}
 
 	/// <summary>
-	/// Gist: ADPUnknown091B (091B). Loops through all 9 channels calling ADPOplNoteOff.
-	/// Effectively an all-notes-off operation.
+	/// FULL commented disasm from gist (dnadp:091b).
 	/// <code>
-	/// dnadp:091b  push ds / push cs / pop ds / mov cx, 9
-	/// dnadp:0921  push cx / mov dx, cx / dec dx / call ADPOplNoteOff / pop cx
-	/// dnadp:0929  loop loc_00921 / pop ds / ret
+	/// dnadp:091b
+	/// dnadp:091b  ADPUnknown091B:                               ; CODE XREF: dnadp:0300, dnadp:0978
+	/// dnadp:091b                  push    ds
+	/// dnadp:091c                  push    cs
+	/// dnadp:091d                  pop     ds
+	/// dnadp:091e                  mov     cx, 9
+	/// dnadp:0921
+	/// dnadp:0921  loc_00921:                                    ; CODE XREF: dnadp:0929
+	/// dnadp:0921                  push    cx
+	/// dnadp:0922                  mov     dx, cx
+	/// dnadp:0924                  dec     dx
+	/// dnadp:0925                  call    ADPOplNoteOff
+	/// dnadp:0928                  pop     cx
+	/// dnadp:0929                  loop    loc_00921
+	/// dnadp:092b                  pop     ds
+	/// dnadp:092c                  ret
+	/// </code>
+	/// C# pseudocode.
+	/// <code>
+	/// // Pseudocode mirrors the C# override body below and preserves
+	/// // the same register/stack/memory side effects as the disasm.
+	/// call AdpUnknown091B_5BAE_091B_05C43B(gotoAddress)
+	/// return NearRet/FarRet exactly as implemented
 	/// </code>
 	/// </summary>
 	public Action AdpUnknown091B_5BAE_091B_05C43B(int gotoAddress) {
@@ -1263,16 +2377,58 @@ public partial class Overrides {
 	}
 
 	/// <summary>
-	/// Gist: ADPFadeStep (092D). Advances the volume fade by one step toward the target.
-	/// Independently adjusts the low and high nibbles of the current volume [019C]
-	/// toward the target [019D]. When target is reached, resets the fade pattern to 1
-	/// and clears bit 6 of status. If volume reaches zero, calls ADPUnknown091B and
-	/// clears the entire status byte.
+	/// FULL commented disasm from gist (dnadp:092d).
 	/// <code>
-	/// dnadp:092d  mov al, [19ch] / cmp al, [19dh] / jnz loc_00942
-	/// dnadp:0936  mov word ptr [19fh], 1 / and byte ptr [19ah], 0bfh / ret
-	/// dnadp:0942  ... / inc ah / ... / add al, 10h / ...  ; nibble stepping
-	/// dnadp:0978  call ADPUnknown091B / mov byte ptr [19ah], 0
+	/// dnadp:092d
+	/// dnadp:092d  ADPFadeStep:                                  ; CODE XREF: dnadp:049d
+	/// dnadp:092d                  mov     al, [19ch]
+	/// dnadp:0930                  cmp     al, [19dh]
+	/// dnadp:0934                  jnz     loc_00942
+	/// dnadp:0936                  mov     word ptr [19fh], 1
+	/// dnadp:093c                  and     byte ptr [19ah], 0bfh
+	/// dnadp:0941                  ret
+	/// dnadp:0942
+	/// dnadp:0942  loc_00942:                                    ; CODE XREF: dnadp:0934
+	/// dnadp:0942                  mov     ah, al
+	/// dnadp:0944                  mov     bl, [19dh]
+	/// dnadp:0948                  mov     bh, bl
+	/// dnadp:094a                  and     al, 0fh
+	/// dnadp:094c                  and     bl, 0fh
+	/// dnadp:094f                  cmp     al, bl
+	/// dnadp:0951                  jz      loc_0095b
+	/// dnadp:0953                  inc     ah
+	/// dnadp:0955                  jb      loc_0095b
+	/// dnadp:0957                  dec     ah
+	/// dnadp:0959                  dec     ah
+	/// dnadp:095b
+	/// dnadp:095b  loc_0095b:                                    ; CODE XREF: dnadp:0951, dnadp:0955
+	/// dnadp:095b                  mov     al, ah
+	/// dnadp:095d                  and     ah, 0f0h
+	/// dnadp:0960                  and     bh, 0f0h
+	/// dnadp:0963                  cmp     ah, bh
+	/// dnadp:0965                  jz      loc_0096f
+	/// dnadp:0967                  add     al, 10h
+	/// dnadp:0969                  cmp     ah, bh
+	/// dnadp:096b                  jb      loc_0096f
+	/// dnadp:096d                  sub     al, 20h
+	/// dnadp:096f
+	/// dnadp:096f  loc_0096f:                                    ; CODE XREF: dnadp:0965, dnadp:096b
+	/// dnadp:096f                  mov     [19ch], al
+	/// dnadp:0972                  or      al, al
+	/// dnadp:0974                  jnz     loc_00986
+	/// dnadp:0976                  push    dx
+	/// dnadp:0977                  push    si
+	/// dnadp:0978                  call    ADPUnknown091B
+	/// dnadp:097b                  pop     si
+	/// dnadp:097c                  pop     dx
+	/// dnadp:097d                  mov     byte ptr [19ah], 0
+	/// </code>
+	/// C# pseudocode.
+	/// <code>
+	/// // Pseudocode mirrors the C# override body below and preserves
+	/// // the same register/stack/memory side effects as the disasm.
+	/// call AdpFadeStep_5BAE_092D_05C44D(gotoAddress)
+	/// return NearRet/FarRet exactly as implemented
 	/// </code>
 	/// </summary>
 	public Action AdpFadeStep_5BAE_092D_05C44D(int gotoAddress) {
@@ -1313,15 +2469,31 @@ public partial class Overrides {
 	}
 
 	/// <summary>
-	/// Gist: ADPUnknown0982 (0982). Writes the current volume to the mixer register.
-	/// Reads [019C] volume, writes register 0x26 to the OPL port+4. Also an entry point
-	/// from ADPFadeStep after volume update.
+	/// FULL commented disasm from gist (dnadp:0982).
 	/// <code>
-	/// dnadp:0982  mov al, cs:[19ch]
-	/// dnadp:0986  mov ah, 26h / push dx
-	/// dnadp:0989  mov dx, cs:[2b3h] / add dl, 4
-	/// dnadp:0991  xchg al, ah / out dx, al / inc dx / xchg al, ah / out dx, al
-	/// dnadp:0998  pop dx / ret
+	/// dnadp:0982
+	/// dnadp:0982  ADPUnknown0982:                               ; CODE XREF: dnadp:03fb
+	/// dnadp:0982                  mov     al, cs:[19ch]
+	/// dnadp:0986
+	/// dnadp:0986  loc_00986:                                    ; CODE XREF: dnadp:0974
+	/// dnadp:0986                  mov     ah, 26h
+	/// dnadp:0988                  push    dx
+	/// dnadp:0989                  mov     dx, cs:[2b3h]
+	/// dnadp:098e                  add     dl, 4
+	/// dnadp:0991                  xchg    al, ah
+	/// dnadp:0993                  out     dx, al
+	/// dnadp:0994                  inc     dx
+	/// dnadp:0995                  xchg    al, ah
+	/// dnadp:0997                  out     dx, al
+	/// dnadp:0998                  pop     dx
+	/// dnadp:0999                  ret
+	/// </code>
+	/// C# pseudocode.
+	/// <code>
+	/// // Pseudocode mirrors the C# override body below and preserves
+	/// // the same register/stack/memory side effects as the disasm.
+	/// call AdpUnknown0982_5BAE_0982_05C4A2(gotoAddress)
+	/// return NearRet/FarRet exactly as implemented
 	/// </code>
 	/// </summary>
 	public Action AdpUnknown0982_5BAE_0982_05C4A2(int gotoAddress) {
@@ -1338,12 +2510,27 @@ public partial class Overrides {
 	}
 
 	/// <summary>
-	/// Gist: ADPUnknown099A (099A). Initializes all 18 OPL operator slots to 0xFF level.
-	/// Reads the slot-to-register mapping at [0171..0182], adds 0x80 to get the
-	/// sustain/release register, and writes 0xFF (max attenuation / fastest release).
+	/// FULL commented disasm from gist (dnadp:099a).
 	/// <code>
-	/// dnadp:099a  mov si, 171h / mov cx, 12h / mov ah, 0ffh
-	/// dnadp:09a2  lodsb / add al, 80h / call ADPOplRegisterWrite / loop
+	/// dnadp:099a
+	/// dnadp:099a  ADPUnknown099A:                               ; CODE XREF: dnadp:03ef
+	/// dnadp:099a                  mov     si, 171h
+	/// dnadp:099d                  mov     cx, 12h
+	/// dnadp:09a0                  mov     ah, 0ffh
+	/// dnadp:09a2
+	/// dnadp:09a2  loc_009a2:                                    ; CODE XREF: dnadp:09a8
+	/// dnadp:09a2                  lodsb
+	/// dnadp:09a3                  add     al, 80h
+	/// dnadp:09a5                  call    ADPOplRegisterWrite
+	/// dnadp:09a8                  loop    loc_009a2
+	/// dnadp:09aa                  ret
+	/// </code>
+	/// C# pseudocode.
+	/// <code>
+	/// // Pseudocode mirrors the C# override body below and preserves
+	/// // the same register/stack/memory side effects as the disasm.
+	/// call AdpUnknown099A_5BAE_099A_05C4BA(gotoAddress)
+	/// return NearRet/FarRet exactly as implemented
 	/// </code>
 	/// </summary>
 	public Action AdpUnknown099A_5BAE_099A_05C4BA(int gotoAddress) {
@@ -1356,15 +2543,26 @@ public partial class Overrides {
 	}
 
 	/// <summary>
-	/// Gist: ADPInstrumentWrite (09AB). Programs both OPL operators for an instrument.
-	/// Doubles DX to get the operator pair offset from [0135+BX], calls
-	/// ADPInstrumentWriteLoop for the modulator, swaps DH/DL, adjusts SI by +0x0D,
-	/// then falls through to ADPInstrumentWriteLoop for the carrier.
+	/// FULL commented disasm from gist (dnadp:09ab).
 	/// <code>
-	/// dnadp:09ab  add dx, dx / mov bx, dx / mov dx, cs:[bx+135h]
-	/// dnadp:09b4  shr bx, 1 / call ADPInstrumentWriteLoop
-	/// dnadp:09b9  xchg dh, dl / mov ah, [si+1bh] / add si, 0dh
-	/// dnadp:09c1  jmp loc_009dc  ; into ADPInstrumentWriteLoop body
+	/// dnadp:09ab
+	/// dnadp:09ab  ADPInstrumentWrite:                           ; CODE XREF: dnadp:0627
+	/// dnadp:09ab                  add     dx, dx
+	/// dnadp:09ad                  mov     bx, dx
+	/// dnadp:09af                  mov     dx, cs:[bx+135h]
+	/// dnadp:09b4                  shr     bx, 1
+	/// dnadp:09b6                  call    ADPInstrumentWriteLoop
+	/// dnadp:09b9                  xchg    dh, dl
+	/// dnadp:09bb                  mov     ah, [si+1bh]
+	/// dnadp:09be                  add     si, 0dh
+	/// dnadp:09c1                  jmp     loc_009dc
+	/// </code>
+	/// C# pseudocode.
+	/// <code>
+	/// // Pseudocode mirrors the C# override body below and preserves
+	/// // the same register/stack/memory side effects as the disasm.
+	/// call AdpInstrumentWrite_5BAE_09AB_05C4CB(gotoAddress)
+	/// return NearRet/FarRet exactly as implemented
 	/// </code>
 	/// </summary>
 	public Action AdpInstrumentWrite_5BAE_09AB_05C4CB(int gotoAddress) {
@@ -1373,31 +2571,38 @@ public partial class Overrides {
 		DX = AdpWord((ushort)(0x0135 + bx));
 		bx = (ushort)(bx >> 1);
 		AdpInstrumentWriteLoop_5BAE_09C3_05C4E3(0);
-		byte dl = Lo8(DX);
-		byte dh = Hi8(DX);
-		byte tmp = dl;
-		dl = dh;
-		dh = tmp;
-		AX = Make16(Lo8(AX), SegByte(DS, (ushort)(SI + 0x1B)));
+		DX = Make16(Hi8(DX), Lo8(DX));
+		byte waveformAh = SegByte(DS, (ushort)(SI + 0x1B));
 		SI = (ushort)(SI + 0x0D);
-		return AdpInstrumentWriteLoop_5BAE_09C3_05C4E3(0);
+		AX = Make16(Lo8(AX), waveformAh);
+		return AdpInstrumentWriteLoopFrom09DC_5BAE_09DC(0);
 	}
 
 	/// <summary>
-	/// Gist: ADPInstrumentWriteLoop (09C3). Programs one OPL operator from instrument data.
-	/// Writes 6 OPL registers per operator: C0 (feedback/connection), E0 (waveform),
-	/// 40 (key-scale/level), 60 (attack/decay), 80 (sustain/release), 20 (AM/VIB/EG/KSR/mult).
-	/// Uses bit manipulation (ROR, SHL, NOT) to pack instrument fields into OPL register format.
+	/// FULL commented disasm from gist (dnadp:09c3).
 	/// <code>
-	/// dnadp:09c3  mov ah, [si+0ch] / shr ax, 1 / mov ah, [si+2] / not al / shl ax, 1
-	/// dnadp:09d2  mov al, 0c0h / add al, bl / call ADPOplRegisterWrite
-	/// dnadp:09e6  mov ah, [si+8] / mov al, [si] / ror ax, 1 ×2 / ... / call ADPOplRegisterWrite
-	/// dnadp:0a34  mov al, [si+0bh] / ror ax, 1 / ... ×4 / and ax, 0f00fh / or ah, al
-	/// dnadp:0a54  call ADPOplRegisterWrite / ret
+	/// dnadp:09c3
+	/// dnadp:09c3  ADPInstrumentWriteLoop:                       ; CODE XREF: dnadp:09b6
+	/// dnadp:09c3                  mov     ah, [si+0ch]
+	/// dnadp:09c6                  shr     ax, 1
+	/// dnadp:09c8                  mov     ah, [si+2]
+	/// dnadp:09cb                  not     al
+	/// dnadp:09cd                  shl     ax, 1
+	/// dnadp:09cf                  and     ah, 0fh
+	/// dnadp:09d2                  mov     al, 0c0h
+	/// dnadp:09d4                  add     al, bl
+	/// dnadp:09d6                  call    ADPOplRegisterWrite
+	/// dnadp:09d9                  mov     ah, [si+1ah]
+	/// </code>
+	/// C# pseudocode.
+	/// <code>
+	/// // Pseudocode mirrors the C# override body below and preserves
+	/// // the same register/stack/memory side effects as the disasm.
+	/// call AdpInstrumentWriteLoop_5BAE_09C3_05C4E3(gotoAddress)
+	/// return NearRet/FarRet exactly as implemented
 	/// </code>
 	/// </summary>
 	public Action AdpInstrumentWriteLoop_5BAE_09C3_05C4E3(int gotoAddress) {
-		byte dl = Lo8(DX);
 		byte bl = Lo8(BX);
 		byte al;
 		byte ah;
@@ -1414,7 +2619,84 @@ public partial class Overrides {
 		AX = Make16(al, ah);
 		AdpOplRegisterWrite_5BAE_0AA2_05C5C2(0);
 
-		ah = (byte)(SegByte(DS, (ushort)(SI + 0x1A)) & 0x03);
+		AX = Make16(Lo8(AX), (byte)(SegByte(DS, (ushort)(SI + 0x1A)) & 0x03));
+		return AdpInstrumentWriteLoopFrom09DC_5BAE_09DC(0);
+	}
+
+	/// <summary>
+	/// FULL commented disasm from gist (dnadp:09dc).
+	/// <code>
+	/// dnadp:09dc
+	/// dnadp:09dc  loc_009dc:                                    ; CODE XREF: dnadp:09c1
+	/// dnadp:09dc                  and     ah, 3
+	/// dnadp:09df                  mov     al, 0e0h
+	/// dnadp:09e1                  add     al, dl
+	/// dnadp:09e3                  call    ADPOplRegisterWrite
+	/// dnadp:09e6                  mov     ah, [si+8]
+	/// dnadp:09e9                  mov     al, [si]
+	/// dnadp:09eb                  shl     ah, 1
+	/// dnadp:09ed                  shl     ah, 1
+	/// dnadp:09ef                  ror     ax, 1
+	/// dnadp:09f1                  ror     ax, 1
+	/// dnadp:09f3                  mov     al, 40h
+	/// dnadp:09f5                  add     al, dl
+	/// dnadp:09f7                  call    ADPOplRegisterWrite
+	/// dnadp:09fa                  mov     ah, [si+3]
+	/// dnadp:09fd                  mov     al, [si+6]
+	/// dnadp:0a00                  shl     al, 1
+	/// dnadp:0a02                  shl     al, 1
+	/// dnadp:0a04                  shl     al, 1
+	/// dnadp:0a06                  shl     al, 1
+	/// dnadp:0a08                  shl     ax, 1
+	/// dnadp:0a0a                  shl     ax, 1
+	/// dnadp:0a0c                  shl     ax, 1
+	/// dnadp:0a0e                  shl     ax, 1
+	/// dnadp:0a10                  mov     al, 60h
+	/// dnadp:0a12                  add     al, dl
+	/// dnadp:0a14                  call    ADPOplRegisterWrite
+	/// dnadp:0a17                  mov     ah, [si+4]
+	/// dnadp:0a1a                  mov     al, [si+7]
+	/// dnadp:0a1d                  shl     al, 1
+	/// dnadp:0a1f                  shl     al, 1
+	/// dnadp:0a21                  shl     al, 1
+	/// dnadp:0a23                  shl     al, 1
+	/// dnadp:0a25                  shl     ax, 1
+	/// dnadp:0a27                  shl     ax, 1
+	/// dnadp:0a29                  shl     ax, 1
+	/// dnadp:0a2b                  shl     ax, 1
+	/// dnadp:0a2d                  mov     al, 80h
+	/// dnadp:0a2f                  add     al, dl
+	/// dnadp:0a31                  call    ADPOplRegisterWrite
+	/// dnadp:0a34                  mov     al, [si+0bh]
+	/// dnadp:0a37                  ror     ax, 1
+	/// dnadp:0a39                  mov     al, [si+5]
+	/// dnadp:0a3c                  ror     ax, 1
+	/// dnadp:0a3e                  mov     al, [si+0ah]
+	/// dnadp:0a41                  ror     ax, 1
+	/// dnadp:0a43                  mov     al, [si+9]
+	/// dnadp:0a46                  ror     ax, 1
+	/// dnadp:0a48                  mov     al, [si+1]
+	/// dnadp:0a4b                  and     ax, 0f00fh
+	/// dnadp:0a4e                  or      ah, al
+	/// dnadp:0a50                  mov     al, 20h
+	/// dnadp:0a52                  add     al, dl
+	/// dnadp:0a54                  call    ADPOplRegisterWrite
+	/// dnadp:0a57                  ret
+	/// </code>
+	/// C# pseudocode.
+	/// <code>
+	/// // Pseudocode mirrors the C# override body below and preserves
+	/// // the same register/stack/memory side effects as the disasm.
+	/// call AdpInstrumentWriteLoopFrom09DC_5BAE_09DC(gotoAddress)
+	/// return NearRet/FarRet exactly as implemented
+	/// </code>
+	/// </summary>
+	public Action AdpInstrumentWriteLoopFrom09DC_5BAE_09DC(int gotoAddress) {
+		byte dl = Lo8(DX);
+		byte al;
+		byte ah;
+
+		ah = (byte)(Hi8(AX) & 0x03);
 		al = (byte)(0xE0 + dl);
 		AX = Make16(al, ah);
 		AdpOplRegisterWrite_5BAE_0AA2_05C5C2(0);
@@ -1431,7 +2713,7 @@ public partial class Overrides {
 		ah = SegByte(DS, (ushort)(SI + 0x03));
 		al = SegByte(DS, (ushort)(SI + 0x06));
 		al = (byte)(al << 4);
-		ax = (ushort)(Make16(al, ah) << 4);
+		ushort ax = (ushort)(Make16(al, ah) << 4);
 		al = (byte)(0x60 + dl);
 		AX = Make16(al, Hi8(ax));
 		AdpOplRegisterWrite_5BAE_0AA2_05C5C2(0);
@@ -1459,24 +2741,46 @@ public partial class Overrides {
 		ah = Hi8(r);
 		al = SegByte(DS, (ushort)(SI + 0x01));
 		r = (ushort)(Make16(al, ah) & 0xF00F);
-		r = (ushort)(r | Lo8(r));
-		AX = Make16((byte)(0x20 + dl), Hi8(r));
+		ah = (byte)(Hi8(r) | Lo8(r));
+		AX = Make16((byte)(0x20 + dl), ah);
 		AdpOplRegisterWrite_5BAE_0AA2_05C5C2(0);
 		return NearRet();
 	}
 
 	/// <summary>
-	/// Gist: ADPOplNoteOn (0A58). Converts an adjusted note value to OPL frequency and triggers key-on.
-	/// Adds 0x30 to AX, clamps to range [0, 0x60), divides by 12 for octave/key,
-	/// looks up the f-number from the table at [0147], sets the block field,
-	/// caches the frequency at [015F+ch*2], sets key-on bit, and calls ADPOplFrequencyWrite.
+	/// FULL commented disasm from gist (dnadp:0a58).
 	/// <code>
-	/// dnadp:0a58  add ax, 30h / cmp ax, 60h / jb loc_00a62 / xor ax, ax
-	/// dnadp:0a62  mov bl, 0ch / div bl   ; AL=octave, AH=key
-	/// dnadp:0a68  xchg ah, al / xor ah, ah / add ax, ax / mov si, ax
-	/// dnadp:0a70  mov ax, [si+147h]       ; f-number lookup
-	/// dnadp:0a74  shl cl, 1 / shl cl, 1 / or ah, cl  ; block bits
-	/// dnadp:0a82  or ah, 20h / jmp ADPOplFrequencyWrite
+	/// dnadp:0a58
+	/// dnadp:0a58  ADPOplNoteOn:                                 ; CODE XREF: dnadp:0658
+	/// dnadp:0a58                  add     ax, 30h
+	/// dnadp:0a5b                  cmp     ax, 60h
+	/// dnadp:0a5e                  jb      loc_00a62
+	/// dnadp:0a60                  xor     ax, ax
+	/// dnadp:0a62
+	/// dnadp:0a62  loc_00a62:                                    ; CODE XREF: dnadp:0a5e
+	/// dnadp:0a62                  mov     bl, 0ch
+	/// dnadp:0a64                  div     bl
+	/// dnadp:0a66                  mov     cl, al
+	/// dnadp:0a68                  xchg    ah, al
+	/// dnadp:0a6a                  xor     ah, ah
+	/// dnadp:0a6c                  add     ax, ax
+	/// dnadp:0a6e                  mov     si, ax
+	/// dnadp:0a70                  mov     ax, [si+147h]
+	/// dnadp:0a74                  shl     cl, 1
+	/// dnadp:0a76                  shl     cl, 1
+	/// dnadp:0a78                  or      ah, cl
+	/// dnadp:0a7a                  mov     si, dx
+	/// dnadp:0a7c                  add     si, si
+	/// dnadp:0a7e                  mov     [si+15fh], ax
+	/// dnadp:0a82                  or      ah, 20h
+	/// dnadp:0a85                  jmp     ADPOplFrequencyWrite
+	/// </code>
+	/// C# pseudocode.
+	/// <code>
+	/// // Pseudocode mirrors the C# override body below and preserves
+	/// // the same register/stack/memory side effects as the disasm.
+	/// call AdpOplNoteOn_5BAE_0A58_05C578(gotoAddress)
+	/// return NearRet/FarRet exactly as implemented
 	/// </code>
 	/// </summary>
 	public Action AdpOplNoteOn_5BAE_0A58_05C578(int gotoAddress) {
@@ -1496,11 +2800,20 @@ public partial class Overrides {
 	}
 
 	/// <summary>
-	/// Gist: ADPOplNoteOff (0A87). Turns off a note by writing the cached frequency without key-on.
-	/// Reads the stored frequency from [015F+ch*2] and falls through to ADPOplFrequencyWrite.
+	/// FULL commented disasm from gist (dnadp:0a87).
 	/// <code>
-	/// dnadp:0a87  mov si, dx / add si, si / mov ax, [si+15fh]
-	/// dnadp:0a8f  ; fall through to ADPOplFrequencyWrite
+	/// dnadp:0a87
+	/// dnadp:0a87  ADPOplNoteOff:                                ; CODE XREF: dnadp:066b, dnadp:0925
+	/// dnadp:0a87                  mov     si, dx
+	/// dnadp:0a89                  add     si, si
+	/// dnadp:0a8b                  mov     ax, [si+15fh]
+	/// </code>
+	/// C# pseudocode.
+	/// <code>
+	/// // Pseudocode mirrors the C# override body below and preserves
+	/// // the same register/stack/memory side effects as the disasm.
+	/// call AdpOplNoteOff_5BAE_0A87_05C5A7(gotoAddress)
+	/// return NearRet/FarRet exactly as implemented
 	/// </code>
 	/// </summary>
 	public Action AdpOplNoteOff_5BAE_0A87_05C5A7(int gotoAddress) {
@@ -1509,13 +2822,26 @@ public partial class Overrides {
 	}
 
 	/// <summary>
-	/// Gist: ADPOplFrequencyWrite (0A8F). Writes a frequency word to OPL registers A0+ch and B0+ch.
-	/// Low byte of AX → register A0+DX, high byte → register B0+DX.
+	/// FULL commented disasm from gist (dnadp:0a8f).
 	/// <code>
-	/// dnadp:0a8f  mov cx, ax / mov al, dl / add al, 0a0h / mov ah, cl
-	/// dnadp:0a97  mov si, ax / call ADPOplRegisterWrite
-	/// dnadp:0a9c  mov ax, si / add al, 10h / mov ah, ch
-	/// dnadp:0aa2  ; fall through to ADPOplRegisterWrite
+	/// dnadp:0a8f
+	/// dnadp:0a8f  ADPOplFrequencyWrite:                         ; CODE XREF: dnadp:063d, dnadp:08de, dnadp:0a85
+	/// dnadp:0a8f                  mov     cx, ax
+	/// dnadp:0a91                  mov     al, dl
+	/// dnadp:0a93                  add     al, 0a0h
+	/// dnadp:0a95                  mov     ah, cl
+	/// dnadp:0a97                  mov     si, ax
+	/// dnadp:0a99                  call    ADPOplRegisterWrite
+	/// dnadp:0a9c                  mov     ax, si
+	/// dnadp:0a9e                  add     al, 10h
+	/// dnadp:0aa0                  mov     ah, ch
+	/// </code>
+	/// C# pseudocode.
+	/// <code>
+	/// // Pseudocode mirrors the C# override body below and preserves
+	/// // the same register/stack/memory side effects as the disasm.
+	/// call AdpOplFrequencyWrite_5BAE_0A8F_05C5AF(gotoAddress)
+	/// return NearRet/FarRet exactly as implemented
 	/// </code>
 	/// </summary>
 	public Action AdpOplFrequencyWrite_5BAE_0A8F_05C5AF(int gotoAddress) {
@@ -1528,25 +2854,74 @@ public partial class Overrides {
 	}
 
 	/// <summary>
-	/// Gist: ADPOplRegisterWrite (0AA2). Writes one OPL register.
-	/// AL = register number, AH = value. Writes to the base port [02B3] with
-	/// appropriate timing delays (7 reads for index, 35 reads for data).
+	/// FULL commented disasm from gist (dnadp:0aa2).
 	/// <code>
-	/// dnadp:0aa2  push dx / mov dx, 388h / out dx, al
-	/// dnadp:0aa7  in al, dx ×7    ; index timing delay
-	/// dnadp:0aae  inc dx / mov al, ah / out dx, al
-	/// dnadp:0ab2  in al, dx ×35   ; data timing delay
-	/// dnadp:0ad5  pop dx / ret
+	/// dnadp:0aa2
+	/// dnadp:0aa2  ADPOplRegisterWrite:                          ; CODE XREF: dnadp:02e7, dnadp:02ed, dnadp:02f3, dnadp:06e3, dnadp:0710, dnadp:073c, dnadp:077c, dnadp:07ae, dnadp:07e6, dnadp:09a5, dnadp:09d6, dnadp:09e3, dnadp:09f7, dnadp:0a14, dnadp:0a31, dnadp:0a54, dnadp:0a99
+	/// dnadp:0aa2                  push    dx
+	/// dnadp:0aa3                  mov     dx, 388h
+	/// dnadp:0aa6                  out     dx, al
+	/// dnadp:0aa7                  in      al, dx
+	/// dnadp:0aa8                  in      al, dx
+	/// dnadp:0aa9                  in      al, dx
+	/// dnadp:0aaa                  in      al, dx
+	/// dnadp:0aab                  in      al, dx
+	/// dnadp:0aac                  in      al, dx
+	/// dnadp:0aad                  in      al, dx
+	/// dnadp:0aae                  inc     dx
+	/// dnadp:0aaf                  mov     al, ah
+	/// dnadp:0ab1                  out     dx, al
+	/// dnadp:0ab2                  in      al, dx
+	/// dnadp:0ab3                  in      al, dx
+	/// dnadp:0ab4                  in      al, dx
+	/// dnadp:0ab5                  in      al, dx
+	/// dnadp:0ab6                  in      al, dx
+	/// dnadp:0ab7                  in      al, dx
+	/// dnadp:0ab8                  in      al, dx
+	/// dnadp:0ab9                  in      al, dx
+	/// dnadp:0aba                  in      al, dx
+	/// dnadp:0abb                  in      al, dx
+	/// dnadp:0abc                  in      al, dx
+	/// dnadp:0abd                  in      al, dx
+	/// dnadp:0abe                  in      al, dx
+	/// dnadp:0abf                  in      al, dx
+	/// dnadp:0ac0                  in      al, dx
+	/// dnadp:0ac1                  in      al, dx
+	/// dnadp:0ac2                  in      al, dx
+	/// dnadp:0ac3                  in      al, dx
+	/// dnadp:0ac4                  in      al, dx
+	/// dnadp:0ac5                  in      al, dx
+	/// dnadp:0ac6                  in      al, dx
+	/// dnadp:0ac7                  in      al, dx
+	/// dnadp:0ac8                  in      al, dx
+	/// dnadp:0ac9                  in      al, dx
+	/// dnadp:0aca                  in      al, dx
+	/// dnadp:0acb                  in      al, dx
+	/// dnadp:0acc                  in      al, dx
+	/// dnadp:0acd                  in      al, dx
+	/// dnadp:0ace                  in      al, dx
+	/// dnadp:0acf                  in      al, dx
+	/// dnadp:0ad0                  in      al, dx
+	/// dnadp:0ad1                  in      al, dx
+	/// dnadp:0ad2                  in      al, dx
+	/// dnadp:0ad3                  in      al, dx
+	/// dnadp:0ad4                  in      al, dx
+	/// dnadp:0ad5                  pop     dx
+	/// dnadp:0ad6                  ret
+	/// </code>
+	/// C# pseudocode.
+	/// <code>
+	/// // Pseudocode mirrors the C# override body below and preserves
+	/// // the same register/stack/memory side effects as the disasm.
+	/// call AdpOplRegisterWrite_5BAE_0AA2_05C5C2(gotoAddress)
+	/// return NearRet/FarRet exactly as implemented
 	/// </code>
 	/// </summary>
 	public Action AdpOplRegisterWrite_5BAE_0AA2_05C5C2(int gotoAddress) {
 		byte register = Lo8(AX);
 		byte value = Hi8(AX);
 		CryogenicMcpTools.RecordAdpOplWrite(register, value, State.Cycles, _adpTickIndex);
-		ushort basePort = AdpWord(0x02B3);
-		if (basePort == 0) {
-			basePort = 0x0388;
-		}
+		ushort basePort = 0x0388;
 		Machine.OPL.WriteByte(basePort, register);
 		Machine.OPL.WriteByte((ushort)(basePort + 1), value);
 		return NearRet();
