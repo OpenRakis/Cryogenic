@@ -1000,8 +1000,8 @@ public partial class Overrides {
 			port = 0x0388;
 		}
 		port = (ushort)(port + 4);
-		Machine.IoPortDispatcher.WriteByte(port, 0x26);
-		Machine.IoPortDispatcher.WriteByte((ushort)(port + 1), volume);
+		Machine.OPL.WriteByte(port, 0x26);
+		Machine.OPL.WriteByte((ushort)(port + 1), volume);
 		AX = Make16(volume, Hi8(AX));
 		return NearRet();
 	}
@@ -1138,15 +1138,8 @@ public partial class Overrides {
 		if (basePort == 0) {
 			basePort = 0x0388;
 		}
-		Machine.IoPortDispatcher.WriteByte(basePort, register);
-		for (int i = 0; i < 7; i++) {
-			_ = Machine.IoPortDispatcher.ReadByte(basePort);
-		}
-		ushort dataPort = (ushort)(basePort + 1);
-		Machine.IoPortDispatcher.WriteByte(dataPort, value);
-		for (int i = 0; i < 35; i++) {
-			_ = Machine.IoPortDispatcher.ReadByte(dataPort);
-		}
+		Machine.OPL.WriteByte(basePort, register);
+		Machine.OPL.WriteByte((ushort)(basePort + 1), value);
 		return NearRet();
 	}
 }
