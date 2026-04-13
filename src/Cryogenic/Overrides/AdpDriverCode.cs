@@ -2422,23 +2422,23 @@ public partial class Overrides {
 		AX = Make16(al, Hi8(ax));
 		AdpOplRegisterWrite_5BAE_0AA2_05C5C2(0);
 
-		ah = SegByte(DS, (ushort)(SI + 0x0B));
+		ushort axState = AX;
+		al = SegByte(DS, (ushort)(SI + 0x0B));
+		axState = Make16(al, Hi8(axState));
+		axState = (ushort)((axState >> 1) | (axState << 15));
 		al = SegByte(DS, (ushort)(SI + 0x05));
-		ushort r = Make16(al, ah);
-		r = (ushort)((r >> 1) | (r << 15));
-		ah = Hi8(r);
+		axState = Make16(al, Hi8(axState));
+		axState = (ushort)((axState >> 1) | (axState << 15));
 		al = SegByte(DS, (ushort)(SI + 0x0A));
-		r = Make16(al, ah);
-		r = (ushort)((r >> 1) | (r << 15));
-		ah = Hi8(r);
+		axState = Make16(al, Hi8(axState));
+		axState = (ushort)((axState >> 1) | (axState << 15));
 		al = SegByte(DS, (ushort)(SI + 0x09));
-		r = Make16(al, ah);
-		r = (ushort)((r >> 1) | (r << 15));
-		ah = Hi8(r);
+		axState = Make16(al, Hi8(axState));
+		axState = (ushort)((axState >> 1) | (axState << 15));
 		al = SegByte(DS, (ushort)(SI + 0x01));
-		r = (ushort)(Make16(al, ah) & 0xF00F);
-		ah = (byte)(Hi8(r) | Lo8(r));
-		AX = Make16((byte)(0x20 + dl), ah);
+		axState = Make16(al, Hi8(axState));
+		axState = (ushort)(axState & 0xF00F);
+		AX = Make16((byte)(0x20 + dl), (byte)(Hi8(axState) | Lo8(axState)));
 		AdpOplRegisterWrite_5BAE_0AA2_05C5C2(0);
 		return NearRet();
 	}
