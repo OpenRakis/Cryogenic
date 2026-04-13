@@ -152,13 +152,6 @@ public partial class Overrides {
 	/// dnadp:0100  ADPInit_entry:
 	/// dnadp:0100                  jmp     ADPInit
 	/// </code>
-	/// C# pseudocode.
-	/// <code>
-	/// // Pseudocode mirrors the C# override body below and preserves
-	/// // the same register/stack/memory side effects as the disasm.
-	/// call AdpInit_5BAE_0100_05BBE0(gotoAddress)
-	/// return NearRet/FarRet exactly as implemented
-	/// </code>
 	/// </summary>
 	public Action AdpInit_5BAE_0100_05BBE0(int gotoAddress) {
 		CryogenicMcpTools.RecordAdpCall("5BAE:0100_Init");
@@ -171,13 +164,6 @@ public partial class Overrides {
 	/// dnadp:0103
 	/// dnadp:0103  ADPOpen_entry:
 	/// dnadp:0103                  jmp     ADPOpen
-	/// </code>
-	/// C# pseudocode.
-	/// <code>
-	/// // Pseudocode mirrors the C# override body below and preserves
-	/// // the same register/stack/memory side effects as the disasm.
-	/// call AdpOpen_5BAE_0103_05BBE3(gotoAddress)
-	/// return NearRet/FarRet exactly as implemented
 	/// </code>
 	/// </summary>
 	public Action AdpOpen_5BAE_0103_05BBE3(int gotoAddress) {
@@ -193,13 +179,6 @@ public partial class Overrides {
 	/// dnadp:0106  ADPReset_entry:
 	/// dnadp:0106                  jmp     ADPReset
 	/// </code>
-	/// C# pseudocode.
-	/// <code>
-	/// // Pseudocode mirrors the C# override body below and preserves
-	/// // the same register/stack/memory side effects as the disasm.
-	/// call AdpReset_5BAE_0106_05BBE6(gotoAddress)
-	/// return NearRet/FarRet exactly as implemented
-	/// </code>
 	/// </summary>
 	public Action AdpReset_5BAE_0106_05BBE6(int gotoAddress) {
 		CryogenicMcpTools.RecordAdpCall("5BAE:0106_Reset");
@@ -212,13 +191,6 @@ public partial class Overrides {
 	/// dnadp:0109
 	/// dnadp:0109  ADPSetTickEnabled_entry:
 	/// dnadp:0109                  jmp     ADPSetTimerTickFlag
-	/// </code>
-	/// C# pseudocode.
-	/// <code>
-	/// // Pseudocode mirrors the C# override body below and preserves
-	/// // the same register/stack/memory side effects as the disasm.
-	/// call AdpSetTickEnabled_5BAE_0109_05BBE9(gotoAddress)
-	/// return NearRet/FarRet exactly as implemented
 	/// </code>
 	/// </summary>
 	public Action AdpSetTickEnabled_5BAE_0109_05BBE9(int gotoAddress) {
@@ -233,13 +205,6 @@ public partial class Overrides {
 	/// dnadp:010c  ADPSetDynamics_entry:
 	/// dnadp:010c                  jmp     ADPSetDynamicsCurve
 	/// </code>
-	/// C# pseudocode.
-	/// <code>
-	/// // Pseudocode mirrors the C# override body below and preserves
-	/// // the same register/stack/memory side effects as the disasm.
-	/// call AdpSetDynamics_5BAE_010C_05BBEC(gotoAddress)
-	/// return NearRet/FarRet exactly as implemented
-	/// </code>
 	/// </summary>
 	public Action AdpSetDynamics_5BAE_010C_05BBEC(int gotoAddress) {
 		CryogenicMcpTools.RecordAdpCall("5BAE:010C_SetDynamics");
@@ -252,13 +217,6 @@ public partial class Overrides {
 	/// dnadp:010f
 	/// dnadp:010f  ADPTick_entry:
 	/// dnadp:010f                  jmp     ADPTickHandler
-	/// </code>
-	/// C# pseudocode.
-	/// <code>
-	/// // Pseudocode mirrors the C# override body below and preserves
-	/// // the same register/stack/memory side effects as the disasm.
-	/// call AdpTick_5BAE_010F_05BBEF(gotoAddress)
-	/// return NearRet/FarRet exactly as implemented
 	/// </code>
 	/// </summary>
 	public Action AdpTick_5BAE_010F_05BBEF(int gotoAddress) {
@@ -273,22 +231,6 @@ public partial class Overrides {
 	/// dnadp:0112  ADPSetVolume_entry:
 	/// dnadp:0112                  jmp     ADPSetVolume
 	/// dnadp:0115
-	/// dnadp:0115                  db 00h
-	/// dnadp:0116                  db 00h
-	/// dnadp:0117                  db 00h
-	/// dnadp:0118                  db 00h
-	/// dnadp:0119                  db 00h
-	/// dnadp:011a                  db 00h
-	/// dnadp:011b                  db 00h
-	/// dnadp:011c                  db 00h
-	/// dnadp:011d                  db 00h
-	/// dnadp:011e                  db 00h
-	/// dnadp:011f                  db 00h
-	/// dnadp:0120                  db 00h
-	/// dnadp:0121                  db 00h
-	/// dnadp:0122                  db 00h
-	/// dnadp:0123                  db 00h
-	/// dnadp:0124                  db 00h
 	/// dnadp:0125  data_00125      dw ADP_OP_NoteOff
 	/// dnadp:0127                  dw ADP_OP_NoteOn
 	/// dnadp:0129                  dw ADPReadWaitValue
@@ -297,127 +239,6 @@ public partial class Overrides {
 	/// dnadp:012f                  dw ADP_OP_VolumeModulation
 	/// dnadp:0131                  dw ADP_OP_PitchBend
 	/// dnadp:0133                  dw ADP_OP_EndOfTrack
-	/// dnadp:0135                  db 00h
-	/// dnadp:0136                  db 03h
-	/// dnadp:0137                  db 01h
-	/// dnadp:0138                  db 04h
-	/// dnadp:0139                  db 02h
-	/// dnadp:013a                  db 05h
-	/// dnadp:013b                  db 08h
-	/// dnadp:013c                  db 0bh
-	/// dnadp:013d                  db 09h
-	/// dnadp:013e                  db 0ch
-	/// dnadp:013f                  db 0ah
-	/// dnadp:0140                  db 0dh
-	/// dnadp:0141                  db 10h
-	/// dnadp:0142                  db 13h
-	/// dnadp:0143                  db 11h
-	/// dnadp:0144                  db 14h
-	/// dnadp:0145                  db 12h
-	/// dnadp:0146                  db 15h
-	/// dnadp:0147                  db 57h
-	/// dnadp:0148                  db 01h
-	/// dnadp:0149                  db 6ch
-	/// dnadp:014a                  db 01h
-	/// dnadp:014b                  db 81h
-	/// dnadp:014c                  db 01h
-	/// dnadp:014d                  db 98h
-	/// dnadp:014e                  db 01h
-	/// dnadp:014f                  db b1h
-	/// dnadp:0150                  db 01h
-	/// dnadp:0151                  db cbh
-	/// dnadp:0152                  db 01h
-	/// dnadp:0153                  db e6h
-	/// dnadp:0154                  db 01h
-	/// dnadp:0155                  db 03h
-	/// dnadp:0156                  db 02h
-	/// dnadp:0157                  db 22h
-	/// dnadp:0158                  db 02h
-	/// dnadp:0159                  db 43h
-	/// dnadp:015a                  db 02h
-	/// dnadp:015b                  db 66h
-	/// dnadp:015c                  db 02h
-	/// dnadp:015d                  db 8ah
-	/// dnadp:015e                  db 02h
-	/// dnadp:015f                  db 57h
-	/// dnadp:0160                  db 01h
-	/// dnadp:0161                  db 57h
-	/// dnadp:0162                  db 01h
-	/// dnadp:0163                  db 57h
-	/// dnadp:0164                  db 01h
-	/// dnadp:0165                  db 57h
-	/// dnadp:0166                  db 01h
-	/// dnadp:0167                  db 57h
-	/// dnadp:0168                  db 01h
-	/// dnadp:0169                  db 57h
-	/// dnadp:016a                  db 01h
-	/// dnadp:016b                  db 57h
-	/// dnadp:016c                  db 01h
-	/// dnadp:016d                  db 57h
-	/// dnadp:016e                  db 01h
-	/// dnadp:016f                  db 57h
-	/// dnadp:0170                  db 01h
-	/// dnadp:0171                  db 00h
-	/// dnadp:0172                  db 01h
-	/// dnadp:0173                  db 02h
-	/// dnadp:0174                  db 08h
-	/// dnadp:0175                  db 09h
-	/// dnadp:0176                  db 0ah
-	/// dnadp:0177                  db 10h
-	/// dnadp:0178                  db 11h
-	/// dnadp:0179                  db 12h
-	/// dnadp:017a                  db 03h
-	/// dnadp:017b                  db 04h
-	/// dnadp:017c                  db 05h
-	/// dnadp:017d                  db 0bh
-	/// dnadp:017e                  db 0ch
-	/// dnadp:017f                  db 0dh
-	/// dnadp:0180                  db 13h
-	/// dnadp:0181                  db 14h
-	/// dnadp:0182                  db 15h
-	/// dnadp:0183                  db 13h
-	/// dnadp:0184                  db 15h
-	/// dnadp:0185                  db 15h
-	/// dnadp:0186                  db 17h
-	/// dnadp:0187                  db 19h
-	/// dnadp:0188                  db 1ah
-	/// dnadp:0189                  db 1bh
-	/// dnadp:018a                  db 1dh
-	/// dnadp:018b                  db 1fh
-	/// dnadp:018c                  db 21h
-	/// dnadp:018d                  db 23h
-	/// dnadp:018e                  db 24h
-	/// dnadp:018f                  db 25h
-	/// dnadp:0190                  db 00h
-	/// dnadp:0191                  db 05h
-	/// dnadp:0192                  db 0ah
-	/// dnadp:0193                  db 0fh
-	/// dnadp:0194                  db 14h
-	/// dnadp:0195                  db 00h
-	/// dnadp:0196                  db 06h
-	/// dnadp:0197                  db 0ch
-	/// dnadp:0198                  db 12h
-	/// dnadp:0199                  db 18h
-	/// dnadp:019a                  db 00h
-	/// dnadp:019b                  db 00h
-	/// dnadp:019c                  db eeh
-	/// dnadp:019d                  db eeh
-	/// dnadp:019e                  db eeh
-	/// dnadp:019f                  db 01h
-	/// dnadp:01a0                  db 00h
-	/// dnadp:01a1                  db 90h
-	/// dnadp:02b0                  db 48h
-	/// dnadp:02b1                  db 53h
-	/// dnadp:02b2                  db 51h
-	/// dnadp:02b3                  db 20h
-	/// dnadp:02b4                  db 02h
-	/// </code>
-	/// C# pseudocode.
-	/// <code>
-	/// // Pseudocode mirrors the C# override body below and preserves
-	/// // the same register/stack/memory side effects as the disasm.
-	/// call AdpSetVolume_5BAE_0112_05BBF2(gotoAddress)
-	/// return NearRet/FarRet exactly as implemented
 	/// </code>
 	/// </summary>
 	public Action AdpSetVolume_5BAE_0112_05BBF2(int gotoAddress) {
@@ -452,13 +273,6 @@ public partial class Overrides {
 	/// dnadp:02d5  loc_002d5:                                    ; CODE XREF: dnadp:02c9
 	/// dnadp:02d5                  loop    loc_002b9
 	/// dnadp:02d7                  ret
-	/// </code>
-	/// C# pseudocode.
-	/// <code>
-	/// // Pseudocode mirrors the C# override body below and preserves
-	/// // the same register/stack/memory side effects as the disasm.
-	/// call AdpInitInternal_5BAE_02B5_05BDD5(gotoAddress)
-	/// return NearRet/FarRet exactly as implemented
 	/// </code>
 	/// </summary>
 	public Action AdpInitInternal_5BAE_02B5_05BDD5(int gotoAddress) {
@@ -517,13 +331,6 @@ public partial class Overrides {
 	/// dnadp:02fa                  mov     bx, 0f00h
 	/// dnadp:02fd                  retf
 	/// </code>
-	/// C# pseudocode.
-	/// <code>
-	/// // Pseudocode mirrors the C# override body below and preserves
-	/// // the same register/stack/memory side effects as the disasm.
-	/// call AdpInit_5BAE_02D8_05BDF8(gotoAddress)
-	/// return NearRet/FarRet exactly as implemented
-	/// </code>
 	/// </summary>
 	public Action AdpInit_5BAE_02D8_05BDF8(int gotoAddress) {
 		AX = (ushort)(AX & 0x0FFF);
@@ -554,13 +361,6 @@ public partial class Overrides {
 	/// dnadp:0305                  mov     cs:[19ah], al
 	/// dnadp:0309                  popf
 	/// dnadp:030a                  retf
-	/// </code>
-	/// C# pseudocode.
-	/// <code>
-	/// // Pseudocode mirrors the C# override body below and preserves
-	/// // the same register/stack/memory side effects as the disasm.
-	/// call AdpReset_5BAE_02FE_05BE1E(gotoAddress)
-	/// return NearRet/FarRet exactly as implemented
 	/// </code>
 	/// </summary>
 	public Action AdpReset_5BAE_02FE_05BE1E(int gotoAddress) {
@@ -614,13 +414,6 @@ public partial class Overrides {
 	/// dnadp:0345                  pop     dx
 	/// dnadp:0346                  pop     bx
 	/// dnadp:0347                  ret
-	/// </code>
-	/// C# pseudocode.
-	/// <code>
-	/// // Pseudocode mirrors the C# override body below and preserves
-	/// // the same register/stack/memory side effects as the disasm.
-	/// call AdpResetInternalBody_5BAE_030B_05BE2B(gotoAddress)
-	/// return NearRet/FarRet exactly as implemented
 	/// </code>
 	/// </summary>
 	public Action AdpResetInternalBody_5BAE_030B_05BE2B(int gotoAddress) {
@@ -690,13 +483,6 @@ public partial class Overrides {
 	/// dnadp:0353                  mov     word ptr cs:[19fh], 0ffffh
 	/// dnadp:035a                  retf
 	/// </code>
-	/// C# pseudocode.
-	/// <code>
-	/// // Pseudocode mirrors the C# override body below and preserves
-	/// // the same register/stack/memory side effects as the disasm.
-	/// call AdpSetVolume_5BAE_0348_05BE68(gotoAddress)
-	/// return NearRet/FarRet exactly as implemented
-	/// </code>
 	/// </summary>
 	public Action AdpSetVolume_5BAE_0348_05BE68(int gotoAddress) {
 		AdpResetInternalBody_5BAE_030B_05BE2B(0);
@@ -742,13 +528,6 @@ public partial class Overrides {
 	/// dnadp:039b  loc_0039b:                                    ; CODE XREF: dnadp:0393
 	/// dnadp:039b                  retf
 	/// </code>
-	/// C# pseudocode.
-	/// <code>
-	/// // Pseudocode mirrors the C# override body below and preserves
-	/// // the same register/stack/memory side effects as the disasm.
-	/// call AdpSetDynamicsCurve_5BAE_035B_05BE7B(gotoAddress)
-	/// return NearRet/FarRet exactly as implemented
-	/// </code>
 	/// </summary>
 	public Action AdpSetDynamicsCurve_5BAE_035B_05BE7B(int gotoAddress) {
 		ushort savedAx = AX;
@@ -787,24 +566,6 @@ public partial class Overrides {
 	/// dnadp:03a2                  mov     al, cs:[19ah]
 	/// dnadp:03a6                  retf
 	/// dnadp:03a7
-	/// dnadp:03a7                  db 90h
-	/// dnadp:03a8                  db 00h
-	/// dnadp:03a9                  db 00h
-	/// dnadp:03aa                  db 00h
-	/// dnadp:03ab                  db 00h
-	/// dnadp:03ac                  db 00h
-	/// dnadp:03ad                  db 00h
-	/// dnadp:03ae                  db 00h
-	/// dnadp:03af                  db 00h
-	/// dnadp:03b0                  db 00h
-	/// dnadp:03b1                  db 00h
-	/// </code>
-	/// C# pseudocode.
-	/// <code>
-	/// // Pseudocode mirrors the C# override body below and preserves
-	/// // the same register/stack/memory side effects as the disasm.
-	/// call AdpSetTimerTickFlag_5BAE_039C_05BEBC(gotoAddress)
-	/// return NearRet/FarRet exactly as implemented
 	/// </code>
 	/// </summary>
 	public Action AdpSetTimerTickFlag_5BAE_039C_05BEBC(int gotoAddress) {
@@ -853,13 +614,6 @@ public partial class Overrides {
 	/// dnadp:040e                  mov     [19ah], al
 	/// dnadp:0411                  pop     ds
 	/// dnadp:0412                  retf
-	/// </code>
-	/// C# pseudocode.
-	/// <code>
-	/// // Pseudocode mirrors the C# override body below and preserves
-	/// // the same register/stack/memory side effects as the disasm.
-	/// call AdpOpen_5BAE_03B2_05BED2(gotoAddress)
-	/// return NearRet/FarRet exactly as implemented
 	/// </code>
 	/// </summary>
 	public Action AdpOpen_5BAE_03B2_05BED2(int gotoAddress) {
@@ -947,13 +701,6 @@ public partial class Overrides {
 	/// dnadp:0470                  loop    loc_00456
 	/// dnadp:0472                  ret
 	/// </code>
-	/// C# pseudocode.
-	/// <code>
-	/// // Pseudocode mirrors the C# override body below and preserves
-	/// // the same register/stack/memory side effects as the disasm.
-	/// call AdpBuildChannelTable_5BAE_0413_05BF33(gotoAddress)
-	/// return NearRet/FarRet exactly as implemented
-	/// </code>
 	/// </summary>
 	public Action AdpBuildChannelTable_5BAE_0413_05BF33(int gotoAddress) {
 		ushort songOffset = AdpWord(0x0115);
@@ -987,6 +734,8 @@ public partial class Overrides {
 			di = (ushort)(di + 2);
 			cx--;
 		}
+		ES = songSegment;
+		SI = songOffset;
 		return NearRet();
 	}
 
@@ -1027,13 +776,6 @@ public partial class Overrides {
 	/// dnadp:04a7                  mov     cx, [121h]
 	/// dnadp:04ab                  pop     ds
 	/// dnadp:04ac                  retf
-	/// </code>
-	/// C# pseudocode.
-	/// <code>
-	/// // Pseudocode mirrors the C# override body below and preserves
-	/// // the same register/stack/memory side effects as the disasm.
-	/// call AdpTickHandler_5BAE_0473_05BF93(gotoAddress)
-	/// return NearRet/FarRet exactly as implemented
 	/// </code>
 	/// </summary>
 	public Action AdpTickHandler_5BAE_0473_05BF93(int gotoAddress) {
@@ -1099,13 +841,6 @@ public partial class Overrides {
 	/// dnadp:04d0                  pop     es
 	/// dnadp:04d1                  pop     si
 	/// dnadp:04d2                  ret
-	/// </code>
-	/// C# pseudocode.
-	/// <code>
-	/// // Pseudocode mirrors the C# override body below and preserves
-	/// // the same register/stack/memory side effects as the disasm.
-	/// call AdpSongValidation_5BAE_04AD_05BFCD(gotoAddress)
-	/// return NearRet/FarRet exactly as implemented
 	/// </code>
 	/// </summary>
 	public Action AdpSongValidation_5BAE_04AD_05BFCD(int gotoAddress) {
@@ -1188,13 +923,6 @@ public partial class Overrides {
 	/// dnadp:054f                  pop     di
 	/// dnadp:0550                  pop     cx
 	/// dnadp:0551                  jmp     loc_00515
-	/// </code>
-	/// C# pseudocode.
-	/// <code>
-	/// // Pseudocode mirrors the C# override body below and preserves
-	/// // the same register/stack/memory side effects as the disasm.
-	/// call AdpProcessTick_5BAE_04D3_05BFF3(gotoAddress)
-	/// return NearRet/FarRet exactly as implemented
 	/// </code>
 	/// </summary>
 	public Action AdpProcessTick_5BAE_04D3_05BFF3(int gotoAddress) {
@@ -1330,13 +1058,6 @@ public partial class Overrides {
 	/// dnadp:05a9  loc_005a9:                                    ; CODE XREF: dnadp:05b0
 	/// dnadp:05a9                  ret
 	/// </code>
-	/// C# pseudocode.
-	/// <code>
-	/// // Pseudocode mirrors the C# override body below and preserves
-	/// // the same register/stack/memory side effects as the disasm.
-	/// call AdpLoopPointCheck_5BAE_0553_05C073(gotoAddress)
-	/// return NearRet/FarRet exactly as implemented
-	/// </code>
 	/// </summary>
 	public Action AdpLoopPointCheck_5BAE_0553_05C073(int gotoAddress) {
 		if (AdpWord(0x0123) == 0) {
@@ -1408,13 +1129,6 @@ public partial class Overrides {
 	/// dnadp:0627                  call    ADPInstrumentWrite
 	/// dnadp:062a                  pop     ds
 	/// dnadp:062b                  ret
-	/// </code>
-	/// C# pseudocode.
-	/// <code>
-	/// // Pseudocode mirrors the C# override body below and preserves
-	/// // the same register/stack/memory side effects as the disasm.
-	/// call AdpProgramChange_5BAE_05AA_05C0CA(gotoAddress)
-	/// return NearRet/FarRet exactly as implemented
 	/// </code>
 	/// </summary>
 	public Action AdpProgramChange_5BAE_05AA_05C0CA(int gotoAddress) {
@@ -1492,13 +1206,6 @@ public partial class Overrides {
 	/// dnadp:0654                  mov     byte ptr [di+6ch], 40h
 	/// dnadp:0658                  jmp     ADPOplNoteOn
 	/// </code>
-	/// C# pseudocode.
-	/// <code>
-	/// // Pseudocode mirrors the C# override body below and preserves
-	/// // the same register/stack/memory side effects as the disasm.
-	/// call AdpNoteOn_5BAE_062C_05C14C(gotoAddress)
-	/// return NearRet/FarRet exactly as implemented
-	/// </code>
 	/// </summary>
 	public Action AdpNoteOn_5BAE_062C_05C14C(int gotoAddress) {
 		byte note = SegByte(ES, SI);
@@ -1537,13 +1244,6 @@ public partial class Overrides {
 	/// dnadp:066e
 	/// dnadp:066e  loc_0066e:                                    ; CODE XREF: dnadp:0665
 	/// dnadp:066e                  ret
-	/// </code>
-	/// C# pseudocode.
-	/// <code>
-	/// // Pseudocode mirrors the C# override body below and preserves
-	/// // the same register/stack/memory side effects as the disasm.
-	/// call AdpNoteOff_5BAE_065B_05C17B(gotoAddress)
-	/// return NearRet/FarRet exactly as implemented
 	/// </code>
 	/// </summary>
 	public Action AdpNoteOff_5BAE_065B_05C17B(int gotoAddress) {
@@ -1592,13 +1292,6 @@ public partial class Overrides {
 	/// dnadp:06a3                  push    cs
 	/// dnadp:06a4                  call    ADPReset
 	/// dnadp:06a7                  ret
-	/// </code>
-	/// C# pseudocode.
-	/// <code>
-	/// // Pseudocode mirrors the C# override body below and preserves
-	/// // the same register/stack/memory side effects as the disasm.
-	/// call AdpEndOfTrack_5BAE_066F_05C18F(gotoAddress)
-	/// return NearRet/FarRet exactly as implemented
 	/// </code>
 	/// </summary>
 	public Action AdpEndOfTrack_5BAE_066F_05C18F(int gotoAddress) {
@@ -1740,13 +1433,6 @@ public partial class Overrides {
 	/// dnadp:073a                  add     al, 0c0h
 	/// dnadp:073c                  call    ADPOplRegisterWrite
 	/// dnadp:073f                  ret
-	/// </code>
-	/// C# pseudocode.
-	/// <code>
-	/// // Pseudocode mirrors the C# override body below and preserves
-	/// // the same register/stack/memory side effects as the disasm.
-	/// call AdpVolumeModulation_5BAE_06A8_05C1C8(gotoAddress)
-	/// return NearRet/FarRet exactly as implemented
 	/// </code>
 	/// </summary>
 	public Action AdpVolumeModulation_5BAE_06A8_05C1C8(int gotoAddress) {
@@ -1917,13 +1603,6 @@ public partial class Overrides {
 	/// dnadp:07e9  loc_007e9:                                    ; CODE XREF: dnadp:07f4
 	/// dnadp:07e9                  ret
 	/// </code>
-	/// C# pseudocode.
-	/// <code>
-	/// // Pseudocode mirrors the C# override body below and preserves
-	/// // the same register/stack/memory side effects as the disasm.
-	/// call AdpEnvelopeSetup_5BAE_0740_05C260(gotoAddress)
-	/// return NearRet/FarRet exactly as implemented
-	/// </code>
 	/// </summary>
 	public Action AdpEnvelopeSetup_5BAE_0740_05C260(int gotoAddress) {
 		byte ah = Lo8(AX);
@@ -2011,13 +1690,6 @@ public partial class Overrides {
 	/// dnadp:07ea  ADP_OP_PitchBend:
 	/// dnadp:07ea                  mov     al, ah
 	/// dnadp:07ec                  call    ADPReadWaitValue
-	/// </code>
-	/// C# pseudocode.
-	/// <code>
-	/// // Pseudocode mirrors the C# override body below and preserves
-	/// // the same register/stack/memory side effects as the disasm.
-	/// call AdpPitchBend_5BAE_07EA_05C30A(gotoAddress)
-	/// return NearRet/FarRet exactly as implemented
 	/// </code>
 	/// </summary>
 	public Action AdpPitchBend_5BAE_07EA_05C30A(int gotoAddress) {
@@ -2162,13 +1834,6 @@ public partial class Overrides {
 	/// dnadp:08d7                  mov     [si+15fh], ax
 	/// dnadp:08db                  or      ah, 20h
 	/// dnadp:08de                  jmp     ADPOplFrequencyWrite
-	/// </code>
-	/// C# pseudocode.
-	/// <code>
-	/// // Pseudocode mirrors the C# override body below and preserves
-	/// // the same register/stack/memory side effects as the disasm.
-	/// call AdpPitchBendBody_5BAE_07EF_05C30F(gotoAddress)
-	/// return NearRet/FarRet exactly as implemented
 	/// </code>
 	/// </summary>
 	public Action AdpPitchBendBody_5BAE_07EF_05C30F(int gotoAddress) {
@@ -2374,13 +2039,6 @@ public partial class Overrides {
 	/// dnadp:0919                  pop     ax
 	/// dnadp:091a                  ret
 	/// </code>
-	/// C# pseudocode.
-	/// <code>
-	/// // Pseudocode mirrors the C# override body below and preserves
-	/// // the same register/stack/memory side effects as the disasm.
-	/// call AdpReadWaitValue_5BAE_08E1_05C401(gotoAddress)
-	/// return NearRet/FarRet exactly as implemented
-	/// </code>
 	/// </summary>
 	public Action AdpReadWaitValue_5BAE_08E1_05C401(int gotoAddress) {
 		ushort savedAx = AX;
@@ -2447,13 +2105,6 @@ public partial class Overrides {
 	/// dnadp:092b                  pop     ds
 	/// dnadp:092c                  ret
 	/// </code>
-	/// C# pseudocode.
-	/// <code>
-	/// // Pseudocode mirrors the C# override body below and preserves
-	/// // the same register/stack/memory side effects as the disasm.
-	/// call AdpUnknown091B_5BAE_091B_05C43B(gotoAddress)
-	/// return NearRet/FarRet exactly as implemented
-	/// </code>
 	/// </summary>
 	public Action AdpUnknown091B_5BAE_091B_05C43B(int gotoAddress) {
 		for (ushort c = 9; c > 0; c--) {
@@ -2509,13 +2160,6 @@ public partial class Overrides {
 	/// dnadp:097b                  pop     si
 	/// dnadp:097c                  pop     dx
 	/// dnadp:097d                  mov     byte ptr [19ah], 0
-	/// </code>
-	/// C# pseudocode.
-	/// <code>
-	/// // Pseudocode mirrors the C# override body below and preserves
-	/// // the same register/stack/memory side effects as the disasm.
-	/// call AdpFadeStep_5BAE_092D_05C44D(gotoAddress)
-	/// return NearRet/FarRet exactly as implemented
 	/// </code>
 	/// </summary>
 	public Action AdpFadeStep_5BAE_092D_05C44D(int gotoAddress) {
@@ -2575,13 +2219,6 @@ public partial class Overrides {
 	/// dnadp:0998                  pop     dx
 	/// dnadp:0999                  ret
 	/// </code>
-	/// C# pseudocode.
-	/// <code>
-	/// // Pseudocode mirrors the C# override body below and preserves
-	/// // the same register/stack/memory side effects as the disasm.
-	/// call AdpUnknown0982_5BAE_0982_05C4A2(gotoAddress)
-	/// return NearRet/FarRet exactly as implemented
-	/// </code>
 	/// </summary>
 	public Action AdpUnknown0982_5BAE_0982_05C4A2(int gotoAddress) {
 		byte volume = AdpByte(0x019C);
@@ -2612,13 +2249,6 @@ public partial class Overrides {
 	/// dnadp:09a8                  loop    loc_009a2
 	/// dnadp:09aa                  ret
 	/// </code>
-	/// C# pseudocode.
-	/// <code>
-	/// // Pseudocode mirrors the C# override body below and preserves
-	/// // the same register/stack/memory side effects as the disasm.
-	/// call AdpUnknown099A_5BAE_099A_05C4BA(gotoAddress)
-	/// return NearRet/FarRet exactly as implemented
-	/// </code>
 	/// </summary>
 	public Action AdpUnknown099A_5BAE_099A_05C4BA(int gotoAddress) {
 		for (int i = 0; i < 0x12; i++) {
@@ -2643,13 +2273,6 @@ public partial class Overrides {
 	/// dnadp:09bb                  mov     ah, [si+1bh]
 	/// dnadp:09be                  add     si, 0dh
 	/// dnadp:09c1                  jmp     loc_009dc
-	/// </code>
-	/// C# pseudocode.
-	/// <code>
-	/// // Pseudocode mirrors the C# override body below and preserves
-	/// // the same register/stack/memory side effects as the disasm.
-	/// call AdpInstrumentWrite_5BAE_09AB_05C4CB(gotoAddress)
-	/// return NearRet/FarRet exactly as implemented
 	/// </code>
 	/// </summary>
 	public Action AdpInstrumentWrite_5BAE_09AB_05C4CB(int gotoAddress) {
@@ -2680,13 +2303,6 @@ public partial class Overrides {
 	/// dnadp:09d4                  add     al, bl
 	/// dnadp:09d6                  call    ADPOplRegisterWrite
 	/// dnadp:09d9                  mov     ah, [si+1ah]
-	/// </code>
-	/// C# pseudocode.
-	/// <code>
-	/// // Pseudocode mirrors the C# override body below and preserves
-	/// // the same register/stack/memory side effects as the disasm.
-	/// call AdpInstrumentWriteLoop_5BAE_09C3_05C4E3(gotoAddress)
-	/// return NearRet/FarRet exactly as implemented
 	/// </code>
 	/// </summary>
 	public Action AdpInstrumentWriteLoop_5BAE_09C3_05C4E3(int gotoAddress) {
@@ -2769,13 +2385,6 @@ public partial class Overrides {
 	/// dnadp:0a52                  add     al, dl
 	/// dnadp:0a54                  call    ADPOplRegisterWrite
 	/// dnadp:0a57                  ret
-	/// </code>
-	/// C# pseudocode.
-	/// <code>
-	/// // Pseudocode mirrors the C# override body below and preserves
-	/// // the same register/stack/memory side effects as the disasm.
-	/// call AdpInstrumentWriteLoopFrom09DC_5BAE_09DC(gotoAddress)
-	/// return NearRet/FarRet exactly as implemented
 	/// </code>
 	/// </summary>
 	public Action AdpInstrumentWriteLoopFrom09DC_5BAE_09DC(int gotoAddress) {
@@ -2862,13 +2471,6 @@ public partial class Overrides {
 	/// dnadp:0a82                  or      ah, 20h
 	/// dnadp:0a85                  jmp     ADPOplFrequencyWrite
 	/// </code>
-	/// C# pseudocode.
-	/// <code>
-	/// // Pseudocode mirrors the C# override body below and preserves
-	/// // the same register/stack/memory side effects as the disasm.
-	/// call AdpOplNoteOn_5BAE_0A58_05C578(gotoAddress)
-	/// return NearRet/FarRet exactly as implemented
-	/// </code>
 	/// </summary>
 	public Action AdpOplNoteOn_5BAE_0A58_05C578(int gotoAddress) {
 		AX = (ushort)(AX + 0x30);
@@ -2895,13 +2497,6 @@ public partial class Overrides {
 	/// dnadp:0a89                  add     si, si
 	/// dnadp:0a8b                  mov     ax, [si+15fh]
 	/// </code>
-	/// C# pseudocode.
-	/// <code>
-	/// // Pseudocode mirrors the C# override body below and preserves
-	/// // the same register/stack/memory side effects as the disasm.
-	/// call AdpOplNoteOff_5BAE_0A87_05C5A7(gotoAddress)
-	/// return NearRet/FarRet exactly as implemented
-	/// </code>
 	/// </summary>
 	public Action AdpOplNoteOff_5BAE_0A87_05C5A7(int gotoAddress) {
 		AX = AdpWord((ushort)(0x015F + DX * 2));
@@ -2922,13 +2517,6 @@ public partial class Overrides {
 	/// dnadp:0a9c                  mov     ax, si
 	/// dnadp:0a9e                  add     al, 10h
 	/// dnadp:0aa0                  mov     ah, ch
-	/// </code>
-	/// C# pseudocode.
-	/// <code>
-	/// // Pseudocode mirrors the C# override body below and preserves
-	/// // the same register/stack/memory side effects as the disasm.
-	/// call AdpOplFrequencyWrite_5BAE_0A8F_05C5AF(gotoAddress)
-	/// return NearRet/FarRet exactly as implemented
 	/// </code>
 	/// </summary>
 	public Action AdpOplFrequencyWrite_5BAE_0A8F_05C5AF(int gotoAddress) {
@@ -2996,13 +2584,6 @@ public partial class Overrides {
 	/// dnadp:0ad5                  pop     dx
 	/// dnadp:0ad6                  ret
 	/// </code>
-	/// C# pseudocode.
-	/// <code>
-	/// // Pseudocode mirrors the C# override body below and preserves
-	/// // the same register/stack/memory side effects as the disasm.
-	/// call AdpOplRegisterWrite_5BAE_0AA2_05C5C2(gotoAddress)
-	/// return NearRet/FarRet exactly as implemented
-	/// </code>
 	/// </summary>
 	public Action AdpOplRegisterWrite_5BAE_0AA2_05C5C2(int gotoAddress) {
 		byte register = Lo8(AX);
@@ -3010,12 +2591,11 @@ public partial class Overrides {
 		CryogenicMcpTools.RecordAdpOplWrite(register, value, State.Cycles, _adpTickIndex);
 		ushort savedDx = DX;
 		ushort basePort = 0x0388;
-		byte delayStatus = 0;
 		byte delayData = 0;
 
 		Machine.IoPortDispatcher.WriteByte(basePort, register);
 		for (int i = 0; i < 7; i++) {
-			delayStatus = Machine.IoPortDispatcher.ReadByte(basePort);
+			Machine.IoPortDispatcher.ReadByte(basePort);
 		}
 
 		ushort dataPort = (ushort)(basePort + 1);
@@ -3024,7 +2604,8 @@ public partial class Overrides {
 			delayData = Machine.IoPortDispatcher.ReadByte(dataPort);
 		}
 
-		AX = Make16(delayData, delayStatus);
+		// ASM leaves AH as the written value (mov al,ah before data write); only AL is clobbered by IN delay reads.
+		AX = Make16(delayData, value);
 		DX = savedDx;
 		return NearRet();
 	}
