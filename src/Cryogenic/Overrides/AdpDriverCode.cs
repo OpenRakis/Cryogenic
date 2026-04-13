@@ -1,4 +1,4 @@
-namespace Cryogenic.Overrides;
+﻿namespace Cryogenic.Overrides;
 
 #pragma warning disable MA0051 // Method is too long
 #pragma warning disable S4136  // Keep helper overload placement as-is in this low-level port
@@ -92,6 +92,14 @@ public partial class Overrides {
 
 	private static ushort Make16(byte lo, byte hi) {
 		return (ushort)(lo | (hi << 8));
+	}
+
+	private static ushort RotateRight16(ushort value, int count) {
+		int normalizedCount = count & 0x0F;
+		if (normalizedCount == 0) {
+			return value;
+		}
+		return (ushort)((value >> normalizedCount) | (value << (16 - normalizedCount)));
 	}
 
 	private uint AdpAddr(ushort offset) {
@@ -1206,6 +1214,7 @@ public partial class Overrides {
 			if (wait != 0) {
 				if (AdpByte((ushort)(DI + 0x5A)) != 0 && AdpWord((ushort)(DI + 0x12)) != 0) {
 					ushort savedDi = DI;
+					SI = AdpWord((ushort)(DI + 0x12));
 					AdpByteSet((ushort)(DI + 0x5A), (byte)(AdpByte((ushort)(DI + 0x5A)) - 1));
 					ushort phaseWord = AdpWord((ushort)(DI + 0x6C));
 					byte phaseLo = Lo8(phaseWord);
@@ -1214,7 +1223,7 @@ public partial class Overrides {
 					AdpByteSet((ushort)(DI + 0x6C), phaseLo);
 					AX = Make16(phaseLo, phaseHi);
 					DX = (ushort)((DI - AdpChannelTableBase) >> 1);
-					AdpPitchBendBody_5BAE_07EF_05C30F(0);
+					AdpPitchBend_5BAE_07EA_05C30A(0);
 					DI = savedDi;
 				}
 			} else {
@@ -2163,88 +2172,166 @@ public partial class Overrides {
 	/// </code>
 	/// </summary>
 	public Action AdpPitchBendBody_5BAE_07EF_05C30F(int gotoAddress) {
-		byte note = AdpByte((ushort)(DI + 0x37));
-		if (note == 0) {
+		byte cl = AdpByte((ushort)(DI + 0x37));
+		byte ch = 0;
+		if (cl == 0) {
 			return NearRet();
 		}
-		byte pitch = Lo8(AX);
-		byte semitone = (byte)(note - 0x18);
-		byte octave = (byte)(semitone / 12);
-		byte key = (byte)(semitone % 12);
-		ushort freq;
+
+		byte alInput = Lo8(AX);
+		ushort cx = Make16(cl, ch);
+		ushort ax = Make16(alInput, 0);
+		ushort tempSwap = cx;
+		cx = ax;
+		ax = tempSwap;
+
+		byte al = (byte)(Lo8(ax) - 0x18);
+		byte ah = 0;
+		byte bh = 0x0C;
+		ushort divAx = Make16(al, ah);
+		byte divQ = (byte)(divAx / bh);
+		byte divR = (byte)(divAx % bh);
+		ax = Make16(divQ, divR);
+
+		tempSwap = cx;
+		cx = ax;
+		ax = tempSwap;
+		cl = Lo8(cx);
+		ch = Hi8(cx);
+
 		if (AdpByte((ushort)(DI + 0x48)) == 0) {
-			int centered = pitch - 0x40;
-			if (centered < 0) {
-				centered = -centered;
-				int fracMul = (centered & 0x1F) << 3;
-				centered >>= 5;
-				if (key < centered) {
-					key = (byte)(key + 12 - centered);
-					if (octave > 0) {
-						octave--;
-					} else {
-						octave = 0;
-						key = 0;
-					}
+			if (ax < 0x0040) {
+				ax = (ushort)(0 - ax);
+				ax = RotateRight16(ax, 5);
+				al = Lo8(ax);
+				if (ch >= al) {
+					ch = (byte)(ch - al);
 				} else {
-					key = (byte)(key - centered);
+					ch = (byte)(ch + 0x0C - al);
+					cl = (byte)(cl - 1);
+					if ((cl & 0x80) != 0) {
+						cx = 0;
+						cl = 0;
+						ch = 0;
+					}
 				}
-				byte frac = AdpByte((ushort)(0x0183 + key));
-				byte bend = (byte)((frac * fracMul) >> 8);
-				freq = AdpWord((ushort)(0x0147 + key * 2));
-				freq = (ushort)(freq - bend);
+
+				al = ch;
+				byte frac = AdpByte((ushort)(0x0183 + al));
+				ah = Hi8(ax);
+				ushort mul = (ushort)(frac * ah);
+				al = Hi8(mul);
+				byte oldCh = ch;
+				ch = al;
+				al = oldCh;
+				ah = 0;
+				ushort keyIndex = (ushort)(Make16(al, ah) << 1);
+				ax = AdpWord((ushort)(0x0147 + keyIndex));
+				int subRes = Lo8(ax) - ch;
+				al = (byte)subRes;
+				ah = (byte)(Hi8(ax) - (subRes < 0 ? 1 : 0));
+				ax = Make16(al, ah);
 			} else {
-				centered = centered + 1;
-				int fracMul = (centered & 0x1F) << 3;
-				centered >>= 5;
-				key = (byte)(key + centered);
-				if (key >= 12) {
-					key -= 12;
-					octave++;
+				ax = (ushort)(ax + 1);
+				ax = RotateRight16(ax, 5);
+				al = Lo8(ax);
+				ch = (byte)(ch + al);
+				if (ch >= 0x0C) {
+					ch = (byte)(ch - 0x0C);
+					cl = (byte)(cl + 1);
 				}
-				byte frac = AdpByte((ushort)(0x0184 + key));
-				byte bend = (byte)((frac * fracMul) >> 8);
-				freq = AdpWord((ushort)(0x0147 + key * 2));
-				freq = (ushort)(freq + bend);
+
+				al = ch;
+				byte frac = AdpByte((ushort)(0x0184 + al));
+				ah = Hi8(ax);
+				ushort mul = (ushort)(frac * ah);
+				al = Hi8(mul);
+
+				byte oldCh = ch;
+				ch = al;
+				al = oldCh;
+				ah = 0;
+				ushort keyIndex = (ushort)(Make16(al, ah) << 1);
+				ax = AdpWord((ushort)(0x0147 + keyIndex));
+				int addRes = Lo8(ax) + ch;
+				al = (byte)addRes;
+				ah = (byte)(Hi8(ax) + (addRes > 0xFF ? 1 : 0));
+				ax = Make16(al, ah);
 			}
 		} else {
-			int centered = pitch - 0x40;
-			if (centered < 0) {
-				centered = -centered;
-				int q = centered / 5;
-				if (key < q) {
-					key = (byte)(key + 12 - q);
-					if (octave > 0) {
-						octave--;
-					} else {
-						octave = 0;
-						key = 0;
-					}
+			if (ax < 0x0040) {
+				ax = (ushort)(0 - ax);
+				bh = 5;
+				ushort divWord = ax;
+				divQ = (byte)(divWord / bh);
+				divR = (byte)(divWord % bh);
+				if (ch >= divQ) {
+					ch = (byte)(ch - divQ);
 				} else {
-					key = (byte)(key - q);
+					ch = (byte)(ch + 0x0C - divQ);
+					cl = (byte)(cl - 1);
+					if ((cl & 0x80) != 0) {
+						cx = 0;
+						cl = 0;
+						ch = 0;
+					}
 				}
-				ushort tbl = (ushort)(0x0190 + (key >= 6 ? 5 : 0));
-				byte bend = AdpByte((ushort)(tbl + (centered % 5)));
-				freq = AdpWord((ushort)(0x0147 + key * 2));
-				freq = (ushort)(freq - bend);
+
+				al = divR;
+				ushort bx = 0x0190;
+				if (ch >= 6) {
+					bx = (ushort)(bx + 5);
+				}
+				byte frac = AdpByte((ushort)(bx + al));
+				byte oldCh = ch;
+				ch = frac;
+				al = oldCh;
+				ah = 0;
+				ushort keyIndex = (ushort)(Make16(al, ah) << 1);
+				ax = AdpWord((ushort)(0x0147 + keyIndex));
+				int subRes = Lo8(ax) - ch;
+				al = (byte)subRes;
+				ah = (byte)(Hi8(ax) - (subRes < 0 ? 1 : 0));
+				ax = Make16(al, ah);
 			} else {
-				int q = centered / 5;
-				key = (byte)(key + q);
-				if (key >= 12) {
-					key -= 12;
-					octave++;
+				bh = 5;
+				ushort divWord = ax;
+				divQ = (byte)(divWord / bh);
+				divR = (byte)(divWord % bh);
+				ch = (byte)(ch + divQ);
+				if (ch >= 0x0C) {
+					ch = (byte)(ch - 0x0C);
+					cl = (byte)(cl + 1);
 				}
-				ushort tbl = (ushort)(0x0190 + (key >= 6 ? 5 : 0));
-				byte bend = AdpByte((ushort)(tbl + (centered % 5)));
-				freq = AdpWord((ushort)(0x0147 + key * 2));
-				freq = (ushort)(freq + bend);
+
+				al = divR;
+				ushort bx = 0x0190;
+				if (ch >= 6) {
+					bx = (ushort)(bx + 5);
+				}
+				byte frac = AdpByte((ushort)(bx + al));
+				byte oldCh = ch;
+				ch = frac;
+				al = oldCh;
+				ah = 0;
+				ushort keyIndex = (ushort)(Make16(al, ah) << 1);
+				ax = AdpWord((ushort)(0x0147 + keyIndex));
+				int addRes = Lo8(ax) + ch;
+				al = (byte)addRes;
+				ah = (byte)(Hi8(ax) + (addRes > 0xFF ? 1 : 0));
+				ax = Make16(al, ah);
 			}
 		}
-		byte block = (byte)(octave << 2);
-		byte freqHi = (byte)(Hi8(freq) | block);
-		ushort outWord = Make16(Lo8(freq), freqHi);
-		AdpWordSet((ushort)(0x015F + DX * 2), outWord);
-		AX = (ushort)(outWord | 0x2000);
+
+		cl = (byte)(cl << 1);
+		cl = (byte)(cl << 1);
+		ah = (byte)(Hi8(ax) | cl);
+		ax = Make16(Lo8(ax), ah);
+
+		ushort siWord = (ushort)(DX << 1);
+		AdpWordSet((ushort)(0x015F + siWord), ax);
+		ah = (byte)(Hi8(ax) | 0x20);
+		AX = Make16(Lo8(ax), ah);
 		AdpOplFrequencyWrite_5BAE_0A8F_05C5AF(0);
 		return NearRet();
 	}
@@ -2921,9 +3008,24 @@ public partial class Overrides {
 		byte register = Lo8(AX);
 		byte value = Hi8(AX);
 		CryogenicMcpTools.RecordAdpOplWrite(register, value, State.Cycles, _adpTickIndex);
+		ushort savedDx = DX;
 		ushort basePort = 0x0388;
-		Machine.OPL.WriteByte(basePort, register);
-		Machine.OPL.WriteByte((ushort)(basePort + 1), value);
+		byte delayStatus = 0;
+		byte delayData = 0;
+
+		Machine.IoPortDispatcher.WriteByte(basePort, register);
+		for (int i = 0; i < 7; i++) {
+			delayStatus = Machine.IoPortDispatcher.ReadByte(basePort);
+		}
+
+		ushort dataPort = (ushort)(basePort + 1);
+		Machine.IoPortDispatcher.WriteByte(dataPort, value);
+		for (int i = 0; i < 35; i++) {
+			delayData = Machine.IoPortDispatcher.ReadByte(dataPort);
+		}
+
+		AX = Make16(delayData, delayStatus);
+		DX = savedDx;
 		return NearRet();
 	}
 }
