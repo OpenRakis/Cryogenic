@@ -1219,11 +1219,13 @@ public partial class Overrides {
 			AdpOplFrequencyWrite_5BAE_0A8F_05C5AF(0);
 		}
 		AX = savedAx;
-		byte al = Hi8(AX);
-		al = (byte)(al + AdpByte((ushort)(DI + 0x49)));
-		AdpByteSet((ushort)(DI + 0x37), al);
-		AX = (ushort)(al - 0x48);
-		AdpByteSet((ushort)(DI + 0x5A), AdpByte((ushort)(DI + 0x5B)));
+		AL = AH;
+		AL = (byte)(AL + AdpByte((ushort)(DI + 0x49)));
+		AH = 0;
+		AdpByteSet((ushort)(DI + 0x37), AL);
+		AX = (ushort)(AX - 0x48);
+		CL = AdpByte((ushort)(DI + 0x5B));
+		AdpByteSet((ushort)(DI + 0x5A), CL);
 		AdpByteSet((ushort)(DI + 0x6C), 0x40);
 		AdpOplNoteOn_5BAE_0A58_05C578(0);
 		return NearRet();
@@ -1249,8 +1251,8 @@ public partial class Overrides {
 	public Action AdpNoteOff_5BAE_065B_05C17B(int gotoAddress) {
 		SI = (ushort)(SI + 1);
 		AdpReadWaitValue_5BAE_08E1_05C401(0);
-		byte ah = (byte)(Hi8(AX) + AdpByte((ushort)(DI + 0x49)));
-		if (AdpByte((ushort)(DI + 0x37)) == ah) {
+		AH = (byte)(AH + AdpByte((ushort)(DI + 0x49)));
+		if (AdpByte((ushort)(DI + 0x37)) == AH) {
 			AdpByteSet((ushort)(DI + 0x37), 0);
 			AdpOplNoteOff_5BAE_0A87_05C5A7(0);
 		}
@@ -1865,7 +1867,9 @@ public partial class Overrides {
 		ch = Hi8(cx);
 
 		if (AdpByte((ushort)(DI + 0x48)) == 0) {
-			if (ax < 0x0040) {
+			bool carryFromSub40 = ax < 0x0040;
+			ax = (ushort)(ax - 0x0040);
+			if (carryFromSub40) {
 				ax = (ushort)(0 - ax);
 				ax = RotateRight16(ax, 5);
 				al = Lo8(ax);
@@ -1924,7 +1928,9 @@ public partial class Overrides {
 				ax = Make16(al, ah);
 			}
 		} else {
-			if (ax < 0x0040) {
+			bool carryFromSub40 = ax < 0x0040;
+			ax = (ushort)(ax - 0x0040);
+			if (carryFromSub40) {
 				ax = (ushort)(0 - ax);
 				bh = 5;
 				ushort divWord = ax;
@@ -1993,8 +1999,9 @@ public partial class Overrides {
 		ah = (byte)(Hi8(ax) | cl);
 		ax = Make16(Lo8(ax), ah);
 
-		ushort siWord = (ushort)(DX << 1);
-		AdpWordSet((ushort)(0x015F + siWord), ax);
+		SI = DX;
+		SI = (ushort)(SI + SI);
+		AdpWordSet((ushort)(0x015F + SI), ax);
 		ah = (byte)(Hi8(ax) | 0x20);
 		AX = Make16(Lo8(ax), ah);
 		AdpOplFrequencyWrite_5BAE_0A8F_05C5AF(0);
@@ -2073,6 +2080,7 @@ public partial class Overrides {
 					if (cx != 0) {
 						ax = 0xFFFF;
 					}
+					CX = cx;
 					break;
 				}
 			}
@@ -2477,14 +2485,31 @@ public partial class Overrides {
 		if (AX >= 0x60) {
 			AX = 0;
 		}
-		byte octave = (byte)(Lo8(AX) / 12);
-		byte note = (byte)(Lo8(AX) % 12);
-		ushort freq = AdpWord((ushort)(0x0147 + note * 2));
-		byte high = (byte)(Hi8(freq) | (octave << 2));
-		ushort outWord = Make16(Lo8(freq), high);
-		AdpWordSet((ushort)(0x015F + DX * 2), outWord);
-		outWord = (ushort)(outWord | 0x2000);
-		AX = outWord;
+
+		BL = 0x0C;
+		ushort divWord = AX;
+		AL = (byte)(divWord / BL);
+		AH = (byte)(divWord % BL);
+
+		CL = AL;
+		byte tmp = AH;
+		AH = AL;
+		AL = tmp;
+		AH = 0;
+		AX = (ushort)(AX + AX);
+
+		SI = AX;
+		AX = AdpWord((ushort)(0x0147 + SI));
+
+		CL = (byte)(CL << 1);
+		CL = (byte)(CL << 1);
+		AH = (byte)(AH | CL);
+
+		SI = DX;
+		SI = (ushort)(SI + SI);
+		AdpWordSet((ushort)(0x015F + SI), AX);
+
+		AH = (byte)(AH | 0x20);
 		return AdpOplFrequencyWrite_5BAE_0A8F_05C5AF(0);
 	}
 
@@ -2499,7 +2524,9 @@ public partial class Overrides {
 	/// </code>
 	/// </summary>
 	public Action AdpOplNoteOff_5BAE_0A87_05C5A7(int gotoAddress) {
-		AX = AdpWord((ushort)(0x015F + DX * 2));
+		SI = DX;
+		SI = (ushort)(SI + SI);
+		AX = AdpWord((ushort)(0x015F + SI));
 		return AdpOplFrequencyWrite_5BAE_0A8F_05C5AF(0);
 	}
 
@@ -2520,10 +2547,12 @@ public partial class Overrides {
 	/// </code>
 	/// </summary>
 	public Action AdpOplFrequencyWrite_5BAE_0A8F_05C5AF(int gotoAddress) {
-		ushort cx = AX;
-		AX = Make16((byte)(0xA0 + DX), Lo8(cx));
+		CX = AX;
+		AX = Make16((byte)(0xA0 + DX), Lo8(CX));
+		SI = AX;
 		AdpOplRegisterWrite_5BAE_0AA2_05C5C2(0);
-		AX = Make16((byte)(0xB0 + DX), Hi8(cx));
+		AX = SI;
+		AX = Make16((byte)(Lo8(AX) + 0x10), Hi8(CX));
 		AdpOplRegisterWrite_5BAE_0AA2_05C5C2(0);
 		return NearRet();
 	}
