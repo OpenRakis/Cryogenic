@@ -458,122 +458,155 @@ public sealed partial class DuneAdpPlayerEngine {
 	/// Mirrors AdpPitchBendBody_07EF.
 	/// </summary>
 	private void PitchBendBody(int ch, ushort input) {
-		byte currentNote = _channelNote[ch];
-		if (currentNote == 0) {
+		byte cl = _channelNote[ch];
+		byte chByte = 0;
+		if (cl == 0) {
 			return;
 		}
 
 		byte alInput = Lo8(input);
-		byte noteForCalc = currentNote;
+		ushort cx = Make16(cl, chByte);
+		ushort ax = Make16(alInput, 0);
+		ushort tempSwap = cx;
+		cx = ax;
+		ax = tempSwap;
 
-		byte divResult = (byte)((noteForCalc - 0x18) / 0x0C);
-		byte divRemainder = (byte)((noteForCalc - 0x18) % 0x0C);
-		byte octave = divResult;
-		byte semitone = divRemainder;
+		byte al = (byte)(Lo8(ax) - 0x18);
+		byte ah = 0;
+		byte bh = 0x0C;
+		ushort divAx = Make16(al, ah);
+		byte divQ = (byte)(divAx / bh);
+		byte divR = (byte)(divAx % bh);
+		ax = Make16(divQ, divR);
 
-		ushort ax;
-		bool isPortamento = (_channelPitchBendFlag[ch] & 0xFF) != 0;
+		tempSwap = cx;
+		cx = ax;
+		ax = tempSwap;
+		cl = Lo8(cx);
+		chByte = Hi8(cx);
 
-		if (!isPortamento) {
-			bool carryFromSub = alInput < 0x40;
-			int bendOffset = alInput - 0x40;
-
-			if (carryFromSub) {
-				ushort negated = (ushort)(-bendOffset);
-				negated = RotateRight16(negated, 5);
-				byte semitoneShift = Lo8(negated);
-				if (semitone >= semitoneShift) {
-					semitone = (byte)(semitone - semitoneShift);
+		if ((_channelPitchBendFlag[ch] & 0xFF) == 0) {
+			bool carryFromSub40 = ax < 0x0040;
+			ax = (ushort)(ax - 0x0040);
+			if (carryFromSub40) {
+				ax = (ushort)(0 - ax);
+				ax = RotateRight16(ax, 5);
+				al = Lo8(ax);
+				if (chByte >= al) {
+					chByte = (byte)(chByte - al);
 				} else {
-					semitone = (byte)(semitone + 0x0C - semitoneShift);
-					octave--;
-					if ((octave & 0x80) != 0) {
-						octave = 0;
-						semitone = 0;
+					chByte = (byte)(chByte + 0x0C - al);
+					cl = (byte)(cl - 1);
+					if ((cl & 0x80) != 0) {
+						cx = 0;
+						cl = 0;
+						chByte = 0;
 					}
 				}
 
-				byte frac = PitchBendFractions[semitone];
-				byte fracHi = Hi8(negated);
-				ushort mul = (ushort)(frac * fracHi);
-				byte fracResult = Hi8(mul);
-
-				ushort keyIndex = (ushort)(semitone * 2);
-				ax = FrequencyTable[semitone];
-				int subRes = Lo8(ax) - fracResult;
-				ax = Make16((byte)subRes, (byte)(Hi8(ax) - (subRes < 0 ? 1 : 0)));
+				al = chByte;
+				byte frac = PitchBendFractions[al];
+				ah = Hi8(ax);
+				ushort mul = (ushort)(frac * ah);
+				al = Hi8(mul);
+				byte oldCh = chByte;
+				chByte = al;
+				al = oldCh;
+				ah = 0;
+				ax = FrequencyTable[al];
+				int subRes = Lo8(ax) - chByte;
+				al = (byte)subRes;
+				ah = (byte)(Hi8(ax) - (subRes < 0 ? 1 : 0));
+				ax = Make16(al, ah);
 			} else {
-				ushort incremented = (ushort)(bendOffset + 1);
-				incremented = RotateRight16(incremented, 5);
-				byte semitoneShift = Lo8(incremented);
-				semitone = (byte)(semitone + semitoneShift);
-				if (semitone >= 0x0C) {
-					semitone = (byte)(semitone - 0x0C);
-					octave++;
+				ax = (ushort)(ax + 1);
+				ax = RotateRight16(ax, 5);
+				al = Lo8(ax);
+				chByte = (byte)(chByte + al);
+				if (chByte >= 0x0C) {
+					chByte = (byte)(chByte - 0x0C);
+					cl = (byte)(cl + 1);
 				}
 
-				byte frac = semitone < PitchBendFractions.Length
-					? PitchBendFractions[semitone]
-					: (byte)0;
-				// Table at 0x0184 = PitchBendFractions offset by 1
-				if (semitone + 1 < PitchBendFractions.Length) {
-					frac = PitchBendFractions[semitone + 1];
-				}
-				byte fracHi = Hi8(incremented);
-				ushort mul = (ushort)(frac * fracHi);
-				byte fracResult = Hi8(mul);
+				al = chByte;
+				byte frac = PitchBendFractions[(byte)(al + 1)];
+				ah = Hi8(ax);
+				ushort mul = (ushort)(frac * ah);
+				al = Hi8(mul);
 
-				ax = FrequencyTable[semitone % 12];
-				int addRes = Lo8(ax) + fracResult;
-				ax = Make16((byte)addRes, (byte)(Hi8(ax) + (addRes > 0xFF ? 1 : 0)));
+				byte oldCh = chByte;
+				chByte = al;
+				al = oldCh;
+				ah = 0;
+				ax = FrequencyTable[al];
+				int addRes = Lo8(ax) + chByte;
+				al = (byte)addRes;
+				ah = (byte)(Hi8(ax) + (addRes > 0xFF ? 1 : 0));
+				ax = Make16(al, ah);
 			}
 		} else {
-			// Portamento mode
-			bool carryFromSub = alInput < 0x40;
-			int bendOffset = alInput - 0x40;
-
-			if (carryFromSub) {
-				ushort negated = (ushort)(-bendOffset);
-				byte divQ = (byte)(negated / 5);
-				byte divR = (byte)(negated % 5);
-				if (semitone >= divQ) {
-					semitone = (byte)(semitone - divQ);
+			bool carryFromSub40 = ax < 0x0040;
+			ax = (ushort)(ax - 0x0040);
+			if (carryFromSub40) {
+				ax = (ushort)(0 - ax);
+				bh = 5;
+				ushort divWord = ax;
+				divQ = (byte)(divWord / bh);
+				divR = (byte)(divWord % bh);
+				if (chByte >= divQ) {
+					chByte = (byte)(chByte - divQ);
 				} else {
-					semitone = (byte)(semitone + 0x0C - divQ);
-					octave--;
-					if ((octave & 0x80) != 0) {
-						octave = 0;
-						semitone = 0;
+					chByte = (byte)(chByte + 0x0C - divQ);
+					cl = (byte)(cl - 1);
+					if ((cl & 0x80) != 0) {
+						cx = 0;
+						cl = 0;
+						chByte = 0;
 					}
 				}
 
-				int tableBase = semitone >= 6 ? 5 : 0;
-				byte frac = PortamentoFractions[tableBase + divR];
-
-				ax = FrequencyTable[semitone % 12];
-				int subRes = Lo8(ax) - frac;
-				ax = Make16((byte)subRes, (byte)(Hi8(ax) - (subRes < 0 ? 1 : 0)));
+				al = divR;
+				int tableBase = chByte >= 6 ? 5 : 0;
+				byte frac = PortamentoFractions[tableBase + al];
+				byte oldCh = chByte;
+				chByte = frac;
+				al = oldCh;
+				ah = 0;
+				ax = FrequencyTable[al];
+				int subRes = Lo8(ax) - chByte;
+				al = (byte)subRes;
+				ah = (byte)(Hi8(ax) - (subRes < 0 ? 1 : 0));
+				ax = Make16(al, ah);
 			} else {
-				byte divQ = (byte)(bendOffset / 5);
-				byte divR = (byte)(bendOffset % 5);
-				semitone = (byte)(semitone + divQ);
-				if (semitone >= 0x0C) {
-					semitone = (byte)(semitone - 0x0C);
-					octave++;
+				bh = 5;
+				ushort divWord = ax;
+				divQ = (byte)(divWord / bh);
+				divR = (byte)(divWord % bh);
+				chByte = (byte)(chByte + divQ);
+				if (chByte >= 0x0C) {
+					chByte = (byte)(chByte - 0x0C);
+					cl = (byte)(cl + 1);
 				}
 
-				int tableBase = semitone >= 6 ? 5 : 0;
-				byte frac = PortamentoFractions[tableBase + divR];
-
-				ax = FrequencyTable[semitone % 12];
-				int addRes = Lo8(ax) + frac;
-				ax = Make16((byte)addRes, (byte)(Hi8(ax) + (addRes > 0xFF ? 1 : 0)));
+				al = divR;
+				int tableBase = chByte >= 6 ? 5 : 0;
+				byte frac = PortamentoFractions[tableBase + al];
+				byte oldCh = chByte;
+				chByte = frac;
+				al = oldCh;
+				ah = 0;
+				ax = FrequencyTable[al];
+				int addRes = Lo8(ax) + chByte;
+				al = (byte)addRes;
+				ah = (byte)(Hi8(ax) + (addRes > 0xFF ? 1 : 0));
+				ax = Make16(al, ah);
 			}
 		}
 
-		// Combine octave into block bits
-		byte blockBits = (byte)(octave << 2);
-		ax = Make16(Lo8(ax), (byte)(Hi8(ax) | blockBits));
+		cl = (byte)(cl << 1);
+		cl = (byte)(cl << 1);
+		ah = (byte)(Hi8(ax) | cl);
+		ax = Make16(Lo8(ax), ah);
 
 		_channelFreq[ch] = ax;
 		OplFrequencyWrite(ch, (ushort)(ax | 0x2000));
