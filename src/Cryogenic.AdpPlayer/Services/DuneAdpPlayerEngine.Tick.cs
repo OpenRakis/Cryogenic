@@ -618,7 +618,9 @@ public sealed partial class DuneAdpPlayerEngine {
 	/// </summary>
 	private void EndOfTrack(int ch) {
 		_channelWait[ch] = 0xFFFF;
-		_channelEventPointer[ch] -= 2;
+		byte pointerLow = Lo8(_channelEventPointer[ch]);
+		pointerLow = (byte)(pointerLow - 2);
+		_channelEventPointer[ch] = Make16(pointerLow, Hi8(_channelEventPointer[ch]));
 
 		if (ch != 0) {
 			return;
