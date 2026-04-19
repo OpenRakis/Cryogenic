@@ -156,7 +156,8 @@ public partial class Overrides {
 	/// </summary>
 	public Action AdpInit_5BAE_0100_05BBE0(int gotoAddress) {
 		CryogenicMcpTools.RecordAdpCall("5BAE:0100_Init");
-		return AdpInit_5BAE_02D8_05BDF8(0);
+		AdpInit_5BAE_02D8_05BDF8(0);
+		return FarRet();
 	}
 
 	/// <summary>
@@ -170,7 +171,8 @@ public partial class Overrides {
 	public Action AdpOpen_5BAE_0103_05BBE3(int gotoAddress) {
 		CryogenicMcpTools.RecordAdpCall("5BAE:0103_OpenSong");
 		CryogenicMcpTools.RecordAdpSongOpen(ES, SI);
-		return AdpOpen_5BAE_03B2_05BED2(0);
+		AdpOpen_5BAE_03B2_05BED2(0);
+		return FarRet();
 	}
 
 	/// <summary>
@@ -183,7 +185,8 @@ public partial class Overrides {
 	/// </summary>
 	public Action AdpReset_5BAE_0106_05BBE6(int gotoAddress) {
 		CryogenicMcpTools.RecordAdpCall("5BAE:0106_Reset");
-		return AdpReset_5BAE_02FE_05BE1E(0);
+		AdpReset_5BAE_02FE_05BE1E(0);
+		return FarRet();
 	}
 
 	/// <summary>
@@ -196,7 +199,8 @@ public partial class Overrides {
 	/// </summary>
 	public Action AdpSetTickEnabled_5BAE_0109_05BBE9(int gotoAddress) {
 		CryogenicMcpTools.RecordAdpCall("5BAE:0109_SetTickEnabled");
-		return AdpSetTimerTickFlag_5BAE_039C_05BEBC(0);
+		AdpSetTimerTickFlag_5BAE_039C_05BEBC(0);
+		return FarRet();
 	}
 
 	/// <summary>
@@ -209,7 +213,8 @@ public partial class Overrides {
 	/// </summary>
 	public Action AdpSetDynamics_5BAE_010C_05BBEC(int gotoAddress) {
 		CryogenicMcpTools.RecordAdpCall("5BAE:010C_SetDynamics");
-		return AdpSetDynamicsCurve_5BAE_035B_05BE7B(0);
+		AdpSetDynamicsCurve_5BAE_035B_05BE7B(0);
+		return FarRet();
 	}
 
 	/// <summary>
@@ -222,7 +227,8 @@ public partial class Overrides {
 	/// </summary>
 	public Action AdpTick_5BAE_010F_05BBEF(int gotoAddress) {
 		CryogenicMcpTools.RecordAdpCall("5BAE:010F_Tick");
-		return AdpTickHandler_5BAE_0473_05BF93(0);
+		AdpTickHandler_5BAE_0473_05BF93(0);
+		return FarRet();
 	}
 
 	/// <summary>
@@ -244,7 +250,8 @@ public partial class Overrides {
 	/// </summary>
 	public Action AdpSetVolume_5BAE_0112_05BBF2(int gotoAddress) {
 		CryogenicMcpTools.RecordAdpCall("5BAE:0112_SetVolume");
-		return AdpSetVolume_5BAE_0348_05BE68(0);
+		AdpSetVolume_5BAE_0348_05BE68(0);
+		return FarRet();
 	}
 
 	/// <summary>
