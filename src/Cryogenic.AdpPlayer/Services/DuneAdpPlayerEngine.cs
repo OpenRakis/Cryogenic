@@ -2,11 +2,7 @@
 
 using Serilog;
 
-using Spice86.Audio.Backend.Audio;
-using Spice86.Audio.Filters;
-
 using System;
-using System.Threading;
 
 /// <summary>
 /// Standalone DNADP (AdLib Pro / OPL) music player engine.
@@ -19,10 +15,6 @@ public sealed partial class DuneAdpPlayerEngine : IDisposable {
 
 	// --- Audio pipeline ---
 	private readonly OplSynthesizer _opl;
-	private readonly AudioPlayer _audioPlayer;
-	private readonly int _sampleRate;
-	private readonly int _framesPerBuffer;
-	private Thread? _renderThread;
 	private volatile bool _disposed;
 	private volatile bool _playing;
 	private volatile bool _paused;
@@ -31,10 +23,6 @@ public sealed partial class DuneAdpPlayerEngine : IDisposable {
 	private readonly object _lock = new();
 	private long _totalTickCount;
 	private long _totalSamplesRendered;
-
-	// --- Defaults ---
-	private const int DefaultSampleRate = 48000;
-	private const int DefaultFramesPerBuffer = 1024;
 
 	// --- PIT timing ---
 	private const int PitInputClock = 1193182;
@@ -160,9 +148,9 @@ public sealed partial class DuneAdpPlayerEngine : IDisposable {
 	public long TotalSamplesRendered => _totalSamplesRendered;
 
 	/// <summary>
-	/// Current elapsed time in seconds based on rendered samples.
+	/// Current elapsed time in seconds based on rendered samples at native OPL rate.
 	/// </summary>
-	public double ElapsedSeconds => (double)_totalSamplesRendered / _sampleRate;
+	public double ElapsedSeconds => (double)_totalSamplesRendered / OplSynthesizer.NativeOplSampleRate;
 
 	/// <summary>
 	/// Current driver volume (packed nibble byte).
@@ -195,9 +183,9 @@ public sealed partial class DuneAdpPlayerEngine : IDisposable {
 	public byte CurrentSubdivision => _subdivision;
 
 	/// <summary>
-	/// Song sample rate.
+	/// Native OPL sample rate (49716 Hz). Output is resampled to 48000 Hz by the mixer.
 	/// </summary>
-	public int SampleRate => _sampleRate;
+	public int SampleRate => OplSynthesizer.NativeOplSampleRate;
 
 	/// <summary>
 	/// PIT reload value.
@@ -247,14 +235,16 @@ public sealed partial class DuneAdpPlayerEngine : IDisposable {
 	/// </summary>
 	public void SetOutputGain(float gain) {
 		_outputGain = Math.Clamp(gain, 0.0f, 1.0f);
+		_opl.SetMasterVolume(_outputGain);
 	}
 
 	/// <summary>
-	/// Sets the OPL volume gain scalar (mirrors Spice86 OplVolumeGain).
-	/// Default is 1.5f matching Spice86 Opl3Fm.
+	/// Sets the OPL volume gain scalar (mirrors Spice86 Opl3Fm Set0dbScalar).
+	/// Default is 1.5f matching Spice86 Opl3Fm. Applied via SoftwareMixer channel volume.
 	/// </summary>
 	public void SetOplVolumeGain(float gain) {
 		_oplVolumeGain = Math.Clamp(gain, 0.0f, 5.0f);
+		_opl.SetOplVolumeGain(_oplVolumeGain);
 	}
 
 	/// <summary>
@@ -263,32 +253,25 @@ public sealed partial class DuneAdpPlayerEngine : IDisposable {
 	public bool IsPaused => _playing && _paused;
 
 	/// <summary>
-	/// Creates the engine with full dependency injection.
+	/// Creates the engine with a custom OPL synthesizer (for testing).
 	/// </summary>
-	public DuneAdpPlayerEngine(OplSynthesizer opl, AudioPlayer audioPlayer, int sampleRate, int framesPerBuffer) {
+	public DuneAdpPlayerEngine(OplSynthesizer opl) {
 		_opl = opl;
-		_audioPlayer = audioPlayer;
-		_sampleRate = sampleRate;
-		_framesPerBuffer = framesPerBuffer;
-		_samplesPerTickThreshold = (long)_sampleRate * _pitReloadValue;
+		_samplesPerTickThreshold = (long)OplSynthesizer.NativeOplSampleRate * _pitReloadValue;
 		_opl.OnBeforeRender = AdvanceSamples;
-		Logger.Information("ADP engine created: {SampleRate} Hz, {Frames} frames/buffer, PIT reload 0x{PitReload:X4}",
-			_sampleRate, _framesPerBuffer, _pitReloadValue);
+		Logger.Information("ADP engine created: {SampleRate} Hz native OPL, PIT reload 0x{PitReload:X4}",
+			OplSynthesizer.NativeOplSampleRate, _pitReloadValue);
 	}
 
 	/// <summary>
-	/// Creates the engine with default audio pipeline (48 kHz, 1024 frames, CrossPlatform).
+	/// Creates the engine with default audio pipeline (SoftwareMixer at 49716 Hz native OPL rate).
 	/// </summary>
 	public DuneAdpPlayerEngine() {
-		_sampleRate = DefaultSampleRate;
-		_framesPerBuffer = DefaultFramesPerBuffer;
-		_opl = new OplSynthesizer(_sampleRate);
-		AudioPlayerFactory factory = new AudioPlayerFactory(AudioEngine.CrossPlatform);
-		_audioPlayer = factory.CreatePlayer(_sampleRate, _framesPerBuffer, 50, true);
-		_samplesPerTickThreshold = (long)_sampleRate * _pitReloadValue;
+		_opl = new OplSynthesizer();
+		_samplesPerTickThreshold = (long)OplSynthesizer.NativeOplSampleRate * _pitReloadValue;
 		_opl.OnBeforeRender = AdvanceSamples;
 		_opl.AudioSamplesRendered += (samples, count) => AudioSamplesRendered?.Invoke(samples, count);
-		Logger.Information("ADP engine created (default): {SampleRate} Hz, {Frames} frames/buffer", _sampleRate, _framesPerBuffer);
+		Logger.Information("ADP engine created (default): {SampleRate} Hz native OPL via SoftwareMixer", OplSynthesizer.NativeOplSampleRate);
 	}
 
 	// --- Helpers ---
@@ -496,7 +479,7 @@ public sealed partial class DuneAdpPlayerEngine : IDisposable {
 
 			if (_playing && _paused) {
 				_paused = false;
-				_audioPlayer.Start();
+				_opl.Resume();
 				Logger.Information("Playback resumed");
 				return;
 			}
@@ -520,18 +503,9 @@ public sealed partial class DuneAdpPlayerEngine : IDisposable {
 			ProcessTick();
 			_statusFlags = 0x80;
 
-			if (_renderThread == null || !_renderThread.IsAlive) {
-				_renderThread = new Thread(RenderLoop) {
-					Name = "ADP-Render",
-					IsBackground = true,
-					Priority = ThreadPriority.AboveNormal
-				};
-				_renderThread.Start();
-			}
-
 			_playing = true;
 			_paused = false;
-			_audioPlayer.Start();
+			_opl.Resume();
 			Logger.Information("Playback started");
 		}
 	}
@@ -546,7 +520,7 @@ public sealed partial class DuneAdpPlayerEngine : IDisposable {
 			}
 
 			_paused = true;
-			_audioPlayer.ClearQueuedData();
+			_opl.Pause();
 			Logger.Information("Playback paused");
 		}
 	}
@@ -561,7 +535,7 @@ public sealed partial class DuneAdpPlayerEngine : IDisposable {
 			}
 
 			_paused = false;
-			_audioPlayer.Start();
+			_opl.Resume();
 			Logger.Information("Playback resumed");
 		}
 	}
@@ -580,30 +554,8 @@ public sealed partial class DuneAdpPlayerEngine : IDisposable {
 		_paused = false;
 		AllNotesOff();
 		_statusFlags = 0;
-		_audioPlayer.ClearQueuedData();
+		_opl.Pause();
 		Logger.Information("Playback stopped");
-	}
-
-	// --- Render Loop ---
-
-	private void RenderLoop() {
-		float[] buffer = new float[_framesPerBuffer * 2];
-		Logger.Debug("Render thread started");
-		while (!_disposed) {
-			if (!_playing || _paused) {
-				Thread.Sleep(10);
-				continue;
-			}
-			lock (_lock) {
-				_opl.RenderFrames(buffer, _framesPerBuffer);
-			}
-			float combinedGain = _outputGain * _oplVolumeGain;
-			for (int i = 0; i < buffer.Length; i++) {
-				buffer[i] *= combinedGain;
-			}
-			_audioPlayer.WriteData(buffer.AsSpan());
-		}
-		Logger.Debug("Render thread exiting");
 	}
 
 	public void Dispose() {
@@ -613,9 +565,7 @@ public sealed partial class DuneAdpPlayerEngine : IDisposable {
 		_disposed = true;
 		_playing = false;
 		_paused = false;
-		_renderThread?.Join(2000);
 		_opl.Dispose();
-		_audioPlayer.Dispose();
 		Logger.Information("ADP engine disposed");
 	}
 

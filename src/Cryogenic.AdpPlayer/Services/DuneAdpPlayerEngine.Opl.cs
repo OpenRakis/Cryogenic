@@ -64,7 +64,7 @@ public sealed partial class DuneAdpPlayerEngine {
 	private void InitOplChip() {
 		_opl.Reset();
 		// Enable waveform select (register 0x01, bit 5)
-		OplRegisterWrite(0x20, 0x01);
+		OplRegisterWrite(0x01, 0x20);
 		// Rhythm mode off
 		OplRegisterWrite(0xBD, 0x00);
 		// CSM/keyboard split (register 0x08, bit 6)
