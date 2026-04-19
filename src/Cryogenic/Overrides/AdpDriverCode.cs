@@ -2080,43 +2080,52 @@ public partial class Overrides {
 	public Action AdpReadWaitValue_5BAE_08E1_05C401(int gotoAddress) {
 		CryogenicMcpTools.RecordAdpCall("5BAE:08E1_ReadWaitValue");
 		ushort savedAx = AX;
-		AX = 0;
-		AL = SegByte(ES, SI);
+		ushort ax = 0;
+		byte al = SegByte(ES, SI);
 		SI = (ushort)(SI + 1);
+		ax = Make16(al, 0);
 
-		if ((AL & 0x80) != 0) {
-			CX = 0;
+		if ((al & 0x80) != 0) {
+			ushort cx = 0;
 			do {
-				byte currentCl = Lo8(CX);
-				CX = Make16(currentCl, currentCl);
-				CX = Make16(AH, Hi8(CX));
-				AH = AL;
-				AL = SegByte(ES, SI);
+				byte previousCl = Lo8(cx);
+				byte previousAh = Hi8(ax);
+				cx = Make16(previousAh, previousCl);
+				Hi8(ref ax, al);
+				al = SegByte(ES, SI);
 				SI = (ushort)(SI + 1);
-			} while ((AL & 0x80) != 0);
+				Lo8(ref ax, al);
+			} while ((al & 0x80) != 0);
 
-			AX = (ushort)(AX & 0x7F7F);
-			CX = (ushort)(CX & 0x7F7F);
+			ax = (ushort)(ax & 0x7F7F);
+			cx = (ushort)(cx & 0x7F7F);
 
-			CL = (byte)(CL << 1);
-			CX = (ushort)(CX >> 1);
-			AL = (byte)(AL << 1);
-			AX = (ushort)(AX << 1);
+			byte cl = Lo8(cx);
+			cl = (byte)(cl << 1);
+			Lo8(ref cx, cl);
+			cx = (ushort)(cx >> 1);
 
-			bool carry = (CX & 0x0001) != 0;
-			CX = (ushort)(CX >> 1);
-			AX = (ushort)((AX >> 1) | (carry ? 0x8000 : 0));
+			byte lowAl = Lo8(ax);
+			lowAl = (byte)(lowAl << 1);
+			Lo8(ref ax, lowAl);
+			ax = (ushort)(ax << 1);
 
-			carry = (CX & 0x0001) != 0;
-			CX = (ushort)(CX >> 1);
-			AX = (ushort)((AX >> 1) | (carry ? 0x8000 : 0));
+			bool carry = (cx & 0x0001) != 0;
+			cx = (ushort)(cx >> 1);
+			ax = (ushort)((ax >> 1) | (carry ? 0x8000 : 0));
 
-			if (CX != 0) {
-				AX = 0xFFFF;
+			carry = (cx & 0x0001) != 0;
+			cx = (ushort)(cx >> 1);
+			ax = (ushort)((ax >> 1) | (carry ? 0x8000 : 0));
+
+			if (cx != 0) {
+				ax = 0xFFFF;
 			}
+
+			CX = cx;
 		}
 
-		AdpWordSet(DI, AX);
+		AdpWordSet(DI, ax);
 		AdpWordSet((ushort)(DI + 0x12), SI);
 		AX = savedAx;
 		return NearRet();
