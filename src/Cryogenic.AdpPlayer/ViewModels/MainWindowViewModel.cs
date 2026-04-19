@@ -32,6 +32,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 	private readonly Window _window;
 	private DuneAdpPlayerEngine _engine;
 	private WaveformControl _waveformControl;
+	private VolumeFeedbackControl _volumeFeedbackControl;
 	private readonly DispatcherTimer _statusTimer;
 	private string _loadedPath = "";
 	private int _playlistIndex = -1;
@@ -103,6 +104,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 	public MainWindowViewModel(Window window) {
 		_window = window;
 		_waveformControl = new WaveformControl();
+		_volumeFeedbackControl = new VolumeFeedbackControl();
 		_engine = new DuneAdpPlayerEngine();
 
 		WireSerilogSink();
@@ -129,6 +131,13 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 	/// </summary>
 	public void RegisterWaveformControl(WaveformControl control) {
 		_waveformControl = control;
+	}
+
+	/// <summary>
+	/// Called by MainWindow code-behind to link the volume feedback control instance.
+	/// </summary>
+	public void RegisterVolumeFeedbackControl(VolumeFeedbackControl control) {
+		_volumeFeedbackControl = control;
 	}
 
 	/// <inheritdoc />
@@ -386,6 +395,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 
 	private void OnAudioSamplesRendered(float[] samples, int count) {
 		_waveformControl.PushSamples(samples, count);
+		_volumeFeedbackControl.PushSamples(samples, count);
 	}
 
 	private static string ResolveDefaultSongPath() {

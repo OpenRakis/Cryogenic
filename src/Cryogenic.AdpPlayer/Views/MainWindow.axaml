@@ -124,10 +124,25 @@
             <TextBlock Classes="mono" Foreground="#7EE787" Text="{Binding ChannelStateText}" TextWrapping="Wrap" FontSize="10" />
         </Border>
 
-        <!-- Row 6: Waveform -->
-        <Border Grid.Row="6" CornerRadius="6" ClipToBounds="True" Background="#080C10">
-            <v:WaveformControl x:Name="Waveform" />
-        </Border>
+        <!-- Row 6: Waveform + Volume feedback (50/50 split) -->
+        <Grid Grid.Row="6" ColumnDefinitions="*,6,*" Margin="0,0,0,0">
+            <Border Grid.Column="0" CornerRadius="6" ClipToBounds="True" Background="#080C10" Margin="0,0,3,0">
+                <v:WaveformControl x:Name="Waveform" />
+            </Border>
+
+            <GridSplitter Grid.Column="1"
+                          Width="6"
+                          HorizontalAlignment="Stretch"
+                          VerticalAlignment="Stretch"
+                          ResizeDirection="Columns"
+                          ResizeBehavior="PreviousAndNext"
+                          ShowsPreview="True"
+                          Background="#21262D" />
+
+            <Border Grid.Column="2" CornerRadius="6" ClipToBounds="True" Background="#080C10" Margin="3,0,0,0">
+                <v:VolumeFeedbackControl x:Name="VolumeFeedback" />
+            </Border>
+        </Grid>
 
         <!-- Row 7: Bottom panels (Playlist | Channel Events | OPL Writes | Logs) -->
         <Grid Grid.Row="7" ColumnDefinitions="0.8*,*,*,*" Margin="0,6,0,0">
