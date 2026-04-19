@@ -55,7 +55,6 @@ public sealed partial class DuneAdpPlayerEngine : IDisposable {
 	private readonly byte[] _channelInstrument = new byte[ChannelCount];
 	private readonly byte[] _channelNote = new byte[ChannelCount];
 	private readonly ushort[] _channelPitchBendFlag = new ushort[ChannelCount];
-	private readonly byte[] _channelTranspose = new byte[ChannelCount];
 	private readonly byte[] _channelVibratoCount = new byte[ChannelCount];
 	private readonly byte[] _channelVibratoInit = new byte[ChannelCount];
 	private readonly byte[] _channelVibratoPhase = new byte[ChannelCount];
@@ -214,7 +213,7 @@ public sealed partial class DuneAdpPlayerEngine : IDisposable {
 					Wait = _channelWait[i],
 					Instrument = _channelInstrument[i],
 					Note = _channelNote[i],
-					Transpose = _channelTranspose[i],
+					Transpose = Hi8(_channelPitchBendFlag[i]),
 					Frequency = _channelFreq[i],
 					PitchBendFlag = _channelPitchBendFlag[i],
 					IsActive = _channelEventPointer[i] != 0 && _channelWait[i] != 0xFFFF

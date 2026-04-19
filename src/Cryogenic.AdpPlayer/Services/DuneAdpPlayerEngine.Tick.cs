@@ -27,7 +27,6 @@ public sealed partial class DuneAdpPlayerEngine {
 			_channelVibratoCount[i] = 0;
 			_channelVibratoInit[i] = 0;
 			_channelPitchBendFlag[i] = 0;
-			_channelTranspose[i] = 0;
 		}
 
 		_measure = 1;
@@ -214,7 +213,8 @@ public sealed partial class DuneAdpPlayerEngine {
 		}
 
 		byte noteFromEvent = Hi8(eventWord);
-		byte note = (byte)(noteFromEvent + _channelTranspose[ch]);
+		byte noteTranspose = Hi8(_channelPitchBendFlag[ch]);
+		byte note = (byte)(noteFromEvent + noteTranspose);
 		_channelNote[ch] = note;
 		ushort rawPitch = (ushort)(note - 0x48);
 
@@ -233,7 +233,7 @@ public sealed partial class DuneAdpPlayerEngine {
 		_channelEventPointer[ch]++;
 		ReadWaitValue(ch);
 
-		byte noteFromEvent = (byte)(Hi8(eventWord) + _channelTranspose[ch]);
+		byte noteFromEvent = (byte)(Hi8(eventWord) + Hi8(_channelPitchBendFlag[ch]));
 		if (_channelNote[ch] == noteFromEvent) {
 			_channelNote[ch] = 0;
 			OplNoteOff(ch);
