@@ -955,6 +955,8 @@ public partial class Overrides {
 			if (wait != 0) {
 				if (AdpByte((ushort)(DI + 0x5A)) != 0 && AdpWord((ushort)(DI + 0x12)) != 0) {
 					ushort savedDi = DI;
+					ushort savedCxRegister = CX;
+					CX = cx;
 					SI = AdpWord((ushort)(DI + 0x12));
 					AdpByteSet((ushort)(DI + 0x5A), (byte)(AdpByte((ushort)(DI + 0x5A)) - 1));
 					ushort phaseWord = AdpWord((ushort)(DI + 0x6C));
@@ -965,6 +967,7 @@ public partial class Overrides {
 					AX = Make16(phaseLo, phaseHi);
 					DX = (ushort)((DI - AdpChannelTableBase) >> 1);
 					AdpPitchBend_5BAE_07EA_05C30A(0);
+					CX = savedCxRegister;
 					DI = savedDi;
 				}
 			} else {
@@ -977,6 +980,8 @@ public partial class Overrides {
 					SI = (ushort)(SI + 2);
 					DX = (ushort)((DI - AdpChannelTableBase) >> 1);
 					ushort savedDi = DI;
+					ushort savedCxRegister = CX;
+					CX = cx;
 					byte handler = (byte)((AX >> 4) & 0x07);
 					switch (handler) {
 						case 0:
@@ -1002,6 +1007,7 @@ public partial class Overrides {
 							AdpEndOfTrack_5BAE_066F_05C18F(0);
 							break;
 					}
+					CX = savedCxRegister;
 					DI = savedDi;
 					if (AdpWord(DI) != 0) {
 						break;
@@ -1073,6 +1079,7 @@ public partial class Overrides {
 	/// </code>
 	/// </summary>
 	public Action AdpLoopPointCheck_5BAE_0553_05C073(int gotoAddress) {
+		CryogenicMcpTools.RecordAdpCall("5BAE:0553_LoopPointCheck");
 		if (AdpWord(0x0123) == 0) {
 			if (SegWord(ES, (ushort)(BX + 0x2A)) == AdpWord(0x011F) && AdpWord(0x0121) == 0x0060) {
 				for (int i = 0; i < 0x12; i++) {
@@ -1145,6 +1152,7 @@ public partial class Overrides {
 	/// </code>
 	/// </summary>
 	public Action AdpProgramChange_5BAE_05AA_05C0CA(int gotoAddress) {
+		CryogenicMcpTools.RecordAdpCall("5BAE:05AA_ProgramChange");
 		AdpReadWaitValue_5BAE_08E1_05C401(0);
 		if (AdpByte((ushort)(DI + 0x36)) == Hi8(AX)) {
 			return NearRet();
@@ -1221,6 +1229,7 @@ public partial class Overrides {
 	/// </code>
 	/// </summary>
 	public Action AdpNoteOn_5BAE_062C_05C14C(int gotoAddress) {
+		CryogenicMcpTools.RecordAdpCall("5BAE:062C_NoteOn");
 		byte note = SegByte(ES, SI);
 		SI = (ushort)(SI + 1);
 		AX = Make16(note, Hi8(AX));
@@ -1262,6 +1271,7 @@ public partial class Overrides {
 	/// </code>
 	/// </summary>
 	public Action AdpNoteOff_5BAE_065B_05C17B(int gotoAddress) {
+		CryogenicMcpTools.RecordAdpCall("5BAE:065B_NoteOff");
 		SI = (ushort)(SI + 1);
 		AdpReadWaitValue_5BAE_08E1_05C401(0);
 		AH = (byte)(AH + AdpByte((ushort)(DI + 0x49)));
@@ -1310,8 +1320,9 @@ public partial class Overrides {
 	/// </code>
 	/// </summary>
 	public Action AdpEndOfTrack_5BAE_066F_05C18F(int gotoAddress) {
+		CryogenicMcpTools.RecordAdpCall("5BAE:066F_EndOfTrack");
 		AdpWordSet(DI, 0xFFFF);
-		AdpByteSet((ushort)(DI + 0x12), (byte)(AdpByte((ushort)(DI + 0x12)) - 2));
+		AdpWordSet((ushort)(DI + 0x12), (ushort)(AdpWord((ushort)(DI + 0x12)) - 2));
 		if (DX != 0) {
 			return NearRet();
 		}
@@ -1332,7 +1343,8 @@ public partial class Overrides {
 		AdpWordSet(0x011F, 1);
 		AdpWordSet(0x0121, 0x60);
 		ushort loopDi = AdpChannelTableBase;
-		for (ushort cx = 9; cx > 0; cx--) {
+		ushort cx = 9;
+		while (cx > 0) {
 			ushort ptr = AdpWord((ushort)(loopDi + 0x24));
 			AdpWordSet((ushort)(loopDi + 0x12), ptr);
 			AdpWordSet(loopDi, 0xFFFF);
@@ -1343,8 +1355,10 @@ public partial class Overrides {
 				DI = loopDi;
 				AdpReadWaitValue_5BAE_08E1_05C401(0);
 				AdpWordSet(loopDi, (ushort)(AdpWord(loopDi) + 1));
+				cx = AX;
 			}
 			loopDi = (ushort)(loopDi + 2);
+			cx = (ushort)(cx - 1);
 		}
 		ES = AdpWord(0x0117);
 		BX = AdpWord(0x0115);
@@ -1451,6 +1465,7 @@ public partial class Overrides {
 	/// </code>
 	/// </summary>
 	public Action AdpVolumeModulation_5BAE_06A8_05C1C8(int gotoAddress) {
+		CryogenicMcpTools.RecordAdpCall("5BAE:06A8_VolumeModulation");
 		AdpReadWaitValue_5BAE_08E1_05C401(0);
 		byte al = 0x80;
 		byte ah = Hi8(AX);
@@ -2061,46 +2076,45 @@ public partial class Overrides {
 	/// </code>
 	/// </summary>
 	public Action AdpReadWaitValue_5BAE_08E1_05C401(int gotoAddress) {
+		CryogenicMcpTools.RecordAdpCall("5BAE:08E1_ReadWaitValue");
 		ushort savedAx = AX;
-		ushort ax = 0;
-		byte al = SegByte(ES, SI);
+		AX = 0;
+		AL = SegByte(ES, SI);
 		SI = (ushort)(SI + 1);
-		if ((al & 0x80) != 0) {
-			ushort cx = 0;
-			while (true) {
-				byte ch = Lo8(cx);
-				byte cl = Hi8(ax);
-				byte ah = al;
-				al = SegByte(ES, SI);
+
+		if ((AL & 0x80) != 0) {
+			CX = 0;
+			do {
+				byte currentCl = Lo8(CX);
+				CX = Make16(currentCl, currentCl);
+				CX = Make16(AH, Hi8(CX));
+				AH = AL;
+				AL = SegByte(ES, SI);
 				SI = (ushort)(SI + 1);
-				cx = Make16(cl, ch);
-				ax = Make16(al, ah);
-				if ((al & 0x80) == 0) {
-					ax = (ushort)(ax & 0x7F7F);
-					cx = (ushort)(cx & 0x7F7F);
-					byte cxLo = (byte)(Lo8(cx) << 1);
-					cx = Make16(cxLo, Hi8(cx));
-					cx = (ushort)(cx >> 1);
-					al = (byte)(Lo8(ax) << 1);
-					ax = Make16(al, Hi8(ax));
-					ax = (ushort)(ax << 1);
-					bool carry2 = (cx & 0x0001) != 0;
-					cx = (ushort)(cx >> 1);
-					ax = (ushort)((ax >> 1) | (carry2 ? 0x8000 : 0));
-					bool carry3 = (cx & 0x0001) != 0;
-					cx = (ushort)(cx >> 1);
-					ax = (ushort)((ax >> 1) | (carry3 ? 0x8000 : 0));
-					if (cx != 0) {
-						ax = 0xFFFF;
-					}
-					CX = cx;
-					break;
-				}
+			} while ((AL & 0x80) != 0);
+
+			AX = (ushort)(AX & 0x7F7F);
+			CX = (ushort)(CX & 0x7F7F);
+
+			CL = (byte)(CL << 1);
+			CX = (ushort)(CX >> 1);
+			AL = (byte)(AL << 1);
+			AX = (ushort)(AX << 1);
+
+			bool carry = (CX & 0x0001) != 0;
+			CX = (ushort)(CX >> 1);
+			AX = (ushort)((AX >> 1) | (carry ? 0x8000 : 0));
+
+			carry = (CX & 0x0001) != 0;
+			CX = (ushort)(CX >> 1);
+			AX = (ushort)((AX >> 1) | (carry ? 0x8000 : 0));
+
+			if (CX != 0) {
+				AX = 0xFFFF;
 			}
-		} else {
-			ax = al;
 		}
-		AdpWordSet(DI, ax);
+
+		AdpWordSet(DI, AX);
 		AdpWordSet((ushort)(DI + 0x12), SI);
 		AX = savedAx;
 		return NearRet();
@@ -2184,6 +2198,7 @@ public partial class Overrides {
 	/// </code>
 	/// </summary>
 	public Action AdpFadeStep_5BAE_092D_05C44D(int gotoAddress) {
+		CryogenicMcpTools.RecordAdpCall("5BAE:092D_FadeStep");
 		byte current = AdpByte(0x019C);
 		byte target = AdpByte(0x019D);
 		if (current == target) {
