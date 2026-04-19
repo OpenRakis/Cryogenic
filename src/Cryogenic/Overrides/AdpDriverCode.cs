@@ -966,7 +966,7 @@ public partial class Overrides {
 					AdpByteSet((ushort)(DI + 0x6C), phaseLo);
 					AX = Make16(phaseLo, phaseHi);
 					DX = (ushort)((DI - AdpChannelTableBase) >> 1);
-					AdpPitchBend_5BAE_07EA_05C30A(0);
+					AdpPitchBendBody_5BAE_07EF_05C30F(0);
 					CX = savedCxRegister;
 					DI = savedDi;
 				}
@@ -992,6 +992,7 @@ public partial class Overrides {
 							break;
 						case 2:
 						case 3:
+							CryogenicMcpTools.RecordAdpCall("5BAE:04D3_DispatchReadWait");
 							AdpReadWaitValue_5BAE_08E1_05C401(0);
 							break;
 						case 4:
@@ -1322,7 +1323,7 @@ public partial class Overrides {
 	public Action AdpEndOfTrack_5BAE_066F_05C18F(int gotoAddress) {
 		CryogenicMcpTools.RecordAdpCall("5BAE:066F_EndOfTrack");
 		AdpWordSet(DI, 0xFFFF);
-		AdpWordSet((ushort)(DI + 0x12), (ushort)(AdpWord((ushort)(DI + 0x12)) - 2));
+		AdpByteSet((ushort)(DI + 0x12), (byte)(AdpByte((ushort)(DI + 0x12)) - 2));
 		if (DX != 0) {
 			return NearRet();
 		}
@@ -1723,6 +1724,7 @@ public partial class Overrides {
 	/// </code>
 	/// </summary>
 	public Action AdpPitchBend_5BAE_07EA_05C30A(int gotoAddress) {
+		CryogenicMcpTools.RecordAdpCall("5BAE:07EA_PitchBendOp");
 		byte al = Hi8(AX);
 		AX = Make16(al, Hi8(AX));
 		AdpReadWaitValue_5BAE_08E1_05C401(0);
