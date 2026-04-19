@@ -45,7 +45,8 @@ public partial class Overrides {
 		DefineFunction(_adpSegment, 0x0106, AdpReset_5BAE_0106_05BBE6, false, nameof(AdpReset_5BAE_0106_05BBE6));
 		DefineFunction(_adpSegment, 0x0109, AdpSetTickEnabled_5BAE_0109_05BBE9, false, nameof(AdpSetTickEnabled_5BAE_0109_05BBE9));
 		DefineFunction(_adpSegment, 0x010C, AdpSetDynamics_5BAE_010C_05BBEC, false, nameof(AdpSetDynamics_5BAE_010C_05BBEC));
-		DefineFunction(_adpSegment, 0x010F, AdpTick_5BAE_010F_05BBEF, false, nameof(AdpTick_5BAE_010F_05BBEF));
+		// Keep 5BAE:010F as original ASM (jmp 0473) to preserve call/return traceability.
+		// The real tick logic remains overridden at 5BAE:0473.
 		DefineFunction(_adpSegment, 0x0112, AdpSetVolume_5BAE_0112_05BBF2, false, nameof(AdpSetVolume_5BAE_0112_05BBF2));
 
 		DefineFunction(_adpSegment, 0x02B5, AdpInitInternal_5BAE_02B5_05BDD5, false, nameof(AdpInitInternal_5BAE_02B5_05BDD5));
@@ -783,6 +784,7 @@ public partial class Overrides {
 		CryogenicMcpTools.RecordAdpCall("5BAE:0473_TickInternal");
 		ushort oldDs = DS;
 		DS = CS;
+		bool skipTickAndFade = false;
 		byte status = AdpByte(0x019A);
 		if ((status & 0x80) != 0) {
 			byte timerLo = AdpByte(0x011E);
@@ -790,7 +792,9 @@ public partial class Overrides {
 			AdpByteSet(0x011E, timerLo);
 			if ((timerLo & 0x80) != 0) {
 				AdpSongValidation_5BAE_04AD_05BFCD(0);
-				if (ZeroFlag) {
+				if (!ZeroFlag) {
+					skipTickAndFade = true;
+				} else {
 					ushort savedDx = DX;
 					ushort savedSi = SI;
 					ushort savedDi = DI;
@@ -804,12 +808,14 @@ public partial class Overrides {
 					DX = savedDx;
 				}
 			}
-			ushort fadePattern = AdpWord(0x019F);
-			fadePattern = (ushort)((fadePattern << 1) | (fadePattern >> 15));
-			AdpWordSet(0x019F, fadePattern);
-			CarryFlag = (fadePattern & 0x0001) != 0;
-			if (CarryFlag) {
-				AdpFadeStep_5BAE_092D_05C44D(0);
+			if (!skipTickAndFade) {
+				ushort fadePattern = AdpWord(0x019F);
+				fadePattern = (ushort)((fadePattern << 1) | (fadePattern >> 15));
+				AdpWordSet(0x019F, fadePattern);
+				CarryFlag = (fadePattern & 0x0001) != 0;
+				if (CarryFlag) {
+					AdpFadeStep_5BAE_092D_05C44D(0);
+				}
 			}
 		}
 		byte outStatus = AdpByte(0x019A);
@@ -2237,7 +2243,7 @@ public partial class Overrides {
 		port = (ushort)(port + 4);
 		Machine.OPL.WriteByte(port, 0x26);
 		Machine.OPL.WriteByte((ushort)(port + 1), volume);
-		AX = Make16(volume, Hi8(AX));
+		AX = Make16(volume, 0x26);
 		return NearRet();
 	}
 

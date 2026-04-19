@@ -14,6 +14,22 @@ Run an evidence-first reverse engineering pass for DNADP where note timing and s
 - MCP endpoint available
 - Access to DUNE.DAT extracted entries and UNHSQ decompressor
 
+## Mandatory Launch Discipline (Do This First)
+- Start a baseline run in a background terminal with `--UseCodeOverride false`.
+- Use `--HeadlessMode Minimal` so analysis does not disrupt interactive workflow.
+- Keep MCP enabled and use a non-conflicting GDB port when multiple instances are active.
+- Do not begin disassembly or parity edits until this baseline MCP session is confirmed reachable.
+
+Recommended baseline command:
+
+```bash
+dotnet run -- --UseCodeOverride false --HeadlessMode Minimal --Cycles 8000 \
+    -a "ADP330 SBP2227" -e "C:/path/to/DNCDPRG.EXE" -p 4096 \
+    --McpHttpPort 8081 --GdbPort 10001
+```
+
+Override-enabled comparison runs are allowed only after baseline evidence capture is completed.
+
 ### Driver profile terminology
 - ADL = regular AdLib music (`DNADL`), broadly compatible path.
 - ADP = Sound Blaster Pro-oriented AdLib music (`DNADP`) and default target for this skill.
