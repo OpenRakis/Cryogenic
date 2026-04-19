@@ -311,12 +311,17 @@ public sealed partial class DuneAdpPlayerEngine : IDisposable {
 	/// Called from the OPL synthesizer's OnBeforeRender hook on the render thread.
 	/// </summary>
 	private void AdvanceSamples(int frameCount) {
-		_totalSamplesRendered += frameCount;
-		_sampleAccumulator += (long)frameCount * PitInputClock;
-		while (_sampleAccumulator >= _samplesPerTickThreshold) {
-			_sampleAccumulator -= _samplesPerTickThreshold;
-			_totalTickCount++;
-			TickInternal();
+		if (!_playing || _paused) {
+			return;
+		}
+		lock (_lock) {
+			_totalSamplesRendered += frameCount;
+			_sampleAccumulator += (long)frameCount * PitInputClock;
+			while (_sampleAccumulator >= _samplesPerTickThreshold) {
+				_sampleAccumulator -= _samplesPerTickThreshold;
+				_totalTickCount++;
+				TickInternal();
+			}
 		}
 	}
 
