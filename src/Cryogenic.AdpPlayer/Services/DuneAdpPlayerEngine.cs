@@ -1,396 +1,707 @@
 ﻿namespace Cryogenic.AdpPlayer.Services;
 
+using Serilog;
+
+using Spice86.Audio.Backend.Audio;
+using Spice86.Audio.Filters;
+
+using System;
+using System.Threading;
+
 /// <summary>
-/// Standalone DNADP (AdLib/OPL2) player engine whose core logic is a faithful
-/// translation of the DNADP driver routines decoded from the Dune CD executable.
-///
-/// This file is intentionally a self-contained copy — it does NOT reference
-/// Cryogenic override code — so that changes to the emulator overrides can never
-/// regress the standalone player, and vice-versa.
-///
-/// Song data layout (identical to DNMID / M32 format):
-///   file[0..1]     = event base offset (relative to file start)
-///   file[2..3]     = channel 0 offset (relative to songDataOffset = file+2)
-///   file[4..5]     = channel 1 offset
-///   ...
-///   file[18..19]   = channel 8 offset
-///   file[0x2C..0x2D] = endMeasure     (songDataOffset + 0x2A)
-///   file[0x2E..0x2F] = loopMeasure    (songDataOffset + 0x2C)
-///   file[0x30..0x31] = loopRepeat     (songDataOffset + 0x2E)
-///   file[0x32..0x33] = tickIncrement  (songDataOffset + 0x30)
-///
-/// Timer model:
-///   PIT IRQ0 (~200 Hz, reload 0x1745)
-///     TickInternal:
-///       dec high byte of accumulator
-///       if bit7 set -> ProcessTick (adds tickIncrement to word accumulator)
-///       rol fadeBitPattern; if carry -> HandleFade
+/// Standalone DNADP (AdLib Pro / OPL) music player engine.
+/// Faithfully ports the original driver logic from AdpDriverCode.cs
+/// to run outside the Spice86 emulator using NukedOPL3Sharp for synthesis
+/// and Spice86.Audio for playback.
 /// </summary>
 public sealed partial class DuneAdpPlayerEngine : IDisposable {
-	// PIT reload value 0x1745 = 5957 -> 1193182 / 5957 = ~200.2 Hz -> ~4.99ms per tick.
-	private const int PitReloadValue = 0x1745;
+	private static readonly ILogger Logger = Log.ForContext<DuneAdpPlayerEngine>();
+
+	// --- Audio pipeline ---
+	private readonly OplSynthesizer _opl;
+	private readonly AudioPlayer _audioPlayer;
+	private readonly int _sampleRate;
+	private readonly int _framesPerBuffer;
+	private Thread? _renderThread;
+	private volatile bool _disposed;
+	private volatile bool _playing;
+	private volatile bool _paused;
+	private volatile float _outputGain = 1.0f;
+	private volatile float _oplVolumeGain = 1.5f;
+	private readonly object _lock = new();
+	private long _totalTickCount;
+	private long _totalSamplesRendered;
+
+	// --- Defaults ---
+	private const int DefaultSampleRate = 48000;
+	private const int DefaultFramesPerBuffer = 1024;
+
+	// --- PIT timing ---
 	private const int PitInputClock = 1193182;
-	private const int SampleRate = 48000;
+	private int _pitReloadValue = 0x1745;
+	private long _samplesPerTickThreshold;
+	private long _sampleAccumulator;
 
-	// Threshold for audio-driven tick: one PIT tick = SampleRate * PitReloadValue ticks of PitInputClock.
-	private const long SamplesPerTickThreshold = (long)SampleRate * PitReloadValue;
+	// --- Song data ---
+	private byte[] _songData = Array.Empty<byte>();
+	private int _dataBase;
+	private int _eventBase;
 
-
-
-	// Offset 2 into the file, matching driver's songDataOffset = SI + 2.
-	private const int SongDataOffset = 2;
-
-	private readonly Opl2Synth _synth;
-
-	// Song data
-	private byte[] _songData = [];
-
-	// Event base offset (points to instrument table in song data)
-	private ushort _eventBaseOffset;
-
-	// Driver state (mirrors DNADP CS-relative variables)
-	private readonly ushort[] _channelWait = new ushort[9];
-	private readonly ushort[] _channelEventPointer = new ushort[9];
-	private readonly ushort[] _channelStartOffset = new ushort[9];
-	private readonly ushort[] _snapshotWait = new ushort[9];
-	private readonly ushort[] _snapshotPointer = new ushort[9];
-
-	// Per-channel OPL state (DNADP SOA layout decoded from driver)
-	private readonly byte[] _channelInstrument = new byte[9];
-	private readonly byte[] _channelNote = new byte[9];
-	private readonly byte[] _channelTranspose = new byte[9];
-	private readonly ushort[] _channelStoredFreq = new ushort[9];
-	private readonly byte[] _channelVolume = new byte[9];
-	private readonly byte[] _channelCarrierKsl = new byte[9];
-	private readonly ushort[] _channelReg90 = new ushort[9];
-	private readonly byte[] _channelReg48 = new byte[9];
-	private readonly ushort[] _channelReg7E = new ushort[9];
-	private readonly ushort[] _channelRegA2 = new ushort[9];
-	private readonly ushort[] _channelRegC6 = new ushort[9];
-	private readonly ushort[] _channelRegB4 = new ushort[9];
-	private readonly ushort[] _channelRegD8 = new ushort[9];
-
-	private ushort _activeChannelCount;
+	// --- Global driver state ---
 	private ushort _accumulator;
+	private byte _statusFlags;
+	private byte _tickFlag;
 	private ushort _measure;
-	private ushort _subdivision;
+	private byte _subdivision;
 	private ushort _repeatCounter;
-	private ushort _tickIncrement;
-	private ushort _fadeBitPattern;
 	private byte _currentVolume;
 	private byte _targetVolume;
 	private byte _masterVolume;
-	private byte _statusFlags;
-	private byte _tickFlag;
+	private ushort _fadeBitPattern;
 
-	// Song header fields
-	private ushort _endMeasure;
-	private ushort _loopMeasure;
-	private ushort _loopRepeat;
+	// --- Per-channel state (9 OPL2 channels) ---
+	private const int ChannelCount = 9;
+	private readonly ushort[] _channelWait = new ushort[ChannelCount];
+	private readonly int[] _channelEventPointer = new int[ChannelCount];
+	private readonly int[] _channelStartOffset = new int[ChannelCount];
+	private readonly byte[] _channelInstrument = new byte[ChannelCount];
+	private readonly byte[] _channelNote = new byte[ChannelCount];
+	private readonly ushort[] _channelPitchBendFlag = new ushort[ChannelCount];
+	private readonly byte[] _channelTranspose = new byte[ChannelCount];
+	private readonly byte[] _channelVibratoCount = new byte[ChannelCount];
+	private readonly byte[] _channelVibratoInit = new byte[ChannelCount];
+	private readonly byte[] _channelVibratoPhase = new byte[ChannelCount];
+	private readonly byte[] _channelVibratoSpeed = new byte[ChannelCount];
+	private readonly ushort[] _channelTlShaping = new ushort[ChannelCount];
+	private readonly ushort[] _channelEnvShaping = new ushort[ChannelCount];
+	private readonly ushort[] _channelOperatorLevel = new ushort[ChannelCount];
+	private readonly ushort[] _channelConnShaping = new ushort[ChannelCount];
+	private readonly ushort[] _channelVolModShaping = new ushort[ChannelCount];
+	private readonly ushort[] _channelConnMod = new ushort[ChannelCount];
+	private readonly ushort[] _channelFreq = new ushort[ChannelCount];
 
-	// Audio-driven tick accumulator
-	private long _sampleAccumulator;
+	// --- Loop snapshot ---
+	private readonly ushort[] _snapshotWait = new ushort[ChannelCount];
+	private readonly int[] _snapshotPointer = new int[ChannelCount];
 
-	// Process tick counter for diagnostics
-	private int _processTickCount;
+	// --- Static lookup tables (from driver binary, verified against runtime dump) ---
 
-	// Playback control
-	private bool _isLoaded;
-	private bool _isPlaying;
-	private bool _isPaused;
-	private int _rawFileSize;
-	private bool _wasCompressed;
+	/// <summary>OPL2 F-number table for one octave (C through B), 12 entries.</summary>
+	private static readonly ushort[] FrequencyTable = {
+		0x0157, 0x016C, 0x0181, 0x0198, 0x01B1, 0x01CB,
+		0x01E6, 0x0203, 0x0222, 0x0243, 0x0266, 0x028A
+	};
 
-	public event Action<PlayerDiagnosticsSnapshot>? SnapshotProduced;
-	public event Action<string>? LogProduced;
-	public event Action<SongHeaderInfo>? HeaderInfoProduced;
-	public event Action<EventFlowEntry>? EventFlowProduced;
+	/// <summary>Maps channel (0-8) to OPL register offset for modulator operator.</summary>
+	private static readonly byte[] ModulatorOffsets = {
+		0x00, 0x01, 0x02, 0x08, 0x09, 0x0A, 0x10, 0x11, 0x12
+	};
 
-	public DuneAdpPlayerEngine(Opl2Synth synth) {
-		_synth = synth;
-		_masterVolume = 0x7F;
-		_currentVolume = 0x7F;
-		_targetVolume = 0x7F;
-		_fadeBitPattern = 0xFFFF;
-		for (int i = 0; i < _lastEventPerChannel.Length; i++) {
-			_lastEventPerChannel[i] = "-";
-		}
-	}
-
-	public bool IsPlaying => _isPlaying;
-	public bool IsPaused => _isPaused;
-	public ushort EndMeasure => _endMeasure;
-	public byte CurrentVolume => _currentVolume;
-	public byte TargetVolume => _targetVolume;
-
-	/// <summary>
-	/// When true, replaces all song instrument data with a known-good test instrument.
-	/// If sound appears during playback with this enabled, the instrument data parsing is wrong.
-	/// </summary>
-	public bool UseTestInstruments { get; set; }
+	/// <summary>Maps channel (0-8) to OPL register offset for carrier operator.</summary>
+	private static readonly byte[] CarrierOffsets = {
+		0x03, 0x04, 0x05, 0x0B, 0x0C, 0x0D, 0x13, 0x14, 0x15
+	};
 
 	/// <summary>
-	/// Loads a song file (optionally HSQ-compressed) and prepares driver state.
+	/// Operator pair table: interleaved (modulator, carrier) per channel.
+	/// Channel N modulator = OperatorPairTable[N*2], carrier = OperatorPairTable[N*2+1].
 	/// </summary>
-	public void Load(string path) {
-		byte[] source = File.ReadAllBytes(path);
-		byte[] data = TryDecompressHsq(source);
-		if (data.Length < 0x40) {
-			throw new InvalidDataException("Song stream is too small after decode.");
-		}
+	private static readonly byte[] OperatorPairTable = {
+		0x00, 0x03, 0x01, 0x04, 0x02, 0x05,
+		0x08, 0x0B, 0x09, 0x0C, 0x0A, 0x0D,
+		0x10, 0x13, 0x11, 0x14, 0x12, 0x15
+	};
 
-		_songData = data;
-		_rawFileSize = source.Length;
-		_wasCompressed = source.Length != data.Length;
-		_currentSongPath = path;
-		_currentSongName = Path.GetFileName(path);
-		_songLayoutNote = DescribeSongLayout(data);
+	/// <summary>Non-portamento pitch bend fractions (13 entries, indexed 0-12).</summary>
+	private static readonly byte[] PitchBendFractions = {
+		0x13, 0x15, 0x15, 0x17, 0x19, 0x1A,
+		0x1B, 0x1D, 0x1F, 0x21, 0x23, 0x24, 0x25
+	};
 
-		_tickFlag = 1;
+	/// <summary>Portamento pitch bend fractions (two groups of 5).</summary>
+	private static readonly byte[] PortamentoFractions = {
+		0x00, 0x05, 0x0A, 0x0F, 0x14,
+		0x00, 0x06, 0x0C, 0x12, 0x18
+	};
 
-		// Event base offset: file[0..1] stores raw offset; the driver subtracts 0x20
-		// before using it (verified via MCP: far pointer at [0x0119] = file_value - 0x20).
-		_eventBaseOffset = (ushort)(ReadU16(0) - 0x20);
+	/// <summary>
+	/// Fired when the song has finished playing (all channels ended and tickFlag reached 0).
+	/// </summary>
+	public event Action? SongFinished;
 
-		// Header fields at songDataOffset-relative offsets:
-		_endMeasure = ReadU16(SongDataOffset + 0x2A);
-		_loopMeasure = ReadU16(SongDataOffset + 0x2C);
-		_loopRepeat = ReadU16(SongDataOffset + 0x2E);
-		_tickIncrement = ReadU16(SongDataOffset + 0x30);
-		if (_tickIncrement == 0) {
-			_tickIncrement = 1;
-		}
+	/// <summary>
+	/// Fired when audio samples have been rendered, for waveform display.
+	/// </summary>
+	public event Action<float[], int>? AudioSamplesRendered;
 
-		// Initialize OPL2 chip
-		InitOpl();
+	/// <summary>
+	/// Fired when an OPL register write occurs. Args: (register, value, tickCount).
+	/// </summary>
+	public event Action<ushort, byte, long>? OplRegisterWritten;
 
-		BuildChannelTable();
+	/// <summary>
+	/// Fired when a channel event is dispatched. Args: (channel, eventName, detail, tickCount).
+	/// </summary>
+	public event Action<int, string, string, long>? ChannelEventDispatched;
 
-		_currentVolume = _masterVolume;
-		_targetVolume = _masterVolume;
+	/// <summary>
+	/// Current playback measure (1-based). Updated each tick.
+	/// </summary>
+	public int CurrentMeasure => _measure;
 
-		_accumulator = 0;
-		_repeatCounter = 0;
+	/// <summary>
+	/// Total ticks elapsed since playback started.
+	/// </summary>
+	public long TotalTickCount => _totalTickCount;
 
-		// First ProcessTick (driver calls this during OpenSong)
-		ProcessTick();
+	/// <summary>
+	/// Total audio samples rendered since playback started.
+	/// </summary>
+	public long TotalSamplesRendered => _totalSamplesRendered;
 
-		_statusFlags = 0x80;
-		_isLoaded = true;
-		_tickIndex = 0;
-		_processTickCount = 0;
-		_instrumentLoadCount = 0;
-		_noteOnCount = 0;
-		_advanceSamplesCallCount = 0;
+	/// <summary>
+	/// Current elapsed time in seconds based on rendered samples.
+	/// </summary>
+	public double ElapsedSeconds => (double)_totalSamplesRendered / _sampleRate;
 
-		ResetAudioDebug();
-		for (int i = 0; i < _lastEventPerChannel.Length; i++) {
-			_lastEventPerChannel[i] = "-";
-		}
+	/// <summary>
+	/// Current driver volume (packed nibble byte).
+	/// </summary>
+	public byte CurrentDriverVolume => _currentVolume;
 
-		EmitLog($"Loaded '{Path.GetFileName(path)}' ({source.Length}B raw -> {data.Length}B decoded)");
-		EmitLog($"  Header: tickInc=0x{_tickIncrement:X4} ({_tickIncrement}), endMeasure={_endMeasure}, loopMeasure={_loopMeasure}, loopRepeat={_loopRepeat}");
-		EmitLog($"  Timing: ~{_tickIncrement / 256.0:F2} PIT ticks/subdiv, ~{_tickIncrement / 256.0 * PitReloadValue / (double)PitInputClock * 1000.0:F2}ms/subdiv");
-		EmitLog($"  eventBase=0x{_eventBaseOffset:X4}, activeChannels={_activeChannelCount}, accumAfterInit=0x{_accumulator:X4}");
-		for (int i = 0; i < 9; i++) {
-			ushort chOff = ReadU16(SongDataOffset + i * 2);
-			if (chOff != 0) {
-				EmitLog($"  Ch{i}: offset=0x{chOff:X4} -> abs=0x{SongDataOffset + chOff:X4}, wait={_channelWait[i]}, ptr=0x{_channelEventPointer[i]:X4}");
+	/// <summary>
+	/// Target driver volume (packed nibble byte).
+	/// </summary>
+	public byte TargetDriverVolume => _targetVolume;
+
+	/// <summary>
+	/// Master driver volume (packed nibble byte).
+	/// </summary>
+	public byte MasterDriverVolume => _masterVolume;
+
+	/// <summary>
+	/// Current output gain (0.0–1.0).
+	/// </summary>
+	public float OutputGain => _outputGain;
+
+	/// <summary>
+	/// Current OPL volume gain scalar.
+	/// </summary>
+	public float OplVolumeGain => _oplVolumeGain;
+
+	/// <summary>
+	/// Current subdivision within a measure (counts down from 0x60).
+	/// </summary>
+	public byte CurrentSubdivision => _subdivision;
+
+	/// <summary>
+	/// Song sample rate.
+	/// </summary>
+	public int SampleRate => _sampleRate;
+
+	/// <summary>
+	/// PIT reload value.
+	/// </summary>
+	public int PitReloadValue => _pitReloadValue;
+
+	/// <summary>
+	/// Tick rate in Hz (PIT clock / reload value).
+	/// </summary>
+	public double TickRateHz => (double)PitInputClock / _pitReloadValue;
+
+	/// <summary>
+	/// Gets parsed song header info. Only valid after LoadSong.
+	/// </summary>
+	public SongHeaderInfo? HeaderInfo { get; private set; }
+
+	/// <summary>
+	/// Gets a snapshot of per-channel state for UI display.
+	/// </summary>
+	public ChannelSnapshot[] GetChannelSnapshots() {
+		ChannelSnapshot[] snapshots = new ChannelSnapshot[ChannelCount];
+		lock (_lock) {
+			for (int i = 0; i < ChannelCount; i++) {
+				snapshots[i] = new ChannelSnapshot {
+					Channel = i,
+					Wait = _channelWait[i],
+					Instrument = _channelInstrument[i],
+					Note = _channelNote[i],
+					Transpose = _channelTranspose[i],
+					Frequency = _channelFreq[i],
+					PitchBendFlag = _channelPitchBendFlag[i],
+					IsActive = _channelEventPointer[i] != 0 && _channelWait[i] != 0xFFFF
+				};
 			}
 		}
-		EmitHeaderInfo();
-		EmitSnapshot(0);
-	}
-
-	public void SetTargetVolume(byte targetVolume) {
-		_targetVolume = targetVolume;
-		_fadeBitPattern = 0xFFFF;
+		return snapshots;
 	}
 
 	/// <summary>
-	/// Sets master + current + target volume immediately.
+	/// True when the engine is actively generating audio.
 	/// </summary>
-	public void SetMasterVolumeImmediate(byte volume) {
-		_masterVolume = volume;
-		_currentVolume = volume;
-		_targetVolume = volume;
-		_fadeBitPattern = 0xFFFF;
-	}
+	public bool IsPlaying => _playing && !_paused;
 
-	public void Start() {
-		if (!_isLoaded) {
-			throw new InvalidOperationException("Load a song file first.");
-		}
-		if (_isPlaying) {
-			return;
-		}
-		_sampleAccumulator = 0;
-		_isPlaying = true;
-		_isPaused = false;
-		_synth.OnBeforeRender = AdvanceSamples;
-		_synth.LogDebug($"Start(): OnBeforeRender hooked, isPlaying={_isPlaying}");
-		EmitLog($"Playback started (audio-driven, PIT ~{PitInputClock / (double)PitReloadValue:F1} Hz, ~{SamplesPerTickThreshold / (double)PitInputClock:F1} samples/tick).");
+	/// <summary>
+	/// Sets the output gain applied to all rendered samples.
+	/// Range is 0.0 (silence) to 1.0 (full volume).
+	/// </summary>
+	public void SetOutputGain(float gain) {
+		_outputGain = Math.Clamp(gain, 0.0f, 1.0f);
 	}
 
 	/// <summary>
-	/// Pauses playback: stops tick advancement and silences sounding notes.
+	/// Sets the OPL volume gain scalar (mirrors Spice86 OplVolumeGain).
+	/// Default is 1.5f matching Spice86 Opl3Fm.
 	/// </summary>
-	public void Pause() {
-		if (!_isPlaying || _isPaused) {
-			return;
-		}
-		_synth.OnBeforeRender = null;
-		AllNotesOff();
-		_isPlaying = false;
-		_isPaused = true;
-		EmitLog("Playback paused.");
+	public void SetOplVolumeGain(float gain) {
+		_oplVolumeGain = Math.Clamp(gain, 0.0f, 5.0f);
 	}
 
 	/// <summary>
-	/// Resumes playback from a paused state.
+	/// True when playback state is preserved but audio generation is paused.
 	/// </summary>
-	public void Resume() {
-		if (!_isPaused) {
-			return;
+	public bool IsPaused => _playing && _paused;
+
+	/// <summary>
+	/// Creates the engine with full dependency injection.
+	/// </summary>
+	public DuneAdpPlayerEngine(OplSynthesizer opl, AudioPlayer audioPlayer, int sampleRate, int framesPerBuffer) {
+		_opl = opl;
+		_audioPlayer = audioPlayer;
+		_sampleRate = sampleRate;
+		_framesPerBuffer = framesPerBuffer;
+		_samplesPerTickThreshold = (long)_sampleRate * _pitReloadValue;
+		_opl.OnBeforeRender = AdvanceSamples;
+		Logger.Information("ADP engine created: {SampleRate} Hz, {Frames} frames/buffer, PIT reload 0x{PitReload:X4}",
+			_sampleRate, _framesPerBuffer, _pitReloadValue);
+	}
+
+	/// <summary>
+	/// Creates the engine with default audio pipeline (48 kHz, 1024 frames, CrossPlatform).
+	/// </summary>
+	public DuneAdpPlayerEngine() {
+		_sampleRate = DefaultSampleRate;
+		_framesPerBuffer = DefaultFramesPerBuffer;
+		_opl = new OplSynthesizer(_sampleRate);
+		AudioPlayerFactory factory = new AudioPlayerFactory(AudioEngine.CrossPlatform);
+		_audioPlayer = factory.CreatePlayer(_sampleRate, _framesPerBuffer, 50, true);
+		_samplesPerTickThreshold = (long)_sampleRate * _pitReloadValue;
+		_opl.OnBeforeRender = AdvanceSamples;
+		_opl.AudioSamplesRendered += (samples, count) => AudioSamplesRendered?.Invoke(samples, count);
+		Logger.Information("ADP engine created (default): {SampleRate} Hz, {Frames} frames/buffer", _sampleRate, _framesPerBuffer);
+	}
+
+	// --- Helpers ---
+
+	private static byte Lo8(ushort value) {
+		return (byte)(value & 0xFF);
+	}
+
+	private static byte Hi8(ushort value) {
+		return (byte)(value >> 8);
+	}
+
+	private static ushort Make16(byte lo, byte hi) {
+		return (ushort)(lo | (hi << 8));
+	}
+
+	private static ushort RotateRight16(ushort value, int count) {
+		int n = count & 0x0F;
+		if (n == 0) {
+			return value;
 		}
-		_sampleAccumulator = 0;
-		_isPlaying = true;
-		_isPaused = false;
-		_synth.OnBeforeRender = AdvanceSamples;
-		EmitLog("Playback resumed.");
+		return (ushort)((value >> n) | (value << (16 - n)));
 	}
 
-	public void Stop() {
-		_synth.OnBeforeRender = null;
-		_isPlaying = false;
-		_isPaused = false;
-		_statusFlags = 0;
-		_sampleAccumulator = 0;
-		AllNotesOff();
-		EmitLog("Playback stopped.");
+	private byte SongByte(int offset) {
+		return _songData[offset];
 	}
 
-	public void Dispose() {
-		Stop();
-	}
-
-	public void PanicAllNotesOff() {
-		AllNotesOff();
-		AddRecentEvent("PANIC all notes off");
-	}
-
-	public object GetRawStreamDebug(int channel, int before, int count) {
-		int clampedBefore = Math.Clamp(before, 0, 64);
-		int clampedCount = Math.Clamp(count, 8, 256);
-		int clampedChannel = Math.Clamp(channel, 0, 8);
-
-		ushort pointer = _channelEventPointer[clampedChannel];
-		int start = Math.Max(0, pointer - clampedBefore);
-		int endExclusive = Math.Min(_songData.Length, start + clampedCount);
-		byte[] window = _songData[start..endExclusive];
-
-		int headerStart = 0;
-		int headerCount = Math.Min(80, Math.Max(0, _songData.Length - headerStart));
-		byte[] headerWindow = headerCount > 0 ? _songData[headerStart..(headerStart + headerCount)] : [];
-
-		return new {
-			channel = clampedChannel,
-			pointer,
-			wait = _channelWait[clampedChannel],
-			windowStart = start,
-			windowLength = window.Length,
-			windowHex = BytesToHex(window),
-			headerOffset = 0,
-			headerHex = BytesToHex(headerWindow),
-			songLayoutNote = _songLayoutNote
-		};
-	}
-
-	// Memory access helper
-	private ushort ReadU16(int offset) {
-		if (offset + 1 >= _songData.Length) {
-			throw new InvalidDataException($"Song read out of bounds at 0x{offset:X4} / len=0x{_songData.Length:X4}.");
-		}
+	private ushort SongWord(int offset) {
 		return (ushort)(_songData[offset] | (_songData[offset + 1] << 8));
 	}
 
-	private static string DescribeSongLayout(byte[] data) {
-		int activeCount = 0;
-		for (int i = 0; i < 9; i++) {
-			ushort ch = (ushort)(data[SongDataOffset + i * 2] | (data[SongDataOffset + i * 2 + 1] << 8));
-			if (ch != 0) { activeCount++; }
-		}
-		ushort endMeasure = (ushort)(data[SongDataOffset + 0x2A] | (data[SongDataOffset + 0x2A + 1] << 8));
-		ushort loopMeasure = (ushort)(data[SongDataOffset + 0x2C] | (data[SongDataOffset + 0x2C + 1] << 8));
-		ushort loopRepeat = (ushort)(data[SongDataOffset + 0x2E] | (data[SongDataOffset + 0x2E + 1] << 8));
-		ushort tickInc = (ushort)(data[SongDataOffset + 0x30] | (data[SongDataOffset + 0x30 + 1] << 8));
-		ushort firstWord = (ushort)(data[0] | (data[1] << 8));
-		return $"evtBase=0x{firstWord:X4}, {activeCount}ch, tickInc=0x{tickInc:X4}, end={endMeasure}, loop={loopMeasure}, repeat={loopRepeat}";
-	}
+	// --- PIT Timing ---
 
-	private static string BytesToHex(byte[] bytes) {
-		if (bytes.Length == 0) {
-			return string.Empty;
+	/// <summary>
+	/// Advances the PIT accumulator by the given number of audio frames.
+	/// Called from the OPL synthesizer's OnBeforeRender hook on the render thread.
+	/// </summary>
+	private void AdvanceSamples(int frameCount) {
+		_totalSamplesRendered += frameCount;
+		_sampleAccumulator += (long)frameCount * PitInputClock;
+		while (_sampleAccumulator >= _samplesPerTickThreshold) {
+			_sampleAccumulator -= _samplesPerTickThreshold;
+			_totalTickCount++;
+			TickInternal();
 		}
-		char[] chars = new char[bytes.Length * 3 - 1];
-		int c = 0;
-		for (int i = 0; i < bytes.Length; i++) {
-			byte b = bytes[i];
-			chars[c++] = (char)(((b >> 4) & 0xF) < 10 ? '0' + ((b >> 4) & 0xF) : 'A' + ((b >> 4) & 0xF) - 10);
-			chars[c++] = (char)((b & 0xF) < 10 ? '0' + (b & 0xF) : 'A' + (b & 0xF) - 10);
-			if (i != bytes.Length - 1) {
-				chars[c++] = ' ';
-			}
-		}
-		return new string(chars);
-	}
-
-	private void EmitLog(string message) {
-		string line = $"[{DateTime.Now:HH:mm:ss.fff}] {message}";
-		LogProduced?.Invoke(line);
 	}
 
 	/// <summary>
-	/// Builds and emits a structured SongHeaderInfo for the UI header panel.
+	/// Single driver tick. Mirrors AdpTickHandler_0473.
+	/// Decrements the prescaler, fires ProcessTick on overflow,
+	/// rotates the fade pattern, and calls FadeStep on carry.
 	/// </summary>
-	private void EmitHeaderInfo() {
-		double pitTicksPerSubdiv = _tickIncrement / 256.0;
-		double msPerSubdiv = pitTicksPerSubdiv * PitReloadValue / (double)PitInputClock * 1000.0;
-		double msPerMeasure = msPerSubdiv * 0x60;
-		double estimatedSec = _endMeasure * msPerMeasure / 1000.0;
-
-		ChannelHeaderInfo[] channels = new ChannelHeaderInfo[9];
-		for (int i = 0; i < 9; i++) {
-			ushort rawOff = ReadU16(SongDataOffset + i * 2);
-			channels[i] = new ChannelHeaderInfo {
-				Index = i,
-				RawOffset = rawOff,
-				AbsoluteOffset = (ushort)(rawOff != 0 ? SongDataOffset + rawOff : 0),
-				InitialWait = _channelWait[i],
-				InitialPointer = _channelEventPointer[i],
-				Active = rawOff != 0
-			};
+	private void TickInternal() {
+		if ((_statusFlags & 0x80) == 0) {
+			return;
 		}
 
-		SongHeaderInfo info = new() {
-			FileName = _currentSongName,
-			FilePath = _currentSongPath,
-			RawFileSize = _rawFileSize,
-			DecodedSize = _songData.Length,
-			WasCompressed = _wasCompressed,
-			FirstWord = ReadU16(0),
-			TickIncrement = _tickIncrement,
-			PitTicksPerSubdivision = pitTicksPerSubdiv,
-			MillisecondsPerSubdivision = msPerSubdiv,
-			MillisecondsPerMeasure = msPerMeasure,
-			EstimatedDurationSeconds = estimatedSec,
-			EndMeasure = _endMeasure,
-			LoopMeasure = _loopMeasure,
-			LoopRepeat = _loopRepeat,
-			ActiveChannelCount = _activeChannelCount,
-			Channels = channels
+		byte prescaler = Hi8(_accumulator);
+		prescaler--;
+		_accumulator = Make16(Lo8(_accumulator), prescaler);
+
+		if ((prescaler & 0x80) != 0) {
+			ProcessTick();
+		}
+
+		ushort fadePattern = _fadeBitPattern;
+		bool carry = (fadePattern & 0x8000) != 0;
+		fadePattern = (ushort)((fadePattern << 1) | (carry ? 1 : 0));
+		_fadeBitPattern = fadePattern;
+
+		if (carry) {
+			FadeStep();
+		}
+	}
+
+	// --- Volume Computation ---
+
+	/// <summary>
+	/// Computes a packed volume nibble byte from the raw two-component volume
+	/// in (al, ah). Mirrors AdpResetInternalBody_030B.
+	/// </summary>
+	private static byte ComputeVolumeNibbles(byte al, byte ah) {
+		al = (byte)(al >> 3);
+		byte dl = al;
+		byte dh = ah;
+		byte bl = 0x78;
+		byte bh = 0xF0;
+
+		if (ah > bl) {
+			ah = bl;
+		}
+		al = 0;
+		ushort axDiv = Make16(al, ah);
+		al = (byte)(axDiv / bh);
+		ah = (byte)(axDiv % bh);
+		ushort mul1 = (ushort)(al * dl);
+		al = Lo8(mul1);
+		ah = Hi8(mul1);
+
+		byte temp = ah;
+		ah = dh;
+		dh = temp;
+
+		ah = (byte)(ah - bh);
+		ah = (byte)(0 - ah);
+		if (ah > bl) {
+			ah = bl;
+		}
+
+		al = 0;
+		axDiv = Make16(al, ah);
+		al = (byte)(axDiv / bh);
+		ah = (byte)(axDiv % bh);
+		ushort axOut = (ushort)(al * dl);
+		axOut = (ushort)(axOut >> 4);
+
+		ah = dh;
+		axOut = (ushort)((axOut & 0x00F0) | ((ah & 0x0F) << 8));
+		return (byte)((axOut & 0xF0) | (ah & 0x0F));
+	}
+
+	// --- Public API ---
+
+	/// <summary>
+	/// Loads a song from file, applying HSQ decompression if detected.
+	/// </summary>
+	public void LoadSong(byte[] fileData) {
+		bool wasCompressed = false;
+		byte[]? decompressed = TryDecompressHsq(fileData);
+		byte[] data;
+		if (decompressed != null) {
+			data = decompressed;
+			wasCompressed = true;
+		} else {
+			data = fileData;
+		}
+		lock (_lock) {
+			bool wasPlaying = _playing;
+			if (wasPlaying) {
+				StopInternal();
+			}
+
+			_songData = data;
+			_dataBase = 2;
+			_eventBase = SongWord(0);
+
+			HeaderInfo = ParseSongHeader(data, _dataBase, _eventBase, wasCompressed);
+
+			Logger.Information("Song loaded: {Length} bytes, dataBase={DataBase}, eventBase=0x{EventBase:X4}",
+				_songData.Length, _dataBase, _eventBase);
+		}
+	}
+
+	/// <summary>
+	/// Sets the master volume. Input is the raw AX value (AH=high, AL=low).
+	/// Mirrors AdpSetVolume_0348.
+	/// </summary>
+	public void SetVolume(byte low, byte high) {
+		lock (_lock) {
+			byte packed = ComputeVolumeNibbles(low, high);
+			_masterVolume = packed;
+			_targetVolume = packed;
+			_fadeBitPattern = 0xFFFF;
+		}
+	}
+
+	/// <summary>
+	/// Sets the fade dynamics. Mirrors AdpSetDynamicsCurve_035B.
+	/// </summary>
+	public void SetDynamics(ushort fadeSpeed, byte volumeLow, byte volumeHigh) {
+		lock (_lock) {
+			byte packed = ComputeVolumeNibbles(volumeLow, volumeHigh);
+			_targetVolume = packed;
+
+			ushort fade;
+			if (fadeSpeed < 0x0060) {
+				fade = 0xFFFF;
+			} else if (fadeSpeed < 0x00C0) {
+				fade = 0xAAAA;
+			} else if (fadeSpeed < 0x0180) {
+				fade = 0x8888;
+			} else if (fadeSpeed < 0x0300) {
+				fade = 0x8080;
+			} else {
+				fade = 0x8000;
+			}
+			_fadeBitPattern = fade;
+
+			if ((_statusFlags & 0x80) != 0) {
+				_statusFlags = (byte)(_statusFlags | 0x40);
+			}
+		}
+	}
+
+	/// <summary>
+	/// Opens and starts playing the loaded song. Mirrors AdpOpen_03B2.
+	/// </summary>
+	public void Play() {
+		lock (_lock) {
+			if (_songData.Length == 0) {
+				Logger.Warning("No song loaded");
+				return;
+			}
+
+			if (_playing && _paused) {
+				_paused = false;
+				_audioPlayer.Start();
+				Logger.Information("Playback resumed");
+				return;
+			}
+
+			if (_playing) {
+				StopInternal();
+			}
+
+			InitOplChip();
+			InitTotalLevels();
+			BuildChannelTable();
+
+			_currentVolume = _masterVolume;
+			_targetVolume = _masterVolume;
+			_accumulator = 0;
+			_repeatCounter = 0;
+			_tickFlag = 1;
+			_totalTickCount = 0;
+			_totalSamplesRendered = 0;
+
+			ProcessTick();
+			_statusFlags = 0x80;
+
+			if (_renderThread == null || !_renderThread.IsAlive) {
+				_renderThread = new Thread(RenderLoop) {
+					Name = "ADP-Render",
+					IsBackground = true,
+					Priority = ThreadPriority.AboveNormal
+				};
+				_renderThread.Start();
+			}
+
+			_playing = true;
+			_paused = false;
+			_audioPlayer.Start();
+			Logger.Information("Playback started");
+		}
+	}
+
+	/// <summary>
+	/// Pauses playback while preserving the current driver state.
+	/// </summary>
+	public void Pause() {
+		lock (_lock) {
+			if (!_playing || _paused) {
+				return;
+			}
+
+			_paused = true;
+			_audioPlayer.ClearQueuedData();
+			Logger.Information("Playback paused");
+		}
+	}
+
+	/// <summary>
+	/// Resumes playback after a pause.
+	/// </summary>
+	public void Resume() {
+		lock (_lock) {
+			if (!_playing || !_paused) {
+				return;
+			}
+
+			_paused = false;
+			_audioPlayer.Start();
+			Logger.Information("Playback resumed");
+		}
+	}
+
+	/// <summary>
+	/// Stops playback and silences all channels.
+	/// </summary>
+	public void Stop() {
+		lock (_lock) {
+			StopInternal();
+		}
+	}
+
+	private void StopInternal() {
+		_playing = false;
+		_paused = false;
+		AllNotesOff();
+		_statusFlags = 0;
+		_audioPlayer.ClearQueuedData();
+		Logger.Information("Playback stopped");
+	}
+
+	// --- Render Loop ---
+
+	private void RenderLoop() {
+		float[] buffer = new float[_framesPerBuffer * 2];
+		Logger.Debug("Render thread started");
+		while (!_disposed) {
+			if (!_playing || _paused) {
+				Thread.Sleep(10);
+				continue;
+			}
+			lock (_lock) {
+				_opl.RenderFrames(buffer, _framesPerBuffer);
+			}
+			float combinedGain = _outputGain * _oplVolumeGain;
+			for (int i = 0; i < buffer.Length; i++) {
+				buffer[i] *= combinedGain;
+			}
+			_audioPlayer.WriteData(buffer.AsSpan());
+		}
+		Logger.Debug("Render thread exiting");
+	}
+
+	public void Dispose() {
+		if (_disposed) {
+			return;
+		}
+		_disposed = true;
+		_playing = false;
+		_paused = false;
+		_renderThread?.Join(2000);
+		_opl.Dispose();
+		_audioPlayer.Dispose();
+		Logger.Information("ADP engine disposed");
+	}
+
+	/// <summary>
+	/// Parses song header metadata for UI display.
+	/// </summary>
+	private SongHeaderInfo ParseSongHeader(byte[] data, int dataBase, int eventBase, bool wasCompressed) {
+		SongHeaderInfo info = new SongHeaderInfo {
+			RawFileSize = data.Length,
+			WasHsqCompressed = wasCompressed,
+			DataBase = dataBase,
+			EventBase = eventBase,
+			InstrumentCount = eventBase > dataBase + 0x32 ? (data.Length - eventBase) / 0x28 : 0
 		};
 
-		HeaderInfoProduced?.Invoke(info);
+		if (data.Length >= dataBase + 0x32) {
+			info.Tempo = SongWord(dataBase + 0x30);
+			info.LoopStartMeasure = SongWord(dataBase + 0x2A);
+			info.LoopEndMeasure = SongWord(dataBase + 0x2C);
+			info.LoopCount = SongWord(dataBase + 0x2E);
+
+			for (int i = 0; i < ChannelCount; i++) {
+				ushort relative = SongWord(dataBase + i * 2);
+				info.ChannelOffsets[i] = relative;
+				info.ChannelActive[i] = relative != 0;
+			}
+		}
+
+		int activeChannels = 0;
+		for (int i = 0; i < ChannelCount; i++) {
+			if (info.ChannelActive[i]) {
+				activeChannels++;
+			}
+		}
+		info.ActiveChannelCount = activeChannels;
+
+		Logger.Information("Header: tempo=0x{Tempo:X4}, {ActiveCh} active channels, {InstCount} instruments, loop={LoopStart}-{LoopEnd}x{LoopCount}",
+			info.Tempo, activeChannels, info.InstrumentCount, info.LoopStartMeasure, info.LoopEndMeasure, info.LoopCount);
+
+		return info;
+	}
+}
+
+/// <summary>
+/// Parsed song header metadata for display.
+/// </summary>
+public sealed class SongHeaderInfo {
+	public int RawFileSize { get; set; }
+	public bool WasHsqCompressed { get; set; }
+	public int DataBase { get; set; }
+	public int EventBase { get; set; }
+	public ushort Tempo { get; set; }
+	public ushort LoopStartMeasure { get; set; }
+	public ushort LoopEndMeasure { get; set; }
+	public ushort LoopCount { get; set; }
+	public int InstrumentCount { get; set; }
+	public int ActiveChannelCount { get; set; }
+	public ushort[] ChannelOffsets { get; set; } = new ushort[9];
+	public bool[] ChannelActive { get; set; } = new bool[9];
+}
+
+/// <summary>
+/// Snapshot of a single OPL channel's state for UI display.
+/// </summary>
+public sealed class ChannelSnapshot {
+	public int Channel { get; set; }
+	public ushort Wait { get; set; }
+	public byte Instrument { get; set; }
+	public byte Note { get; set; }
+	public byte Transpose { get; set; }
+	public ushort Frequency { get; set; }
+	public ushort PitchBendFlag { get; set; }
+	public bool IsActive { get; set; }
+
+	/// <summary>
+	/// Human-readable note name from MIDI-style note number.
+	/// </summary>
+	public string NoteName {
+		get {
+			if (Note == 0) {
+				return "---";
+			}
+			string[] names = { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
+			int octave = (Note / 12) - 1;
+			int semitone = Note % 12;
+			return $"{names[semitone]}{octave}";
+		}
 	}
 }

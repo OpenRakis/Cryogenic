@@ -7,27 +7,37 @@ using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
+using Cryogenic.AdpPlayer.Logging;
 using Cryogenic.AdpPlayer.Services;
 using Cryogenic.AdpPlayer.Views;
 
+using Serilog;
+
+using System;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Text;
 
+/// <summary>
+/// Main window view model: manages file loading, playback, volume, waveform,
+/// channel events, OPL writes, and Serilog log display for the standalone ADP OPL3 player.
+/// </summary>
 public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
+	private static readonly ILogger Logger = Log.ForContext<MainWindowViewModel>();
+
+	private const string DefaultAdgPath = @"C:\Jeux\DUNE\ARRAKIS.ADG";
+
 	private readonly Window _window;
-	private Opl2Synth? _synth;
-	private DuneAdpPlayerEngine? _player;
-	private PlayerControlServer? _controlServer;
-	private readonly Queue<int> _eventsHistory = new();
-	private const int GraphWindow = 64;
-	private const int MaxEventFlowEntries = 200;
-	private WaveformControl? _waveformControl;
+	private DuneAdpPlayerEngine _engine;
+	private WaveformControl _waveformControl;
+	private readonly DispatcherTimer _statusTimer;
+	private string _loadedPath = "";
 
 	[ObservableProperty]
-	private string _songPath = @"C:\Users\noalm\source\repos\Cryogenic\doc\DUNECDVF\C\DUNECD\DUNE.DAT_\MORNING.AGD";
+	private string _adgPath = DefaultAdgPath;
 
 	[ObservableProperty]
-	private string _status = "Select an ADP/AGD/HSQ song file.";
+	private string _status = "Select an ADG/ADP file to play.";
 
 	[ObservableProperty]
 	private bool _isPlaying;
@@ -36,483 +46,260 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 	private bool _isPaused;
 
 	[ObservableProperty]
-	private string _tickInfo = "Tick: -";
+	private string _tickInfo = "Idle";
+
+	// --- Volume controls ---
 
 	[ObservableProperty]
-	private string _eventGraph = string.Empty;
+	private int _masterVolume = 200;
 
 	[ObservableProperty]
-	private string _transportInfo = "00:00 / 00:00";
+	private int _oplVolume = 150;
 
 	[ObservableProperty]
-	private double _timelineProgress;
+	private string _selectedFileName = "No file selected";
+
+	// --- Position/time ---
 
 	[ObservableProperty]
-	private int _masterVolume = 127;
+	private string _positionText = "00:00.0 / Measure 0";
+
+	// --- Header info ---
 
 	[ObservableProperty]
-	private int _targetVolume = 127;
+	private string _headerInfo = "No song loaded.";
+
+	// --- Volume feedback ---
 
 	[ObservableProperty]
-	private double _outputGain = 1.0;
+	private string _volumeInfo = "Master: 0 dB  |  OPL: 1.5x  |  Driver: --";
+
+	// --- Channel state ---
 
 	[ObservableProperty]
-	private double _audioPeak;
+	private string _channelStateText = "";
 
-	[ObservableProperty]
-	private string _serverEndpoint = "http://127.0.0.1:8766/";
+	/// <summary>Channel events shown in the UI.</summary>
+	public ObservableCollection<ChannelEventItem> ChannelEvents { get; } = new();
 
-	[ObservableProperty]
-	private bool _serverRunning;
+	/// <summary>OPL register writes shown in the UI.</summary>
+	public ObservableCollection<OplWriteItem> OplWrites { get; } = new();
 
-	// OPL Test panel properties
-	[ObservableProperty]
-	private int _testChannel;
-
-	[ObservableProperty]
-	private int _testNote = 60;
-
-	[ObservableProperty]
-	private int _testVolume;
-
-	[ObservableProperty]
-	private bool _useTestInstruments;
-
-	// Header panel structured properties
-	[ObservableProperty]
-	private string _headerFileName = "-";
-
-	[ObservableProperty]
-	private string _headerFileSize = "-";
-
-	[ObservableProperty]
-	private string _headerTiming = "-";
-
-	[ObservableProperty]
-	private string _headerStructure = "-";
-
-	[ObservableProperty]
-	private string _headerChannels = "-";
-
+	/// <summary>Log entries shown in the UI log panel.</summary>
 	public ObservableCollection<LogDisplayItem> Logs { get; } = new();
-	public ObservableCollection<ChannelTrackerRowViewModel> TrackerRows { get; } = new();
-	public ObservableCollection<EventFlowDisplayItem> EventFlow { get; } = new();
 
+	/// <summary>
+	/// Creates the view model, wires the Serilog UI sink.
+	/// </summary>
 	public MainWindowViewModel(Window window) {
 		_window = window;
-		for (int i = 0; i < 9; i++) {
-			TrackerRows.Add(new ChannelTrackerRowViewModel(i));
+		_waveformControl = new WaveformControl();
+		_engine = new DuneAdpPlayerEngine();
+
+		WireSerilogSink();
+		WireEngineEvents();
+
+		_statusTimer = new DispatcherTimer {
+			Interval = TimeSpan.FromMilliseconds(100)
+		};
+		_statusTimer.Tick += (_, _) => RefreshTransportState();
+		_statusTimer.Start();
+
+		// Set default file name
+		if (File.Exists(DefaultAdgPath)) {
+			SelectedFileName = Path.GetFileName(DefaultAdgPath);
+			Status = "Default file found. Press Play.";
 		}
 
-		StartControlServer();
+		Logger.Information("ADP Player ready — OPL gain={OplGain:F1}x, tick rate={TickRate:F1} Hz",
+			_engine.OplVolumeGain, _engine.TickRateHz);
 	}
 
 	/// <summary>
-	/// Called by MainWindow codebehind to link the waveform control instance.
+	/// Called by MainWindow code-behind to link the waveform control instance.
 	/// </summary>
 	public void RegisterWaveformControl(WaveformControl control) {
 		_waveformControl = control;
 	}
 
+	/// <inheritdoc />
 	public void Dispose() {
-		_controlServer?.Dispose();
-		_player?.Dispose();
-		_synth?.Dispose();
-	}
-
-	partial void OnOutputGainChanged(double value) {
-		if (_synth is not null) {
-			_synth.OutputGain = (float)value;
-			AddLog($"Output gain set to {value:F2}.");
-		}
+		ObservableSerilogSink.Instance.LogReceived -= OnSerilogMessage;
+		_statusTimer.Stop();
+		_engine.ChannelEventDispatched -= OnChannelEvent;
+		_engine.OplRegisterWritten -= OnOplWrite;
+		_engine.Dispose();
 	}
 
 	partial void OnMasterVolumeChanged(int value) {
-		if (_player is not null) {
-			int clamped = Math.Clamp(value, 0, 127);
-			_player.SetMasterVolumeImmediate((byte)clamped);
-		}
+		float gain = Math.Clamp(value, 0, 255) / 255f;
+		_engine.SetOutputGain(gain);
+		UpdateVolumeInfo();
 	}
 
-	partial void OnTargetVolumeChanged(int value) {
-		if (_player is not null) {
-			int clamped = Math.Clamp(value, 0, 127);
-			_player.SetTargetVolume((byte)clamped);
-		}
+	partial void OnOplVolumeChanged(int value) {
+		float gain = Math.Clamp(value, 0, 300) / 100f;
+		_engine.SetOplVolumeGain(gain);
+		UpdateVolumeInfo();
 	}
 
-	partial void OnUseTestInstrumentsChanged(bool value) {
-		if (_player is not null) {
-			_player.UseTestInstruments = value;
-			AddLog(value ? "UseTestInstruments ON — all PRG events write test instrument." : "UseTestInstruments OFF — using song instrument data.");
-		}
-	}
-
+	/// <summary>
+	/// Opens a file picker for ADG/ADP files.
+	/// </summary>
 	[RelayCommand]
-	private async Task BrowseSongAsync() {
+	private async System.Threading.Tasks.Task BrowseFileAsync() {
 		if (_window.StorageProvider is null) {
 			return;
 		}
 
-		FilePickerOpenOptions options = new() {
-			Title = "Select Dune ADP/AGD song file",
-			AllowMultiple = false,
-			FileTypeFilter = [new FilePickerFileType("Dune ADP Songs") { Patterns = ["*.AGD", "*.HSQ", "*.M32", "*.*"] }]
-		};
-
-		// Start in the parent folder of the last loaded file
-		if (!string.IsNullOrWhiteSpace(SongPath)) {
-			string? parentDir = System.IO.Path.GetDirectoryName(SongPath);
-			if (!string.IsNullOrEmpty(parentDir) && System.IO.Directory.Exists(parentDir)) {
-				IStorageFolder? folder = await _window.StorageProvider.TryGetFolderFromPathAsync(parentDir);
-				if (folder is not null) {
-					options.SuggestedStartLocation = folder;
-				}
-			}
-		}
-
-		IReadOnlyList<IStorageFile> picked = await _window.StorageProvider.OpenFilePickerAsync(options);
+		System.Collections.Generic.IReadOnlyList<IStorageFile> picked =
+			await _window.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions {
+				Title = "Select ADG/ADP music file",
+				AllowMultiple = false,
+				FileTypeFilter = [
+					new FilePickerFileType("Dune ADG/ADP") { Patterns = ["*.ADG", "*.ADP", "*.adg", "*.adp"] },
+					new FilePickerFileType("All files") { Patterns = ["*"] }
+				]
+			});
 
 		if (picked.Count > 0) {
-			SongPath = picked[0].Path.LocalPath;
-			Status = "Song file selected.";
+			AdgPath = picked[0].Path.LocalPath;
+			SelectedFileName = Path.GetFileName(AdgPath);
+			Status = "File selected. Use Load or Play.";
 		}
 	}
 
+	/// <summary>
+	/// Loads the selected file into the driver without starting playback.
+	/// </summary>
 	[RelayCommand]
 	private void Load() {
-		if (string.IsNullOrWhiteSpace(SongPath)) {
-			Status = "Select a song file first.";
+		if (!TryLoadSelectedFile()) {
 			return;
 		}
 
-		try {
-			EnsurePlayerInitialized();
-			if (_player is null) {
-				return;
-			}
-			_player.Load(SongPath);
-			Status = "Loaded.";
-			AddLog($"Loaded file '{SongPath}'.");
-		} catch (Exception ex) {
-			Status = $"Load failed: {ex.Message}";
-			AddLog(Status);
-		}
+		Status = "Loaded.";
 	}
 
+	/// <summary>
+	/// Loads and plays the selected file.
+	/// </summary>
 	[RelayCommand]
 	private void Play() {
 		try {
-			if (string.IsNullOrWhiteSpace(SongPath)) {
-				Status = "Select a song file first.";
+			if (_engine.IsPaused) {
+				_engine.Resume();
+				RefreshTransportState();
+				Status = "Playing.";
 				return;
 			}
 
-			EnsurePlayerInitialized();
-			if (_player is null) {
-				return;
+			if (_engine.IsPlaying) {
+				_engine.Stop();
 			}
-			if (_player.IsPlaying) {
-				_player.Stop();
+
+			if (_loadedPath != AdgPath) {
+				if (!TryLoadSelectedFile()) {
+					return;
+				}
 			}
-			_player.Load(SongPath);
-			_player.Start();
-			IsPlaying = true;
-			IsPaused = false;
+
+			ChannelEvents.Clear();
+			OplWrites.Clear();
+			_engine.Play();
+			RefreshTransportState();
 			Status = "Playing.";
-			AddLog("Playback started.");
+			Logger.Information("Playing {File}", Path.GetFileName(AdgPath));
 		} catch (Exception ex) {
 			Status = $"Play failed: {ex.Message}";
-			IsPlaying = false;
-			IsPaused = false;
-			AddLog(Status);
+			Logger.Error(ex, "Play failed");
+			RefreshTransportState();
 		}
 	}
 
+	/// <summary>
+	/// Pauses playback while preserving the current song state.
+	/// </summary>
 	[RelayCommand]
-	private void TogglePause() {
-		if (_player is null) {
-			return;
-		}
-		if (_player.IsPaused) {
-			_player.Resume();
-			IsPlaying = true;
-			IsPaused = false;
-			Status = "Playing.";
-		} else if (_player.IsPlaying) {
-			_player.Pause();
-			IsPlaying = false;
-			IsPaused = true;
+	private void Pause() {
+		_engine.Pause();
+		RefreshTransportState();
+		if (IsPaused) {
 			Status = "Paused.";
 		}
 	}
 
+	/// <summary>
+	/// Stops playback.
+	/// </summary>
 	[RelayCommand]
 	private void Stop() {
-		_player?.Stop();
-		IsPlaying = false;
-		IsPaused = false;
+		_engine.Stop();
+		RefreshTransportState();
 		Status = "Stopped.";
-		AddLog("Playback stopped.");
 	}
 
-	/// <summary>
-	/// Pauses playback. Called from MCP pause tool.
-	/// </summary>
-	private void PauseMcp() {
-		if (_player is null || !_player.IsPlaying || _player.IsPaused) {
-			return;
-		}
-		_player.Pause();
-		IsPlaying = false;
-		IsPaused = true;
-		Status = "Paused.";
-		AddLog("Playback paused (MCP).");
+	private void WireEngineEvents() {
+		_engine.SongFinished += () => {
+			Dispatcher.UIThread.Post(() => {
+				RefreshTransportState();
+				Status = "Finished.";
+			});
+		};
+
+		_engine.AudioSamplesRendered += OnAudioSamplesRendered;
+		_engine.ChannelEventDispatched += OnChannelEvent;
+		_engine.OplRegisterWritten += OnOplWrite;
 	}
 
-	/// <summary>
-	/// Resumes playback. Called from MCP resume tool.
-	/// </summary>
-	private void ResumeMcp() {
-		if (_player is null || !_player.IsPaused) {
-			return;
-		}
-		_player.Resume();
-		IsPlaying = true;
-		IsPaused = false;
-		Status = "Playing.";
-		AddLog("Playback resumed (MCP).");
+	private void OnAudioSamplesRendered(float[] samples, int count) {
+		_waveformControl.PushSamples(samples, count);
 	}
 
-	[RelayCommand]
-	private void StartControlServer() {
-		try {
-			_controlServer?.Dispose();
-			_controlServer = new PlayerControlServer(
-				getState: BuildState,
-				play: Play,
-				stop: Stop,
-				pause: PauseMcp,
-				resume: ResumeMcp,
-				load: LoadFromPath,
-				setOutputGain: SetOutputGain,
-				setMasterVolume: SetMasterVolume,
-				setTargetVolume: SetTargetVolume,
-				getAudioDebug: GetAudioDebug,
-				resetAudioDebug: ResetAudioDebug,
-				audioPanic: PanicAudio,
-				getRawStreamDebug: GetRawStreamDebug,
-				startGoldenCapture: StartGoldenCapture,
-				stopGoldenCapture: StopGoldenCapture,
-				resetGoldenCapture: ResetGoldenCapture,
-				getGoldenCaptureSummary: GetGoldenCaptureSummary,
-				dumpGoldenCapture: DumpGoldenCapture,
-				diagnoseGoldenCapture: DiagnoseGoldenCapture,
-				getRecentLogs: GetRecentLogs,
-				clearLogs: ClearLogs,
-				log: AddLog,
-				prefix: ServerEndpoint);
-			_controlServer.Start();
-			ServerRunning = true;
-		} catch (Exception ex) {
-			ServerRunning = false;
-			AddLog($"Control server start failed: {ex.Message}");
-		}
-	}
-
-	[RelayCommand]
-	private void StopControlServer() {
-		_controlServer?.Stop();
-		ServerRunning = false;
-	}
-
-	[RelayCommand]
-	private void PlayTestTone() {
-		EnsurePlayerInitialized();
-		if (_synth is null) {
-			return;
-		}
-		_synth.PlayTestTone(TestChannel, (byte)TestNote, (byte)TestVolume);
-		AddLog($"Test tone ON: ch={TestChannel} note={TestNote} vol={TestVolume}.");
-	}
-
-	[RelayCommand]
-	private void StopTestTone() {
-		if (_synth is null) {
-			return;
-		}
-		_synth.StopTestTone(TestChannel);
-		AddLog($"Test tone OFF: ch={TestChannel}.");
-	}
-
-	[RelayCommand]
-	private void PanicBeep() {
-		EnsurePlayerInitialized();
-		if (_synth is null) {
-			return;
-		}
-		_synth.PlayTestBeep();
-		AddLog("Panic beep fired (500ms test tone on ch0).");
-	}
-
-	[RelayCommand]
-	private void PlayTestChord() {
-		EnsurePlayerInitialized();
-		if (_synth is null) {
-			return;
-		}
-		// C major chord across 3 channels
-		_synth.PlayTestTone(0, 48, 0x00); // C3
-		_synth.PlayTestTone(1, 52, 0x00); // E3
-		_synth.PlayTestTone(2, 55, 0x00); // G3
-		AddLog("Test chord ON: C-E-G on ch0-1-2.");
-	}
-
-	[RelayCommand]
-	private void StopAllTestTones() {
-		if (_synth is null) {
-			return;
-		}
-		for (int i = 0; i < 9; i++) {
-			_synth.StopTestTone(i);
-		}
-		AddLog("All test tones OFF.");
-	}
-
-	[RelayCommand]
-	private void MixerThreadTestTone() {
-		EnsurePlayerInitialized();
-		if (_synth is null) {
-			return;
-		}
-		_synth.PlayTestToneFromMixerThread();
-		AddLog("Mixer-thread test tone scheduled. If heard → engine data issue. If silent → mixer write path issue.");
-	}
-
-	private void EnsurePlayerInitialized() {
-		if (_player is not null) {
-			return;
-		}
-
-		try {
-			_synth = new Opl2Synth();
-			_synth.OutputGain = (float)OutputGain;
-			_synth.AudioPeakComputed += OnAudioPeakComputed;
-			_synth.AudioSamplesRendered += OnAudioSamplesRendered;
-
-			_player = new DuneAdpPlayerEngine(_synth);
-			_player.LogProduced += OnEngineLogProduced;
-			_player.SnapshotProduced += OnSnapshotProduced;
-			_player.HeaderInfoProduced += OnHeaderInfoProduced;
-			_player.EventFlowProduced += OnEventFlowProduced;
-
-			_player.SetMasterVolumeImmediate((byte)Math.Clamp(MasterVolume, 0, 127));
-			_player.SetTargetVolume((byte)Math.Clamp(TargetVolume, 0, 127));
-
-			AddLog("OPL2 Synth (NukedOPL3Sharp) initialized successfully.");
-		} catch (Exception ex) {
-			Status = $"Synth initialization failed: {ex.Message}";
-			AddLog(Status);
-			_synth = null;
-			_player = null;
-		}
-	}
-
-	private void OnAudioPeakComputed(float peak) {
+	private void OnChannelEvent(int channel, string eventType, string detail, long tick) {
 		Dispatcher.UIThread.Post(() => {
-			AudioPeak = Math.Round(peak, 3);
-		});
-	}
-
-	private void OnEngineLogProduced(string logLine) {
-		Dispatcher.UIThread.Post(() => {
-			AddLog(logLine);
-		});
-	}
-
-	private void OnAudioSamplesRendered(float[] samples, int sampleCount) {
-		_waveformControl?.PushSamples(samples, sampleCount);
-	}
-
-	private void OnHeaderInfoProduced(SongHeaderInfo info) {
-		Dispatcher.UIThread.Post(() => {
-			HeaderFileName = $"{info.FileName}  ({(info.WasCompressed ? "HSQ" : "raw")})";
-			HeaderFileSize = $"Raw: {info.RawFileSize:N0}B  Decoded: {info.DecodedSize:N0}B  FirstWord: 0x{info.FirstWord:X4}";
-			HeaderTiming = $"TickInc: 0x{info.TickIncrement:X4} ({info.TickIncrement})  |  {info.PitTicksPerSubdivision:F2} PIT/sub  |  {info.MillisecondsPerSubdivision:F2}ms/sub  |  {info.MillisecondsPerMeasure:F1}ms/measure  |  Est: {info.EstimatedDurationSeconds:F1}s";
-			HeaderStructure = $"End: {info.EndMeasure}  Loop: {info.LoopMeasure}  Repeat: {info.LoopRepeat}  Active: {info.ActiveChannelCount}/9";
-
-			StringBuilder chInfo = new();
-			foreach (ChannelHeaderInfo ch in info.Channels) {
-				if (ch.Active) {
-					chInfo.Append($"Ch{ch.Index}:0x{ch.RawOffset:X4}→0x{ch.AbsoluteOffset:X4} w={ch.InitialWait} p=0x{ch.InitialPointer:X4}  ");
-				}
-			}
-			HeaderChannels = chInfo.Length > 0 ? chInfo.ToString().TrimEnd() : "No active channels";
-		});
-	}
-
-	private void OnEventFlowProduced(EventFlowEntry entry) {
-		Dispatcher.UIThread.Post(() => {
-			EventFlowDisplayItem item = new() {
-				Position = $"T{entry.TickIndex} M{entry.Measure}:{entry.Subdivision:X2}",
-				ChannelLabel = $"ch{entry.Channel}",
-				Kind = entry.Kind,
-				Detail = entry.Detail,
-				DeltaLabel = $"d={entry.Delta}",
-				Channel = entry.Channel,
+			ChannelEventItem item = new ChannelEventItem {
+				Channel = channel,
+				EventType = eventType,
+				Detail = detail,
+				Tick = tick
 			};
-			EventFlow.Add(item);
-			while (EventFlow.Count > MaxEventFlowEntries) {
-				EventFlow.RemoveAt(0);
+			ChannelEvents.Add(item);
+			while (ChannelEvents.Count > 500) {
+				ChannelEvents.RemoveAt(0);
 			}
 		});
 	}
 
-	private void OnSnapshotProduced(PlayerDiagnosticsSnapshot snapshot) {
+	private void OnOplWrite(ushort register, byte value, long tick) {
+		// Only capture interesting registers (skip high-frequency freq writes to reduce noise)
+		if (register >= 0xA0 && register <= 0xA8) {
+			return; // Skip freq-low writes (too noisy)
+		}
+
 		Dispatcher.UIThread.Post(() => {
-			TickInfo = $"Tick: {snapshot.TickIndex}  Measure: {snapshot.Measure}/{snapshot.EndMeasure}  Sub: {snapshot.Subdivision}  Repeat: {snapshot.RepeatCounter}  Accum: 0x{snapshot.Accumulator:X4}  TickInc: 0x{snapshot.TickIncrement:X4}  PTicks: {snapshot.ProcessTickCount}  Chs: {snapshot.ActiveChannelCount}  Peak: {snapshot.AudioPeak:F3}";
-
-			TimeSpan elapsed = TimeSpan.FromSeconds(snapshot.ElapsedSeconds);
-			TimeSpan estimated = TimeSpan.FromSeconds(snapshot.EstimatedDurationSeconds);
-			TransportInfo = $"{elapsed:mm\\:ss} / {estimated:mm\\:ss}";
-			TimelineProgress = snapshot.TimelineProgress;
-
-			for (int i = 0; i < 9; i++) {
-				ChannelTrackerRowViewModel row = TrackerRows[i];
-				row.Wait = i < snapshot.ChannelWait.Length ? snapshot.ChannelWait[i].ToString("X4") : "----";
-				row.Pointer = i < snapshot.ChannelEventPointer.Length ? snapshot.ChannelEventPointer[i].ToString("X4") : "----";
-				row.LastEvent = i < snapshot.LastEventPerChannel.Length ? snapshot.LastEventPerChannel[i] : "-";
-			}
-
-			_eventsHistory.Enqueue(snapshot.EventsDispatchedThisTick);
-			while (_eventsHistory.Count > GraphWindow) {
-				_eventsHistory.Dequeue();
-			}
-			EventGraph = BuildSparkline(_eventsHistory);
-
-			IsPlaying = _player?.IsPlaying == true;
-			IsPaused = _player?.IsPaused == true;
-			if (!IsPlaying && !IsPaused && Status == "Playing.") {
-				Status = "Idle.";
+			OplWriteItem item = new OplWriteItem {
+				Register = register,
+				Value = value,
+				Tick = tick
+			};
+			OplWrites.Add(item);
+			while (OplWrites.Count > 500) {
+				OplWrites.RemoveAt(0);
 			}
 		});
 	}
 
-	private static string BuildSparkline(IEnumerable<int> values) {
-		int[] array = values.ToArray();
-		if (array.Length == 0) {
-			return string.Empty;
+	private void WireSerilogSink() {
+		ObservableSerilogSink sink = ObservableSerilogSink.Instance;
+		sink.LogReceived += OnSerilogMessage;
+		foreach (string line in sink.DrainAll()) {
+			AddLog(line);
 		}
+	}
 
-		int max = Math.Max(1, array.Max());
-		char[] levels = ['▁', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
-		StringBuilder builder = new(array.Length);
-		foreach (int value in array) {
-			int index = (int)Math.Round((double)value / max * (levels.Length - 1));
-			index = Math.Clamp(index, 0, levels.Length - 1);
-			builder.Append(levels[index]);
-		}
-		return builder.ToString();
+	private void OnSerilogMessage(string message) {
+		Dispatcher.UIThread.Post(() => AddLog(message));
 	}
 
 	private void AddLog(string message) {
@@ -522,161 +309,99 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 			Message = message,
 		};
 		Logs.Add(item);
-		if (Logs.Count > 600) {
+		while (Logs.Count > 600) {
 			Logs.RemoveAt(0);
 		}
-		Console.WriteLine($"{timestamp}  {message}");
 	}
 
-	private object BuildState() {
-		AudioDebugInfo? audioDebug = _player?.GetAudioDebugInfo();
-		return new {
-			songPath = SongPath,
-			isPlaying = IsPlaying,
-			status = Status,
-			tickInfo = TickInfo,
-			timelineProgress = TimelineProgress,
-			transportInfo = TransportInfo,
-			masterVolume = MasterVolume,
-			targetVolume = TargetVolume,
-			outputGain = OutputGain,
-			audioPeak = AudioPeak,
-			serverEndpoint = ServerEndpoint,
-			audioDebug = audioDebug
-		};
-	}
-
-	private void LoadFromPath(string path) {
-		SongPath = path;
-		Load();
-	}
-
-	private void SetOutputGain(float gain) {
-		OutputGain = Math.Clamp(gain, 0.0f, 2.0f);
-	}
-
-	private void SetMasterVolume(byte volume) {
-		MasterVolume = Math.Clamp((int)volume, 0, 127);
-	}
-
-	private void SetTargetVolume(byte volume) {
-		TargetVolume = Math.Clamp((int)volume, 0, 127);
-	}
-
-	private object GetAudioDebug() {
-		if (_player is null) {
-			return new {
-				ready = false,
-				reason = "Player not initialized."
-			};
+	private bool TryLoadSelectedFile() {
+		if (string.IsNullOrWhiteSpace(AdgPath)) {
+			Status = "Select a file first.";
+			return false;
 		}
 
-		AudioDebugInfo debugInfo = _player.GetAudioDebugInfo();
-		return new {
-			ready = true,
-			debugInfo
-		};
-	}
-
-	private void ResetAudioDebug() {
-		_player?.ResetAudioDebug();
-		AddLog("Audio debug counters reset.");
-	}
-
-	private void PanicAudio() {
-		_player?.PanicAllNotesOff();
-		AddLog("Audio panic sent.");
-	}
-
-	private object GetRawStreamDebug(int channel, int before, int count) {
-		if (_player is null) {
-			return new {
-				ready = false,
-				reason = "Player not initialized."
-			};
+		if (!File.Exists(AdgPath)) {
+			Status = "Selected file does not exist.";
+			return false;
 		}
 
-		return _player.GetRawStreamDebug(channel, before, count);
+		try {
+			byte[] raw = File.ReadAllBytes(AdgPath);
+			_engine.LoadSong(raw);
+			_loadedPath = AdgPath;
+			SelectedFileName = Path.GetFileName(AdgPath);
+			UpdateHeaderInfo();
+			Logger.Information("Loaded {File}", SelectedFileName);
+			return true;
+		} catch (Exception ex) {
+			Status = $"Load failed: {ex.Message}";
+			Logger.Error(ex, "Load failed");
+			return false;
+		}
 	}
 
-	private object StartGoldenCapture(int maxEvents) {
-		EnsurePlayerInitialized();
-		OplCaptureDump dump = _player!.StartGoldenCapture(maxEvents);
-		AddLog($"Golden capture started (maxEvents={dump.MaxEvents}).");
-		return dump;
-	}
-
-	private object StopGoldenCapture() {
-		if (_player is null) {
-			return new {
-				ready = false,
-				reason = "Player not initialized."
-			};
+	private void UpdateHeaderInfo() {
+		SongHeaderInfo? header = _engine.HeaderInfo;
+		if (header == null) {
+			HeaderInfo = "No header.";
+			return;
 		}
 
-		object result = _player.StopGoldenCapture(includeEvents: false);
-		AddLog("Golden capture stopped.");
-		return result;
+		StringBuilder sb = new StringBuilder();
+		sb.AppendLine($"File: {SelectedFileName}  ({header.RawFileSize} bytes{(header.WasHsqCompressed ? ", HSQ compressed" : ", raw")})");
+		sb.AppendLine($"Data @{header.DataBase}  Events @0x{header.EventBase:X4}  Tempo=0x{header.Tempo:X4}  Instruments={header.InstrumentCount}");
+		sb.AppendLine($"Channels: {header.ActiveChannelCount}/9 active  Loop: measure {header.LoopStartMeasure}→{header.LoopEndMeasure} x{header.LoopCount}");
+		sb.Append("Offsets: ");
+		for (int i = 0; i < 9; i++) {
+			if (header.ChannelActive[i]) {
+				sb.Append($"Ch{i}=0x{header.ChannelOffsets[i]:X4} ");
+			} else {
+				sb.Append($"Ch{i}=-- ");
+			}
+		}
+		HeaderInfo = sb.ToString();
 	}
 
-	private object ResetGoldenCapture() {
-		if (_player is null) {
-			return new {
-				ready = false,
-				reason = "Player not initialized."
-			};
-		}
-
-		OplCaptureDump dump = _player.ResetGoldenCapture();
-		AddLog("Golden capture reset.");
-		return dump;
+	private void UpdateVolumeInfo() {
+		float masterGain = Math.Clamp(MasterVolume, 0, 255) / 255f;
+		float oplGain = Math.Clamp(OplVolume, 0, 300) / 100f;
+		float combinedDb = masterGain * oplGain > 0 ? 20f * MathF.Log10(masterGain * oplGain) : -100f;
+		VolumeInfo = $"Master: {masterGain:P0}  |  OPL: {oplGain:F2}x  |  Combined: {combinedDb:F1} dB  |  Driver vol: 0x{_engine.CurrentDriverVolume:X2}→0x{_engine.TargetDriverVolume:X2}";
 	}
 
-	private object GetGoldenCaptureSummary() {
-		if (_player is null) {
-			return new {
-				ready = false,
-				reason = "Player not initialized."
-			};
-		}
+	private void RefreshTransportState() {
+		IsPlaying = _engine.IsPlaying;
+		IsPaused = _engine.IsPaused;
 
-		return _player.GetGoldenCaptureSummary();
+		string transportState = IsPlaying ? "▶ Playing" : IsPaused ? "⏸ Paused" : "■ Idle";
+		double elapsed = _engine.ElapsedSeconds;
+		int minutes = (int)(elapsed / 60);
+		double seconds = elapsed % 60;
+		PositionText = $"{minutes:D2}:{seconds:05.1f}  |  Measure {_engine.CurrentMeasure}  Sub {_engine.CurrentSubdivision:X2}  |  Tick {_engine.TotalTickCount}";
+		TickInfo = $"{transportState}  |  {_engine.TickRateHz:F1} Hz  |  {_engine.SampleRate} Hz";
+
+		UpdateVolumeInfo();
+		UpdateChannelState();
 	}
 
-	private object DumpGoldenCapture(int offset, int limit) {
-		if (_player is null) {
-			return new {
-				ready = false,
-				reason = "Player not initialized."
-			};
+	private void UpdateChannelState() {
+		if (!_engine.IsPlaying && !_engine.IsPaused) {
+			ChannelStateText = "";
+			return;
 		}
 
-		return _player.GetGoldenCaptureDump(offset, limit);
-	}
-
-	private object DiagnoseGoldenCapture(int sampleSize) {
-		if (_player is null) {
-			return new { ready = false, reason = "Player not initialized." };
+		ChannelSnapshot[] snapshots = _engine.GetChannelSnapshots();
+		StringBuilder sb = new StringBuilder();
+		for (int i = 0; i < snapshots.Length; i++) {
+			ChannelSnapshot s = snapshots[i];
+			string active = s.IsActive ? "●" : "○";
+			string inst = s.Instrument == 0xFF ? "--" : $"{s.Instrument:X2}";
+			string freq = s.Frequency > 0 ? $"F={s.Frequency:X4}" : "F=----";
+			sb.Append($"{active} Ch{i}: {s.NoteName,-4} I={inst} {freq} W={s.Wait:X4}");
+			if (i < snapshots.Length - 1) {
+				sb.Append("  |  ");
+			}
 		}
-
-		OplCaptureDiagnostics diagnostics = _player.GetGoldenCaptureDiagnostics(sampleSize);
-		return new {
-			ready = true,
-			diagnostics
-		};
-	}
-
-	private string[] GetRecentLogs(int count) {
-		if (_synth is null) {
-			return ["Synth not initialized."];
-		}
-		return _synth.LogSink.GetLatest(count);
-	}
-
-	private void ClearLogs() {
-		if (_synth is not null) {
-			_synth.LogSink.Clear();
-		}
-		AddLog("Serilog circular buffer cleared.");
+		ChannelStateText = sb.ToString();
 	}
 }

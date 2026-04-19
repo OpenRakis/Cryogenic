@@ -5,6 +5,7 @@ using Avalonia.Controls;
 using Avalonia.Media;
 using Avalonia.Threading;
 
+using System;
 using System.Globalization;
 
 /// <summary>
@@ -26,12 +27,10 @@ public sealed class WaveformControl : Control {
 	private readonly float[] _rightPeak = new float[DisplaySamples];
 	private int _writeIndex;
 
-	// ── Background & grid ──
 	private static readonly IBrush BgBrush = new SolidColorBrush(Color.FromRgb(0x08, 0x0C, 0x10));
 	private static readonly Pen GridPen = new(new SolidColorBrush(Color.FromArgb(18, 0x40, 0x60, 0x80)), 0.5);
 	private static readonly Pen CenterPen = new(new SolidColorBrush(Color.FromArgb(30, 0xFF, 0xFF, 0xFF)), 0.5);
 
-	// ── Left channel (cyan) ──
 	private static readonly Pen LGlow = new(new SolidColorBrush(Color.FromArgb(40, 0x40, 0xC8, 0xFF)), 4.0);
 	private static readonly Pen LLine = new(new SolidColorBrush(Color.FromRgb(0x40, 0xC8, 0xFF)), 1.2);
 	private static readonly Pen LPeak = new(new SolidColorBrush(Color.FromArgb(90, 0x20, 0xA0, 0xE0)), 0.6);
@@ -46,7 +45,6 @@ public sealed class WaveformControl : Control {
 	};
 	private static readonly IBrush LLabel = new SolidColorBrush(Color.FromArgb(70, 0x40, 0xC8, 0xFF));
 
-	// ── Right channel (warm orange) ──
 	private static readonly Pen RGlow = new(new SolidColorBrush(Color.FromArgb(40, 0xFF, 0x80, 0x40)), 4.0);
 	private static readonly Pen RLine = new(new SolidColorBrush(Color.FromRgb(0xFF, 0x80, 0x40)), 1.2);
 	private static readonly Pen RPeak = new(new SolidColorBrush(Color.FromArgb(90, 0xE0, 0x60, 0x20)), 0.6);
@@ -111,6 +109,7 @@ public sealed class WaveformControl : Control {
 		Dispatcher.UIThread.Post(InvalidateVisual, DispatcherPriority.Render);
 	}
 
+	/// <inheritdoc />
 	public override void Render(DrawingContext context) {
 		base.Render(context);
 
@@ -124,10 +123,8 @@ public sealed class WaveformControl : Control {
 		double xStep = w / DisplaySamples;
 		int readStart = _writeIndex >= DisplaySamples ? _writeIndex - DisplaySamples : 0;
 
-		// 1 ── Background
 		context.DrawRectangle(BgBrush, null, new Rect(0, 0, w, h));
 
-		// 2 ── Grid lines at ±25/50/75 % amplitude
 		double[] gridLevels = [0.25, 0.50, 0.75];
 		foreach (double lv in gridLevels) {
 			double yUp = cy - lv * cy;
@@ -136,7 +133,6 @@ public sealed class WaveformControl : Control {
 			context.DrawLine(GridPen, new Point(0, yDn), new Point(w, yDn));
 		}
 
-		// 3 ── Build all six geometries in one pass
 		StreamGeometry leftFillGeo = new();
 		StreamGeometry rightFillGeo = new();
 		StreamGeometry leftLineGeo = new();
@@ -199,7 +195,6 @@ public sealed class WaveformControl : Control {
 			rf.EndFigure(true);
 		}
 
-		// 4 ── Gradient fills
 		if (anyLeft) {
 			context.DrawGeometry(LFill, null, leftFillGeo);
 		}
@@ -207,7 +202,6 @@ public sealed class WaveformControl : Control {
 			context.DrawGeometry(RFill, null, rightFillGeo);
 		}
 
-		// 5 ── Glow pass (thick translucent)
 		if (anyLeft) {
 			context.DrawGeometry(null, LGlow, leftLineGeo);
 		}
@@ -215,7 +209,6 @@ public sealed class WaveformControl : Control {
 			context.DrawGeometry(null, RGlow, rightLineGeo);
 		}
 
-		// 6 ── Sharp waveform lines
 		if (anyLeft) {
 			context.DrawGeometry(null, LLine, leftLineGeo);
 		}
@@ -223,7 +216,6 @@ public sealed class WaveformControl : Control {
 			context.DrawGeometry(null, RLine, rightLineGeo);
 		}
 
-		// 7 ── Peak-hold envelopes
 		if (anyLeft) {
 			context.DrawGeometry(null, LPeak, leftPeakGeo);
 		}
@@ -231,10 +223,8 @@ public sealed class WaveformControl : Control {
 			context.DrawGeometry(null, RPeak, rightPeakGeo);
 		}
 
-		// 8 ── Center line (on top)
 		context.DrawLine(CenterPen, new Point(0, cy), new Point(w, cy));
 
-		// 9 ── Channel labels
 		FormattedText lt = new("L", CultureInfo.InvariantCulture, FlowDirection.LeftToRight,
 			new Typeface("Inter", FontStyle.Normal, FontWeight.Bold), 11, LLabel);
 		FormattedText rt = new("R", CultureInfo.InvariantCulture, FlowDirection.LeftToRight,

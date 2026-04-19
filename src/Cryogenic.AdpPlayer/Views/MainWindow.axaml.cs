@@ -4,18 +4,22 @@ using Avalonia.Controls;
 
 using Cryogenic.AdpPlayer.ViewModels;
 
-public partial class MainWindow : Window {
+/// <summary>
+/// Main window code-behind. Links the waveform control to the view model.
+/// </summary>
+public sealed partial class MainWindow : Window {
+	/// <summary>
+	/// Initializes the main window and registers the waveform control.
+	/// </summary>
 	public MainWindow() {
 		InitializeComponent();
 	}
 
-	protected override void OnDataContextChanged(EventArgs e) {
+	/// <inheritdoc />
+	protected override void OnDataContextChanged(System.EventArgs e) {
 		base.OnDataContextChanged(e);
 		if (DataContext is MainWindowViewModel vm) {
-			WaveformControl? waveform = this.FindControl<WaveformControl>("Waveform");
-			if (waveform is not null) {
-				vm.RegisterWaveformControl(waveform);
-			}
+			vm.RegisterWaveformControl(Waveform);
 		}
 	}
 }

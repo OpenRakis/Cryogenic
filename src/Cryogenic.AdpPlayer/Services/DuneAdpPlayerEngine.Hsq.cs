@@ -1,39 +1,41 @@
 ﻿namespace Cryogenic.AdpPlayer.Services;
 
+using Serilog;
+
 /// <summary>
-/// HSQ decompression for Dune ADP files. Many song files in DUNE.DAT
-/// are HSQ-compressed (LZ77 variant with a 6-byte header).
-///
-/// Reference implementation: OpenRakis/tools/dune-ds/source/unhsq.c
+/// HSQ decompression for ADG/ADP music files from DUNE.DAT.
+/// Many files are HSQ-compressed (LZ77 variant with a 6-byte header).
+/// Ported from OpenRakis/tools/dune-ds/source/unhsq.c via the MT32 player.
 /// Checksum: (byte0 + byte1 + byte2 + byte3 + byte4 + byte5) &amp; 0xFF == 0xAB
 /// </summary>
 public sealed partial class DuneAdpPlayerEngine {
+	private static readonly ILogger HsqLogger = Log.ForContext("Subsystem", "HSQ");
+
 	/// <summary>
-	/// Attempts HSQ decompression; returns original bytes if header
-	/// is not a valid HSQ signature.
+	/// Attempts HSQ decompression; returns null if the header is not a valid HSQ signature.
 	/// </summary>
-	private static byte[] TryDecompressHsq(byte[] source) {
+	private static byte[]? TryDecompressHsq(byte[] source) {
 		if (source.Length < 6) {
-			return source;
+			return null;
 		}
 
-		// HSQ header: bytes 0-1 = uncompressed size (LE)
 		int uncompressedSize = source[0] | (source[1] << 8);
 		if (uncompressedSize == 0 || uncompressedSize > 0x100000) {
-			return source;
+			return null;
 		}
 
-		// HSQ checksum: sum of all 6 header bytes must equal 0xAB
 		int checksum = (source[0] + source[1] + source[2] + source[3] + source[4] + source[5]) & 0xFF;
 		if (checksum != 0xAB) {
-			return source;
+			return null;
 		}
 
 		try {
 			byte[] result = DecompressHsq(source, uncompressedSize);
+			HsqLogger.Information("HSQ decompressed: {SrcLen} → {DstLen} bytes", source.Length, result.Length);
 			return result;
 		} catch {
-			return source;
+			HsqLogger.Warning("HSQ decompression failed, using raw data");
+			return null;
 		}
 	}
 
@@ -44,48 +46,54 @@ public sealed partial class DuneAdpPlayerEngine {
 		byte[] output = new byte[uncompressedSize];
 		int srcPos = 6;
 		int dstPos = 0;
-		int bitBuffer = 1; // sentinel: q=1 forces reload on first getbit
+		int bitBuffer = 1;
 
 		while (dstPos < uncompressedSize && srcPos < source.Length) {
 			if (HsqGetBit(source, ref srcPos, ref bitBuffer)) {
-				// Literal byte
-				if (srcPos >= source.Length) { break; }
+				if (srcPos >= source.Length) {
+					break;
+				}
 				output[dstPos++] = source[srcPos++];
 			} else {
 				int count;
 				int offset;
 
 				if (HsqGetBit(source, ref srcPos, ref bitBuffer)) {
-					// Long match
-					if (srcPos + 1 >= source.Length) { break; }
+					if (srcPos + 1 >= source.Length) {
+						break;
+					}
 					byte first = source[srcPos++];
 					byte second = source[srcPos++];
 
-					// count = low 3 bits of first byte
 					count = first & 7;
-					// offset = (word >> 3) sign-extended to 13 bits (negative)
 					int word = first | (second << 8);
 					int offsetBits = word >> 3;
-					offset = offsetBits - 8192; // equivalent to 0xFFFFE000 | offsetBits
+					offset = offsetBits - 8192;
 
 					if (count == 0) {
-						// Extended count: read next byte
-						if (srcPos >= source.Length) { break; }
+						if (srcPos >= source.Length) {
+							break;
+						}
 						count = source[srcPos++];
-						if (count == 0) { break; } // end of compressed data
+						if (count == 0) {
+							break;
+						}
 					}
 				} else {
-					// Short match: 2 bits for count, 1 byte for offset
 					count = HsqGetBit(source, ref srcPos, ref bitBuffer) ? 2 : 0;
 					count |= HsqGetBit(source, ref srcPos, ref bitBuffer) ? 1 : 0;
 
-					if (srcPos >= source.Length) { break; }
-					offset = source[srcPos++] - 256; // 0xFFFFFF00 | byte
+					if (srcPos >= source.Length) {
+						break;
+					}
+					offset = source[srcPos++] - 256;
 				}
 
 				count += 2;
 				int copyFrom = dstPos + offset;
-				if (copyFrom < 0) { break; }
+				if (copyFrom < 0) {
+					break;
+				}
 
 				for (int i = 0; i < count && dstPos < uncompressedSize; i++) {
 					output[dstPos++] = output[copyFrom + i];
@@ -98,13 +106,9 @@ public sealed partial class DuneAdpPlayerEngine {
 
 	/// <summary>
 	/// Reads one bit from the HSQ bit stream using the sentinel approach.
-	/// Matches unhsq_getbit from OpenRakis exactly:
-	///   q starts at 1 (sentinel). When q==1, reload 16 bits | 0x10000.
-	///   Return low bit, shift right.
 	/// </summary>
 	private static bool HsqGetBit(byte[] source, ref int srcPos, ref int bitBuffer) {
 		if (bitBuffer == 1) {
-			// Sentinel hit: reload 16 bits from source
 			if (srcPos + 1 >= source.Length) {
 				return false;
 			}

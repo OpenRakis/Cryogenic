@@ -1,609 +1,112 @@
 ﻿namespace Cryogenic.AdpPlayer.Services;
 
+using Serilog;
+
+using System;
+
 /// <summary>
-/// Tick/timer, channel processing, event dispatch, and all DNADP OPL2 event handlers.
-/// Faithfully mirrors DNADP routines decoded from the driver at segment 5BAE.
-///
-/// DNADP event handler table (CS:0125, 8 entries by bits 4-6):
-///   0 (0x8x)  Note Off          at 0x065B
-///   1 (0x9x)  Note On           at 0x062C
-///   2 (0xAx)  Wait/Delta        at 0x08E1
-///   3 (0xBx)  Wait/Delta (same) at 0x08E1
-///   4 (0xCx)  Program Change    at 0x05AA
-///   5 (0xDx)  Volume Mod        at 0x06A8
-///   6 (0xEx)  Pitch Bend        at 0x07EA
-///   7 (0xFx)  End of Track      at 0x066F
-///
-/// Timing model is identical to DNMID: PIT IRQ0 at ~200 Hz (reload 0x1745),
-/// accumulator high-byte countdown, 0x60 subdivisions per measure.
+/// Tick processing, event dispatch, and all DNADP event handlers.
+/// Faithfully ported from AdpDriverCode.cs (AdpProcessTick_04D3 and related).
 /// </summary>
 public sealed partial class DuneAdpPlayerEngine {
-	private int _tickIndex;
-
-	private int _advanceSamplesCallCount;
-	private int _instrumentLoadCount;
-	private int _noteOnCount;
 
 	/// <summary>
-	/// Called from the audio render callback with the number of audio frames
-	/// about to be rendered. Advances the PIT tick accumulator and fires
-	/// TickInternal at the correct rate relative to the sample clock.
-	///
-	///   samplesPerTick = SampleRate * PitReloadValue / PitInputClock
-	///                  = 48000 * 5957 / 1193182 ~ 239.8
-	/// </summary>
-	public void AdvanceSamples(int frameCount) {
-		if (!_isPlaying) {
-			return;
-		}
-		_advanceSamplesCallCount++;
-		if (_advanceSamplesCallCount <= 5 || (_advanceSamplesCallCount % 500) == 0) {
-			_synth.LogDebug($"AdvanceSamples #{_advanceSamplesCallCount}: frames={frameCount} accum={_sampleAccumulator} threshold={SamplesPerTickThreshold} tickIdx={_tickIndex} status=0x{_statusFlags:X2}");
-		}
-		_sampleAccumulator += (long)frameCount * PitInputClock;
-		int ticksThisCall = 0;
-		while (_sampleAccumulator >= SamplesPerTickThreshold) {
-			_sampleAccumulator -= SamplesPerTickThreshold;
-			TickInternal();
-			ticksThisCall++;
-		}
-		if (_advanceSamplesCallCount <= 5 || (_advanceSamplesCallCount % 500) == 0) {
-			_synth.LogDebug($"AdvanceSamples #{_advanceSamplesCallCount} done: ticks={ticksThisCall} tickIdx={_tickIndex} measure={_measure}/{_endMeasure} sub={_subdivision}");
-		}
-
-		// Compute and report peak/waveform after advancing ticks.
-		float peak = EstimatePeakFromChannelState();
-		_synth.NotifyPeak(peak);
-		NotifyWaveformFromPeak(peak, frameCount);
-	}
-
-	/// <summary>
-	/// Estimates audio peak amplitude (0..1) from the current OPL channel state.
-	/// Uses per-channel note-on/off and volume (0x3F total-level) to approximate
-	/// the instantaneous output level without reading actual audio samples.
-	/// </summary>
-	private float EstimatePeakFromChannelState() {
-		float maxLevel = 0f;
-		for (int ch = 0; ch < _activeChannelCount; ch++) {
-			if (_channelNote[ch] == 0) {
-				continue;
-			}
-			// DNADP volume from song data: 0 = silent, 0x7F = loudest.
-			byte vol = _channelVolume[ch];
-			float normalized = vol / 127.0f;
-			if (normalized > maxLevel) {
-				maxLevel = normalized;
-			}
-		}
-		// Scale by master volume (0..127 → 0..1).
-		float masterScale = _currentVolume / 127.0f;
-		return maxLevel * masterScale;
-	}
-
-	/// <summary>
-	/// Generates a synthetic waveform from the peak envelope and pushes it
-	/// to the synth for the waveform display. Produces interleaved stereo
-	/// samples with amplitude matching the estimated peak.
-	/// </summary>
-	private void NotifyWaveformFromPeak(float peak, int frameCount) {
-		int sampleCount = frameCount * 2;
-		float[] buffer = _waveformBuffer;
-		int count = Math.Min(sampleCount, buffer.Length);
-		for (int i = 0; i < count; i += 2) {
-			buffer[i] = peak;
-			buffer[i + 1] = peak;
-		}
-		_synth.NotifySamples(buffer, count);
-	}
-
-	// Shared waveform buffer to avoid per-callback allocation.
-	private readonly float[] _waveformBuffer = new float[4096];
-
-	/// <summary>
-	/// Called once per PIT tick (~5ms). Mirrors DNADP tick handler:
-	///
-	///   if (statusFlags &amp; 0x80) == 0: return
-	///   dec byte [accumulator high byte]
-	///   if (highByte &amp; 0x80) != 0: ProcessTick()
-	///   rol fadeBitPattern, 1
-	///   if carry: HandleFade()
-	/// </summary>
-	private void TickInternal() {
-		if ((_statusFlags & 0x80) == 0) {
-			return;
-		}
-		_tickIndex++;
-
-		// dec byte ptr [accumHi] — decrement ONLY the high byte
-		byte hiByte = (byte)(_accumulator >> 8);
-		hiByte--;
-		_accumulator = (ushort)((hiByte << 8) | (_accumulator & 0xFF));
-
-		// jns skip — if high byte went negative (bit7 set), call ProcessTick
-		if ((hiByte & 0x80) != 0) {
-			ProcessTick();
-		}
-
-		// rol word [fadeBitPattern], 1; jnb skip
-		bool carry = (_fadeBitPattern & 0x8000) != 0;
-		_fadeBitPattern = (ushort)((_fadeBitPattern << 1) | (carry ? 1 : 0));
-		if (carry) {
-			HandleFade();
-		}
-
-		if ((_tickIndex % 200) == 0) {
-			EmitSnapshot(_tickIndex);
-		}
-	}
-
-	/// <summary>
-	/// One scheduler cycle. Mirrors DNADP ProcessTick at 0x04D3:
-	///
-	///   add word [accumulator], tickIncrement
-	///   CheckSongEnd()
-	///   for each channel: wait--; if wait != 0 continue; ProcessChannel(ch) until wait != 0
-	///   subdivision--; if 0 -> subdivision = 0x60, measure++
-	/// </summary>
-	private void ProcessTick() {
-		_processTickCount++;
-		_accumulator += _tickIncrement;
-		CheckSongEnd();
-
-		for (int ch = 0; ch < _activeChannelCount; ch++) {
-			if (_channelWait[ch] == 0xFFFF) {
-				continue;
-			}
-			_channelWait[ch]--;
-			if (_channelWait[ch] != 0) {
-				continue;
-			}
-			if (_channelEventPointer[ch] == 0) {
-				continue;
-			}
-			ProcessChannel(ch);
-		}
-
-		AdvanceSubdivision();
-	}
-
-	/// <summary>
-	/// Processes events for a single channel until a non-zero wait is obtained.
-	/// DNADP dispatch: read event word (LODSW), extract bits 4-6 from low byte,
-	/// dispatch to handler with high byte as payload. Handler then calls wait decoder.
-	/// Loop if wait is zero (multiple events per tick).
-	/// </summary>
-	private void ProcessChannel(int ch) {
-		int safetyLimit = 2000;
-		while (safetyLimit-- > 0) {
-			ushort pointer = _channelEventPointer[ch];
-			if (pointer + 1 >= _songData.Length) {
-				_channelWait[ch] = 0xFFFF;
-				AddRecentEvent($"ch{ch}: pointer 0x{pointer:X4} past end, parking");
-				return;
-			}
-
-			ushort eventWord = (ushort)(_songData[pointer] | (_songData[pointer + 1] << 8));
-			_channelEventPointer[ch] = (ushort)(pointer + 2);
-			byte eventLow = (byte)(eventWord & 0xFF);
-			byte eventData = (byte)(eventWord >> 8);
-
-			int handlerClass = (eventLow >> 4) & 0x07;
-
-			switch (handlerClass) {
-				case 0: // Note Off (0x8x)
-					HandleNoteOff(ch, eventData);
-					break;
-				case 1: // Note On (0x9x)
-					HandleNoteOn(ch, eventData);
-					break;
-				case 2: // Wait (0xAx)
-				case 3: // Wait (0xBx) — same handler
-					HandleWait(ch, eventData);
-					break;
-				case 4: // Program Change (0xCx)
-					HandleProgramChange(ch, eventData);
-					break;
-				case 5: // Volume Modulation (0xDx)
-					HandleVolumeModulation(ch, eventData);
-					break;
-				case 6: // Pitch Bend (0xEx)
-					HandlePitchBend(ch, eventData);
-					break;
-				case 7: // End of Track (0xFx)
-					HandleEndOfTrack(ch);
-					return;
-			}
-
-			if (_channelWait[ch] != 0) {
-				return;
-			}
-		}
-	}
-
-	/// <summary>
-	/// Note Off handler (class 0, 0x8x). Mirrors 0x065B:
-	/// Clears key-on bit for the channel, then reads wait.
-	/// </summary>
-	private void HandleNoteOff(int ch, byte noteData) {
-		SkipChannelBytes(ch, 1);
-		if (_channelWait[ch] == 0xFFFF) {
-			return;
-		}
-		byte noteWithTranspose = (byte)(noteData + _channelTranspose[ch]);
-		if (_channelNote[ch] == noteWithTranspose) {
-			OplNoteOff(ch);
-			_channelNote[ch] = 0;
-		}
-
-		ushort delta = ReadWaitValue(ch);
-		_channelWait[ch] = delta;
-
-		_lastEventPerChannel[Math.Min(ch, _lastEventPerChannel.Length - 1)] = $"NOF d={delta}";
-		EmitEventFlow(ch, "NOF", "", delta, _channelEventPointer[ch]);
-	}
-
-	/// <summary>
-	/// Note On handler (class 1, 0x9x). Mirrors 0x062C:
-	/// 1. Read note byte from stream
-	/// 2. If note already playing, do note-off first
-	/// 3. Store note, add transpose, compute freq, write OPL registers
-	/// 4. Read wait
-	/// </summary>
-	private void HandleNoteOn(int ch, byte noteData) {
-		byte noteOnShapeByte;
-		if (!TryReadAndSkipChannelByte(ch, out noteOnShapeByte)) {
-			return;
-		}
-		ApplyNoteOnShaping0740(ch, noteOnShapeByte);
-		byte note = (byte)(noteData + _channelTranspose[ch]);
-
-		// If a note is already sounding on this channel, turn it off first
-		if (_channelNote[ch] != 0) {
-			OplNoteOff(ch);
-		}
-
-		_channelNote[ch] = note;
-
-		// Log first note-ons with full OPL context
-		if (_noteOnCount < 20) {
-			int adjusted = note - 0x18;
-			if (adjusted < 0 || adjusted >= 96) {
-				adjusted = 0;
-			}
-			int octave = adjusted / 12;
-			int semitone = adjusted % 12;
-			ushort fnum = FrequencyTable[semitone];
-			EmitLog($"NON ch{ch} note={note} trans={_channelTranspose[ch]} adj={adjusted} " +
-				$"oct={octave} semi={semitone} fnum=0x{fnum:X3} " +
-				$"inst={_channelInstrument[ch]} vol={_channelVolume[ch]} masterVol={_currentVolume}");
-			_noteOnCount++;
-		}
-
-		OplNoteOn(ch, note);
-
-		ushort delta = ReadWaitValue(ch);
-		_channelWait[ch] = delta;
-
-		_lastEventPerChannel[Math.Min(ch, _lastEventPerChannel.Length - 1)] = $"NON n={note} d={delta}";
-		EmitEventFlow(ch, "NON", $"n={note}", delta, _channelEventPointer[ch]);
-	}
-
-	/// <summary>
-	/// Wait handler (class 2/3, 0xAx/0xBx). Mirrors 0x08E1:
-	/// Pure delta — no side effects, just reads the next wait value.
-	/// </summary>
-	private void HandleWait(int ch, byte waitSeed) {
-		ushort delta = ReadWaitValue(ch);
-		_channelWait[ch] = delta;
-
-		_lastEventPerChannel[Math.Min(ch, _lastEventPerChannel.Length - 1)] = $"DO d={delta}";
-		EmitEventFlow(ch, "DO", "", delta, _channelEventPointer[ch]);
-	}
-
-	/// <summary>
-	/// Program Change handler (class 4, 0xCx). Mirrors 0x05AA:
-	/// Reads instrument number, loads 40-byte instrument definition into OPL registers.
-	/// </summary>
-	private void HandleProgramChange(int ch, byte instrument) {
-
-		_channelInstrument[ch] = instrument;
-
-		// Dump raw instrument bytes for the first few loads to diagnose silence
-		if (_instrumentLoadCount < 10) {
-			int instOffset = _eventBaseOffset + instrument * 40;
-			if (instOffset + 40 <= _songData.Length) {
-				byte[] raw = _songData[instOffset..(instOffset + 40)];
-				EmitLog($"PRG ch{ch} inst#{instrument} @0x{instOffset:X4}: " +
-					$"modKSL=0x{raw[0]:X2} modChar=0x{raw[1]:X2} fb=0x{raw[2]:X2} " +
-					$"modAD=0x{raw[3]:X2} modSR=0x{raw[4]:X2} modAMVIB=0x{raw[5]:X2} " +
-					$"carAD=0x{raw[6]:X2} carSR=0x{raw[7]:X2} carKSL=0x{raw[8]:X2} " +
-					$"carAMVIB=0x{raw[9]:X2} modKSR=0x{raw[0xA]:X2} carMULT=0x{raw[0xB]:X2} " +
-					$"conn=0x{raw[0xC]:X2} wfMod=0x{raw[0x1A]:X2} wfCar=0x{raw[0x1B]:X2}");
-			} else {
-				EmitLog($"PRG ch{ch} inst#{instrument}: INVALID offset 0x{instOffset:X4} (songLen=0x{_songData.Length:X4})");
-			}
-			_instrumentLoadCount++;
-		}
-
-		OplWriteInstrument(ch, instrument);
-
-		ushort delta = ReadWaitValue(ch);
-		_channelWait[ch] = delta;
-
-		_lastEventPerChannel[Math.Min(ch, _lastEventPerChannel.Length - 1)] = $"PRG i={instrument} d={delta}";
-		EmitEventFlow(ch, "PRG", $"i={instrument}", delta, _channelEventPointer[ch]);
-	}
-
-	/// <summary>
-	/// Volume/Envelope Modulation handler (class 5, 0xDx). Mirrors 0x06A8:
-	/// Reads volume byte, updates carrier operator total level.
-	/// </summary>
-	private void HandleVolumeModulation(int ch, byte volumeData) {
-		byte volume = (byte)(0x80 - volumeData);
-
-		_channelVolume[ch] = volume;
-		ApplyVolumeShaping06A8(ch, volumeData);
-
-		ushort delta = ReadWaitValue(ch);
-		_channelWait[ch] = delta;
-
-		_lastEventPerChannel[Math.Min(ch, _lastEventPerChannel.Length - 1)] = $"VOL v={volume} d={delta}";
-		EmitEventFlow(ch, "VOL", $"v={volume}", delta, _channelEventPointer[ch]);
-	}
-
-	/// <summary>
-	/// Pitch Bend handler (class 6, 0xEx). Mirrors 0x07EA:
-	/// Reads pitch bend value, adjusts frequency registers.
-	/// </summary>
-	private void HandlePitchBend(int ch, byte pitchBend) {
-
-		OplPitchBend(ch, pitchBend);
-
-		ushort delta = ReadWaitValue(ch);
-		_channelWait[ch] = delta;
-
-		_lastEventPerChannel[Math.Min(ch, _lastEventPerChannel.Length - 1)] = $"PB pb={pitchBend} d={delta}";
-		EmitEventFlow(ch, "PB", $"pb={pitchBend}", delta, _channelEventPointer[ch]);
-	}
-
-	private void SkipChannelBytes(int ch, int count) {
-		ushort pointer = _channelEventPointer[ch];
-		if (pointer + count > _songData.Length) {
-			_channelEventPointer[ch] = (ushort)_songData.Length;
-			_channelWait[ch] = 0xFFFF;
-			return;
-		}
-		_channelEventPointer[ch] = (ushort)(pointer + count);
-	}
-
-	private bool TryReadAndSkipChannelByte(int ch, out byte value) {
-		value = 0;
-		ushort pointer = _channelEventPointer[ch];
-		if (pointer >= _songData.Length) {
-			_channelEventPointer[ch] = (ushort)_songData.Length;
-			_channelWait[ch] = 0xFFFF;
-			return false;
-		}
-		value = _songData[pointer];
-		_channelEventPointer[ch] = (ushort)(pointer + 1);
-		return true;
-	}
-
-	/// <summary>
-	/// End of Track handler (class 7, 0xFx). Mirrors 0x066F:
-	/// Parks the channel with wait = 0xFFFF.
-	/// For channel 0: handles tick flag management and song looping.
-	/// </summary>
-	private void HandleEndOfTrack(int ch) {
-		_channelWait[ch] = 0xFFFF;
-		ushort pointer = _channelEventPointer[ch];
-		_channelEventPointer[ch] = pointer >= 2 ? (ushort)(pointer - 2) : (ushort)0;
-
-		_lastEventPerChannel[Math.Min(ch, _lastEventPerChannel.Length - 1)] = "EOT";
-		AddRecentEvent($"ch{ch}: EOT");
-		EmitEventFlow(ch, "EOT", "", 0xFFFF, _channelEventPointer[ch]);
-
-		if (ch != 0) {
-			return;
-		}
-
-		// Channel 0: tick flag management (mirrors driver at 0x066F)
-		_tickFlag--;
-		if (_tickFlag == 0) {
-			for (int i = 0; i < 9; i++) {
-				_channelWait[i] = 0xFFFF;
-			}
-			_statusFlags = (byte)(_statusFlags & 0x7F);
-			AllNotesOff();
-			_isPlaying = false;
-			_synth.OnBeforeRender = null;
-			EmitLog("EOT: tickFlag reached 0, stopping.");
-			return;
-		}
-		if ((_tickFlag & 0x80) != 0) {
-			_tickFlag++;
-		}
-
-		// Reset scheduler (driver path 0x066F -> 0x019B)
-		ResetSchedulerState();
-
-		if (_channelWait[0] > 0 && _channelWait[0] != 0xFFFF) {
-			_channelWait[0]--;
-		}
-	}
-
-	/// <summary>
-	/// Reads a wait/delta value from the channel event stream.
-	/// Mirrors DNADP decoder 0x08E1.
-	///
-	/// The driver does: push ax; xor ax,ax; es lodsb — clearing AH before
-	/// entering the multi-byte loop. CX is also zeroed. The original AX is
-	/// saved/restored across the call (push/pop) and has NO effect on the
-	/// wait decode. All state is derived purely from the stream bytes.
-	/// </summary>
-	private ushort ReadWaitValue(int ch) {
-		ushort pos = _channelEventPointer[ch];
-		if (pos >= _songData.Length) {
-			_channelEventPointer[ch] = (ushort)_songData.Length;
-			return 0xFFFF;
-		}
-
-		byte first = _songData[pos++];
-		if ((first & 0x80) == 0) {
-			_channelEventPointer[ch] = pos;
-			return first;
-		}
-
-		// Multi-byte variable-length encoding.
-		// Driver state at entry to loop: AH=0 (from xor ax,ax), CX=0 (from xor cx,cx).
-		// Bytes shift through CH←CL←AH←AL until a byte without bit7 is found.
-		byte chReg = 0;
-		byte clReg = 0;
-		byte ahReg = first;
-		byte alReg;
-
-		while (true) {
-			if (pos >= _songData.Length) {
-				_channelEventPointer[ch] = (ushort)_songData.Length;
-				return 0xFFFF;
-			}
-
-			alReg = _songData[pos++];
-			if ((alReg & 0x80) != 0) {
-				chReg = clReg;
-				clReg = ahReg;
-				ahReg = alReg;
-				continue;
-			}
-
-			ushort ax = (ushort)((ahReg << 8) | alReg);
-			ushort cx = (ushort)((chReg << 8) | clReg);
-			ax &= 0x7F7F;
-			cx &= 0x7F7F;
-
-			cx = (ushort)((cx & 0xFF00) | (((cx & 0x00FF) << 1) & 0x00FF)); // shl cl,1
-			cx = (ushort)(cx >> 1); // shr cx,1
-
-			ax = (ushort)((ax & 0xFF00) | (((ax & 0x00FF) << 1) & 0x00FF)); // shl al,1
-			ax = (ushort)((ax << 1) & 0xFFFF); // shl ax,1
-
-			int carry = cx & 0x0001;
-			cx = (ushort)(cx >> 1); // shr cx,1
-			ax = (ushort)(((carry << 15) | (ax >> 1)) & 0xFFFF); // rcr ax,1
-
-			carry = cx & 0x0001;
-			cx = (ushort)(cx >> 1); // shr cx,1
-			ax = (ushort)(((carry << 15) | (ax >> 1)) & 0xFFFF); // rcr ax,1
-
-			_channelEventPointer[ch] = pos;
-			return cx == 0 ? ax : (ushort)0xFFFF;
-		}
-	}
-
-	/// <summary>
-	/// Builds channel pointer table and reads initial deltas.
-	/// Mirrors MidiBuildChannelTable: channel offsets at songDataOffset[0..16],
-	/// relative to songDataOffset. Then reads first VLQ delta for each active channel.
+	/// Builds the channel table from song header data.
+	/// Mirrors AdpBuildChannelTable_0413.
 	/// </summary>
 	private void BuildChannelTable() {
-		_activeChannelCount = 9;
+		for (int i = 0; i < ChannelCount; i++) {
+			ushort relative = SongWord(_dataBase + i * 2);
+			int absolute = relative == 0 ? 0 : relative + _dataBase;
+			_channelStartOffset[i] = absolute;
+		}
+
+		for (int i = 0; i < ChannelCount; i++) {
+			_channelInstrument[i] = 0xFF;
+			_channelNote[i] = 0x00;
+			_channelVibratoCount[i] = 0;
+			_channelVibratoInit[i] = 0;
+			_channelPitchBendFlag[i] = 0;
+			_channelTranspose[i] = 0;
+		}
+
 		_measure = 1;
 		_subdivision = 0x60;
 
-		for (int i = 0; i < 9; i++) {
-			ushort channelOffset = ReadU16(SongDataOffset + i * 2);
-			_channelWait[i] = 0xFFFF;
-			_channelEventPointer[i] = 0;
-			_channelStartOffset[i] = 0;
-			_snapshotWait[i] = 0;
-			_snapshotPointer[i] = 0;
-			_channelVolume[i] = 0x3F;
-			_channelNote[i] = 0;
-			_channelTranspose[i] = 0;
-			_channelInstrument[i] = 0;
-			_channelStoredFreq[i] = 0;
-			_channelReg90[i] = 0;
-			_channelReg48[i] = 0;
-			_channelReg7E[i] = 0;
-			_channelRegA2[i] = 0;
-			_channelRegC6[i] = 0;
-			_channelRegB4[i] = 0;
-			_channelRegD8[i] = 0;
-
-			if (channelOffset != 0) {
-				ushort absOffset = (ushort)(SongDataOffset + channelOffset);
-				_channelEventPointer[i] = absOffset;
-				_channelStartOffset[i] = absOffset;
+		for (int ch = 0; ch < ChannelCount; ch++) {
+			int ptr = _channelStartOffset[ch];
+			_channelEventPointer[ch] = ptr;
+			_channelWait[ch] = 0xFFFF;
+			if (ptr != 0) {
+				ReadWaitValue(ch);
+				_channelWait[ch]++;
 			}
 		}
-
-		InitChannelDeltas();
 	}
 
 	/// <summary>
-	/// Initializes all 9 channel waits and pointers from start offsets.
-	/// Mirrors DNADP 0x0444: wait is set via 0x08E1 decode, then incremented by 1.
+	/// Main tick processing. Adds tempo to accumulator, checks loop points,
+	/// iterates all 9 channels dispatching events.
+	/// Mirrors AdpProcessTick_04D3.
 	/// </summary>
-	private void InitChannelDeltas() {
-		for (int i = 0; i < 9; i++) {
-			ushort startOffset = _channelStartOffset[i];
-			_channelEventPointer[i] = startOffset;
-			_channelWait[i] = 0xFFFF;
+	private void ProcessTick() {
+		ushort tempoWord = SongWord(_dataBase + 0x30);
+		_accumulator = (ushort)(_accumulator + tempoWord);
 
-			if (startOffset != 0) {
-				ushort delta = ReadWaitValue(i);
-				if (delta == 0xFFFF) {
-					_channelWait[i] = 0xFFFF;
-				} else {
-					_channelWait[i] = (ushort)(delta + 1);
+		LoopPointCheck();
+
+		for (int ch = 0; ch < ChannelCount; ch++) {
+			_channelWait[ch]--;
+
+			if (_channelWait[ch] != 0) {
+				// Channel still waiting — check vibrato
+				if (_channelVibratoCount[ch] != 0 && _channelEventPointer[ch] != 0) {
+					_channelVibratoCount[ch]--;
+					byte phase = _channelVibratoPhase[ch];
+					byte speed = _channelVibratoSpeed[ch];
+					phase = (byte)(phase + speed);
+					_channelVibratoPhase[ch] = phase;
+					PitchBendBody(ch, Make16(phase, speed));
+				}
+			} else {
+				// Wait expired — dispatch events until a new wait is set
+				while (_channelWait[ch] == 0) {
+					int si = _channelEventPointer[ch];
+					if (si == 0) {
+						break;
+					}
+					ushort eventWord = SongWord(si);
+					_channelEventPointer[ch] = si + 2;
+					byte handler = (byte)((eventWord >> 4) & 0x07);
+
+					switch (handler) {
+						case 0:
+							NoteOff(ch, eventWord);
+							break;
+						case 1:
+							NoteOn(ch, eventWord);
+							break;
+						case 2:
+						case 3:
+							ReadWaitValue(ch);
+							break;
+						case 4:
+							ProgramChange(ch, eventWord);
+							break;
+						case 5:
+							VolumeModulation(ch, eventWord);
+							break;
+						case 6:
+							PitchBend(ch, eventWord);
+							break;
+						case 7:
+							EndOfTrack(ch);
+							break;
+					}
 				}
 			}
 		}
-	}
 
-	/// <summary>
-	/// Resets measure/subdivision and re-initializes channel deltas from start offsets.
-	/// </summary>
-	private void ResetSchedulerState() {
-		_measure = 1;
-		_subdivision = 0x60;
-		InitChannelDeltas();
-	}
-
-	/// <summary>
-	/// Checks song end boundary and handles loop/repeat bookkeeping.
-	/// Identical to DNMID: endMeasure triggers snapshot, loopMeasure triggers restore.
-	/// </summary>
-	private void CheckSongEnd() {
-		if (_repeatCounter == 0) {
-			if (_measure != _endMeasure || _subdivision != 0x60) {
-				return;
-			}
-			for (int i = 0; i < 9; i++) {
-				_snapshotWait[i] = _channelWait[i];
-				_snapshotPointer[i] = _channelEventPointer[i];
-			}
-			_repeatCounter = (ushort)(_loopRepeat - 1);
-			EmitLog($"Song end reached: took snapshot, repeat={_repeatCounter}");
-			return;
-		}
-
-		if (_measure != _loopMeasure) {
-			return;
-		}
-		_repeatCounter--;
-		for (int i = 0; i < 9; i++) {
-			_channelWait[i] = _snapshotWait[i];
-			_channelEventPointer[i] = _snapshotPointer[i];
-		}
-		_measure = _endMeasure;
-		EmitLog($"Loop: restored snapshot, measure={_measure}, repeat={_repeatCounter}");
-	}
-
-	/// <summary>
-	/// Advances subdivision counter: dec first, then check == 0.
-	/// </summary>
-	private void AdvanceSubdivision() {
 		_subdivision--;
 		if (_subdivision == 0) {
 			_subdivision = 0x60;
@@ -612,39 +115,558 @@ public sealed partial class DuneAdpPlayerEngine {
 	}
 
 	/// <summary>
-	/// Fade toward target volume by +-3 per fade tick.
-	/// For OPL2: adjusts _currentVolume and re-applies carrier total level
-	/// for all active channels.
+	/// Checks and manages loop snapshot save/restore.
+	/// Mirrors AdpLoopPointCheck_0553.
 	/// </summary>
-	private void HandleFade() {
-		int diff = _targetVolume - _currentVolume;
-		if (diff == 0) {
-			return;
-		}
-		if (Math.Abs(diff) <= 3) {
-			_currentVolume = _targetVolume;
+	private void LoopPointCheck() {
+		if (_repeatCounter == 0) {
+			ushort loopStartMeasure = SongWord(_dataBase + 0x2A);
+			if (loopStartMeasure == _measure && _subdivision == 0x60) {
+				for (int i = 0; i < ChannelCount; i++) {
+					_snapshotWait[i] = _channelWait[i];
+					_snapshotPointer[i] = _channelEventPointer[i];
+				}
+				ushort loopCount = SongWord(_dataBase + 0x2E);
+				_repeatCounter = (ushort)(loopCount - 1);
+			}
 		} else {
-			_currentVolume = (byte)(_currentVolume + (diff > 0 ? 3 : -3));
-		}
-		// Re-apply volume to all active channels via carrier total level
-		for (int ch = 0; ch < _activeChannelCount; ch++) {
-			OplSetVolume(ch, _channelVolume[ch]);
+			ushort loopEndMeasure = SongWord(_dataBase + 0x2C);
+			if (loopEndMeasure == _measure) {
+				_repeatCounter--;
+				for (int i = 0; i < ChannelCount; i++) {
+					_channelWait[i] = _snapshotWait[i];
+					_channelEventPointer[i] = _snapshotPointer[i];
+				}
+				_measure = SongWord(_dataBase + 0x2A);
+			}
 		}
 	}
 
 	/// <summary>
-	/// Emits a live event flow entry to the UI for the event flow panel.
+	/// Reads a variable-length wait value from the song data stream.
+	/// Updates channel wait and event pointer.
+	/// Mirrors AdpReadWaitValue_08E1.
 	/// </summary>
-	private void EmitEventFlow(int ch, string kind, string detail, ushort delta, ushort pointer) {
-		EventFlowProduced?.Invoke(new EventFlowEntry {
-			TickIndex = _tickIndex,
-			Channel = ch,
-			Kind = kind,
-			Detail = detail,
-			Delta = delta,
-			Pointer = pointer,
-			Measure = _measure,
-			Subdivision = _subdivision
-		});
+	private void ReadWaitValue(int ch) {
+		int si = _channelEventPointer[ch];
+		byte al = _songData[si++];
+		ushort ax = al;
+
+		if ((al & 0x80) != 0) {
+			ushort cx = 0;
+			byte ah = 0;
+			do {
+				byte previousCl = Lo8(cx);
+				byte previousAh = ah;
+				cx = Make16(previousAh, previousCl);
+				ah = al;
+				al = _songData[si++];
+			} while ((al & 0x80) != 0);
+
+			ax = (ushort)((al & 0x7F) | ((ah & 0x7F) << 8));
+			cx = (ushort)(cx & 0x7F7F);
+
+			byte cl = (byte)(Lo8(cx) << 1);
+			cx = Make16(cl, Hi8(cx));
+			cx = (ushort)(cx >> 1);
+
+			byte lowAl = Lo8(ax);
+			lowAl = (byte)(lowAl << 1);
+			ax = Make16(lowAl, Hi8(ax));
+			ax = (ushort)(ax << 1);
+
+			bool carry = (cx & 0x0001) != 0;
+			cx = (ushort)(cx >> 1);
+			ax = (ushort)((ax >> 1) | (carry ? 0x8000 : 0));
+
+			carry = (cx & 0x0001) != 0;
+			cx = (ushort)(cx >> 1);
+			ax = (ushort)((ax >> 1) | (carry ? 0x8000 : 0));
+
+			if (cx != 0) {
+				ax = 0xFFFF;
+			}
+		}
+
+		_channelWait[ch] = ax;
+		_channelEventPointer[ch] = si;
+	}
+
+	/// <summary>
+	/// NoteOn event handler. Reads velocity byte, sets up envelope,
+	/// writes frequency to OPL with key-on.
+	/// Mirrors AdpNoteOn_062C.
+	/// </summary>
+	private void NoteOn(int ch, ushort eventWord) {
+		int si = _channelEventPointer[ch];
+		byte velocity = _songData[si++];
+		_channelEventPointer[ch] = si;
+
+		ReadWaitValue(ch);
+
+		EnvelopeSetup(ch, velocity);
+
+		if (_channelNote[ch] != 0) {
+			OplFrequencyWrite(ch, 0);
+		}
+
+		byte noteFromEvent = Hi8(eventWord);
+		byte note = (byte)(noteFromEvent + _channelTranspose[ch]);
+		_channelNote[ch] = note;
+		ushort rawPitch = (ushort)(note - 0x48);
+
+		_channelVibratoCount[ch] = _channelVibratoInit[ch];
+		_channelVibratoPhase[ch] = 0x40;
+
+		OplNoteOn(ch, rawPitch);
+		ChannelEventDispatched?.Invoke(ch, "NoteOn", $"note={note:X2} vel={velocity:X2}", _totalTickCount);
+	}
+
+	/// <summary>
+	/// NoteOff event handler. Skips one byte, reads wait, clears note if matching.
+	/// Mirrors AdpNoteOff_065B.
+	/// </summary>
+	private void NoteOff(int ch, ushort eventWord) {
+		_channelEventPointer[ch]++;
+		ReadWaitValue(ch);
+
+		byte noteFromEvent = (byte)(Hi8(eventWord) + _channelTranspose[ch]);
+		if (_channelNote[ch] == noteFromEvent) {
+			_channelNote[ch] = 0;
+			OplNoteOff(ch);
+		}
+		ChannelEventDispatched?.Invoke(ch, "NoteOff", $"note={noteFromEvent:X2}", _totalTickCount);
+	}
+
+	/// <summary>
+	/// ProgramChange event handler. Loads instrument patch and writes to OPL.
+	/// Mirrors AdpProgramChange_05AA.
+	/// </summary>
+	private void ProgramChange(int ch, ushort eventWord) {
+		ReadWaitValue(ch);
+
+		byte instrument = Hi8(eventWord);
+		if (_channelInstrument[ch] == instrument) {
+			return;
+		}
+		_channelInstrument[ch] = instrument;
+
+		int instOff = _eventBase + instrument * 0x28;
+
+		_channelPitchBendFlag[ch] = SongWord(instOff + 0x21);
+
+		byte ah = SongByte(instOff + 0x17);
+		byte al = SongByte(instOff + 0x0A);
+		byte bh = SongByte(instOff + 0x02);
+		byte bl = SongByte(instOff + 0x0F);
+		ushort bx = (ushort)(Make16(bl, bh) & 0x0303);
+		bx = (ushort)((bx >> 2) | (bx << 14));
+		_channelEnvShaping[ch] = (ushort)(Make16(al, ah) | bx);
+
+		_channelTlShaping[ch] = SongWord(instOff + 0x1E);
+		_channelVolModShaping[ch] = SongWord(instOff + 0x26);
+
+		al = SongByte(instOff + 0x0E);
+		al = (byte)~al;
+		al = (byte)((al >> 1) | (al << 7));
+		ah = SongByte(instOff + 0x04);
+		ushort ax = (ushort)(Make16(al, ah) << 1);
+		al = SongByte(instOff + 0x20);
+		ax = Make16(al, Hi8(ax));
+		_channelConnShaping[ch] = ax;
+
+		al = SongByte(instOff + 0x1B);
+		_channelConnMod[ch] = Make16(al, Hi8(ax));
+
+		ax = SongWord(instOff + 0x23);
+		_channelVibratoSpeed[ch] = Hi8(ax);
+		_channelVibratoCount[ch] = 0;
+		_channelVibratoInit[ch] = Lo8(ax);
+
+		InstrumentWrite(ch, instOff + 2);
+		ChannelEventDispatched?.Invoke(ch, "PgmChg", $"inst={instrument:X2}", _totalTickCount);
+	}
+
+	/// <summary>
+	/// VolumeModulation event handler. Applies velocity-based modulation
+	/// to operator TL registers and connection.
+	/// Mirrors AdpVolumeModulation_06A8.
+	/// </summary>
+	private void VolumeModulation(int ch, ushort eventWord) {
+		ReadWaitValue(ch);
+
+		byte velocityRaw = Hi8(eventWord);
+		byte al = (byte)(0x80 - velocityRaw);
+		byte ah = al;
+		al = velocityRaw;
+
+		// Swap: al = inverted velocity (0x80-raw), ah = raw velocity
+		// Actually after the swap: al = raw, ah = inverted. Let me re-check.
+		// Original: al = 0x80; sub al, ah → al = 0x80 - velocity; xchg al, ah → al = velocity, ah = 0x80-velocity
+		byte velocity = velocityRaw;
+		byte invertedVelocity = (byte)(0x80 - velocityRaw);
+
+		ushort operatorLevel = _channelOperatorLevel[ch];
+		ushort volModShape = _channelVolModShaping[ch];
+
+		// Modulator TL (low byte of volModShape)
+		if (Lo8(volModShape) != 0) {
+			byte cl = Lo8(volModShape);
+			byte scaleAl = velocity;
+			if ((cl & 0x80) != 0) {
+				cl = (byte)(0 - cl);
+				scaleAl = invertedVelocity;
+			}
+			cl = (byte)(0 - (byte)(cl - 4));
+			scaleAl = (byte)(scaleAl >> cl);
+			byte reg = (byte)(Lo8(operatorLevel) & 0x3F);
+			reg = reg >= scaleAl ? (byte)(reg - scaleAl) : (byte)0;
+			byte flags = (byte)(Lo8(operatorLevel) & 0xC0);
+			OplRegisterWrite((ushort)(0x40 + ModulatorOffsets[ch]), (byte)(reg | flags));
+		}
+
+		// Carrier TL (high byte of volModShape)
+		if (Hi8(volModShape) != 0) {
+			byte chByte = Hi8(volModShape);
+			byte scaleAl = velocity;
+			if ((chByte & 0x80) != 0) {
+				chByte = (byte)(0 - chByte);
+				scaleAl = invertedVelocity;
+			}
+			byte shr = (byte)(4 - chByte);
+			scaleAl = (byte)(scaleAl >> shr);
+			byte reg = (byte)(Hi8(operatorLevel) & 0x3F);
+			reg = reg >= scaleAl ? (byte)(reg - scaleAl) : (byte)0;
+			byte flags = (byte)(Hi8(operatorLevel) & 0xC0);
+			OplRegisterWrite((ushort)(0x40 + CarrierOffsets[ch]), (byte)(reg | flags));
+		}
+
+		// Connection modulation
+		ushort connMod = _channelConnMod[ch];
+		if (Lo8(connMod) != 0) {
+			byte cl = Lo8(connMod);
+			byte scaleAl = velocity;
+			if ((cl & 0x80) != 0) {
+				cl = (byte)(0 - cl);
+				scaleAl = invertedVelocity;
+			}
+			cl = (byte)(0 - (byte)(cl - 6));
+			scaleAl = (byte)(scaleAl >> cl);
+			scaleAl = (byte)(scaleAl & 0xFE);
+			scaleAl = (byte)(scaleAl + Hi8(connMod));
+			if (scaleAl > 0x0F) {
+				scaleAl = (byte)((scaleAl & 0x0F) | 0x0E);
+			}
+			OplRegisterWrite((ushort)(0xC0 + ch), scaleAl);
+		}
+	}
+
+	/// <summary>
+	/// EnvelopeSetup for NoteOn. Adds to base TL instead of subtracting.
+	/// Mirrors AdpEnvelopeSetup_0740.
+	/// </summary>
+	private void EnvelopeSetup(int ch, byte velocity) {
+		byte ah = velocity;
+		byte al = (byte)(0x80 - ah);
+
+		ushort bx = _channelEnvShaping[ch];
+		ushort cx = _channelTlShaping[ch];
+
+		// Modulator TL
+		if (Lo8(cx) != 0) {
+			byte cl = Lo8(cx);
+			byte scaleAl = al;
+			if ((cl & 0x80) != 0) {
+				cl = (byte)(0 - cl);
+				scaleAl = ah;
+			}
+			cl = (byte)(0 - (byte)(cl - 4));
+			scaleAl = (byte)(scaleAl >> cl);
+			byte reg = (byte)(Lo8(bx) & 0x3F);
+			reg = (byte)(reg + scaleAl);
+			if (reg > 0x3F) {
+				reg = 0x3F;
+			}
+			bx = (ushort)((bx & 0xFF00) | ((Lo8(bx) & 0xC0) | reg));
+			OplRegisterWrite((ushort)(0x40 + ModulatorOffsets[ch]), Lo8(bx));
+		}
+
+		// Carrier TL
+		if (Hi8(cx) != 0) {
+			byte chByte = Hi8(cx);
+			byte scaleAl = al;
+			if ((chByte & 0x80) != 0) {
+				chByte = (byte)(0 - chByte);
+				scaleAl = ah;
+			}
+			byte shr = (byte)(4 - chByte);
+			scaleAl = (byte)(scaleAl >> shr);
+			byte reg = (byte)(Hi8(bx) & 0x3F);
+			reg = (byte)(reg + scaleAl);
+			if (reg > 0x3F) {
+				reg = 0x3F;
+			}
+			bx = (ushort)((bx & 0x00FF) | (((Hi8(bx) & 0xC0) | reg) << 8));
+			OplRegisterWrite((ushort)(0x40 + CarrierOffsets[ch]), Hi8(bx));
+		}
+
+		_channelOperatorLevel[ch] = bx;
+
+		// Connection
+		cx = _channelConnShaping[ch];
+		if (Lo8(cx) == 0) {
+			_channelConnMod[ch] = (ushort)((_channelConnMod[ch] & 0x00FF) | (Hi8(cx) << 8));
+			return;
+		}
+
+		byte cl2 = Lo8(cx);
+		byte scale = al;
+		if ((cl2 & 0x80) != 0) {
+			cl2 = (byte)(0 - cl2);
+			scale = ah;
+		}
+		cl2 = (byte)(0 - (byte)(cl2 - 6));
+		scale = (byte)(scale >> cl2);
+		scale = (byte)(scale & 0xFE);
+		scale = (byte)(scale + Hi8(cx));
+		if (scale > 0x0F) {
+			scale = (byte)((scale & 0x0F) | 0x0E);
+		}
+		_channelConnMod[ch] = (ushort)((_channelConnMod[ch] & 0x00FF) | (scale << 8));
+		OplRegisterWrite((ushort)(0xC0 + ch), scale);
+	}
+
+	/// <summary>
+	/// PitchBend event handler (from event dispatch).
+	/// Mirrors AdpPitchBend_07EA.
+	/// </summary>
+	private void PitchBend(int ch, ushort eventWord) {
+		byte bendValue = Hi8(eventWord);
+		// Store bend value as AL, then call ReadWaitValue (preserves our local state)
+		ReadWaitValue(ch);
+		PitchBendBody(ch, Make16(bendValue, 0));
+		ChannelEventDispatched?.Invoke(ch, "PBend", $"val={bendValue:X2}", _totalTickCount);
+	}
+
+	/// <summary>
+	/// Pitch bend computation. Handles both portamento and non-portamento modes.
+	/// Mirrors AdpPitchBendBody_07EF.
+	/// </summary>
+	private void PitchBendBody(int ch, ushort input) {
+		byte currentNote = _channelNote[ch];
+		if (currentNote == 0) {
+			return;
+		}
+
+		byte alInput = Lo8(input);
+		byte noteForCalc = currentNote;
+
+		byte divResult = (byte)((noteForCalc - 0x18) / 0x0C);
+		byte divRemainder = (byte)((noteForCalc - 0x18) % 0x0C);
+		byte octave = divResult;
+		byte semitone = divRemainder;
+
+		ushort ax;
+		bool isPortamento = (_channelPitchBendFlag[ch] & 0xFF) != 0;
+
+		if (!isPortamento) {
+			bool carryFromSub = alInput < 0x40;
+			int bendOffset = alInput - 0x40;
+
+			if (carryFromSub) {
+				ushort negated = (ushort)(-bendOffset);
+				negated = RotateRight16(negated, 5);
+				byte semitoneShift = Lo8(negated);
+				if (semitone >= semitoneShift) {
+					semitone = (byte)(semitone - semitoneShift);
+				} else {
+					semitone = (byte)(semitone + 0x0C - semitoneShift);
+					octave--;
+					if ((octave & 0x80) != 0) {
+						octave = 0;
+						semitone = 0;
+					}
+				}
+
+				byte frac = PitchBendFractions[semitone];
+				byte fracHi = Hi8(negated);
+				ushort mul = (ushort)(frac * fracHi);
+				byte fracResult = Hi8(mul);
+
+				ushort keyIndex = (ushort)(semitone * 2);
+				ax = FrequencyTable[semitone];
+				int subRes = Lo8(ax) - fracResult;
+				ax = Make16((byte)subRes, (byte)(Hi8(ax) - (subRes < 0 ? 1 : 0)));
+			} else {
+				ushort incremented = (ushort)(bendOffset + 1);
+				incremented = RotateRight16(incremented, 5);
+				byte semitoneShift = Lo8(incremented);
+				semitone = (byte)(semitone + semitoneShift);
+				if (semitone >= 0x0C) {
+					semitone = (byte)(semitone - 0x0C);
+					octave++;
+				}
+
+				byte frac = semitone < PitchBendFractions.Length
+					? PitchBendFractions[semitone]
+					: (byte)0;
+				// Table at 0x0184 = PitchBendFractions offset by 1
+				if (semitone + 1 < PitchBendFractions.Length) {
+					frac = PitchBendFractions[semitone + 1];
+				}
+				byte fracHi = Hi8(incremented);
+				ushort mul = (ushort)(frac * fracHi);
+				byte fracResult = Hi8(mul);
+
+				ax = FrequencyTable[semitone % 12];
+				int addRes = Lo8(ax) + fracResult;
+				ax = Make16((byte)addRes, (byte)(Hi8(ax) + (addRes > 0xFF ? 1 : 0)));
+			}
+		} else {
+			// Portamento mode
+			bool carryFromSub = alInput < 0x40;
+			int bendOffset = alInput - 0x40;
+
+			if (carryFromSub) {
+				ushort negated = (ushort)(-bendOffset);
+				byte divQ = (byte)(negated / 5);
+				byte divR = (byte)(negated % 5);
+				if (semitone >= divQ) {
+					semitone = (byte)(semitone - divQ);
+				} else {
+					semitone = (byte)(semitone + 0x0C - divQ);
+					octave--;
+					if ((octave & 0x80) != 0) {
+						octave = 0;
+						semitone = 0;
+					}
+				}
+
+				int tableBase = semitone >= 6 ? 5 : 0;
+				byte frac = PortamentoFractions[tableBase + divR];
+
+				ax = FrequencyTable[semitone % 12];
+				int subRes = Lo8(ax) - frac;
+				ax = Make16((byte)subRes, (byte)(Hi8(ax) - (subRes < 0 ? 1 : 0)));
+			} else {
+				byte divQ = (byte)(bendOffset / 5);
+				byte divR = (byte)(bendOffset % 5);
+				semitone = (byte)(semitone + divQ);
+				if (semitone >= 0x0C) {
+					semitone = (byte)(semitone - 0x0C);
+					octave++;
+				}
+
+				int tableBase = semitone >= 6 ? 5 : 0;
+				byte frac = PortamentoFractions[tableBase + divR];
+
+				ax = FrequencyTable[semitone % 12];
+				int addRes = Lo8(ax) + frac;
+				ax = Make16((byte)addRes, (byte)(Hi8(ax) + (addRes > 0xFF ? 1 : 0)));
+			}
+		}
+
+		// Combine octave into block bits
+		byte blockBits = (byte)(octave << 2);
+		ax = Make16(Lo8(ax), (byte)(Hi8(ax) | blockBits));
+
+		_channelFreq[ch] = ax;
+		OplFrequencyWrite(ch, (ushort)(ax | 0x2000));
+	}
+
+	/// <summary>
+	/// EndOfTrack event handler. Handles song looping and termination.
+	/// Mirrors AdpEndOfTrack_066F.
+	/// </summary>
+	private void EndOfTrack(int ch) {
+		_channelWait[ch] = 0xFFFF;
+		_channelEventPointer[ch] -= 2;
+
+		if (ch != 0) {
+			return;
+		}
+
+		_tickFlag--;
+		if (_tickFlag == 0) {
+			for (int i = 0; i < ChannelCount; i++) {
+				_channelWait[i] = 0xFFFF;
+			}
+			AllNotesOff();
+			_statusFlags = 0;
+			Logger.Information("Song finished (tickFlag reached 0)");
+			SongFinished?.Invoke();
+			return;
+		}
+		if ((_tickFlag & 0x80) != 0) {
+			_tickFlag++;
+		}
+
+		// Rebuild channel table for loop
+		_measure = 1;
+		_subdivision = 0x60;
+		for (int i = 0; i < ChannelCount; i++) {
+			int ptr = _channelStartOffset[i];
+			_channelEventPointer[i] = ptr;
+			_channelWait[i] = 0xFFFF;
+			if (ptr != 0) {
+				ReadWaitValue(i);
+				_channelWait[i]++;
+			}
+		}
+
+		LoopPointCheck();
+		_channelWait[0]--;
+	}
+
+	/// <summary>
+	/// FadeStep: approaches target volume one nibble increment at a time.
+	/// Mirrors AdpFadeStep_092D.
+	/// </summary>
+	private void FadeStep() {
+		byte current = _currentVolume;
+		byte target = _targetVolume;
+
+		if (current == target) {
+			_fadeBitPattern = 1;
+			_statusFlags = (byte)(_statusFlags & 0xBF);
+			return;
+		}
+
+		byte ah = current;
+		byte lowCurrent = (byte)(current & 0x0F);
+		byte lowTarget = (byte)(target & 0x0F);
+		if (lowCurrent != lowTarget) {
+			ah++;
+			if (lowCurrent > lowTarget) {
+				ah -= 2;
+			}
+		}
+
+		byte outValue = ah;
+		byte highOut = (byte)(ah & 0xF0);
+		byte highTarget = (byte)(target & 0xF0);
+		if (highOut != highTarget) {
+			outValue = (byte)(outValue + 0x10);
+			if (highOut > highTarget) {
+				outValue = (byte)(outValue - 0x20);
+			}
+		}
+
+		_currentVolume = outValue;
+
+		if (outValue == 0) {
+			AllNotesOff();
+			_statusFlags = 0;
+		}
+	}
+
+	/// <summary>
+	/// Turns off all 9 OPL channels.
+	/// Mirrors AdpUnknown091B.
+	/// </summary>
+	private void AllNotesOff() {
+		for (int ch = 0; ch < ChannelCount; ch++) {
+			OplNoteOff(ch);
+		}
 	}
 }
