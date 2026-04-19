@@ -457,13 +457,14 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 			return false;
 		}
 
-		if (!File.Exists(AdgPath)) {
+		string resolvedPath = ResolveAdpCompatiblePath(AdgPath);
+		if (!File.Exists(resolvedPath)) {
 			Status = "Selected file does not exist.";
 			return false;
 		}
 
 		try {
-			return TryLoadPath(AdgPath);
+			return TryLoadPath(resolvedPath);
 		} catch (Exception ex) {
 			Status = $"Load failed: {ex.Message}";
 			Logger.Error(ex, "Load failed");
@@ -475,16 +476,22 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 		if (string.IsNullOrWhiteSpace(path)) {
 			return false;
 		}
-		if (!File.Exists(path)) {
+
+		string resolvedPath = ResolveAdpCompatiblePath(path);
+		if (!File.Exists(resolvedPath)) {
 			Status = "Selected file does not exist.";
 			return false;
 		}
 		try {
-			byte[] raw = File.ReadAllBytes(path);
+			if (!string.Equals(path, resolvedPath, StringComparison.OrdinalIgnoreCase)) {
+				Logger.Information("ADP source remapped: {Requested} -> {Resolved}", Path.GetFileName(path), Path.GetFileName(resolvedPath));
+			}
+
+			byte[] raw = File.ReadAllBytes(resolvedPath);
 			_engine.LoadSong(raw);
-			_loadedPath = path;
-			AdgPath = path;
-			SelectedFileName = Path.GetFileName(path);
+			_loadedPath = resolvedPath;
+			AdgPath = resolvedPath;
+			SelectedFileName = Path.GetFileName(resolvedPath);
 			UpdateHeaderInfo();
 			Logger.Information("Loaded {File}", SelectedFileName);
 			return true;
@@ -496,15 +503,45 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 	}
 
 	private void AddPlaylistPath(string path) {
-		if (string.IsNullOrWhiteSpace(path) || !File.Exists(path)) {
+		if (string.IsNullOrWhiteSpace(path)) {
+			return;
+		}
+
+		string resolvedPath = ResolveAdpCompatiblePath(path);
+		if (!File.Exists(resolvedPath)) {
 			return;
 		}
 		for (int i = 0; i < Playlist.Count; i++) {
-			if (string.Equals(Playlist[i].Path, path, StringComparison.OrdinalIgnoreCase)) {
+			if (string.Equals(Playlist[i].Path, resolvedPath, StringComparison.OrdinalIgnoreCase)) {
 				return;
 			}
 		}
-		Playlist.Add(new PlaylistItem { Path = path });
+		Playlist.Add(new PlaylistItem { Path = resolvedPath });
+	}
+
+	private static string ResolveAdpCompatiblePath(string requestedPath) {
+		if (string.IsNullOrWhiteSpace(requestedPath)) {
+			return requestedPath;
+		}
+
+		string extension = Path.GetExtension(requestedPath);
+		if (!string.Equals(extension, ".AGD", StringComparison.OrdinalIgnoreCase)
+			&& !string.Equals(extension, ".ADG", StringComparison.OrdinalIgnoreCase)) {
+			return requestedPath;
+		}
+
+		string? directory = Path.GetDirectoryName(requestedPath);
+		if (string.IsNullOrWhiteSpace(directory)) {
+			return requestedPath;
+		}
+
+		string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(requestedPath);
+		string hsqCandidate = Path.Combine(directory, fileNameWithoutExtension + ".HSQ");
+		if (File.Exists(hsqCandidate)) {
+			return hsqCandidate;
+		}
+
+		return requestedPath;
 	}
 
 	private void PlayPlaylistIndex(int index) {
