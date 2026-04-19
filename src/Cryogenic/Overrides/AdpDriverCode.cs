@@ -2324,9 +2324,9 @@ public partial class Overrides {
 	/// </summary>
 	public Action AdpInstrumentWrite_5BAE_09AB_05C4CB(int gotoAddress) {
 		DX = (ushort)(DX * 2);
-		ushort bx = DX;
-		DX = AdpWord((ushort)(0x0135 + bx));
-		bx = (ushort)(bx >> 1);
+		BX = DX;
+		DX = AdpWord((ushort)(0x0135 + BX));
+		BX = (ushort)(BX >> 1);
 		AdpInstrumentWriteLoop_5BAE_09C3_05C4E3(0);
 		DX = Make16(Hi8(DX), Lo8(DX));
 		byte waveformAh = SegByte(DS, (ushort)(SI + 0x1B));
