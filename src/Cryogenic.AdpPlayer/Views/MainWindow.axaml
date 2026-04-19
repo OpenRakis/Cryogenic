@@ -73,10 +73,11 @@
         </StackPanel>
 
         <!-- Row 1: File selector -->
-        <Grid Grid.Row="1" ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,6">
+        <Grid Grid.Row="1" ColumnDefinitions="Auto,*,Auto,Auto" Margin="0,0,0,6">
             <Button Grid.Column="0" Content="Browse" Command="{Binding BrowseFileCommand}" Margin="0,0,6,0" />
-            <TextBox Grid.Column="1" Text="{Binding AdgPath}" Watermark="ADG/ADP file path..." FontSize="11" />
-            <Button Grid.Column="2" Content="Load" Command="{Binding LoadCommand}" Margin="8,0,0,0" />
+            <TextBox Grid.Column="1" Text="{Binding AdgPath}" Watermark="ADG/HSQ/ADP file path..." FontSize="11" />
+            <Button Grid.Column="2" Content="Add Files" Command="{Binding BrowsePlaylistFilesCommand}" Margin="8,0,0,0" />
+            <Button Grid.Column="3" Content="Load" Command="{Binding LoadCommand}" Margin="8,0,0,0" />
         </Grid>
 
         <!-- Row 2: Transport + Volume controls -->
@@ -84,8 +85,10 @@
             <!-- Transport buttons -->
             <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="5">
                 <Button Classes="transport-primary" Content="▶" FontSize="18" Command="{Binding PlayCommand}" />
+                <Button Classes="transport" Content="⏮" FontSize="14" Command="{Binding PreviousTrackCommand}" />
                 <Button Classes="transport" Content="⏸" FontSize="16" Command="{Binding PauseCommand}" />
                 <Button Classes="transport" Content="■" FontSize="16" Command="{Binding StopCommand}" />
+                <Button Classes="transport" Content="⏭" FontSize="14" Command="{Binding NextTrackCommand}" />
             </StackPanel>
 
             <!-- Volume controls -->
@@ -126,11 +129,30 @@
             <v:WaveformControl x:Name="Waveform" />
         </Border>
 
-        <!-- Row 7: Bottom panels (Channel Events | OPL Writes | Logs) -->
-        <Grid Grid.Row="7" ColumnDefinitions="*,*,*" Margin="0,6,0,0">
+        <!-- Row 7: Bottom panels (Playlist | Channel Events | OPL Writes | Logs) -->
+        <Grid Grid.Row="7" ColumnDefinitions="0.8*,*,*,*" Margin="0,6,0,0">
+
+            <!-- Playlist -->
+            <Border Grid.Column="0" CornerRadius="4" Background="#161B22" Padding="4" Margin="0,0,3,0">
+                <Grid RowDefinitions="Auto,Auto,*" RowSpacing="4">
+                    <TextBlock Grid.Row="0" Classes="panel-header" Text="PLAYLIST" />
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="4">
+                        <Button Content="Play" Command="{Binding PlaySelectedTrackCommand}" Padding="6,2" />
+                        <Button Content="Remove" Command="{Binding RemoveSelectedTrackCommand}" Padding="6,2" />
+                        <Button Content="Clear" Command="{Binding ClearPlaylistCommand}" Padding="6,2" />
+                    </StackPanel>
+                    <ListBox Grid.Row="2" ItemsSource="{Binding Playlist}" SelectedItem="{Binding SelectedPlaylistItem}" ScrollViewer.VerticalScrollBarVisibility="Auto">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate x:DataType="vm:PlaylistItem">
+                                <TextBlock Classes="mono" Foreground="#79C0FF" Text="{Binding Display}" TextWrapping="NoWrap" />
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
+            </Border>
 
             <!-- Channel Events -->
-            <Border Grid.Column="0" CornerRadius="4" Background="#161B22" Padding="4" Margin="0,0,3,0">
+            <Border Grid.Column="1" CornerRadius="4" Background="#161B22" Padding="4" Margin="3,0,3,0">
                 <Grid RowDefinitions="Auto,*">
                     <TextBlock Grid.Row="0" Classes="panel-header" Text="CHANNEL EVENTS" />
                     <ListBox Grid.Row="1" ItemsSource="{Binding ChannelEvents}" ScrollViewer.VerticalScrollBarVisibility="Auto">
@@ -147,7 +169,7 @@
             </Border>
 
             <!-- OPL Writes -->
-            <Border Grid.Column="1" CornerRadius="4" Background="#161B22" Padding="4" Margin="3,0,3,0">
+            <Border Grid.Column="2" CornerRadius="4" Background="#161B22" Padding="4" Margin="3,0,3,0">
                 <Grid RowDefinitions="Auto,*">
                     <TextBlock Grid.Row="0" Classes="panel-header" Text="OPL REGISTER WRITES" />
                     <ListBox Grid.Row="1" ItemsSource="{Binding OplWrites}" ScrollViewer.VerticalScrollBarVisibility="Auto">
@@ -164,7 +186,7 @@
             </Border>
 
             <!-- Logs -->
-            <Border Grid.Column="2" CornerRadius="4" Background="#161B22" Padding="4" Margin="3,0,0,0">
+            <Border Grid.Column="3" CornerRadius="4" Background="#161B22" Padding="4" Margin="3,0,0,0">
                 <Grid RowDefinitions="Auto,*">
                     <TextBlock Grid.Row="0" Classes="panel-header" Text="LOG" />
                     <ListBox Grid.Row="1" x:Name="LogList" ItemsSource="{Binding Logs}" ScrollViewer.VerticalScrollBarVisibility="Auto">

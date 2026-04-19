@@ -222,7 +222,7 @@ public sealed partial class DuneAdpPlayerEngine {
 		_channelVibratoPhase[ch] = 0x40;
 
 		OplNoteOn(ch, rawPitch);
-		ChannelEventDispatched?.Invoke(ch, "NoteOn", $"note={note:X2} vel={velocity:X2}", _totalTickCount);
+		ChannelEventDispatched?.Invoke(ch, "NoteOn", $"note={note:X2} vel={velocity:X2} inst={_channelInstrument[ch]:X2} tr={noteTranspose:X2} pb={Lo8(_channelPitchBendFlag[ch]):X2} rp={rawPitch:X4}", _totalTickCount);
 	}
 
 	/// <summary>
@@ -238,7 +238,7 @@ public sealed partial class DuneAdpPlayerEngine {
 			_channelNote[ch] = 0;
 			OplNoteOff(ch);
 		}
-		ChannelEventDispatched?.Invoke(ch, "NoteOff", $"note={noteFromEvent:X2}", _totalTickCount);
+		ChannelEventDispatched?.Invoke(ch, "NoteOff", $"note={noteFromEvent:X2} inst={_channelInstrument[ch]:X2} tr={Hi8(_channelPitchBendFlag[ch]):X2}", _totalTickCount);
 	}
 
 	/// <summary>

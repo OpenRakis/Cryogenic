@@ -26,7 +26,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 	private static readonly ILogger Logger = Log.ForContext<MainWindowViewModel>();
 
 	private static readonly string[] DefaultSongCandidates = [
-		@"C:\Users\noalm\source\repos\Cryogenic\doc\DUNECDVF\C\DUNECD\DUNE.DAT\_ARRAKIS.ADG",
+		@"C:\Users\noalm\source\repos\Cryogenic\doc\DUNECDVF\C\DUNECD\DUNE.DAT_\ARRAKIS.ADG",
 	];
 
 	private readonly Window _window;
@@ -34,6 +34,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 	private WaveformControl _waveformControl;
 	private readonly DispatcherTimer _statusTimer;
 	private string _loadedPath = "";
+	private int _playlistIndex = -1;
 
 	[ObservableProperty]
 	private string _adgPath = ResolveDefaultSongPath();
@@ -81,6 +82,9 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 	[ObservableProperty]
 	private string _channelStateText = "";
 
+	[ObservableProperty]
+	private PlaylistItem? _selectedPlaylistItem;
+
 	/// <summary>Channel events shown in the UI.</summary>
 	public ObservableCollection<ChannelEventItem> ChannelEvents { get; } = new();
 
@@ -89,6 +93,9 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 
 	/// <summary>Log entries shown in the UI log panel.</summary>
 	public ObservableCollection<LogDisplayItem> Logs { get; } = new();
+
+	/// <summary>Playlist entries shown in the UI.</summary>
+	public ObservableCollection<PlaylistItem> Playlist { get; } = new();
 
 	/// <summary>
 	/// Creates the view model, wires the Serilog UI sink.
@@ -156,18 +163,141 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 
 		System.Collections.Generic.IReadOnlyList<IStorageFile> picked =
 			await _window.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions {
-				Title = "Select ADG/ADP music file",
-				AllowMultiple = false,
+				Title = "Select ADG/HSQ/ADP music file",
+				AllowMultiple = true,
 				FileTypeFilter = [
-					new FilePickerFileType("Dune ADG/ADP") { Patterns = ["*.ADG", "*.ADP", "*.adg", "*.adp"] },
+					new FilePickerFileType("Dune Music") { Patterns = ["*.AGD", "*.ADG", "*.HSQ", "*.ADP", "*.agd", "*.adg", "*.hsq", "*.adp"] },
 					new FilePickerFileType("All files") { Patterns = ["*"] }
 				]
 			});
 
 		if (picked.Count > 0) {
+			for (int i = 0; i < picked.Count; i++) {
+				AddPlaylistPath(picked[i].Path.LocalPath);
+			}
+
 			AdgPath = picked[0].Path.LocalPath;
 			SelectedFileName = Path.GetFileName(AdgPath);
+			for (int i = 0; i < Playlist.Count; i++) {
+				if (string.Equals(Playlist[i].Path, AdgPath, StringComparison.OrdinalIgnoreCase)) {
+					_playlistIndex = i;
+					SelectedPlaylistItem = Playlist[i];
+					break;
+				}
+			}
 		}
+	}
+
+	/// <summary>
+	/// Adds one or more music files to the playlist.
+	/// </summary>
+	[RelayCommand]
+	private async System.Threading.Tasks.Task BrowsePlaylistFilesAsync() {
+		if (_window.StorageProvider is null) {
+			return;
+		}
+
+		System.Collections.Generic.IReadOnlyList<IStorageFile> picked =
+			await _window.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions {
+				Title = "Add songs to playlist",
+				AllowMultiple = true,
+				FileTypeFilter = [
+					new FilePickerFileType("Dune Music") { Patterns = ["*.AGD", "*.ADG", "*.HSQ", "*.ADP", "*.agd", "*.adg", "*.hsq", "*.adp"] },
+					new FilePickerFileType("All files") { Patterns = ["*"] }
+				]
+			});
+
+		if (picked.Count == 0) {
+			return;
+		}
+
+		for (int i = 0; i < picked.Count; i++) {
+			string path = picked[i].Path.LocalPath;
+			AddPlaylistPath(path);
+		}
+
+		if (SelectedPlaylistItem is null && Playlist.Count > 0) {
+			SelectedPlaylistItem = Playlist[0];
+			_playlistIndex = 0;
+		}
+	}
+
+	[RelayCommand]
+	private void PlaySelectedTrack() {
+		if (SelectedPlaylistItem is null) {
+			return;
+		}
+		for (int i = 0; i < Playlist.Count; i++) {
+			if (ReferenceEquals(Playlist[i], SelectedPlaylistItem)) {
+				_playlistIndex = i;
+				break;
+			}
+		}
+
+		AdgPath = SelectedPlaylistItem.Path;
+		SelectedFileName = SelectedPlaylistItem.FileName;
+		Play();
+	}
+
+	[RelayCommand]
+	private void NextTrack() {
+		if (Playlist.Count == 0) {
+			return;
+		}
+		int nextIndex = _playlistIndex + 1;
+		if (nextIndex >= Playlist.Count) {
+			nextIndex = 0;
+		}
+		PlayPlaylistIndex(nextIndex);
+	}
+
+	[RelayCommand]
+	private void PreviousTrack() {
+		if (Playlist.Count == 0) {
+			return;
+		}
+		int previousIndex = _playlistIndex - 1;
+		if (previousIndex < 0) {
+			previousIndex = Playlist.Count - 1;
+		}
+		PlayPlaylistIndex(previousIndex);
+	}
+
+	[RelayCommand]
+	private void RemoveSelectedTrack() {
+		if (SelectedPlaylistItem is null) {
+			return;
+		}
+		int removedIndex = -1;
+		for (int i = 0; i < Playlist.Count; i++) {
+			if (ReferenceEquals(Playlist[i], SelectedPlaylistItem)) {
+				removedIndex = i;
+				break;
+			}
+		}
+		if (removedIndex < 0) {
+			return;
+		}
+		Playlist.RemoveAt(removedIndex);
+		if (Playlist.Count == 0) {
+			SelectedPlaylistItem = null;
+			_playlistIndex = -1;
+			return;
+		}
+		if (_playlistIndex > removedIndex) {
+			_playlistIndex--;
+		}
+		if (_playlistIndex >= Playlist.Count) {
+			_playlistIndex = Playlist.Count - 1;
+		}
+		SelectedPlaylistItem = Playlist[Math.Max(0, Math.Min(removedIndex, Playlist.Count - 1))];
+	}
+
+	[RelayCommand]
+	private void ClearPlaylist() {
+		Playlist.Clear();
+		SelectedPlaylistItem = null;
+		_playlistIndex = -1;
 	}
 
 	/// <summary>
@@ -245,6 +375,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 			Dispatcher.UIThread.Post(() => {
 				RefreshTransportState();
 				Status = "Finished.";
+				TryAutoAdvancePlaylist();
 			});
 		};
 
@@ -283,11 +414,6 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 	}
 
 	private void OnOplWrite(ushort register, byte value, long tick) {
-		// Only capture interesting registers (skip high-frequency freq writes to reduce noise)
-		if (register >= 0xA0 && register <= 0xA8) {
-			return; // Skip freq-low writes (too noisy)
-		}
-
 		Dispatcher.UIThread.Post(() => {
 			OplWriteItem item = new OplWriteItem {
 				Register = register,
@@ -337,10 +463,28 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 		}
 
 		try {
-			byte[] raw = File.ReadAllBytes(AdgPath);
+			return TryLoadPath(AdgPath);
+		} catch (Exception ex) {
+			Status = $"Load failed: {ex.Message}";
+			Logger.Error(ex, "Load failed");
+			return false;
+		}
+	}
+
+	private bool TryLoadPath(string path) {
+		if (string.IsNullOrWhiteSpace(path)) {
+			return false;
+		}
+		if (!File.Exists(path)) {
+			Status = "Selected file does not exist.";
+			return false;
+		}
+		try {
+			byte[] raw = File.ReadAllBytes(path);
 			_engine.LoadSong(raw);
-			_loadedPath = AdgPath;
-			SelectedFileName = Path.GetFileName(AdgPath);
+			_loadedPath = path;
+			AdgPath = path;
+			SelectedFileName = Path.GetFileName(path);
 			UpdateHeaderInfo();
 			Logger.Information("Loaded {File}", SelectedFileName);
 			return true;
@@ -349,6 +493,53 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 			Logger.Error(ex, "Load failed");
 			return false;
 		}
+	}
+
+	private void AddPlaylistPath(string path) {
+		if (string.IsNullOrWhiteSpace(path) || !File.Exists(path)) {
+			return;
+		}
+		for (int i = 0; i < Playlist.Count; i++) {
+			if (string.Equals(Playlist[i].Path, path, StringComparison.OrdinalIgnoreCase)) {
+				return;
+			}
+		}
+		Playlist.Add(new PlaylistItem { Path = path });
+	}
+
+	private void PlayPlaylistIndex(int index) {
+		if (index < 0 || index >= Playlist.Count) {
+			return;
+		}
+		_playlistIndex = index;
+		SelectedPlaylistItem = Playlist[index];
+		AdgPath = SelectedPlaylistItem.Path;
+		SelectedFileName = SelectedPlaylistItem.FileName;
+		Play();
+	}
+
+	private void TryAutoAdvancePlaylist() {
+		if (Playlist.Count == 0) {
+			return;
+		}
+		int currentIndex = _playlistIndex;
+		if (currentIndex < 0 && !string.IsNullOrWhiteSpace(_loadedPath)) {
+			for (int i = 0; i < Playlist.Count; i++) {
+				if (string.Equals(Playlist[i].Path, _loadedPath, StringComparison.OrdinalIgnoreCase)) {
+					currentIndex = i;
+					break;
+				}
+			}
+		}
+		if (currentIndex < 0) {
+			return;
+		}
+		int nextIndex = currentIndex + 1;
+		if (nextIndex >= Playlist.Count) {
+			Status = "Finished playlist.";
+			return;
+		}
+		PlayPlaylistIndex(nextIndex);
 	}
 
 	private void UpdateHeaderInfo() {
