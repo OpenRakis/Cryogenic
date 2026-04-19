@@ -1,6 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:Cryogenic.AdpPlayer.ViewModels"
+        xmlns:b="using:Cryogenic.AdpPlayer.Behaviors"
         xmlns:v="using:Cryogenic.AdpPlayer.Views"
         x:Class="Cryogenic.AdpPlayer.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
@@ -133,6 +134,9 @@
                 <Grid RowDefinitions="Auto,*">
                     <TextBlock Grid.Row="0" Classes="panel-header" Text="CHANNEL EVENTS" />
                     <ListBox Grid.Row="1" ItemsSource="{Binding ChannelEvents}" ScrollViewer.VerticalScrollBarVisibility="Auto">
+                        <Interaction.Behaviors>
+                            <b:ScrollToEndBehavior />
+                        </Interaction.Behaviors>
                         <ListBox.ItemTemplate>
                             <DataTemplate x:DataType="vm:ChannelEventItem">
                                 <TextBlock Classes="mono" Foreground="#FFA657" Text="{Binding Display}" TextWrapping="NoWrap" />
@@ -147,6 +151,9 @@
                 <Grid RowDefinitions="Auto,*">
                     <TextBlock Grid.Row="0" Classes="panel-header" Text="OPL REGISTER WRITES" />
                     <ListBox Grid.Row="1" ItemsSource="{Binding OplWrites}" ScrollViewer.VerticalScrollBarVisibility="Auto">
+                        <Interaction.Behaviors>
+                            <b:ScrollToEndBehavior />
+                        </Interaction.Behaviors>
                         <ListBox.ItemTemplate>
                             <DataTemplate x:DataType="vm:OplWriteItem">
                                 <TextBlock Classes="mono" Foreground="#D2A8FF" Text="{Binding Display}" TextWrapping="NoWrap" />
@@ -161,6 +168,9 @@
                 <Grid RowDefinitions="Auto,*">
                     <TextBlock Grid.Row="0" Classes="panel-header" Text="LOG" />
                     <ListBox Grid.Row="1" x:Name="LogList" ItemsSource="{Binding Logs}" ScrollViewer.VerticalScrollBarVisibility="Auto">
+                        <Interaction.Behaviors>
+                            <b:ScrollToEndBehavior />
+                        </Interaction.Behaviors>
                         <ListBox.ItemTemplate>
                             <DataTemplate x:DataType="vm:LogDisplayItem">
                                 <StackPanel Orientation="Horizontal" Spacing="6">
