@@ -25,7 +25,12 @@ using System.Text;
 public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 	private static readonly ILogger Logger = Log.ForContext<MainWindowViewModel>();
 
-	private const string DefaultAdgPath = @"C:\Jeux\DUNE\ARRAKIS.ADG";
+	private static readonly string[] DefaultSongCandidates = {
+		@"C:\Users\noalm\source\repos\Cryogenic\doc\DUNECDVF\C\DUNECD\DUNE.DAT_ARRAKIS.HSQ",
+		@"C:\Users\noalm\source\repos\Cryogenic\doc\DUNECDVF\C\DUNECD\DUNE.DAT_ARRAKIS.ADG",
+		@"C:\Jeux\DUNE\ARRAKIS.ADG",
+		@"C:\Jeux\DUNE\ARRAKIS.HSQ"
+	};
 
 	private readonly Window _window;
 	private DuneAdpPlayerEngine _engine;
@@ -34,7 +39,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 	private string _loadedPath = "";
 
 	[ObservableProperty]
-	private string _adgPath = DefaultAdgPath;
+	private string _adgPath = ResolveDefaultSongPath();
 
 	[ObservableProperty]
 	private string _status = "Select an ADG/ADP file to play.";
@@ -106,8 +111,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 		_statusTimer.Start();
 
 		// Set default file name
-		if (File.Exists(DefaultAdgPath)) {
-			SelectedFileName = Path.GetFileName(DefaultAdgPath);
+		if (File.Exists(AdgPath)) {
+			SelectedFileName = Path.GetFileName(AdgPath);
 			Status = "Default file found. Press Play.";
 		}
 
@@ -165,7 +170,6 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 		if (picked.Count > 0) {
 			AdgPath = picked[0].Path.LocalPath;
 			SelectedFileName = Path.GetFileName(AdgPath);
-			Status = "File selected. Use Load or Play.";
 		}
 	}
 
@@ -254,6 +258,16 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 
 	private void OnAudioSamplesRendered(float[] samples, int count) {
 		_waveformControl.PushSamples(samples, count);
+	}
+
+	private static string ResolveDefaultSongPath() {
+		for (int i = 0; i < DefaultSongCandidates.Length; i++) {
+			string candidate = DefaultSongCandidates[i];
+			if (File.Exists(candidate)) {
+				return candidate;
+			}
+		}
+		return DefaultSongCandidates[0];
 	}
 
 	private void OnChannelEvent(int channel, string eventType, string detail, long tick) {

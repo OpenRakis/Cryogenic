@@ -75,7 +75,8 @@ public sealed class OplSynthesizer : IDisposable {
 	/// Register address is 0x000–0x0FF for OPL2 bank 0.
 	/// </summary>
 	public void WriteRegister(ushort register, byte value) {
-		_chip.WriteRegister(register, value);
+		// Match Spice86 Opl3Fm timing path: buffered register writes.
+		_chip.WriteRegisterBuffered(register, value);
 	}
 
 	/// <summary>
