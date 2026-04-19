@@ -25,12 +25,9 @@ using System.Text;
 public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 	private static readonly ILogger Logger = Log.ForContext<MainWindowViewModel>();
 
-	private static readonly string[] DefaultSongCandidates = {
-		@"C:\Users\noalm\source\repos\Cryogenic\doc\DUNECDVF\C\DUNECD\DUNE.DAT_ARRAKIS.HSQ",
-		@"C:\Users\noalm\source\repos\Cryogenic\doc\DUNECDVF\C\DUNECD\DUNE.DAT_ARRAKIS.ADG",
-		@"C:\Jeux\DUNE\ARRAKIS.ADG",
-		@"C:\Jeux\DUNE\ARRAKIS.HSQ"
-	};
+	private static readonly string[] DefaultSongCandidates = [
+		@"C:\Users\noalm\source\repos\Cryogenic\doc\DUNECDVF\C\DUNECD\DUNE.DAT\_ARRAKIS.ADG",
+	];
 
 	private readonly Window _window;
 	private DuneAdpPlayerEngine _engine;

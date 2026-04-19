@@ -17,7 +17,7 @@ public sealed partial class DuneAdpPlayerEngine {
 	private void BuildChannelTable() {
 		for (int i = 0; i < ChannelCount; i++) {
 			ushort relative = SongWord(_dataBase + i * 2);
-			int absolute = relative == 0 ? 0 : relative + _dataBase;
+			ushort absolute = relative == 0 ? (ushort)0 : (ushort)(relative + _dataBase);
 			_channelStartOffset[i] = absolute;
 		}
 
@@ -34,7 +34,7 @@ public sealed partial class DuneAdpPlayerEngine {
 		_subdivision = 0x60;
 
 		for (int ch = 0; ch < ChannelCount; ch++) {
-			int ptr = _channelStartOffset[ch];
+			ushort ptr = _channelStartOffset[ch];
 			_channelEventPointer[ch] = ptr;
 			_channelWait[ch] = 0xFFFF;
 			if (ptr != 0) {
@@ -71,12 +71,12 @@ public sealed partial class DuneAdpPlayerEngine {
 			} else {
 				// Wait expired — dispatch events until a new wait is set
 				while (_channelWait[ch] == 0) {
-					int si = _channelEventPointer[ch];
+					ushort si = _channelEventPointer[ch];
 					if (si == 0) {
 						break;
 					}
-					ushort eventWord = SongWord(si);
-					_channelEventPointer[ch] = si + 2;
+					ushort eventWord = SongWord16(si);
+					_channelEventPointer[ch] = (ushort)(si + 2);
 					byte handler = (byte)((eventWord >> 4) & 0x07);
 
 					switch (handler) {
@@ -148,8 +148,9 @@ public sealed partial class DuneAdpPlayerEngine {
 	/// Mirrors AdpReadWaitValue_08E1.
 	/// </summary>
 	private void ReadWaitValue(int ch) {
-		int si = _channelEventPointer[ch];
-		byte al = _songData[si++];
+		ushort si = _channelEventPointer[ch];
+		byte al = SongByte16(si);
+		si = (ushort)(si + 1);
 		ushort ax = al;
 
 		if ((al & 0x80) != 0) {
@@ -160,7 +161,8 @@ public sealed partial class DuneAdpPlayerEngine {
 				byte previousAh = ah;
 				cx = Make16(previousAh, previousCl);
 				ah = al;
-				al = _songData[si++];
+				al = SongByte16(si);
+				si = (ushort)(si + 1);
 			} while ((al & 0x80) != 0);
 
 			ax = (ushort)((al & 0x7F) | ((ah & 0x7F) << 8));
@@ -198,8 +200,9 @@ public sealed partial class DuneAdpPlayerEngine {
 	/// Mirrors AdpNoteOn_062C.
 	/// </summary>
 	private void NoteOn(int ch, ushort eventWord) {
-		int si = _channelEventPointer[ch];
-		byte velocity = _songData[si++];
+		ushort si = _channelEventPointer[ch];
+		byte velocity = SongByte16(si);
+		si = (ushort)(si + 1);
 		_channelEventPointer[ch] = si;
 
 		ReadWaitValue(ch);
@@ -251,39 +254,39 @@ public sealed partial class DuneAdpPlayerEngine {
 		}
 		_channelInstrument[ch] = instrument;
 
-		int instOff = _eventBase + instrument * 0x28;
+		ushort instOff = (ushort)(_eventBase + instrument * 0x28);
 
-		_channelPitchBendFlag[ch] = SongWord(instOff + 0x21);
+		_channelPitchBendFlag[ch] = SongWord16((ushort)(instOff + 0x21));
 
-		byte ah = SongByte(instOff + 0x17);
-		byte al = SongByte(instOff + 0x0A);
-		byte bh = SongByte(instOff + 0x02);
-		byte bl = SongByte(instOff + 0x0F);
+		byte ah = SongByte16((ushort)(instOff + 0x17));
+		byte al = SongByte16((ushort)(instOff + 0x0A));
+		byte bh = SongByte16((ushort)(instOff + 0x02));
+		byte bl = SongByte16((ushort)(instOff + 0x0F));
 		ushort bx = (ushort)(Make16(bl, bh) & 0x0303);
 		bx = (ushort)((bx >> 2) | (bx << 14));
 		_channelEnvShaping[ch] = (ushort)(Make16(al, ah) | bx);
 
-		_channelTlShaping[ch] = SongWord(instOff + 0x1E);
-		_channelVolModShaping[ch] = SongWord(instOff + 0x26);
+		_channelTlShaping[ch] = SongWord16((ushort)(instOff + 0x1E));
+		_channelVolModShaping[ch] = SongWord16((ushort)(instOff + 0x26));
 
-		al = SongByte(instOff + 0x0E);
+		al = SongByte16((ushort)(instOff + 0x0E));
 		al = (byte)~al;
 		al = (byte)((al >> 1) | (al << 7));
-		ah = SongByte(instOff + 0x04);
+		ah = SongByte16((ushort)(instOff + 0x04));
 		ushort ax = (ushort)(Make16(al, ah) << 1);
-		al = SongByte(instOff + 0x20);
+		al = SongByte16((ushort)(instOff + 0x20));
 		ax = Make16(al, Hi8(ax));
 		_channelConnShaping[ch] = ax;
 
-		al = SongByte(instOff + 0x1B);
+		al = SongByte16((ushort)(instOff + 0x1B));
 		_channelConnMod[ch] = Make16(al, Hi8(ax));
 
-		ax = SongWord(instOff + 0x23);
+		ax = SongWord16((ushort)(instOff + 0x23));
 		_channelVibratoSpeed[ch] = Hi8(ax);
 		_channelVibratoCount[ch] = 0;
 		_channelVibratoInit[ch] = Lo8(ax);
 
-		InstrumentWrite(ch, instOff + 2);
+		InstrumentWrite(ch, (ushort)(instOff + 2));
 		ChannelEventDispatched?.Invoke(ch, "PgmChg", $"inst={instrument:X2}", _totalTickCount);
 	}
 
@@ -442,9 +445,11 @@ public sealed partial class DuneAdpPlayerEngine {
 	/// </summary>
 	private void PitchBend(int ch, ushort eventWord) {
 		byte bendValue = Hi8(eventWord);
-		// Store bend value as AL, then call ReadWaitValue (preserves our local state)
+		// DNADP 07EA semantics: mov al, ah before ReadWaitValue.
+		// With AH already holding bendValue from eventWord, this yields AX = vvvv.
+		// The bend body consumes full AX, so preserving this contract is critical.
 		ReadWaitValue(ch);
-		PitchBendBody(ch, Make16(bendValue, 0));
+		PitchBendBody(ch, Make16(bendValue, bendValue));
 		ChannelEventDispatched?.Invoke(ch, "PBend", $"val={bendValue:X2}", _totalTickCount);
 	}
 
@@ -605,7 +610,7 @@ public sealed partial class DuneAdpPlayerEngine {
 		_measure = 1;
 		_subdivision = 0x60;
 		for (int i = 0; i < ChannelCount; i++) {
-			int ptr = _channelStartOffset[i];
+			ushort ptr = _channelStartOffset[i];
 			_channelEventPointer[i] = ptr;
 			_channelWait[i] = 0xFFFF;
 			if (ptr != 0) {

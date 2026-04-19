@@ -33,7 +33,7 @@ public sealed partial class DuneAdpPlayerEngine : IDisposable {
 	// --- Song data ---
 	private byte[] _songData = Array.Empty<byte>();
 	private int _dataBase;
-	private int _eventBase;
+	private ushort _eventBase;
 
 	// --- Global driver state ---
 	private ushort _accumulator;
@@ -50,8 +50,8 @@ public sealed partial class DuneAdpPlayerEngine : IDisposable {
 	// --- Per-channel state (9 OPL2 channels) ---
 	private const int ChannelCount = 9;
 	private readonly ushort[] _channelWait = new ushort[ChannelCount];
-	private readonly int[] _channelEventPointer = new int[ChannelCount];
-	private readonly int[] _channelStartOffset = new int[ChannelCount];
+	private readonly ushort[] _channelEventPointer = new ushort[ChannelCount];
+	private readonly ushort[] _channelStartOffset = new ushort[ChannelCount];
 	private readonly byte[] _channelInstrument = new byte[ChannelCount];
 	private readonly byte[] _channelNote = new byte[ChannelCount];
 	private readonly ushort[] _channelPitchBendFlag = new ushort[ChannelCount];
@@ -70,7 +70,7 @@ public sealed partial class DuneAdpPlayerEngine : IDisposable {
 
 	// --- Loop snapshot ---
 	private readonly ushort[] _snapshotWait = new ushort[ChannelCount];
-	private readonly int[] _snapshotPointer = new int[ChannelCount];
+	private readonly ushort[] _snapshotPointer = new ushort[ChannelCount];
 
 	// --- Static lookup tables (from driver binary, verified against runtime dump) ---
 
@@ -300,8 +300,18 @@ public sealed partial class DuneAdpPlayerEngine : IDisposable {
 		return _songData[offset];
 	}
 
+	private byte SongByte16(ushort offset) {
+		return _songData[offset];
+	}
+
 	private ushort SongWord(int offset) {
 		return (ushort)(_songData[offset] | (_songData[offset + 1] << 8));
+	}
+
+	private ushort SongWord16(ushort offset) {
+		byte lo = SongByte16(offset);
+		byte hi = SongByte16((ushort)(offset + 1));
+		return Make16(lo, hi);
 	}
 
 	// --- PIT Timing ---

@@ -91,7 +91,7 @@ public sealed partial class DuneAdpPlayerEngine {
 	/// Writes a full instrument patch (40 bytes) to the OPL for a channel.
 	/// Mirrors AdpInstrumentWrite_09AB and AdpInstrumentWriteLoop_09C3.
 	/// </summary>
-	private void InstrumentWrite(int ch, int patchOffset) {
+	private void InstrumentWrite(int ch, ushort patchOffset) {
 		byte modOp = OperatorPairTable[ch * 2];
 		byte carOp = OperatorPairTable[ch * 2 + 1];
 
@@ -99,8 +99,8 @@ public sealed partial class DuneAdpPlayerEngine {
 		WriteOperatorRegisters(modOp, (byte)ch, patchOffset);
 
 		// Write carrier operator registers (offset by 0x0D in the patch)
-		byte waveformAh = SongByte(patchOffset + 0x1B - 2);
-		WriteOperatorRegisters(carOp, (byte)ch, patchOffset + 0x0D);
+		byte waveformAh = SongByte16((ushort)(patchOffset + 0x1B - 2));
+		WriteOperatorRegisters(carOp, (byte)ch, (ushort)(patchOffset + 0x0D));
 	}
 
 	/// <summary>
@@ -112,66 +112,66 @@ public sealed partial class DuneAdpPlayerEngine {
 	///   [0x08]=KSL, [0x09]=EG, [0x0A]=VIB, [0x0B]=AM, [0x0C]=waveform_half,
 	///   [0x1A]=waveform (for first op), [0x1B]=waveform (for second op).
 	/// </summary>
-	private void WriteOperatorRegisters(byte opOffset, byte channel, int si) {
+	private void WriteOperatorRegisters(byte opOffset, byte channel, ushort si) {
 		// Connection/feedback (0xC0 + channel)
 		// Only write for first operator (modulator)
 		if (opOffset == OperatorPairTable[channel * 2]) {
-			byte connAh = SongByte(si + 0x0C);
+			byte connAh = SongByte16((ushort)(si + 0x0C));
 			byte connAl = 0;
 			ushort connAx = Make16(connAl, connAh);
 			connAx = (ushort)(connAx >> 1);
-			connAh = SongByte(si + 0x02);
+			connAh = SongByte16((ushort)(si + 0x02));
 			connAl = (byte)~Lo8(connAx);
 			connAx = (ushort)(Make16(connAl, connAh) << 1);
 			connAh = (byte)(Hi8(connAx) & 0x0F);
 			OplRegisterWrite((ushort)(0xC0 + channel), connAh);
 
 			// Waveform from [si + 0x1A] & 0x03
-			byte wave = (byte)(SongByte(si + 0x1A) & 0x03);
+			byte wave = (byte)(SongByte16((ushort)(si + 0x1A)) & 0x03);
 			OplRegisterWrite((ushort)(0xE0 + opOffset), wave);
 		} else {
 			// Carrier waveform from the caller (high byte has it)
-			byte wave = (byte)(SongByte(si - 0x0D + 0x1B) & 0x03);
+			byte wave = (byte)(SongByte16((ushort)(si - 0x0D + 0x1B)) & 0x03);
 			OplRegisterWrite((ushort)(0xE0 + opOffset), wave);
 		}
 
 		// TL/KSL (0x40 + opOffset)
-		byte tlAh = SongByte(si + 0x08);
-		byte tlAl = SongByte(si);
+		byte tlAh = SongByte16((ushort)(si + 0x08));
+		byte tlAl = SongByte16(si);
 		tlAh = (byte)(tlAh << 2);
 		ushort tlRot = Make16(tlAl, tlAh);
 		tlRot = (ushort)((tlRot >> 2) | (tlRot << 14));
 		OplRegisterWrite((ushort)(0x40 + opOffset), Hi8(tlRot));
 
 		// Attack/Decay (0x60 + opOffset)
-		byte adAh = SongByte(si + 0x03);
-		byte adAl = SongByte(si + 0x06);
+		byte adAh = SongByte16((ushort)(si + 0x03));
+		byte adAl = SongByte16((ushort)(si + 0x06));
 		adAl = (byte)(adAl << 4);
 		ushort adAx = (ushort)(Make16(adAl, adAh) << 4);
 		OplRegisterWrite((ushort)(0x60 + opOffset), Hi8(adAx));
 
 		// Sustain/Release (0x80 + opOffset)
-		byte srAh = SongByte(si + 0x04);
-		byte srAl = SongByte(si + 0x07);
+		byte srAh = SongByte16((ushort)(si + 0x04));
+		byte srAl = SongByte16((ushort)(si + 0x07));
 		srAl = (byte)(srAl << 4);
 		ushort srAx = (ushort)(Make16(srAl, srAh) << 4);
 		OplRegisterWrite((ushort)(0x80 + opOffset), Hi8(srAx));
 
 		// AM/VIB/EG/KSR/MULT (0x20 + opOffset)
 		ushort axState = 0;
-		byte amByte = SongByte(si + 0x0B);
+		byte amByte = SongByte16((ushort)(si + 0x0B));
 		axState = Make16(amByte, Hi8(axState));
 		axState = (ushort)((axState >> 1) | (axState << 15));
-		byte ksrByte = SongByte(si + 0x05);
+		byte ksrByte = SongByte16((ushort)(si + 0x05));
 		axState = Make16(ksrByte, Hi8(axState));
 		axState = (ushort)((axState >> 1) | (axState << 15));
-		byte vibByte = SongByte(si + 0x0A);
+		byte vibByte = SongByte16((ushort)(si + 0x0A));
 		axState = Make16(vibByte, Hi8(axState));
 		axState = (ushort)((axState >> 1) | (axState << 15));
-		byte egByte = SongByte(si + 0x09);
+		byte egByte = SongByte16((ushort)(si + 0x09));
 		axState = Make16(egByte, Hi8(axState));
 		axState = (ushort)((axState >> 1) | (axState << 15));
-		byte multByte = SongByte(si + 0x01);
+		byte multByte = SongByte16((ushort)(si + 0x01));
 		axState = Make16(multByte, Hi8(axState));
 		axState = (ushort)(axState & 0xF00F);
 		OplRegisterWrite((ushort)(0x20 + opOffset), (byte)(Hi8(axState) | Lo8(axState)));
