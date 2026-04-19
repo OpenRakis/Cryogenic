@@ -4,7 +4,7 @@
         xmlns:b="using:Cryogenic.Mt32DriverDebug.Behaviors"
         x:Class="Cryogenic.Mt32DriverDebug.Views.Mt32DriverWindow"
         x:DataType="vm:Mt32DriverWindowViewModel"
-        Title="Cryogenic MT-32 Driver Debug"
+        Title="Cryogenic Music Driver Debug"
         Width="1500"
         Height="1000"
         MinWidth="1200"
@@ -92,9 +92,9 @@
     <!-- ═══ Row 0: Title ═══ -->
     <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="10" Margin="0,0,0,6">
       <TextBlock Text="♪" FontSize="22" Foreground="#58A6FF" VerticalAlignment="Center" />
-      <TextBlock Text="Cryogenic MT-32 Driver Debug" FontSize="20" FontWeight="SemiBold"
+      <TextBlock Text="Cryogenic Music Driver Debug" FontSize="20" FontWeight="SemiBold"
                  Foreground="#E6EDF3" VerticalAlignment="Center" />
-      <TextBlock Text="Live DNMID state from emulator memory" FontSize="12" Foreground="#484F58"
+      <TextBlock Text="Live Music driver state from emulator memory" FontSize="12" Foreground="#484F58"
                  VerticalAlignment="Center" Margin="8,4,0,0" />
     </StackPanel>
 
