@@ -61,6 +61,12 @@
             <Setter Property="Padding" Value="2,0" />
             <Setter Property="MinHeight" Value="0" />
         </Style>
+        <Style Selector="ListBoxItem:selected">
+            <Setter Property="Background" Value="#0969DA" />
+        </Style>
+        <Style Selector="ListBoxItem:pointerover">
+            <Setter Property="Background" Value="#21262D" />
+        </Style>
     </Window.Styles>
 
     <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,120,*" Margin="14,10,14,8">
@@ -159,7 +165,18 @@
                     <ListBox Grid.Row="2" ItemsSource="{Binding Playlist}" SelectedItem="{Binding SelectedPlaylistItem}" ScrollViewer.VerticalScrollBarVisibility="Auto">
                         <ListBox.ItemTemplate>
                             <DataTemplate x:DataType="vm:PlaylistItem">
-                                <TextBlock Classes="mono" Foreground="#79C0FF" Text="{Binding Display}" TextWrapping="NoWrap" />
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <TextBlock Classes="mono"
+                                               Foreground="{Binding CurrentTrackIconColor}"
+                                               Text="{Binding CurrentTrackIcon}"
+                                               Width="12"
+                                               TextAlignment="Center" />
+                                    <TextBlock Classes="mono"
+                                               Foreground="{Binding CurrentTrackTextColor}"
+                                               Text="{Binding Display}"
+                                               TextWrapping="NoWrap"
+                                               ToolTip.Tip="{Binding Tooltip}" />
+                                </StackPanel>
                             </DataTemplate>
                         </ListBox.ItemTemplate>
                     </ListBox>

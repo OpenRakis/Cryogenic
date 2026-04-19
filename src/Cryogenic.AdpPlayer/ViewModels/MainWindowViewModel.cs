@@ -36,6 +36,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 	private readonly DispatcherTimer _statusTimer;
 	private string _loadedPath = "";
 	private int _playlistIndex = -1;
+	private PlaylistItem? _currentlyPlayingTrack = null;
 
 	[ObservableProperty]
 	private string _adgPath = ResolveDefaultSongPath();
@@ -194,6 +195,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 					break;
 				}
 			}
+			UpdateAllPlaylistDisplays();
 		}
 	}
 
@@ -229,6 +231,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 			SelectedPlaylistItem = Playlist[0];
 			_playlistIndex = 0;
 		}
+		UpdateAllPlaylistDisplays();
 	}
 
 	[RelayCommand]
@@ -288,6 +291,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 			return;
 		}
 		Playlist.RemoveAt(removedIndex);
+		UpdateAllPlaylistDisplays();
 		if (Playlist.Count == 0) {
 			SelectedPlaylistItem = null;
 			_playlistIndex = -1;
@@ -338,7 +342,20 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 				_engine.Stop();
 			}
 
-			if (_loadedPath != AdgPath) {
+			// If a playlist item is selected, play that; otherwise use AdgPath
+			string fileToPlay = AdgPath;
+			if (SelectedPlaylistItem is not null) {
+				fileToPlay = SelectedPlaylistItem.Path;
+				for (int i = 0; i < Playlist.Count; i++) {
+					if (ReferenceEquals(Playlist[i], SelectedPlaylistItem)) {
+						_playlistIndex = i;
+						break;
+					}
+				}
+			}
+
+			if (_loadedPath != fileToPlay) {
+				AdgPath = fileToPlay;
 				if (!TryLoadSelectedFile()) {
 					return;
 				}
@@ -350,6 +367,9 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 			RefreshTransportState();
 			Status = "Playing.";
 			Logger.Information("Playing {File}", Path.GetFileName(AdgPath));
+
+			// Update currently playing track visual indicator
+			UpdateCurrentlyPlayingTrack();
 		} catch (Exception ex) {
 			Status = $"Play failed: {ex.Message}";
 			Logger.Error(ex, "Play failed");
@@ -526,7 +546,10 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 				return;
 			}
 		}
-		Playlist.Add(new PlaylistItem { Path = resolvedPath });
+		PlaylistItem item = new PlaylistItem { Path = resolvedPath };
+		Playlist.Add(item);
+		UpdatePlaylistItemDisplay(item, Playlist.Count);
+		ExtractHeaderInfoForPlaylistItem(item);
 	}
 
 	private static string ResolveAdpCompatiblePath(string requestedPath) {
@@ -563,6 +586,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 		AdgPath = SelectedPlaylistItem.Path;
 		SelectedFileName = SelectedPlaylistItem.FileName;
 		Play();
+		UpdateCurrentlyPlayingTrack();
 	}
 
 	private void TryAutoAdvancePlaylist() {
@@ -652,5 +676,44 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 			}
 		}
 		ChannelStateText = sb.ToString();
+	}
+
+	private void UpdateCurrentlyPlayingTrack() {
+		if (_currentlyPlayingTrack is not null) {
+			_currentlyPlayingTrack.IsCurrentTrack = false;
+		}
+
+		if (_playlistIndex >= 0 && _playlistIndex < Playlist.Count) {
+			_currentlyPlayingTrack = Playlist[_playlistIndex];
+			_currentlyPlayingTrack.IsCurrentTrack = true;
+		}
+	}
+
+	private void UpdatePlaylistItemDisplay(PlaylistItem item, int trackNumber) {
+		item.Display = $"[{trackNumber:D2}] {item.FileName}";
+	}
+
+	private void UpdateAllPlaylistDisplays() {
+		for (int i = 0; i < Playlist.Count; i++) {
+			UpdatePlaylistItemDisplay(Playlist[i], i + 1);
+		}
+	}
+
+	private void ExtractHeaderInfoForPlaylistItem(PlaylistItem item) {
+		try {
+			byte[] raw = File.ReadAllBytes(item.Path);
+			if (DuneAdpPlayerEngine.TryExtractHeaderInfo(raw, out SongHeaderInfo? headerInfo) && headerInfo is not null) {
+				StringBuilder tooltip = new StringBuilder();
+				tooltip.AppendLine($"File: {item.FileName}");
+				tooltip.AppendLine($"Size: {headerInfo.RawFileSize} bytes ({(headerInfo.WasHsqCompressed ? "HSQ compressed" : "raw")})");
+				tooltip.AppendLine($"Data @0x{headerInfo.DataBase:X4}  Events @0x{headerInfo.EventBase:X4}");
+				tooltip.AppendLine($"Tempo: 0x{headerInfo.Tempo:X4}  Instruments: {headerInfo.InstrumentCount}");
+				tooltip.AppendLine($"Channels: {headerInfo.ActiveChannelCount}/9 active");
+				tooltip.Append($"Loop: Measure {headerInfo.LoopStartMeasure}→{headerInfo.LoopEndMeasure} (×{headerInfo.LoopCount})");
+				item.Tooltip = tooltip.ToString();
+			}
+		} catch {
+			item.Tooltip = $"Error loading header for {item.FileName}";
+		}
 	}
 }

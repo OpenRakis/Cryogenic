@@ -621,6 +621,64 @@ public sealed partial class DuneAdpPlayerEngine : IDisposable {
 
 		return info;
 	}
+
+	/// <summary>
+	/// Extracts song header info from raw file data without loading the full song.
+	/// Handles both HSQ-compressed and raw ADP data.
+	/// </summary>
+	public static bool TryExtractHeaderInfo(byte[] fileData, out SongHeaderInfo? headerInfo) {
+		headerInfo = null;
+		bool wasCompressed = false;
+		byte[]? decompressed = null;
+		byte[] data = fileData;
+
+		// Try HSQ decompression using a temporary instance
+		DuneAdpPlayerEngine tempEngine = new DuneAdpPlayerEngine();
+		decompressed = tempEngine.TryDecompressHsqInternal(fileData);
+		if (decompressed != null) {
+			data = decompressed;
+			wasCompressed = true;
+		}
+
+		int dataBase = 2;
+		int eventBase = (ushort)(data[0] | (data[1] << 8));
+
+		SongHeaderInfo info = new SongHeaderInfo {
+			RawFileSize = data.Length,
+			WasHsqCompressed = wasCompressed,
+			DataBase = dataBase,
+			EventBase = eventBase,
+			InstrumentCount = eventBase > dataBase + 0x32 ? (data.Length - eventBase) / 0x28 : 0
+		};
+
+		if (data.Length >= dataBase + 0x32) {
+			info.Tempo = (ushort)(data[dataBase + 0x30] | (data[dataBase + 0x31] << 8));
+			info.LoopStartMeasure = (ushort)(data[dataBase + 0x2A] | (data[dataBase + 0x2B] << 8));
+			info.LoopEndMeasure = (ushort)(data[dataBase + 0x2C] | (data[dataBase + 0x2D] << 8));
+			info.LoopCount = (ushort)(data[dataBase + 0x2E] | (data[dataBase + 0x2F] << 8));
+
+			for (int i = 0; i < 9; i++) {
+				ushort relative = (ushort)(data[dataBase + i * 2] | (data[dataBase + i * 2 + 1] << 8));
+				info.ChannelOffsets[i] = relative;
+				info.ChannelActive[i] = relative != 0;
+			}
+		}
+
+		int activeChannels = 0;
+		for (int i = 0; i < 9; i++) {
+			if (info.ChannelActive[i]) {
+				activeChannels++;
+			}
+		}
+		info.ActiveChannelCount = activeChannels;
+
+		headerInfo = info;
+		return true;
+	}
+
+	private byte[]? TryDecompressHsqInternal(byte[] fileData) {
+		return TryDecompressHsq(fileData);
+	}
 }
 
 /// <summary>
