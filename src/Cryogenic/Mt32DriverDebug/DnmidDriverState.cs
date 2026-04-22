@@ -41,15 +41,10 @@ using Spice86.Core.Emulator.ReverseEngineer.DataStructure;
 /// <item><description>0x0246..0x024F: song header cache (SI, ES, markers)</description></item>
 /// </list>
 /// </remarks>
-public sealed class DnmidDriverState : MemoryBasedDataStructure {
-	/// <summary>Maximum number of MIDI channels tracked by the DNMID driver.</summary>
-	public const int MaxChannels = 9;
-
-	/// <summary>Maximum number of MIDI channels for base volume (includes channel 9).</summary>
-	public const int MaxBaseVolumeChannels = 10;
-
-	/// <summary>Number of export table entries (init, open, reset, tickset, vel, tick, vol).</summary>
-	public const int ExportEntryCount = 7;
+public sealed class DnmidDriverState : MemoryBasedDataStructure, IMusicDriverState {
+	private const int ExportCount = 7;
+	private const int ChannelCount = 9;
+	private const int BaseVolumeCount = 10;
 
 	/// <summary>Stride between export entries (3 bytes per JMP SHORT).</summary>
 	private const int ExportStride = 3;
@@ -65,6 +60,14 @@ public sealed class DnmidDriverState : MemoryBasedDataStructure {
 	public DnmidDriverState(IByteReaderWriter memory, ushort driverSegment)
 		: base(memory, (uint)driverSegment << 4) {
 	}
+
+	// ── Identity (IMusicDriverState) ──
+
+	/// <inheritdoc />
+	public MusicDriverType DriverType => MusicDriverType.Dnmid;
+
+	/// <inheritdoc />
+	public string DriverName => "DNMID (MT-32)";
 
 	// ── Song/Stream Pointers ──
 
@@ -101,6 +104,12 @@ public sealed class DnmidDriverState : MemoryBasedDataStructure {
 
 	/// <summary>MPU-401 MIDI base I/O port (typically 0x330).</summary>
 	public ushort MidiBasePort => UInt16[0x0125];
+
+	/// <inheritdoc />
+	public ushort BasePort => MidiBasePort;
+
+	/// <inheritdoc />
+	public string BasePortLabel => "MIDI Port";
 
 	/// <summary>I/O settle delay value.</summary>
 	public ushort IoDelay => UInt16[0x0127];
@@ -139,7 +148,13 @@ public sealed class DnmidDriverState : MemoryBasedDataStructure {
 	// ── Channel Counts ──
 
 	/// <summary>Number of active channels in the current song.</summary>
-	public ushort ActiveChannelCount => UInt16[0x0140];
+	public int ActiveChannelCount => UInt16[0x0140];
+
+	/// <inheritdoc />
+	public int MaxChannels => ChannelCount;
+
+	/// <inheritdoc />
+	public int MaxBaseVolumeChannels => BaseVolumeCount;
 
 	// ── Per-Channel Arrays: Tick Counters ──
 
@@ -233,6 +248,20 @@ public sealed class DnmidDriverState : MemoryBasedDataStructure {
 	public ushort HeaderMarker2 => UInt16[0x024E];
 
 	// ── Export Table ──
+
+	private static readonly string[] ExportNames = [
+		"MidiInit", "MidiOpen", "MidiReset",
+		"MidiSetTimerTickFlag", "MidiSetVelocityMapping",
+		"MidiTick", "MidiSetVolume"
+	];
+
+	/// <inheritdoc />
+	public int ExportEntryCount => ExportCount;
+
+	/// <inheritdoc />
+	public string GetExportName(int entryIndex) {
+		return entryIndex < ExportNames.Length ? ExportNames[entryIndex] : $"Export{entryIndex}";
+	}
 
 	/// <summary>
 	/// Reads a raw byte from the export table region (offset 0x0000..0x0014).

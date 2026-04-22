@@ -89,6 +89,12 @@ public static class DriverLoadToolbox {
 	public static ushort ActualMidiSegment { get; private set; } = 0;
 
 	/// <summary>
+	/// The actual segment where the DNADP (AdLib Pro) driver was loaded at runtime.
+	/// Set by <see cref="ReadDriverFunctionTable"/> when the ADP driver is detected.
+	/// </summary>
+	public static ushort ActualAdpSegment { get; private set; } = 0;
+
+	/// <summary>
 	/// Expected exported function offsets for the DNMID MT-32 driver.
 	/// </summary>
 	private static readonly ushort[] Mt32ExportedFunctionOffsets = [0x0100, 0x0103, 0x0106, 0x0109, 0x010C, 0x010F, 0x0112];
@@ -285,6 +291,11 @@ public static class DriverLoadToolbox {
 		if (IsMt32DriverFunctionTable(memory, state.DS, functionTableEntryOffset, numberOfFunctions)) {
 			ActualMidiSegment = segment;
 			Logger.Information("Detected MT-32 driver function table. ActualMidiSegment set to {ActualMidiSegmentHex}", $"0x{ActualMidiSegment:X4}");
+		}
+		if (CurrentDriver == (int)DriverIndex.DNADP || CurrentDriver == (int)DriverIndex.DNADL || CurrentDriver == (int)DriverIndex.DNADG) {
+			ActualAdpSegment = segment;
+			Logger.Information("Detected ADP/ADL/ADG driver. ActualAdpSegment set to {ActualAdpSegmentHex}, DriverName={DriverName}",
+				$"0x{ActualAdpSegment:X4}", driverName);
 		}
 		for (int i = 0; i < numberOfFunctions; i++) {
 			ushort pointerTableOffset = memory.UInt16[state.DS, (ushort)(functionTableEntryOffset + i * 4)];

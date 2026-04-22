@@ -1,4 +1,4 @@
-﻿namespace Cryogenic.Mt32Player.Behaviors;
+﻿namespace Cryogenic.AdpPlayer.Behaviors;
 
 using Avalonia;
 using Avalonia.Controls;
@@ -8,13 +8,12 @@ using System.Collections.Specialized;
 
 /// <summary>
 /// XAML behavior that auto-scrolls a ListBox to the last item when new items are added.
-/// Attach via Interaction.Behaviors in AXAML. Requires Xaml.Behaviors.Avalonia package.
-/// Watches for ItemsSource property changes so it re-hooks when the binding resolves
-/// after the behavior is attached.
+/// Reused by all ADP scrolling panels (events, OPL writes, logs).
 /// </summary>
 public sealed class ScrollToEndBehavior : Behavior<ListBox> {
 	private INotifyCollectionChanged? _trackedCollection;
 
+	/// <inheritdoc />
 	protected override void OnAttached() {
 		base.OnAttached();
 		if (AssociatedObject is not null) {
@@ -23,6 +22,7 @@ public sealed class ScrollToEndBehavior : Behavior<ListBox> {
 		HookCollection();
 	}
 
+	/// <inheritdoc />
 	protected override void OnDetaching() {
 		if (AssociatedObject is not null) {
 			AssociatedObject.PropertyChanged -= OnPropertyChanged;
@@ -39,9 +39,9 @@ public sealed class ScrollToEndBehavior : Behavior<ListBox> {
 
 	private void HookCollection() {
 		UnhookCollection();
-		if (AssociatedObject?.ItemsSource is INotifyCollectionChanged ncc) {
-			_trackedCollection = ncc;
-			ncc.CollectionChanged += OnCollectionChanged;
+		if (AssociatedObject?.ItemsSource is INotifyCollectionChanged notifyCollectionChanged) {
+			_trackedCollection = notifyCollectionChanged;
+			notifyCollectionChanged.CollectionChanged += OnCollectionChanged;
 		}
 	}
 

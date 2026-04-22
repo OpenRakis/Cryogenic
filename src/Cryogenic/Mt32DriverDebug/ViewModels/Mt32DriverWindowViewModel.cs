@@ -29,7 +29,7 @@ using System.Text;
 /// </para>
 /// </remarks>
 public sealed partial class Mt32DriverWindowViewModel : Mt32DebugViewModelBase, IDisposable {
-	private readonly DnmidDriverState _driverState;
+	private readonly IMusicDriverState _driverState;
 	private readonly GameAudioState _gameAudio;
 	private DispatcherTimer _pollTimer;
 	private const int MaxLogEntries = 500;
@@ -41,12 +41,7 @@ public sealed partial class Mt32DriverWindowViewModel : Mt32DebugViewModelBase, 
 	private ushort _lastMeasure;
 	private int _pollCount;
 
-	// ── Export table names ──
-	private static readonly string[] ExportNames = [
-		"MidiInit", "MidiOpen", "MidiReset",
-		"MidiSetTimerTickFlag", "MidiSetVelocityMapping",
-		"MidiTick", "MidiSetVolume"
-	];
+	// ── Export table names come from the driver state ──
 
 	// ══════════════════════════════════════════════════════
 	//  TAB 1: Song Position & Transport
@@ -278,22 +273,22 @@ public sealed partial class Mt32DriverWindowViewModel : Mt32DebugViewModelBase, 
 	/// <summary>
 	/// Creates the ViewModel bound to emulator memory.
 	/// </summary>
-	/// <param name="memory">Emulated memory reader/writer from Machine.Memory.</param>
-	/// <param name="driverSegment">The segment where DNMID driver is loaded (e.g. 0x5BAE).</param>
-	public Mt32DriverWindowViewModel(IByteReaderWriter memory, ushort driverSegment) {
-		_driverState = new DnmidDriverState(memory, driverSegment);
-		_gameAudio = new GameAudioState(memory);
+	/// <param name="driverState">Driver state reader implementing the generic music driver interface.</param>
+	/// <param name="gameAudio">Game-level audio globals reader.</param>
+	public Mt32DriverWindowViewModel(IMusicDriverState driverState, GameAudioState gameAudio) {
+		_driverState = driverState;
+		_gameAudio = gameAudio;
 		_pollTimer = new DispatcherTimer(
 			TimeSpan.FromMilliseconds(PollIntervalMs),
 			DispatcherPriority.Background,
 			OnPollTimerTick);
 		_pollTimer.IsEnabled = false;
 
-		for (int i = 0; i < DnmidDriverState.MaxChannels; i++) {
+		for (int i = 0; i < _driverState.MaxChannels; i++) {
 			TrackerRows.Add(new DriverChannelRowViewModel(i));
 		}
 
-		for (int i = 0; i < DnmidDriverState.MaxBaseVolumeChannels; i++) {
+		for (int i = 0; i < _driverState.MaxBaseVolumeChannels; i++) {
 			ChannelVolumes.Add(new ChannelVolumeBarViewModel(i));
 		}
 
@@ -301,11 +296,11 @@ public sealed partial class Mt32DriverWindowViewModel : Mt32DebugViewModelBase, 
 			FadeBits.Add(new FadeBitCellViewModel(i));
 		}
 
-		for (int i = 0; i < DnmidDriverState.ExportEntryCount; i++) {
-			ExportEntries.Add(new ExportEntryViewModel(i, ExportNames[i]));
+		for (int i = 0; i < _driverState.ExportEntryCount; i++) {
+			ExportEntries.Add(new ExportEntryViewModel(i, _driverState.GetExportName(i)));
 		}
 
-		AddLog("MT-32 driver debug window initialized.");
+		AddLog($"{_driverState.DriverName} driver debug window initialized.");
 	}
 
 	/// <summary>
@@ -389,7 +384,7 @@ public sealed partial class Mt32DriverWindowViewModel : Mt32DebugViewModelBase, 
 
 		VolumeHierarchy = $"Master({_driverState.MasterVolume}) → Current({_driverState.CurrentVolume}) → Target({_driverState.TargetVolume})";
 
-		for (int i = 0; i < DnmidDriverState.MaxBaseVolumeChannels; i++) {
+		for (int i = 0; i < _driverState.MaxBaseVolumeChannels; i++) {
 			ChannelVolumes[i].Volume = _driverState.GetChannelBaseVolume(i);
 		}
 
@@ -410,7 +405,7 @@ public sealed partial class Mt32DriverWindowViewModel : Mt32DebugViewModelBase, 
 		TickFlag = _driverState.TickFlag.ToString(CultureInfo.InvariantCulture);
 		ActiveChannelCount = _driverState.ActiveChannelCount;
 
-		ushort port = _driverState.MidiBasePort;
+		ushort port = _driverState.BasePort;
 		MidiPort = $"0x{port:X4}";
 		MidiDataPort = $"0x{port:X4}";
 		MidiControlPort = $"0x{(port + 1):X4}";
@@ -459,7 +454,7 @@ public sealed partial class Mt32DriverWindowViewModel : Mt32DebugViewModelBase, 
 	/// Reads the 7-entry export/jump table from driver base.
 	/// </summary>
 	private void ReadExportTable() {
-		for (int i = 0; i < DnmidDriverState.ExportEntryCount; i++) {
+		for (int i = 0; i < _driverState.ExportEntryCount; i++) {
 			ExportEntryViewModel entry = ExportEntries[i];
 			byte opcode = _driverState.GetExportOpcode(i);
 			ushort target = _driverState.GetExportJumpTarget(i);
@@ -483,8 +478,8 @@ public sealed partial class Mt32DriverWindowViewModel : Mt32DebugViewModelBase, 
 	/// Updates the 9-channel tracker rows from current driver state.
 	/// </summary>
 	private void UpdateChannelTracker() {
-		int activeCount = Math.Min((int)_driverState.ActiveChannelCount, DnmidDriverState.MaxChannels);
-		for (int i = 0; i < DnmidDriverState.MaxChannels; i++) {
+		int activeCount = Math.Min(_driverState.ActiveChannelCount, _driverState.MaxChannels);
+		for (int i = 0; i < _driverState.MaxChannels; i++) {
 			DriverChannelRowViewModel row = TrackerRows[i];
 			if (i < activeCount) {
 				ushort tick = _driverState.GetChannelTickCounter(i);
@@ -539,7 +534,7 @@ public sealed partial class Mt32DriverWindowViewModel : Mt32DebugViewModelBase, 
 	/// Updates the status bar at the bottom of the window.
 	/// </summary>
 	private void UpdateStatusBar() {
-		int activeCount = Math.Min((int)_driverState.ActiveChannelCount, DnmidDriverState.MaxChannels);
+		int activeCount = Math.Min(_driverState.ActiveChannelCount, _driverState.MaxChannels);
 		byte statusByte = _driverState.StatusFlags;
 
 		if (IsPlaying) {

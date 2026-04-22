@@ -61,7 +61,7 @@ public partial class Overrides : CSharpOverrideHelper {
 	/// <summary>Accessor for game global variables stored in CS segment 0x2538.</summary>
 	private ExtraGlobalsOnCsSegment0x2538 globalsOnCsSegment0X2538;
 
-	/// <summary>Service managing the MT-32 driver debug window.</summary>
+	/// <summary>Service managing the music driver debug window.</summary>
 	private Mt32DriverWindowService mt32DriverWindowService;
 
 	/// <summary>
@@ -91,9 +91,15 @@ public partial class Overrides : CSharpOverrideHelper {
 		DefineOverrides();
 		DefineStaticDefinitionsFunctions();
 
-		// Show the MT-32 driver debug window via Spice86's AdditionalWindow API.
-		// Active regardless of whether C# MT-32 overrides are enabled.
-		mt32DriverWindowService = new Mt32DriverWindowService(machine.Memory, 0x5BAE);
+		// Show the music driver debug window via Spice86's AdditionalWindow API.
+		// Active regardless of whether C# driver overrides are enabled.
+		// Detect driver type from the -a (ExeArgs) command-line argument prefix.
+		MusicDriverType musicDriverType = MusicDriverDetection.DetectFromExeArgs(Configuration.ExeArgs ?? "");
+		GameAudioState gameAudio = new GameAudioState(machine.Memory);
+		IMusicDriverState driverState = MusicDriverDetection.IsOplDriver(musicDriverType)
+			? new AdpDriverState(machine.Memory, 0x5BAE)
+			: new DnmidDriverState(machine.Memory, 0x5BAE);
+		mt32DriverWindowService = new Mt32DriverWindowService(driverState, gameAudio);
 		mt32DriverWindowService.ShowWindow();
 	}
 
@@ -139,6 +145,9 @@ public partial class Overrides : CSharpOverrideHelper {
 		// MT-32 MIDI driver is always remapped to F000 by DriverLoadToolbox hooks.
 		// Register overrides eagerly at F000 so they are active when the driver loads.
 		DefineMT32DriverCodeOverrides();
+		// DNADP (AdLib Pro) driver observation hooks on the live segment (0x5BAE).
+		// Phase 1: observation-only (call counters, OPL traces, scheduler state).
+		DefineAdpDriverCodeOverrides();
 		// Dump memory at the proper time. Too soon and drivers wont be loaded, too late and init code will be erased
 		DefineMemoryDumpsMapping();
 

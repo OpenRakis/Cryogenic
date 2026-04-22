@@ -59,7 +59,7 @@ public partial class Overrides {
 	private const ushort LiveMt32DriverSegment = 0x5BAE;
 	private const ushort LiveMt32OutOffsetA = 0x0577;
 	private const ushort LiveMt32OutOffsetB = 0x05D0;
-	private static bool EnableMt32CSharpFunctionReplacement = true;
+	private static bool EnableMt32CSharpFunctionReplacement = false;
 	private int _firstDispatchCount = 0;
 
 	private const string MusicDriverInitAlias = "MusicDriver_Init";

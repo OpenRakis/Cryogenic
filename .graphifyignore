@@ -1,0 +1,37 @@
+# graphify corpus exclusions for Cryogenic
+# These paths produce noise or exceed useful context for reverse-engineering queries.
+
+# Build outputs and generated code
+src/**/bin/
+src/**/obj/
+src/**/Generated/
+
+# Binary dump artifacts (not meaningful as text corpus)
+dump/live/*.bin
+dump/live/*.hex.txt
+dump/live/*.hex
+dump/live/HsqDump/
+dump/live/m32_unhsq_*/
+dump/live/hsq_compare/
+dump/live/*.raw.txt
+dump/live/*.csx
+
+# Large raw JSON snapshots (use targeted graphify-out query instead)
+dump/live/mcp_memory_full_1mb_latest.*
+dump/live/mt32_5bae_disassembly_chunks.json
+
+# Third-party emulator submodule (not Cryogenic domain knowledge)
+Spice86/
+Spice86.Audio/
+dosbox-staging/
+OpenRakis/
+
+# Node/dependency caches
+node_modules/
+.git/
+
+# Copilot session storage
+.copilot/
+
+# graphify outputs (avoid circular self-reference)
+graphify-out/
