@@ -31,7 +31,7 @@
 		<PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
 		<PackageReference Include="Spice86" Version="12.0.0" />
 		<PackageReference Include="Xaml.Behaviors.Avalonia" Version="11.3.9.5" />
-		<PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="10.0.201">
+		<PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="10.0.203">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
