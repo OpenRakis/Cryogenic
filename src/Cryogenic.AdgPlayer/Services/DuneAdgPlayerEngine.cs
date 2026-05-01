@@ -80,6 +80,10 @@ public sealed partial class DuneAdgPlayerEngine : IDisposable {
 	private ushort _fadeScratch2;
 	private byte _tickEnabled;
 	private byte _loopCounter;
+	/// <summary>16-bit tempo accumulator. Hi8 is decremented every PIT tick; ProcessTick
+	/// fires when Hi8 reaches 0, then reloads Hi8 by adding tempoWord.
+	/// Mirrors AdgTempoAccumulatorOffset (0x0126).</summary>
+	private ushort _tempoAccumulator;
 
 	// --- Static lookup tables (from DNADG driver binary, verified against runtime) ---
 
@@ -357,15 +361,25 @@ public sealed partial class DuneAdgPlayerEngine : IDisposable {
 	}
 
 	/// <summary>
-	/// Single driver tick. Mirrors the ADG interrupt handler at 564B:04FF.
-	/// Calls ProcessTick each PIT interrupt, rotates fade pattern, and calls FadeStep on carry.
+	/// Single driver tick. Mirrors AdgTick_564B_06F6_056BA6.
+	/// Decrements Hi8 of _tempoAccumulator (the tick divider); calls ProcessTick only when
+	/// the divider reaches 0. ProcessTick reloads Hi8 by adding tempoWord to _tempoAccumulator.
+	/// Rotates fade pattern and calls FadeStep on carry-out.
 	/// </summary>
 	private void TickInternal() {
 		if ((_statusFlags & 0x80) == 0) {
 			return;
 		}
 
-		ProcessTick();
+		// ADG tick divider: Hi8 of _tempoAccumulator is decremented every PIT interrupt.
+		// ProcessTick fires only when the divider reaches 0, matching the real driver.
+		byte tickDivider = Hi8(_tempoAccumulator);
+		tickDivider--;
+		_tempoAccumulator = Make16(Lo8(_tempoAccumulator), tickDivider);
+
+		if (tickDivider == 0) {
+			ProcessTick();
+		}
 
 		ushort fadePattern = _fadeBitPattern;
 		bool carry = (fadePattern & 0x8000) != 0;
@@ -551,6 +565,12 @@ public sealed partial class DuneAdgPlayerEngine : IDisposable {
 	/// Opens and starts playing the loaded song. Mirrors AdpOpen_03B2.
 	/// </summary>
 	public void Play() {
+		// Determine OPL actions outside the lock to avoid ABBA deadlock:
+		// mixer thread holds mixer lock -> calls AdvanceSamples -> waits for _lock;
+		// UI thread holds _lock -> calls _opl.Resume/Pause -> waits for mixer lock.
+		bool shouldPauseFirst = false;
+		bool shouldResume = false;
+
 		lock (_lock) {
 			if (_songData.Length == 0) {
 				Logger.Warning("No song loaded");
@@ -559,35 +579,46 @@ public sealed partial class DuneAdgPlayerEngine : IDisposable {
 
 			if (_playing && _paused) {
 				_paused = false;
-				_opl.Resume();
+				shouldResume = true;
 				Logger.Information("Playback resumed");
-				return;
+			} else {
+				if (_playing) {
+					_playing = false;
+					_paused = false;
+					SilenceAllChannels();
+					_statusFlags = 0;
+					shouldPauseFirst = true;
+				}
+
+				InitOplChip();
+				InitializeRoutingTables();
+				BuildChannelTable();
+
+				_tempoAccumulator = 0;
+				_currentVolume = _masterVolume;
+				_targetVolume = _masterVolume;
+				_loopCounter = 0;
+				_tickEnabled = 1;
+				_fadeScratch = 0;
+				_fadeScratch2 = 0;
+				_totalTickCount = 0;
+				_totalSamplesRendered = 0;
+
+				ProcessTick();
+				_statusFlags = 0x80;
+
+				_playing = true;
+				_paused = false;
+				shouldResume = true;
+				Logger.Information("Playback started");
 			}
+		}
 
-			if (_playing) {
-				StopInternal();
-			}
-
-			InitOplChip();
-			InitializeRoutingTables();
-			BuildChannelTable();
-
-			_currentVolume = _masterVolume;
-			_targetVolume = _masterVolume;
-			_loopCounter = 0;
-			_tickEnabled = 1;
-			_fadeScratch = 0;
-			_fadeScratch2 = 0;
-			_totalTickCount = 0;
-			_totalSamplesRendered = 0;
-
-			ProcessTick();
-			_statusFlags = 0x80;
-
-			_playing = true;
-			_paused = false;
+		if (shouldPauseFirst) {
+			_opl.Pause();
+		}
+		if (shouldResume) {
 			_opl.Resume();
-			Logger.Information("Playback started");
 		}
 	}
 
@@ -595,14 +626,18 @@ public sealed partial class DuneAdgPlayerEngine : IDisposable {
 	/// Pauses playback while preserving the current driver state.
 	/// </summary>
 	public void Pause() {
+		bool shouldPause = false;
 		lock (_lock) {
 			if (!_playing || _paused) {
 				return;
 			}
 
 			_paused = true;
-			_opl.Pause();
+			shouldPause = true;
 			Logger.Information("Playback paused");
+		}
+		if (shouldPause) {
+			_opl.Pause();
 		}
 	}
 
@@ -610,14 +645,18 @@ public sealed partial class DuneAdgPlayerEngine : IDisposable {
 	/// Resumes playback after a pause.
 	/// </summary>
 	public void Resume() {
+		bool shouldResume = false;
 		lock (_lock) {
 			if (!_playing || !_paused) {
 				return;
 			}
 
 			_paused = false;
-			_opl.Resume();
+			shouldResume = true;
 			Logger.Information("Playback resumed");
+		}
+		if (shouldResume) {
+			_opl.Resume();
 		}
 	}
 
@@ -628,6 +667,7 @@ public sealed partial class DuneAdgPlayerEngine : IDisposable {
 		lock (_lock) {
 			StopInternal();
 		}
+		_opl.Pause();
 	}
 
 	private void StopInternal() {
@@ -635,7 +675,6 @@ public sealed partial class DuneAdgPlayerEngine : IDisposable {
 		_paused = false;
 		SilenceAllChannels();
 		_statusFlags = 0;
-		_opl.Pause();
 		Logger.Information("Playback stopped");
 	}
 
