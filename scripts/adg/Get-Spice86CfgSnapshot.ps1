@@ -32,8 +32,26 @@ function Invoke-McpPost {
     param([hashtable]$Payload)
 
     $json = $Payload | ConvertTo-Json -Depth 20 -Compress
-    $response = Invoke-WebRequest -Uri $mcpUrl -Method Post -ContentType "application/json" -Body $json
-    $lines = $response.Content -split "`r?`n"
+    $headers = @{ Accept = "application/json, text/event-stream" }
+    $response = Invoke-WebRequest -Uri $mcpUrl -Method Post -ContentType "application/json" -Headers $headers -Body $json
+    $responseContent = $response.Content
+    $contentText = if ($responseContent -is [byte[]]) {
+        [System.Text.Encoding]::UTF8.GetString($responseContent)
+    }
+    else {
+        [string]$responseContent
+    }
+
+    if ([string]::IsNullOrWhiteSpace($contentText)) {
+        return [PSCustomObject]@{}
+    }
+
+    $content = $contentText.Trim()
+    if ($content.StartsWith("{")) {
+        return ($content | ConvertFrom-Json -Depth 100)
+    }
+
+    $lines = $contentText -split "`r?`n"
     $dataLines = @($lines | Where-Object { $_ -like "data:*" })
     if ($dataLines.Count -eq 0) {
         throw "No SSE data lines returned by MCP endpoint $mcpUrl"
@@ -46,20 +64,20 @@ function Invoke-McpPost {
 function Invoke-McpInitialize {
     $initPayload = @{
         jsonrpc = "2.0"
-        id = 1
-        method = "initialize"
-        params = @{
+        id      = 1
+        method  = "initialize"
+        params  = @{
             protocolVersion = "2024-11-05"
-            capabilities = @{}
-            clientInfo = @{ name = "adg-cfg-capture"; version = "1.0" }
+            capabilities    = @{}
+            clientInfo      = @{ name = "adg-cfg-capture"; version = "1.0" }
         }
     }
     [void](Invoke-McpPost -Payload $initPayload)
 
     $notifyPayload = @{
         jsonrpc = "2.0"
-        method = "notifications/initialized"
-        params = @{}
+        method  = "notifications/initialized"
+        params  = @{}
     }
     [void](Invoke-McpPost -Payload $notifyPayload)
 }
@@ -73,16 +91,21 @@ function Invoke-McpTool {
 
     $payload = @{
         jsonrpc = "2.0"
-        id = $Id
-        method = "tools/call"
-        params = @{
-            name = $ToolName
+        id      = $Id
+        method  = "tools/call"
+        params  = @{
+            name      = $ToolName
             arguments = $Arguments
         }
     }
 
     $message = Invoke-McpPost -Payload $payload
-    if ($null -ne $message.result -and $message.result.isError -eq $true) {
+    $hasIsError = $false
+    if ($null -ne $message.result) {
+        $hasIsError = $null -ne ($message.result.PSObject.Properties["isError"])
+    }
+
+    if ($hasIsError -and $message.result.isError -eq $true) {
         $errText = "unknown error"
         if ($null -ne $message.result.content -and $message.result.content.Count -gt 0) {
             $errText = $message.result.content[0].text
@@ -90,7 +113,11 @@ function Invoke-McpTool {
         throw "MCP tool '$ToolName' failed: $errText"
     }
 
-    return $message.result.structuredContent
+    if ($null -ne $message.result -and $null -ne ($message.result.PSObject.Properties["structuredContent"])) {
+        return $message.result.structuredContent
+    }
+
+    return $message.result
 }
 
 $health = Invoke-RestMethod -Uri "$baseUrl/health" -Method Get
@@ -112,17 +139,17 @@ $nodeCount = if ($null -ne $cfg.Nodes) { $cfg.Nodes.Count } else { 0 }
 $liveCount = if ($null -ne $cfg.Nodes) { ($cfg.Nodes | Where-Object { $_.IsLive }).Count } else { 0 }
 
 $meta = [PSCustomObject]@{
-    Label = $Label
-    Port = $Port
-    McpUrl = $mcpUrl
-    Timestamp = $timestamp
-    OutputDir = $outputDir
-    NodeCount = $nodeCount
+    Label         = $Label
+    Port          = $Port
+    McpUrl        = $mcpUrl
+    Timestamp     = $timestamp
+    OutputDir     = $outputDir
+    NodeCount     = $nodeCount
     LiveNodeCount = $liveCount
-    HealthPath = $healthPath
-    AboutPath = $aboutPath
-    StatusPath = $statusPath
-    CfgPath = $cfgPath
+    HealthPath    = $healthPath
+    AboutPath     = $aboutPath
+    StatusPath    = $statusPath
+    CfgPath       = $cfgPath
     FunctionsPath = $functionsPath
 }
 $meta | ConvertTo-Json -Depth 10 | Set-Content -Path $metaPath -Encoding UTF8
