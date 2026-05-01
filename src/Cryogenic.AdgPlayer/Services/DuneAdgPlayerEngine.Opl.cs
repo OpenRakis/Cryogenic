@@ -129,7 +129,11 @@ public sealed partial class DuneAdgPlayerEngine {
 		connectionValue = (ushort)(connectionValue >> 1);
 		connectionValue = Make16((byte)~Lo8(connectionValue), SongByte16((ushort)(patchOffset + 0x04)));
 		connectionValue = (ushort)(connectionValue << 1);
-		byte connectionByte = (byte)(Hi8(connectionValue) & 0x0F);
+		// Preserve feedback/connection nibble from patch; force OPL3 L+R output enable (bits 4-5 = 0x30).
+		// AdLib Gold hardware routes audio via its own surround system so the real driver never
+		// sets these bits, but NukedOPL3Sharp is a standard OPL3 chip: without 0x30, the
+		// channel is muted regardless of what TL/envelope writes.
+		byte connectionByte = (byte)((Hi8(connectionValue) & 0x0F) | 0x30);
 		_channelConnectionCurrent[channelIndex] = connectionByte;
 		WriteRelativeGoldRegister(0xC0, connectionByte, unchecked((sbyte)channelRoute));
 
