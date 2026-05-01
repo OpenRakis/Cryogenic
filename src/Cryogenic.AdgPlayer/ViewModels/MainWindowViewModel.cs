@@ -623,9 +623,9 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 		StringBuilder sb = new StringBuilder();
 		sb.AppendLine($"File: {SelectedFileName}  ({header.RawFileSize} bytes{(header.WasHsqCompressed ? ", HSQ compressed" : ", raw")})");
 		sb.AppendLine($"Data @{header.DataBase}  Events @0x{header.EventBase:X4}  Tempo=0x{header.Tempo:X4}  Instruments={header.InstrumentCount}");
-		sb.AppendLine($"Channels: {header.ActiveChannelCount}/9 active  Loop: measure {header.LoopStartMeasure}→{header.LoopEndMeasure} x{header.LoopCount}");
+		sb.AppendLine($"Channels: {header.ActiveChannelCount}/{header.ChannelOffsets.Length} active  Loop: measure {header.LoopStartMeasure}→{header.LoopEndMeasure} x{header.LoopCount}");
 		sb.Append("Offsets: ");
-		for (int i = 0; i < 9; i++) {
+		for (int i = 0; i < header.ChannelOffsets.Length; i++) {
 			if (header.ChannelActive[i]) {
 				sb.Append($"Ch{i}=0x{header.ChannelOffsets[i]:X4} ");
 			} else {

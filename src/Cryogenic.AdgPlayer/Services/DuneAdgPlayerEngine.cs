@@ -38,9 +38,9 @@ public sealed partial class DuneAdgPlayerEngine : IDisposable {
 	private byte _statusFlags;
 	private ushort _measure;
 	private byte _subdivision;
-	private byte _currentVolume;
-	private byte _targetVolume;
-	private byte _masterVolume;
+	private byte _currentVolume = 0xFF;
+	private byte _targetVolume = 0xFF;
+	private byte _masterVolume = 0xFF;
 	private ushort _fadeBitPattern;
 
 	// --- Per-channel state (18 OPL3 Gold channels) ---
@@ -654,12 +654,18 @@ public sealed partial class DuneAdgPlayerEngine : IDisposable {
 	/// Parses song header metadata for UI display.
 	/// </summary>
 	private SongHeaderInfo ParseSongHeader(byte[] data, int dataBase, int eventBase, bool wasCompressed) {
+		int channelCount = 18;
+		int safeEventBase = eventBase;
+		if (safeEventBase < 0 || safeEventBase > data.Length) {
+			safeEventBase = data.Length;
+		}
+
 		SongHeaderInfo info = new SongHeaderInfo {
 			RawFileSize = data.Length,
 			WasHsqCompressed = wasCompressed,
 			DataBase = dataBase,
 			EventBase = eventBase,
-			InstrumentCount = eventBase > dataBase + 0x32 ? (data.Length - eventBase) / 0x28 : 0
+			InstrumentCount = safeEventBase > dataBase + 0x32 ? (data.Length - safeEventBase) / 0x28 : 0
 		};
 
 		if (data.Length >= dataBase + 0x32) {
@@ -668,15 +674,20 @@ public sealed partial class DuneAdgPlayerEngine : IDisposable {
 			info.LoopEndMeasure = SongWord(dataBase + 0x2C);
 			info.LoopCount = SongWord(dataBase + 0x2E);
 
-			for (int i = 0; i < ChannelCount; i++) {
-				ushort relative = SongWord(dataBase + i * 2);
+			int channelsToRead = Math.Min(channelCount, info.ChannelOffsets.Length);
+			for (int i = 0; i < channelsToRead; i++) {
+				int offset = dataBase + i * 2;
+				if (offset + 1 >= data.Length) {
+					break;
+				}
+				ushort relative = SongWord(offset);
 				info.ChannelOffsets[i] = relative;
 				info.ChannelActive[i] = relative != 0;
 			}
 		}
 
 		int activeChannels = 0;
-		for (int i = 0; i < ChannelCount; i++) {
+		for (int i = 0; i < info.ChannelActive.Length; i++) {
 			if (info.ChannelActive[i]) {
 				activeChannels++;
 			}
@@ -695,6 +706,10 @@ public sealed partial class DuneAdgPlayerEngine : IDisposable {
 	/// </summary>
 	public static bool TryExtractHeaderInfo(byte[] fileData, out SongHeaderInfo? headerInfo) {
 		headerInfo = null;
+		if (fileData.Length < 2) {
+			return false;
+		}
+
 		bool wasCompressed = false;
 		byte[]? decompressed = null;
 		byte[] data = fileData;
@@ -706,16 +721,23 @@ public sealed partial class DuneAdgPlayerEngine : IDisposable {
 			data = decompressed;
 			wasCompressed = true;
 		}
+		if (data.Length < 2) {
+			return false;
+		}
 
 		int dataBase = 2;
 		int eventBase = (ushort)(data[0] | (data[1] << 8));
+		int safeEventBase = eventBase;
+		if (safeEventBase < 0 || safeEventBase > data.Length) {
+			safeEventBase = data.Length;
+		}
 
 		SongHeaderInfo info = new SongHeaderInfo {
 			RawFileSize = data.Length,
 			WasHsqCompressed = wasCompressed,
 			DataBase = dataBase,
 			EventBase = eventBase,
-			InstrumentCount = eventBase > dataBase + 0x32 ? (data.Length - eventBase) / 0x28 : 0
+			InstrumentCount = safeEventBase > dataBase + 0x32 ? (data.Length - safeEventBase) / 0x28 : 0
 		};
 
 		if (data.Length >= dataBase + 0x32) {
@@ -724,15 +746,19 @@ public sealed partial class DuneAdgPlayerEngine : IDisposable {
 			info.LoopEndMeasure = (ushort)(data[dataBase + 0x2C] | (data[dataBase + 0x2D] << 8));
 			info.LoopCount = (ushort)(data[dataBase + 0x2E] | (data[dataBase + 0x2F] << 8));
 
-			for (int i = 0; i < 9; i++) {
-				ushort relative = (ushort)(data[dataBase + i * 2] | (data[dataBase + i * 2 + 1] << 8));
+			for (int i = 0; i < info.ChannelOffsets.Length; i++) {
+				int offset = dataBase + i * 2;
+				if (offset + 1 >= data.Length) {
+					break;
+				}
+				ushort relative = (ushort)(data[offset] | (data[offset + 1] << 8));
 				info.ChannelOffsets[i] = relative;
 				info.ChannelActive[i] = relative != 0;
 			}
 		}
 
 		int activeChannels = 0;
-		for (int i = 0; i < 9; i++) {
+		for (int i = 0; i < info.ChannelActive.Length; i++) {
 			if (info.ChannelActive[i]) {
 				activeChannels++;
 			}
@@ -762,8 +788,8 @@ public sealed class SongHeaderInfo {
 	public ushort LoopCount { get; set; }
 	public int InstrumentCount { get; set; }
 	public int ActiveChannelCount { get; set; }
-	public ushort[] ChannelOffsets { get; set; } = new ushort[9];
-	public bool[] ChannelActive { get; set; } = new bool[9];
+	public ushort[] ChannelOffsets { get; set; } = new ushort[18];
+	public bool[] ChannelActive { get; set; } = new bool[18];
 }
 
 /// <summary>
