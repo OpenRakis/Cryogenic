@@ -314,6 +314,171 @@ public sealed partial class DuneAdgPlayerEngine {
 		return (ushort)(RoutingResolverTable[address] | (RoutingResolverTable[address + 1] << 8));
 	}
 
+	private static byte ReadPitchBendFraction(byte index) {
+		if (PitchBendFractions.Length == 0) {
+			return 0;
+		}
+		int bounded = index % PitchBendFractions.Length;
+		return PitchBendFractions[bounded];
+	}
+
+	private static ushort ReadFrequencyWord(byte semitone) {
+		if (FrequencyLookupTable.Length == 0) {
+			return 0;
+		}
+		int bounded = semitone % FrequencyLookupTable.Length;
+		return FrequencyLookupTable[bounded];
+	}
+
+	/// <summary>
+	/// Resolves the complex DNADG routing fallback branch observed at 564B:09CD-0A7F.
+	/// This is a direct control-flow port of runtime bytes from spice86dumpMemoryDump.bin.
+	/// </summary>
+	private static void ResolveComplexRoutingBranch(ref ushort bp, ref ushort cx, out ushort routePair, out ushort stateMask) {
+		ushort ax;
+		ushort bx = (ushort)~cx;
+
+		byte bl = Lo8(bx);
+		byte bh = bl;
+		bh = (byte)(bh >> 1);
+		bh = (byte)(bh >> 1);
+		bh = (byte)(bh >> 1);
+		bh = (byte)(bh ^ bl);
+		bh = (byte)(bh & 0x07);
+		if (bh != 0) {
+			goto Label0A2E;
+		}
+
+		ax = bp;
+		byte alHash = Lo8(ax);
+		byte ahHash = alHash;
+		ahHash = (byte)(ahHash >> 1);
+		ahHash = (byte)(ahHash >> 1);
+		ahHash = (byte)(ahHash >> 1);
+		alHash = (byte)(alHash ^ ahHash);
+		alHash = (byte)(alHash & 0x07);
+		if (alHash != 0) {
+			bx = (ushort)~bp;
+			bool carry = (alHash & 0x01) != 0;
+			alHash = (byte)(alHash >> 1);
+			if (carry) {
+				goto Label0A01;
+			}
+			carry = (alHash & 0x01) != 0;
+			alHash = (byte)(alHash >> 1);
+			if (carry) {
+				goto Label0A0F;
+			}
+			goto Label0A1E;
+		}
+
+		bx = (ushort)(bx & 0x003F);
+		if (bx != 0) {
+			goto Label0A46;
+		}
+
+		bx = (ushort)~bp;
+		if ((bx & 0x0024) != 0) {
+			goto Label0A1E;
+		}
+		if ((bx & 0x0012) != 0) {
+			goto Label0A0F;
+		}
+
+	Label0A01:
+		ax = 0;
+		bx = (ushort)(bx & 0x0001);
+		if (bx != 0) {
+			goto Label09A9;
+		}
+		ax = 0x0308;
+		bx = Make16(0x08, Hi8(bx));
+		goto Label09AB;
+
+	Label0A0F:
+		ax = 0x0101;
+		bx = (ushort)(bx & 0x0002);
+		if (bx != 0) {
+			goto Label09A9;
+		}
+		ax = 0x0409;
+		bx = Make16(0x10, Hi8(bx));
+		goto Label09AB;
+
+	Label0A1E:
+		ax = 0x0202;
+		bx = (ushort)(bx & 0x0004);
+		if (bx == 0) {
+			ax = 0x050A;
+			bx = Make16(0x20, Hi8(bx));
+		}
+		goto Label09AB;
+
+	Label0A2E:
+		bh = Hi8(bx);
+		bool carryBh = (bh & 0x01) != 0;
+		bh = (byte)(bh >> 1);
+		bx = Make16(Lo8(bx), bh);
+		if (carryBh) {
+			goto Label0A52;
+		}
+		carryBh = (bh & 0x01) != 0;
+		bh = (byte)(bh >> 1);
+		bx = Make16(Lo8(bx), bh);
+		if (carryBh) {
+			goto Label0A62;
+		}
+		goto Label0A72;
+
+	Label0A46:
+		if ((bx & 0x0024) != 0) {
+			goto Label0A72;
+		}
+		if ((bx & 0x0012) != 0) {
+			goto Label0A62;
+		}
+		goto Label0A52;
+
+	Label0A52:
+		ax = 0x8080;
+		bx = (ushort)(bx & 0x0001);
+		if (bx == 0) {
+			ax = 0x8388;
+			bx = Make16(0x08, Hi8(bx));
+		}
+		goto Label0992;
+
+	Label0A62:
+		ax = 0x8181;
+		bx = (ushort)(bx & 0x0002);
+		if (bx == 0) {
+			ax = 0x8489;
+			bx = Make16(0x10, Hi8(bx));
+		}
+		goto Label0992;
+
+	Label0A72:
+		ax = 0x8282;
+		bx = (ushort)(bx & 0x0004);
+		if (bx == 0) {
+			ax = 0x858A;
+			bx = Make16(0x20, Hi8(bx));
+		}
+		goto Label0992;
+
+	Label0992:
+		cx = (ushort)(cx | bx);
+		bx = Make16(Lo8(bx), (byte)(Hi8(bx) | 0x80));
+		goto Label09AB;
+
+	Label09A9:
+		bp = (ushort)(bp | bx);
+
+	Label09AB:
+		routePair = ax;
+		stateMask = bx;
+	}
+
 	/// <summary>
 	/// Configure routing for the current instrument patch.
 	/// Mirrors the tested branches of AdgConfigureInstrumentRouting_090D.
@@ -352,19 +517,17 @@ public sealed partial class DuneAdgPlayerEngine {
 		} else {
 			ushort freeFromSecondary = (ushort)~cx;
 			if ((freeFromSecondary & 0x01C0) == 0) {
-				Logger.Warning("ADG routing: unresolved branch ch={Channel} mask=0x{Mask:X4} bp=0x{Bp:X4} cx=0x{Cx:X4}", ch, scratchMask, bp, cx);
-				_fadeScratch = bp;
-				_fadeScratch2 = cx;
-				return;
+				ResolveComplexRoutingBranch(ref bp, ref cx, out routePair, out stateMask);
+				Logger.Debug("ADG routing: complex-resolver branch ch={Channel} route=0x{Route:X4} mask=0x{StateMask:X4}", ch, routePair, stateMask);
+			} else {
+				int resolverIndex = (freeFromSecondary & 0x01C0) >> 4;
+				routePair = ReadRoutingResolverWord(0, resolverIndex);
+				stateMask = ReadRoutingResolverWord(2, resolverIndex);
+				routePair = (ushort)(routePair | 0x8080);
+				cx = (ushort)(cx | stateMask);
+				stateMask = Make16(Lo8(stateMask), (byte)(Hi8(stateMask) | 0x80));
+				Logger.Debug("ADG routing: secondary-mask branch ch={Channel} idx=0x{Idx:X2} route=0x{Route:X4} mask=0x{StateMask:X4}", ch, resolverIndex, routePair, stateMask);
 			}
-
-			int resolverIndex = (freeFromSecondary & 0x01C0) >> 4;
-			routePair = ReadRoutingResolverWord(0, resolverIndex);
-			stateMask = ReadRoutingResolverWord(2, resolverIndex);
-			routePair = (ushort)(routePair | 0x8080);
-			cx = (ushort)(cx | stateMask);
-			stateMask = Make16(Lo8(stateMask), (byte)(Hi8(stateMask) | 0x80));
-			Logger.Debug("ADG routing: secondary-mask branch ch={Channel} idx=0x{Idx:X2} route=0x{Route:X4} mask=0x{StateMask:X4}", ch, resolverIndex, routePair, stateMask);
 		}
 
 		if (routePair == 0 || stateMask == 0) {
@@ -589,23 +752,6 @@ public sealed partial class DuneAdgPlayerEngine {
 	/// Mirrors AdgPitchBendBody_0D8B.
 	/// </summary>
 	private void PitchBendBody(int ch, ushort input) {
-		static void NormalizeSemitoneAndOctave(ref int semitoneValue, ref int octaveValue) {
-			while (semitoneValue < 0) {
-				semitoneValue += 12;
-				octaveValue--;
-			}
-
-			while (semitoneValue >= 12) {
-				semitoneValue -= 12;
-				octaveValue++;
-			}
-
-			if (octaveValue < 0) {
-				octaveValue = 0;
-				semitoneValue = 0;
-			}
-		}
-
 		byte note = _channelNote[ch];
 		if (note == 0) {
 			return;
@@ -625,30 +771,35 @@ public sealed partial class DuneAdgPlayerEngine {
 				ax = (ushort)(0 - ax);
 				ax = RotateRight16(ax, 5);
 				byte delta = Lo8(ax);
-				int semitoneValue = semitone - delta;
-				int octaveValue = octave;
-				NormalizeSemitoneAndOctave(ref semitoneValue, ref octaveValue);
-				semitone = (byte)semitoneValue;
-				octave = (byte)octaveValue;
-				byte fraction = PitchBendFractions[semitone];
+				if (semitone >= delta) {
+					semitone = (byte)(semitone - delta);
+				} else {
+					semitone = (byte)(semitone + 12 - delta);
+					octave = (byte)(octave - 1);
+					if ((octave & 0x80) != 0) {
+						octave = 0;
+						semitone = 0;
+					}
+				}
+				byte fraction = ReadPitchBendFraction(semitone);
 				ushort mul = (ushort)(fraction * Hi8(ax));
 				byte adjustment = Hi8(mul);
-				ushort frequency = FrequencyLookupTable[semitone];
+				ushort frequency = ReadFrequencyWord(semitone);
 				int result = Lo8(frequency) - adjustment;
 				ax = Make16((byte)result, (byte)(Hi8(frequency) - (result < 0 ? 1 : 0)));
 			} else {
 				ax = (ushort)(ax + 1);
 				ax = RotateRight16(ax, 5);
 				byte delta = Lo8(ax);
-				int semitoneValue = semitone + delta;
-				int octaveValue = octave;
-				NormalizeSemitoneAndOctave(ref semitoneValue, ref octaveValue);
-				semitone = (byte)semitoneValue;
-				octave = (byte)octaveValue;
-				byte fraction = PitchBendFractions[semitone + 1];
+				semitone = (byte)(semitone + delta);
+				if (semitone >= 12) {
+					semitone = (byte)(semitone - 12);
+					octave = (byte)(octave + 1);
+				}
+				byte fraction = ReadPitchBendFraction((byte)(semitone + 1));
 				ushort mul = (ushort)(fraction * Hi8(ax));
 				byte adjustment = Hi8(mul);
-				ushort frequency = FrequencyLookupTable[semitone];
+				ushort frequency = ReadFrequencyWord(semitone);
 				int result = Lo8(frequency) + adjustment;
 				ax = Make16((byte)result, (byte)(Hi8(frequency) + (result > 0xFF ? 1 : 0)));
 			}
@@ -659,27 +810,32 @@ public sealed partial class DuneAdgPlayerEngine {
 				ax = (ushort)(0 - ax);
 				byte delta = (byte)(ax / 5);
 				byte remainderPort = (byte)(ax % 5);
-				int semitoneValue = semitone - delta;
-				int octaveValue = octave;
-				NormalizeSemitoneAndOctave(ref semitoneValue, ref octaveValue);
-				semitone = (byte)semitoneValue;
-				octave = (byte)octaveValue;
+				if (semitone >= delta) {
+					semitone = (byte)(semitone - delta);
+				} else {
+					semitone = (byte)(semitone + 12 - delta);
+					octave = (byte)(octave - 1);
+					if ((octave & 0x80) != 0) {
+						octave = 0;
+						semitone = 0;
+					}
+				}
 				int tableBase = semitone >= 6 ? 5 : 0;
 				byte adjustment = PortamentoFractions[tableBase + remainderPort];
-				ushort frequency = FrequencyLookupTable[semitone];
+				ushort frequency = ReadFrequencyWord(semitone);
 				int result = Lo8(frequency) - adjustment;
 				ax = Make16((byte)result, (byte)(Hi8(frequency) - (result < 0 ? 1 : 0)));
 			} else {
 				byte delta = (byte)(ax / 5);
 				byte remainderPort = (byte)(ax % 5);
-				int semitoneValue = semitone + delta;
-				int octaveValue = octave;
-				NormalizeSemitoneAndOctave(ref semitoneValue, ref octaveValue);
-				semitone = (byte)semitoneValue;
-				octave = (byte)octaveValue;
+				semitone = (byte)(semitone + delta);
+				if (semitone >= 12) {
+					semitone = (byte)(semitone - 12);
+					octave = (byte)(octave + 1);
+				}
 				int tableBase = semitone >= 6 ? 5 : 0;
 				byte adjustment = PortamentoFractions[tableBase + remainderPort];
-				ushort frequency = FrequencyLookupTable[semitone];
+				ushort frequency = ReadFrequencyWord(semitone);
 				int result = Lo8(frequency) + adjustment;
 				ax = Make16((byte)result, (byte)(Hi8(frequency) + (result > 0xFF ? 1 : 0)));
 			}
