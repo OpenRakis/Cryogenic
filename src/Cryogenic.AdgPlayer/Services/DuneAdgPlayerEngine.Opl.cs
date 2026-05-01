@@ -81,8 +81,9 @@ public sealed partial class DuneAdgPlayerEngine {
 	/// Mirrors AdgWriteInstrumentOperator_102C.
 	/// patchOffset points to the operator block within the 0x28-byte patch.
 	/// waveform selects the OPL3 waveform (low 3 bits) for the E0 register.
+	/// Returns the TL byte written so callers can seed channel state for EnvelopeSetup.
 	/// </summary>
-	private void WriteInstrumentOperator(byte routeByte, ushort patchOffset, byte waveform) {
+	private byte WriteInstrumentOperator(byte routeByte, ushort patchOffset, byte waveform) {
 		sbyte route = unchecked((sbyte)routeByte);
 
 		// E0+route: waveform (low 3 bits)
@@ -109,6 +110,8 @@ public sealed partial class DuneAdgPlayerEngine {
 		opFlags = Make16(SongByte16((ushort)(patchOffset + 0x01)), Hi8(opFlags));
 		opFlags = (ushort)(opFlags & 0xF00F);
 		WriteRelativeGoldRegister(0x20, (byte)(Hi8(opFlags) | Lo8(opFlags)), route);
+
+		return tlValue;
 	}
 
 	/// <summary>
@@ -131,10 +134,15 @@ public sealed partial class DuneAdgPlayerEngine {
 		WriteRelativeGoldRegister(0xC0, connectionByte, unchecked((sbyte)channelRoute));
 
 		// Modulator operator (primary route)
-		WriteInstrumentOperator(primaryRoute, patchOffset, SongByte16((ushort)(patchOffset + 0x1C)));
+		byte modulatorTl = WriteInstrumentOperator(primaryRoute, patchOffset, SongByte16((ushort)(patchOffset + 0x1C)));
 
 		// Carrier operator (secondary route, patch offset + 0x0D)
-		WriteInstrumentOperator(secondaryRoute, (ushort)(patchOffset + 0x0D), SongByte16((ushort)(patchOffset + 0x1D)));
+		byte carrierTl = WriteInstrumentOperator(secondaryRoute, (ushort)(patchOffset + 0x0D), SongByte16((ushort)(patchOffset + 0x1D)));
+
+		// Seed channel operator-level state so EnvelopeSetup/VolumeModulation start
+		// from the patch's actual TL values rather than zero (which would clamp
+		// carrier writes to 0x3F = silence on the very first NoteOn after PgmChange).
+		_channelCurrentOperatorLevel[channelIndex] = Make16(modulatorTl, carrierTl);
 	}
 
 	/// <summary>

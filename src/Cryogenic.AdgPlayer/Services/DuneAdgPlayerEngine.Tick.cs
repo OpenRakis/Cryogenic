@@ -474,6 +474,23 @@ public sealed partial class DuneAdgPlayerEngine {
 	/// Mirrors AdgPitchBendBody_0D8B.
 	/// </summary>
 	private void PitchBendBody(int ch, ushort input) {
+		static void NormalizeSemitoneAndOctave(ref int semitoneValue, ref int octaveValue) {
+			while (semitoneValue < 0) {
+				semitoneValue += 12;
+				octaveValue--;
+			}
+
+			while (semitoneValue >= 12) {
+				semitoneValue -= 12;
+				octaveValue++;
+			}
+
+			if (octaveValue < 0) {
+				octaveValue = 0;
+				semitoneValue = 0;
+			}
+		}
+
 		byte note = _channelNote[ch];
 		if (note == 0) {
 			return;
@@ -493,16 +510,11 @@ public sealed partial class DuneAdgPlayerEngine {
 				ax = (ushort)(0 - ax);
 				ax = RotateRight16(ax, 5);
 				byte delta = Lo8(ax);
-				if (semitone >= delta) {
-					semitone = (byte)(semitone - delta);
-				} else {
-					semitone = (byte)(semitone + 12 - delta);
-					octave = (byte)(octave - 1);
-					if ((octave & 0x80) != 0) {
-						octave = 0;
-						semitone = 0;
-					}
-				}
+				int semitoneValue = semitone - delta;
+				int octaveValue = octave;
+				NormalizeSemitoneAndOctave(ref semitoneValue, ref octaveValue);
+				semitone = (byte)semitoneValue;
+				octave = (byte)octaveValue;
 				byte fraction = PitchBendFractions[semitone];
 				ushort mul = (ushort)(fraction * Hi8(ax));
 				byte adjustment = Hi8(mul);
@@ -513,11 +525,11 @@ public sealed partial class DuneAdgPlayerEngine {
 				ax = (ushort)(ax + 1);
 				ax = RotateRight16(ax, 5);
 				byte delta = Lo8(ax);
-				semitone = (byte)(semitone + delta);
-				if (semitone >= 12) {
-					semitone = (byte)(semitone - 12);
-					octave = (byte)(octave + 1);
-				}
+				int semitoneValue = semitone + delta;
+				int octaveValue = octave;
+				NormalizeSemitoneAndOctave(ref semitoneValue, ref octaveValue);
+				semitone = (byte)semitoneValue;
+				octave = (byte)octaveValue;
 				byte fraction = PitchBendFractions[semitone + 1];
 				ushort mul = (ushort)(fraction * Hi8(ax));
 				byte adjustment = Hi8(mul);
@@ -532,16 +544,11 @@ public sealed partial class DuneAdgPlayerEngine {
 				ax = (ushort)(0 - ax);
 				byte delta = (byte)(ax / 5);
 				byte remainderPort = (byte)(ax % 5);
-				if (semitone >= delta) {
-					semitone = (byte)(semitone - delta);
-				} else {
-					semitone = (byte)(semitone + 12 - delta);
-					octave = (byte)(octave - 1);
-					if ((octave & 0x80) != 0) {
-						octave = 0;
-						semitone = 0;
-					}
-				}
+				int semitoneValue = semitone - delta;
+				int octaveValue = octave;
+				NormalizeSemitoneAndOctave(ref semitoneValue, ref octaveValue);
+				semitone = (byte)semitoneValue;
+				octave = (byte)octaveValue;
 				int tableBase = semitone >= 6 ? 5 : 0;
 				byte adjustment = PortamentoFractions[tableBase + remainderPort];
 				ushort frequency = FrequencyLookupTable[semitone];
@@ -550,11 +557,11 @@ public sealed partial class DuneAdgPlayerEngine {
 			} else {
 				byte delta = (byte)(ax / 5);
 				byte remainderPort = (byte)(ax % 5);
-				semitone = (byte)(semitone + delta);
-				if (semitone >= 12) {
-					semitone = (byte)(semitone - 12);
-					octave = (byte)(octave + 1);
-				}
+				int semitoneValue = semitone + delta;
+				int octaveValue = octave;
+				NormalizeSemitoneAndOctave(ref semitoneValue, ref octaveValue);
+				semitone = (byte)semitoneValue;
+				octave = (byte)octaveValue;
 				int tableBase = semitone >= 6 ? 5 : 0;
 				byte adjustment = PortamentoFractions[tableBase + remainderPort];
 				ushort frequency = FrequencyLookupTable[semitone];
