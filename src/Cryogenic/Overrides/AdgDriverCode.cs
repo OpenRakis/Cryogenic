@@ -27,7 +27,13 @@ public partial class Overrides {
 	/// </code>
 	/// </remarks>
 	private enum AdgSecondaryCommand : byte {
+		/// <summary>
+		/// Forces Gold command latch mode and reset staging.
+		/// </summary>
 		ResetAndLatch = 0xFF,
+		/// <summary>
+		/// Leaves Gold command latch mode and resumes normal writes.
+		/// </summary>
 		ReleaseReset = 0xFE
 	}
 
@@ -45,20 +51,97 @@ public partial class Overrides {
 	/// </code>
 	/// </remarks>
 	private enum AdgOplRegister : byte {
+		/// <summary>Waveform control.</summary>
 		WaveformControl = 0x01,
+		/// <summary>Operator key-scale/output-level base register.</summary>
 		KeyScaleAndOutput = 0x40,
+		/// <summary>Operator attack/decay base register.</summary>
 		AttackDecay = 0x60,
+		/// <summary>Operator sustain/release base register.</summary>
 		SustainRelease = 0x80,
+		/// <summary>Operator feedback/connection base register.</summary>
 		FeedbackConnection = 0xC0,
+		/// <summary>Channel frequency low-byte base register.</summary>
 		FrequencyLow = 0xA0,
+		/// <summary>Channel frequency high-byte / key-on base register.</summary>
 		FrequencyHigh = 0xB0,
+		/// <summary>Channel control register used during init.</summary>
 		ChannelEnable = 0x08,
+		/// <summary>Global rhythm/percussion control register.</summary>
 		PercussionControl = 0xBD,
+		/// <summary>Secondary-chip OPL3 mode enable register.</summary>
 		Opl3Mode = 0x05,
+		/// <summary>Secondary-chip control register.</summary>
 		SecondaryControl = 0x04,
+		/// <summary>AdLib Gold global-volume high nibble register.</summary>
 		GoldGlobalVolumeHi = 0x09,
+		/// <summary>AdLib Gold global-volume low nibble register.</summary>
 		GoldGlobalVolumeLo = 0x0A,
+		/// <summary>AdLib Gold surround serial-control register.</summary>
 		GoldSurroundControl = 0x18
+	}
+
+	/// <summary>
+	/// Common immediate values extracted from live ADG instruction streams.
+	/// </summary>
+	private enum AdgImmediate : byte {
+		Zero = 0x00,
+		One = 0x01,
+		Two = 0x02,
+		Three = 0x03,
+		Four = 0x04,
+		Six = 0x06,
+		Seven = 0x07,
+		Eight = 0x08,
+		Nine = 0x09,
+		Ten = 0x0A,
+		Twelve = 0x0C,
+		Fourteen = 0x0E,
+		Fifteen = 0x0F,
+		Eighteen = 0x12,
+		ThirtyOne = 0x1F,
+		ThirtyTwo = 0x20,
+		ThirtyFive = 35,
+		ThirtySeven = 37,
+		NinetySix = 0x60,
+		OneTwenty = 0x78,
+		OneTwentyEight = 0x80,
+		OneTwentyNine = 0x81,
+		OneNinetyTwoMask = 0xC0,
+		TwoFiftyOneMask = 0xFB,
+		TwoFiftyThreeMask = 0xFD,
+		TwoFiftyFourMask = 0xFE,
+		TwoFiftyFive = 0xFF,
+		DotAscii = 0x2E,
+		F0Mask = 0xF0,
+		Ff16Lo = 0xFF,
+		SevenBitMask = 0x7F,
+		FadeClearMask = 0xBF,
+		GoldPresentMask = 0x20
+	}
+
+	/// <summary>
+	/// Named fade-pattern words written to ADG fade state.
+	/// </summary>
+	private enum AdgFadePattern : ushort {
+		SingleStep = 0x0001,
+		Fastest = 0x8000,
+		Fast = 0x8080,
+		Medium = 0x8888,
+		Slow = 0xAAAA,
+		Immediate = 0xFFFF
+	}
+
+	/// <summary>
+	/// Fixed Gold init command words observed at 564B:1185.
+	/// </summary>
+	private enum AdgGoldInitWord : ushort {
+		Fb06 = 0xFB06,
+		F707 = 0xF707,
+		F704 = 0xF704,
+		F705 = 0xF705,
+		Ff09 = 0xFF09,
+		Ff0A = 0xFF0A
 	}
 
 	/// <summary>
@@ -117,23 +200,22 @@ public partial class Overrides {
 	private const ushort AdgSongIdentityMagic2Offset = 0x0622;
 	private const ushort AdgSongIdentityMagic3Offset = 0x0624;
 	private const ushort AdgTickDividerOffset = 0x0127;
-	private const int AdgResetChannelCount = 0x12;
+	private const ushort AdgAuxRegisterPortOffset1 = 0x0119;
+	private const ushort AdgAuxRegisterPortOffset2 = 0x011B;
+	private const int AdgResetChannelCount = (byte)AdgImmediate.Eighteen;
 
 	/// <summary>
 	/// Registers ADG function overrides for the active remapped ADG segment.
 	/// </summary>
 	/// <remarks>
-	/// This method is the entry switch for all ADG replacement wiring.
+	/// Registration is intentionally disabled by default until runtime ABI parity is validated.
+	/// This method is the single activation switch for all ADG replacement wiring.
 	/// <code>
 	/// call far ADG:0100
 	/// call far ADG:0103
 	/// ...
 	/// </code>
 	/// </remarks>
-	/// <summary>
-	/// Registers DNADG overrides.
-	/// Registration is intentionally disabled by default until the runtime ABI is validated from live MCP evidence.
-	/// </summary>
 	public void DefineAdgDriverCodeOverrides() {
 		if (!EnableAdgCSharpFunctionReplacement) {
 			AdgLogger.Information("DNADG full replacement disabled.");
@@ -228,8 +310,8 @@ public partial class Overrides {
 		al = (byte)(al >> 1);
 		byte dl = al;
 		byte dh = ah;
-		byte bl = 0x78;
-		byte bh = 0xF0;
+		byte bl = (byte)AdgImmediate.OneTwenty;
+		byte bh = (byte)AdgImmediate.F0Mask;
 		if (ah > bl) {
 			ah = bl;
 		}
@@ -284,13 +366,13 @@ public partial class Overrides {
 			AX = (ushort)(AX + 2);
 			DI = AX;
 
-			ushort scanCount = 9;
+			ushort scanCount = (byte)AdgImmediate.Nine;
 			bool foundDot = false;
 			while (scanCount != 0) {
 				byte value = SegByte(ES, DI);
 				DI = (ushort)(DI + 1);
 				scanCount--;
-				if (value == 0x2E) {
+				if (value == (byte)AdgImmediate.DotAscii) {
 					foundDot = true;
 					break;
 				}
@@ -315,14 +397,14 @@ public partial class Overrides {
 		ushort savedDx = DX;
 		DX = registerPort;
 		Machine.IoPortDispatcher.WriteByte(DX, registerIndex);
-		for (int i = 0; i < 7; i++) {
+		for (int i = 0; i < (byte)AdgImmediate.Seven; i++) {
 			Machine.IoPortDispatcher.ReadByte(DX);
 		}
 
 		DX++;
 		Machine.IoPortDispatcher.WriteByte(DX, registerValue);
 		byte delayData = 0;
-		for (int i = 0; i < 37; i++) {
+		for (int i = 0; i < (byte)AdgImmediate.ThirtySeven; i++) {
 			delayData = Machine.IoPortDispatcher.ReadByte(DX);
 		}
 
@@ -340,7 +422,7 @@ public partial class Overrides {
 		ushort savedDx = DX;
 		DX = AdgWord(AdgSecondaryRegisterPortOffset);
 		byte status = Machine.IoPortDispatcher.ReadByte(DX);
-		while ((status & 0xC0) != 0) {
+		while ((status & (byte)AdgImmediate.OneNinetyTwoMask) != 0) {
 			status = Machine.IoPortDispatcher.ReadByte(DX);
 		}
 		DX = savedDx;
@@ -357,7 +439,7 @@ public partial class Overrides {
 		ushort savedDx = DX;
 		DX = AdgWord(AdgSecondaryRegisterPortOffset);
 		byte status = Machine.IoPortDispatcher.ReadByte(DX);
-		while ((status & 0xC0) != 0) {
+		while ((status & (byte)AdgImmediate.OneNinetyTwoMask) != 0) {
 			status = Machine.IoPortDispatcher.ReadByte(DX);
 		}
 		Machine.IoPortDispatcher.WriteByte(DX, Lo8(savedAx));
@@ -382,10 +464,6 @@ public partial class Overrides {
 		AX = savedAx;
 	}
 
-	private void AdgSendSecondaryCommandByte_FF_1176() {
-		AdgSendSecondaryCommandByte((byte)AdgSecondaryCommand.ResetAndLatch);
-	}
-
 	/// <summary>
 	/// Issues the Gold latch/reset command sequence start byte.
 	/// </summary>
@@ -397,6 +475,9 @@ public partial class Overrides {
 	/// ret
 	/// </code>
 	/// </remarks>
+	private void AdgSendSecondaryCommandByte_FF_1176() {
+		AdgSendSecondaryCommandByte((byte)AdgSecondaryCommand.ResetAndLatch);
+	}
 
 	private void AdgSendSecondaryCommandByte_FE_116E() {
 		AdgWaitSecondaryOplReady_1149();
@@ -425,23 +506,23 @@ public partial class Overrides {
 		InterruptFlag = false;
 		AdgSendSecondaryCommandByte_FF_1176();
 
-		AX = 0xFB06;
+		AX = (ushort)AdgGoldInitWord.Fb06;
 		AdgWriteSecondaryOplRegisterWithReady_1158();
-		AX = 0xF707;
+		AX = (ushort)AdgGoldInitWord.F707;
 		AdgWriteSecondaryOplRegisterWithReady_1158();
-		AX = 0xF704;
+		AX = (ushort)AdgGoldInitWord.F704;
 		AdgWriteSecondaryOplRegisterWithReady_1158();
-		AX++;
+		AX = (ushort)AdgGoldInitWord.F705;
 		AdgWriteSecondaryOplRegisterWithReady_1158();
-		AX = 0xFF09;
+		AX = (ushort)AdgGoldInitWord.Ff09;
 		AdgWriteSecondaryOplRegisterWithReady_1158();
-		AX++;
+		AX = (ushort)AdgGoldInitWord.Ff0A;
 		AdgWriteSecondaryOplRegisterWithReady_1158();
 		AdgWaitSecondaryOplReady_1149();
 
 		DX = AdgWord(AdgSecondaryRegisterPortOffset);
 		byte status = Machine.IoPortDispatcher.ReadByte((ushort)(DX + 1));
-		status = (byte)(~status & 0x20);
+		status = (byte)(~status & (byte)AdgImmediate.GoldPresentMask);
 		AdgByteSet(AdgGoldStatusOffset, status);
 		AdgSendSecondaryCommandByte_FE_116E();
 		AdgPopFlagsFromStack();
@@ -455,13 +536,13 @@ public partial class Overrides {
 		ushort savedDx = DX;
 		DX = AdgWord(AdgSecondaryRegisterPortOffset);
 		Machine.IoPortDispatcher.WriteByte(DX, registerIndex);
-		for (int i = 0; i < 7; i++) {
+		for (int i = 0; i < (byte)AdgImmediate.Seven; i++) {
 			Machine.IoPortDispatcher.ReadByte(DX);
 		}
 
 		DX++;
 		Machine.IoPortDispatcher.WriteByte(DX, registerValue);
-		for (int i = 0; i < 35; i++) {
+		for (int i = 0; i < (byte)AdgImmediate.ThirtyFive; i++) {
 			Machine.IoPortDispatcher.ReadByte(DX);
 		}
 
@@ -476,13 +557,13 @@ public partial class Overrides {
 		ushort savedDx = DX;
 		DX = AdgWord(AdgPrimaryRegisterPortOffset);
 		Machine.IoPortDispatcher.WriteByte(DX, registerIndex);
-		for (int i = 0; i < 7; i++) {
+		for (int i = 0; i < (byte)AdgImmediate.Seven; i++) {
 			Machine.IoPortDispatcher.ReadByte(DX);
 		}
 
 		DX++;
 		Machine.IoPortDispatcher.WriteByte(DX, registerValue);
-		for (int i = 0; i < 35; i++) {
+		for (int i = 0; i < (byte)AdgImmediate.ThirtyFive; i++) {
 			Machine.IoPortDispatcher.ReadByte(DX);
 		}
 
@@ -496,7 +577,7 @@ public partial class Overrides {
 	private void AdgWriteRelativeGoldRegister(byte registerIndex, byte registerValue, sbyte route) {
 		byte routedRegister = (byte)(registerIndex + (byte)route);
 		if (route < 0) {
-			routedRegister = (byte)(routedRegister ^ 0x80);
+			routedRegister = (byte)(routedRegister ^ (byte)AdgImmediate.OneTwentyEight);
 			AdgWriteSecondaryRegisterDirect(routedRegister, registerValue);
 			return;
 		}
@@ -517,14 +598,14 @@ public partial class Overrides {
 		AdgSendSecondaryCommandByte_FF_1176();
 
 		ushort preservedVolume = AX;
-		byte highNibble = (byte)(Lo8(AX) & 0xF0);
-		byte highRegisterValue = (byte)((highNibble >> 3) | 0x81);
-		AdgWriteSecondaryOplRegisterWithReady(0x09, highRegisterValue);
+		byte highNibble = (byte)(Lo8(AX) & (byte)AdgImmediate.F0Mask);
+		byte highRegisterValue = (byte)((highNibble >> 3) | (byte)AdgImmediate.OneTwentyNine);
+		AdgWriteSecondaryOplRegisterWithReady((byte)AdgOplRegister.GoldGlobalVolumeHi, highRegisterValue);
 
 		AX = preservedVolume;
-		byte lowNibble = (byte)(Lo8(AX) & 0x0F);
-		byte lowRegisterValue = (byte)((lowNibble << 1) | 0x81);
-		AdgWriteSecondaryOplRegisterWithReady(0x0A, lowRegisterValue);
+		byte lowNibble = (byte)(Lo8(AX) & (byte)AdgImmediate.Fifteen);
+		byte lowRegisterValue = (byte)((lowNibble << 1) | (byte)AdgImmediate.OneTwentyNine);
+		AdgWriteSecondaryOplRegisterWithReady((byte)AdgOplRegister.GoldGlobalVolumeLo, lowRegisterValue);
 
 		AdgSendSecondaryCommandByte_FE_116E();
 		AdgPopFlagsFromStack();
@@ -538,13 +619,16 @@ public partial class Overrides {
 	/// <remarks><code>for channel in 0x15..0 : write 0xFF to both chips, skip percussion slots</code></remarks>
 	private void AdgSilenceGoldChannels_0F53() {
 		for (int channel = 0x15; channel >= 0; channel--) {
-			if (channel == 6 || channel == 7 || channel == 0x0E || channel == 0x0F) {
+			if (channel == (byte)AdgImmediate.Six
+				|| channel == (byte)AdgImmediate.Seven
+				|| channel == (byte)AdgImmediate.Fourteen
+				|| channel == (byte)AdgImmediate.Fifteen) {
 				continue;
 			}
 
-			byte registerIndex = (byte)(channel + 0x80);
-			AdgWritePrimaryRegisterDirect(registerIndex, 0xFF);
-			AdgWriteSecondaryRegisterDirect(registerIndex, 0xFF);
+			byte registerIndex = (byte)(channel + (byte)AdgImmediate.OneTwentyEight);
+			AdgWritePrimaryRegisterDirect(registerIndex, (byte)AdgImmediate.TwoFiftyFive);
+			AdgWriteSecondaryRegisterDirect(registerIndex, (byte)AdgImmediate.TwoFiftyFive);
 		}
 	}
 
@@ -567,16 +651,16 @@ public partial class Overrides {
 	private void AdgWriteGoldSurroundMask_11F4() {
 		byte originalValue = Lo8(AX);
 		byte registerValue = Hi8(AX);
-		for (int index = 0; index < 8; index++) {
-			registerValue = (byte)(registerValue & 0xFD);
-			AdgWriteSecondaryOplRegisterWithReady(0x18, registerValue);
+		for (int index = 0; index < (byte)AdgImmediate.Eight; index++) {
+			registerValue = (byte)(registerValue & (byte)AdgImmediate.TwoFiftyThreeMask);
+			AdgWriteSecondaryOplRegisterWithReady((byte)AdgOplRegister.GoldSurroundControl, registerValue);
 
-			byte channelMask = (byte)((originalValue << 1) & 0xFE);
-			registerValue = (byte)((registerValue & 0xFE) | channelMask);
-			AdgWriteSecondaryOplRegisterWithReady(0x18, registerValue);
+			byte channelMask = (byte)((originalValue << 1) & (byte)AdgImmediate.TwoFiftyFourMask);
+			registerValue = (byte)((registerValue & (byte)AdgImmediate.TwoFiftyFourMask) | channelMask);
+			AdgWriteSecondaryOplRegisterWithReady((byte)AdgOplRegister.GoldSurroundControl, registerValue);
 
-			registerValue = (byte)(registerValue | 0x02);
-			AdgWriteSecondaryOplRegisterWithReady(0x18, registerValue);
+			registerValue = (byte)(registerValue | (byte)AdgImmediate.Two);
+			AdgWriteSecondaryOplRegisterWithReady((byte)AdgOplRegister.GoldSurroundControl, registerValue);
 		}
 		AX = Make16(originalValue, registerValue);
 	}
@@ -587,23 +671,23 @@ public partial class Overrides {
 	/// </summary>
 	/// <remarks><code>for 0..0x1E: write mask-on, load table byte, write mask-off</code></remarks>
 	private void AdgUpdateGoldSurround_11C4() {
-		if (AdgByte(AdgGoldStatusOffset) == 0) {
+		if (AdgByte(AdgGoldStatusOffset) == (byte)AdgImmediate.Zero) {
 			return;
 		}
 
 		AdgPushFlagsToStack();
 		InterruptFlag = false;
 		DX = 0;
-		while (Lo8(DX) < 0x1F) {
-			AX = Make16(Lo8(DX), 0);
+		while (Lo8(DX) < (byte)AdgImmediate.ThirtyOne) {
+			AX = Make16(Lo8(DX), (byte)AdgImmediate.Zero);
 			AdgWriteGoldSurroundMask_11F4();
-			AdgWriteSecondaryOplRegisterWithReady(0x18, (byte)(Hi8(AX) | 0x04));
+			AdgWriteSecondaryOplRegisterWithReady((byte)AdgOplRegister.GoldSurroundControl, (byte)(Hi8(AX) | (byte)AdgImmediate.Four));
 
 			byte mask = SegByte(ES, SI);
 			SI = (ushort)(SI + 1);
 			AX = Make16(mask, Hi8(AX));
 			AdgWriteGoldSurroundMask_11F4();
-			AdgWriteSecondaryOplRegisterWithReady(0x18, (byte)(Hi8(AX) & 0xFB));
+			AdgWriteSecondaryOplRegisterWithReady((byte)AdgOplRegister.GoldSurroundControl, (byte)(Hi8(AX) & (byte)AdgImmediate.TwoFiftyOneMask));
 			DX++;
 		}
 		AdgPopFlagsFromStack();
@@ -622,11 +706,11 @@ public partial class Overrides {
 		while (true) {
 			byte current = SegByte(ES, SI);
 			SI = (ushort)(SI + 1);
-			value = (value << 7) | (uint)(current & 0x7F);
+			value = (value << (byte)AdgImmediate.Seven) | (uint)(current & (byte)AdgImmediate.SevenBitMask);
 			if (value > 0xFFFF) {
 				overflow = true;
 			}
-			if ((current & 0x80) == 0) {
+			if ((current & (byte)AdgImmediate.OneTwentyEight) == 0) {
 				break;
 			}
 		}
@@ -664,7 +748,7 @@ public partial class Overrides {
 		DS = currentDs;
 		DI = AdgChannelInitWordsBase;
 		CX = AdgResetChannelCount;
-		AX = 0x00FF;
+		AX = (byte)AdgImmediate.TwoFiftyFive;
 		while (CX != 0) {
 			AdgWordSet(DI, AX);
 			DI = (ushort)(DI + 2);
@@ -682,7 +766,7 @@ public partial class Overrides {
 		ES = songSegment;
 		SI = songOffset;
 		AdgWordSet(AdgMeasureOffset, 1);
-		AdgWordSet(AdgSubdivisionOffset, 0x0060);
+		AdgWordSet(AdgSubdivisionOffset, (byte)AdgImmediate.NinetySix);
 		DI = AdgChannelTableBase;
 		CX = AdgResetChannelCount;
 		while (CX != 0) {
@@ -716,14 +800,14 @@ public partial class Overrides {
 		byte currentVolume = AdgByte(AdgCurrentVolumeOffset);
 		byte targetVolume = AdgByte(AdgDynamicsOffset);
 		if (currentVolume == targetVolume) {
-			AdgWordSet(AdgFadePatternOffset, 1);
-			AdgByteSet(AdgStatusOffset, (byte)(AdgByte(AdgStatusOffset) & 0xBF));
+			AdgWordSet(AdgFadePatternOffset, (ushort)AdgFadePattern.SingleStep);
+			AdgByteSet(AdgStatusOffset, (byte)(AdgByte(AdgStatusOffset) & (byte)AdgImmediate.FadeClearMask));
 			return;
 		}
 
 		byte updatedVolume = currentVolume;
-		byte currentLowNibble = (byte)(updatedVolume & 0x0F);
-		byte targetLowNibble = (byte)(targetVolume & 0x0F);
+		byte currentLowNibble = (byte)(updatedVolume & (byte)AdgImmediate.Fifteen);
+		byte targetLowNibble = (byte)(targetVolume & (byte)AdgImmediate.Fifteen);
 		if (currentLowNibble != targetLowNibble) {
 			updatedVolume = (byte)(updatedVolume + 1);
 			if (currentLowNibble > targetLowNibble) {
@@ -731,8 +815,8 @@ public partial class Overrides {
 			}
 		}
 
-		byte currentHighNibble = (byte)(updatedVolume & 0xF0);
-		byte targetHighNibble = (byte)(targetVolume & 0xF0);
+		byte currentHighNibble = (byte)(updatedVolume & (byte)AdgImmediate.F0Mask);
+		byte targetHighNibble = (byte)(targetVolume & (byte)AdgImmediate.F0Mask);
 		if (currentHighNibble != targetHighNibble) {
 			updatedVolume = (byte)(updatedVolume + 0x10);
 			if (currentHighNibble > targetHighNibble) {
@@ -741,7 +825,7 @@ public partial class Overrides {
 		}
 
 		AdgByteSet(AdgCurrentVolumeOffset, updatedVolume);
-		if (updatedVolume == 0) {
+		if (updatedVolume == (byte)AdgImmediate.Zero) {
 			ushort savedDx = DX;
 			ushort savedSi = SI;
 			AdgResetInternal_0EBA();
@@ -793,8 +877,8 @@ public partial class Overrides {
 		AX = AdgWord((ushort)(AdgFrequencyWordTableOffset + SI));
 		CX = AX;
 
-		AdgWriteRoutedOplRegister(0xA0, Lo8(CX), (byte)channelIndex);
-		AdgWriteRoutedOplRegister(0xB0, Hi8(CX), (byte)channelIndex);
+		AdgWriteRoutedOplRegister((byte)AdgOplRegister.FrequencyLow, Lo8(CX), (byte)channelIndex);
+		AdgWriteRoutedOplRegister((byte)AdgOplRegister.FrequencyHigh, Hi8(CX), (byte)channelIndex);
 	}
 
 	/// <summary>
@@ -961,18 +1045,18 @@ public partial class Overrides {
 			AX = (ushort)(AX + 2);
 			AdgWordSet(AdgSecondaryRegisterPortOffset, AX);
 			AX = (ushort)(AX + 2);
-			AdgWordSet(0x0119, AX);
+			AdgWordSet(AdgAuxRegisterPortOffset1, AX);
 			AX = (ushort)(AX + 2);
-			AdgWordSet(0x011B, AX);
+			AdgWordSet(AdgAuxRegisterPortOffset2, AX);
 		}
 
 		Machine.IoPortDispatcher.WriteByte(AdgWord(AdgSecondaryRegisterPortOffset), (byte)AdgSecondaryCommand.ReleaseReset);
 		AdgPatchDriverFileExtensions_04DC();
-		AdgWriteFixedOplRegister(AdgWord(AdgPrimaryRegisterPortOffset), (byte)AdgOplRegister.WaveformControl, 0x20);
-		AdgWriteFixedOplRegister(AdgWord(AdgPrimaryRegisterPortOffset), (byte)AdgOplRegister.PercussionControl, 0x00);
-		AdgWriteFixedOplRegister(AdgWord(AdgPrimaryRegisterPortOffset), (byte)AdgOplRegister.ChannelEnable, 0x40);
-		AdgWriteFixedOplRegister(AdgWord(AdgSecondaryRegisterPortOffset), (byte)AdgOplRegister.Opl3Mode, 0x01);
-		AdgWriteFixedOplRegister(AdgWord(AdgSecondaryRegisterPortOffset), (byte)AdgOplRegister.SecondaryControl, 0x00);
+		AdgWriteFixedOplRegister(AdgWord(AdgPrimaryRegisterPortOffset), (byte)AdgOplRegister.WaveformControl, (byte)AdgImmediate.ThirtyTwo);
+		AdgWriteFixedOplRegister(AdgWord(AdgPrimaryRegisterPortOffset), (byte)AdgOplRegister.PercussionControl, (byte)AdgImmediate.Zero);
+		AdgWriteFixedOplRegister(AdgWord(AdgPrimaryRegisterPortOffset), (byte)AdgOplRegister.ChannelEnable, (byte)AdgOplRegister.KeyScaleAndOutput);
+		AdgWriteFixedOplRegister(AdgWord(AdgSecondaryRegisterPortOffset), (byte)AdgOplRegister.Opl3Mode, (byte)AdgImmediate.One);
+		AdgWriteFixedOplRegister(AdgWord(AdgSecondaryRegisterPortOffset), (byte)AdgOplRegister.SecondaryControl, (byte)AdgImmediate.Zero);
 		AdgInitializeGoldHardware_1185();
 		AdgReset_564B_0561_056A11(0);
 		BX = 0x0F00;
@@ -1056,18 +1140,18 @@ public partial class Overrides {
 		AdgByteSet(AdgDynamicsOffset, Lo8(AX));
 		AX = savedAx;
 
-		ushort fadePattern = 0xFFFF;
+		ushort fadePattern = (ushort)AdgFadePattern.Immediate;
 		if (AX >= 0x0060) {
-			fadePattern = 0xAAAA;
+			fadePattern = (ushort)AdgFadePattern.Slow;
 		}
 		if (AX >= 0x00C0) {
-			fadePattern = 0x8888;
+			fadePattern = (ushort)AdgFadePattern.Medium;
 		}
 		if (AX >= 0x0180) {
-			fadePattern = 0x8080;
+			fadePattern = (ushort)AdgFadePattern.Fast;
 		}
 		if (AX >= 0x0300) {
-			fadePattern = 0x8000;
+			fadePattern = (ushort)AdgFadePattern.Fastest;
 		}
 		AdgWordSet(AdgFadePatternOffset, fadePattern);
 
@@ -1114,7 +1198,7 @@ public partial class Overrides {
 		byte scaledVolume = Lo8(AX);
 		AdgByteSet(AdgMasterVolumeOffset, scaledVolume);
 		AdgByteSet(AdgDynamicsOffset, scaledVolume);
-		AdgWordSet(AdgFadePatternOffset, 0xFFFF);
+		AdgWordSet(AdgFadePatternOffset, (ushort)AdgFadePattern.Immediate);
 		return FarRet();
 	}
 }
