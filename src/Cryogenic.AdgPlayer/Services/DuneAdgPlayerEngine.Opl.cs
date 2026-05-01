@@ -129,20 +129,31 @@ public sealed partial class DuneAdgPlayerEngine {
 		connectionValue = (ushort)(connectionValue >> 1);
 		connectionValue = Make16((byte)~Lo8(connectionValue), SongByte16((ushort)(patchOffset + 0x04)));
 		connectionValue = (ushort)(connectionValue << 1);
-		byte connectionByte = (byte)((Hi8(connectionValue) & 0x0F) | 0x30);
+		byte connectionByte = (byte)(Hi8(connectionValue) & 0x0F);
 		_channelConnectionCurrent[channelIndex] = connectionByte;
 		WriteRelativeGoldRegister(0xC0, connectionByte, unchecked((sbyte)channelRoute));
 
 		// Modulator operator (primary route)
-		byte modulatorTl = WriteInstrumentOperator(primaryRoute, patchOffset, SongByte16((ushort)(patchOffset + 0x1C)));
+		WriteInstrumentOperator(primaryRoute, patchOffset, SongByte16((ushort)(patchOffset + 0x1C)));
 
 		// Carrier operator (secondary route, patch offset + 0x0D)
-		byte carrierTl = WriteInstrumentOperator(secondaryRoute, (ushort)(patchOffset + 0x0D), SongByte16((ushort)(patchOffset + 0x1D)));
+		WriteInstrumentOperator(secondaryRoute, (ushort)(patchOffset + 0x0D), SongByte16((ushort)(patchOffset + 0x1D)));
 
-		// Seed channel operator-level state so EnvelopeSetup/VolumeModulation start
-		// from the patch's actual TL values rather than zero (which would clamp
-		// carrier writes to 0x3F = silence on the very first NoteOn after PgmChange).
-		_channelCurrentOperatorLevel[channelIndex] = Make16(modulatorTl, carrierTl);
+		if ((secondaryRoute & 0x10) != 0) {
+			return;
+		}
+
+		byte surroundIndex = (byte)(secondaryRoute & 0x03);
+		if (unchecked((sbyte)secondaryRoute) < 0) {
+			surroundIndex = (byte)(surroundIndex + 3);
+		}
+		if (SongByte16(patchOffset) == 0x04) {
+			return;
+		}
+
+		byte surroundMask = (byte)~(1 << surroundIndex);
+		_surroundMask = (byte)(_surroundMask & surroundMask);
+		_opl.WriteRegister(0x104, _surroundMask);
 	}
 
 	/// <summary>
@@ -165,6 +176,43 @@ public sealed partial class DuneAdgPlayerEngine {
 		_opl.WriteRegister(0x101, 0x20);
 		// Secondary chip: rhythm mode off
 		_opl.WriteRegister(0x1BD, 0x00);
+		_opl.InitializeGoldHardware();
+	}
+
+	/// <summary>
+	/// Serializes one AdLib Gold surround mask/control value using DNADG's 11F4 sequence.
+	/// </summary>
+	private byte WriteGoldSurroundMask(byte originalValue, byte registerValue) {
+		for (int index = 0; index < 8; index++) {
+			registerValue = (byte)(registerValue & 0xFD);
+			_opl.WriteGoldSurroundControl(registerValue);
+
+			byte channelMask = (byte)((originalValue << 1) & 0xFE);
+			registerValue = (byte)((registerValue & 0xFE) | channelMask);
+			_opl.WriteGoldSurroundControl(registerValue);
+
+			registerValue = (byte)(registerValue | 0x02);
+			_opl.WriteGoldSurroundControl(registerValue);
+		}
+		return registerValue;
+	}
+
+	/// <summary>
+	/// Replays DNADG's Gold surround initialization from the current song table.
+	/// Mirrors AdgUpdateGoldSurround_11C4 using the standalone Gold processor.
+	/// </summary>
+	private void UpdateGoldSurround() {
+		ushort surroundPointer = _eventBase;
+		byte registerValue = 0;
+		for (byte channelIndex = 0; channelIndex < 0x1F; channelIndex++) {
+			registerValue = WriteGoldSurroundMask(channelIndex, registerValue);
+			_opl.WriteGoldSurroundControl((byte)(registerValue | 0x04));
+
+			byte mask = SongByte16(surroundPointer);
+			surroundPointer = (ushort)(surroundPointer + 1);
+			registerValue = WriteGoldSurroundMask(mask, registerValue);
+			_opl.WriteGoldSurroundControl((byte)(registerValue & 0xFB));
+		}
 	}
 }
 

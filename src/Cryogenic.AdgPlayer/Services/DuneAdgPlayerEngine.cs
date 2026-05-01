@@ -79,6 +79,7 @@ public sealed partial class DuneAdgPlayerEngine : IDisposable {
 	// --- Global ADG state ---
 	private ushort _fadeScratch;
 	private ushort _fadeScratch2;
+	private byte _surroundMask = 0xFF;
 	private byte _tickEnabled;
 	private byte _loopCounter;
 	/// <summary>16-bit tempo accumulator. Hi8 is decremented every PIT tick; ProcessTick
@@ -545,7 +546,9 @@ public sealed partial class DuneAdgPlayerEngine : IDisposable {
 			byte packed = ComputeAdgVolume(low, high);
 			_masterVolume = packed;
 			_targetVolume = packed;
+			_currentVolume = packed;
 			_fadeBitPattern = 0xFFFF;
+			_opl.ApplyGoldPackedVolume(packed);
 		}
 	}
 
@@ -608,15 +611,18 @@ public sealed partial class DuneAdgPlayerEngine : IDisposable {
 
 				InitOplChip();
 				InitializeRoutingTables();
+				UpdateGoldSurround();
 				BuildChannelTable();
 
 				_tempoAccumulator = 0;
 				_currentVolume = _masterVolume;
 				_targetVolume = _masterVolume;
+				_opl.ApplyGoldPackedVolume(_currentVolume);
 				_loopCounter = 0;
 				_tickEnabled = 1;
 				_fadeScratch = 0;
 				_fadeScratch2 = 0;
+				_surroundMask = 0xFF;
 				_totalTickCount = 0;
 				_totalSamplesRendered = 0;
 

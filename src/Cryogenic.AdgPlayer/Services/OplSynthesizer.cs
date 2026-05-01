@@ -33,6 +33,9 @@ public sealed class OplSynthesizer : IDisposable {
 	private readonly SoundChannel _channel;
 	private readonly NullPauseHandler _pauseHandler;
 	private volatile bool _adlibGoldPostProcessEnabled;
+	private float _masterGain = 1.0f;
+	private float _goldLeftGain = 1.0f;
+	private float _goldRightGain = 1.0f;
 	private short[] _tempBuffer = new short[4096];
 	private float[] _floatBuffer = new float[4096];
 	private float[] _normalizedBuffer = new float[4096];
@@ -58,7 +61,7 @@ public sealed class OplSynthesizer : IDisposable {
 		_chip = new Opl3Chip();
 		_chip.Reset((uint)NativeOplSampleRate);
 		_adlibGold = new AdlibGold(NativeOplSampleRate);
-		_adlibGoldPostProcessEnabled = false;
+		_adlibGoldPostProcessEnabled = true;
 
 		_pauseHandler = new NullPauseHandler();
 		_mixer = new SoftwareMixer(AudioEngine.CrossPlatform, _pauseHandler);
@@ -72,7 +75,7 @@ public sealed class OplSynthesizer : IDisposable {
 		// Match Spice86 Opl3Fm: Set0dbScalar(1.5f). Use a lower noise-gate threshold
 		// for Opl3Gold (−80 dB) so quiet startup audio isn't gated out.
 		_channel.UserVolume = new Spice86.Audio.Common.AudioFrame(1.5f, 1.5f);
-		_channel.AppVolume = new Spice86.Audio.Common.AudioFrame(1.0f, 1.0f);
+		UpdateAppVolume();
 
 		Logger.Information("OPL synthesizer initialized: {NativeRate} Hz, AdlibGold post-process {Mode}", NativeOplSampleRate, _adlibGoldPostProcessEnabled ? "enabled" : "disabled");
 	}
@@ -83,6 +86,37 @@ public sealed class OplSynthesizer : IDisposable {
 	/// </summary>
 	public void SetAdlibGoldPostProcessEnabled(bool enabled) {
 		_adlibGoldPostProcessEnabled = enabled;
+	}
+
+	/// <summary>
+	/// Applies DNADG's packed FM volume byte to the Gold stereo stage.
+	/// Mirrors the effective mixer behavior of Opl3Fm's AdLib Gold control writes.
+	/// </summary>
+	public void ApplyGoldPackedVolume(byte packedVolume) {
+		byte leftControl = (byte)(((packedVolume & 0xF0) >> 3) | 0x01);
+		byte rightControl = (byte)(((packedVolume & 0x0F) << 1) | 0x01);
+		_goldLeftGain = (leftControl & 0x1F) / 31.0f;
+		_goldRightGain = (rightControl & 0x1F) / 31.0f;
+		UpdateAppVolume();
+	}
+
+	/// <summary>
+	/// Writes one value to the AdLib Gold surround control processor.
+	/// </summary>
+	public void WriteGoldSurroundControl(byte value) {
+		_adlibGold.SurroundControlWrite(value);
+	}
+
+	/// <summary>
+	/// Applies DNADG's fixed Gold stereo-processor startup configuration.
+	/// Mirrors the 1185 initialization writes used by the real driver.
+	/// </summary>
+	public void InitializeGoldHardware() {
+		_adlibGold.StereoControlWrite(StereoProcessorControlReg.Bass, 0xFB);
+		_adlibGold.StereoControlWrite(StereoProcessorControlReg.Treble, 0xF7);
+		_adlibGold.StereoControlWrite(StereoProcessorControlReg.VolumeLeft, 0xF7);
+		_adlibGold.StereoControlWrite(StereoProcessorControlReg.VolumeRight, 0xF7);
+		ApplyGoldPackedVolume(0xFF);
 	}
 
 	/// <summary>
@@ -114,8 +148,12 @@ public sealed class OplSynthesizer : IDisposable {
 	/// Range 0.0 (silence) to 1.0 (full).
 	/// </summary>
 	public void SetMasterVolume(float volume) {
-		float clamped = Math.Clamp(volume, 0.0f, 1.0f);
-		_channel.AppVolume = new Spice86.Audio.Common.AudioFrame(clamped, clamped);
+		_masterGain = Math.Clamp(volume, 0.0f, 1.0f);
+		UpdateAppVolume();
+	}
+
+	private void UpdateAppVolume() {
+		_channel.AppVolume = new Spice86.Audio.Common.AudioFrame(_masterGain * _goldLeftGain, _masterGain * _goldRightGain);
 	}
 
 	/// <summary>
