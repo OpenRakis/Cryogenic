@@ -9,6 +9,35 @@ using System;
 /// Faithfully ported from AdgDriverCode.cs (AdgSchedulerTick_0756 and related handlers).
 /// </summary>
 public sealed partial class DuneAdgPlayerEngine {
+	/// <summary>
+	/// Runtime routing resolver bytes mirroring DNADG segment 564B at offset 0x08ED.
+	/// The driver reads AdgWord(0x08ED + shiftedBX) and AdgWord(0x08EF + shiftedBX)
+	/// where shiftedBX = (~fadeScratch and 0x01C0) >> 4.  Valid shiftedBX values are
+	/// 0x04, 0x08, 0x0C, 0x10, 0x14, 0x18, and 0x1C — never below 4.
+	/// ReadRoutingResolverWord(0, resolverIndex) reads the AX word (channelRoute|primaryRoute),
+	/// ReadRoutingResolverWord(2, resolverIndex) reads the BX_new word (stateMask).
+	/// Indices 0-3 are unused padding so that resolverIndex directly offsets the array.
+	/// Data captured from live dump at linear 0x56DA1 (segment 564B, offset 0x08F1).
+	/// </summary>
+	private static readonly byte[] RoutingResolverTable = {
+		// Indices 0-3: unused padding — resolverIndex is always >= 4 after the >>4 shift
+		0x00, 0x00, 0x00, 0x00,
+		// BX=0x04: AX=0x0610 (channelRoute=0x06, primaryRoute=0x10), stateMask=0x0040 (indices 4-7)
+		0x10, 0x06, 0x40, 0x00,
+		// BX=0x08: AX=0x0711 (channelRoute=0x07, primaryRoute=0x11), stateMask=0x0080 (indices 8-11)
+		0x11, 0x07, 0x80, 0x00,
+		// BX=0x0C: AX=0x0711, stateMask=0x0080 (indices 12-15)
+		0x11, 0x07, 0x80, 0x00,
+		// BX=0x10: AX=0x0812 (channelRoute=0x08, primaryRoute=0x12), stateMask=0x0100 (indices 16-19)
+		0x12, 0x08, 0x00, 0x01,
+		// BX=0x14: AX=0x0812, stateMask=0x0100 (indices 20-23)
+		0x12, 0x08, 0x00, 0x01,
+		// BX=0x18: AX=0x0812, stateMask=0x0100 (indices 24-27)
+		0x12, 0x08, 0x00, 0x01,
+		// BX=0x1C: AX=0x0812, stateMask=0x0100 (indices 28-31) — the all-bits-free startup case
+		0x12, 0x08, 0x00, 0x01
+	};
+
 
 	/// <summary>
 	/// Copies the fixed initial routing tables into the per-channel mutable arrays.
@@ -17,6 +46,7 @@ public sealed partial class DuneAdgPlayerEngine {
 	private void InitializeRoutingTables() {
 		for (int i = 0; i < ChannelCount; i++) {
 			_channelRoutingTable[i] = InitialChannelRoutes[i];
+			_channelRouteShadow[i] = InitialRouteShadows[i];
 			_channelPrimaryRoute[i] = InitialPrimaryRoutes[i];
 			_channelSecondaryRoute[i] = InitialSecondaryRoutes[i];
 		}
@@ -276,9 +306,89 @@ public sealed partial class DuneAdgPlayerEngine {
 		ChannelEventDispatched?.Invoke(ch, "NoteOff", $"note={note:X2} inst={_channelInstrument[ch]:X2}", _totalTickCount);
 	}
 
+	private static ushort ReadRoutingResolverWord(int baseOffset, int index) {
+		int address = baseOffset + index;
+		if ((uint)(address + 1) >= RoutingResolverTable.Length) {
+			return 0;
+		}
+		return (ushort)(RoutingResolverTable[address] | (RoutingResolverTable[address + 1] << 8));
+	}
+
+	/// <summary>
+	/// Configure routing for the current instrument patch.
+	/// Mirrors the tested branches of AdgConfigureInstrumentRouting_090D.
+	/// Unobserved resolver branches are left as guarded fallbacks.
+	/// </summary>
+	private void ConfigureInstrumentRouting(int ch, ushort patchOffset) {
+		ushort bp = _fadeScratch;
+		ushort cx = _fadeScratch2;
+		ushort stateScratch = _channelStateScratch[ch];
+		ushort scratchMask = (ushort)~stateScratch;
+
+		if ((scratchMask & 0x8000) == 0) {
+			cx = (ushort)(cx & scratchMask);
+		} else {
+			bp = (ushort)(bp & scratchMask);
+		}
+
+		byte patchType = SongByte16(patchOffset);
+		if (patchType == 0x04) {
+			Logger.Warning("ADG routing: patch-type4 fallback ch={Channel} mask=0x{Mask:X4} bp=0x{Bp:X4} cx=0x{Cx:X4}", ch, scratchMask, bp, cx);
+			_fadeScratch = bp;
+			_fadeScratch2 = cx;
+			return;
+		}
+
+		ushort routePair;
+		ushort stateMask;
+
+		ushort freeFromPrimary = (ushort)(~bp & 0x01C0);
+		if (freeFromPrimary != 0) {
+			int resolverIndex = freeFromPrimary >> 4;
+			routePair = ReadRoutingResolverWord(0, resolverIndex);
+			stateMask = ReadRoutingResolverWord(2, resolverIndex);
+			bp = (ushort)(bp | stateMask);
+			Logger.Debug("ADG routing: primary-mask branch ch={Channel} idx=0x{Idx:X2} route=0x{Route:X4} mask=0x{StateMask:X4}", ch, resolverIndex, routePair, stateMask);
+		} else {
+			ushort freeFromSecondary = (ushort)~cx;
+			if ((freeFromSecondary & 0x01C0) == 0) {
+				Logger.Warning("ADG routing: unresolved branch ch={Channel} mask=0x{Mask:X4} bp=0x{Bp:X4} cx=0x{Cx:X4}", ch, scratchMask, bp, cx);
+				_fadeScratch = bp;
+				_fadeScratch2 = cx;
+				return;
+			}
+
+			int resolverIndex = (freeFromSecondary & 0x01C0) >> 4;
+			routePair = ReadRoutingResolverWord(0, resolverIndex);
+			stateMask = ReadRoutingResolverWord(2, resolverIndex);
+			routePair = (ushort)(routePair | 0x8080);
+			cx = (ushort)(cx | stateMask);
+			stateMask = Make16(Lo8(stateMask), (byte)(Hi8(stateMask) | 0x80));
+			Logger.Debug("ADG routing: secondary-mask branch ch={Channel} idx=0x{Idx:X2} route=0x{Route:X4} mask=0x{StateMask:X4}", ch, resolverIndex, routePair, stateMask);
+		}
+
+		if (routePair == 0 || stateMask == 0) {
+			Logger.Warning("ADG routing: empty resolver output ch={Channel} route=0x{Route:X4} mask=0x{StateMask:X4}", ch, routePair, stateMask);
+			_fadeScratch = bp;
+			_fadeScratch2 = cx;
+			return;
+		}
+
+		_channelStateScratch[ch] = stateMask;
+		_fadeScratch = bp;
+		_fadeScratch2 = cx;
+
+		_channelRoutingTable[ch] = Hi8(routePair);
+		_channelPrimaryRoute[ch] = Lo8(routePair);
+
+		routePair = (ushort)(routePair + 0x0303);
+		_channelRouteShadow[ch] = Hi8(routePair);
+		_channelSecondaryRoute[ch] = Lo8(routePair);
+	}
+
 	/// <summary>
 	/// ProgramChange event handler. Loads instrument patch and writes to OPL3 Gold.
-	/// Mirrors AdgProgramChange_0831 with simplified fixed routing for standalone play.
+	/// Mirrors AdgProgramChange_0831.
 	/// </summary>
 	private void ProgramChange(int ch, ushort eventWord) {
 		ReadWaitValue(ch);
@@ -287,6 +397,7 @@ public sealed partial class DuneAdgPlayerEngine {
 		_channelInstrument[ch] = instrument;
 
 		ushort patchOffset = (ushort)(_eventBase + instrument * 0x28);
+		ConfigureInstrumentRouting(ch, patchOffset);
 
 		_channelPitchMode[ch] = SongWord16((ushort)(patchOffset + 0x21));
 		_channelPitchTranspose[ch] = Hi8(_channelPitchMode[ch]);

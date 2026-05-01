@@ -68,6 +68,7 @@ public sealed partial class DuneAdgPlayerEngine : IDisposable {
 
 	// --- Channel routing (18 logical → OPL3 Gold physical) ---
 	private readonly byte[] _channelRoutingTable = new byte[ChannelCount];
+	private readonly byte[] _channelRouteShadow = new byte[ChannelCount];
 	private readonly byte[] _channelPrimaryRoute = new byte[ChannelCount];
 	private readonly byte[] _channelSecondaryRoute = new byte[ChannelCount];
 
@@ -88,32 +89,39 @@ public sealed partial class DuneAdgPlayerEngine : IDisposable {
 	// --- Static lookup tables (from DNADG driver binary, verified against runtime) ---
 
 	/// <summary>
-	/// Fixed OPL3 Gold channel routes for 18 logical channels.
-	/// Primary chip (route >= 0): register = base + route.
-	/// Secondary chip (route signed negative): register = (base + (byte)route) ^ 0x80.
-	/// Channels 0-8 map to primary OPL3 chip; channels 9-17 to secondary.
+	/// Runtime channel-route seed table from DNADG memory image at 564B:017F.
+	/// Captured from dump memory bytes at linear 0x5662F.
 	/// </summary>
 	private static readonly byte[] InitialChannelRoutes = {
-		0, 1, 2, 3, 4, 5, 6, 7, 8,
+		0x08, 0x07, 0x07, 0x06, 0x88, 0x88, 0x87, 0x86, 0x82,
 		0x80, 0x81, 0x82, 0x83, 0x84, 0x85, 0x86, 0x87, 0x88
 	};
 
 	/// <summary>
-	/// Fixed OPL3 Gold modulator operator routes for 18 logical channels.
-	/// Encodes the operator register offset for the modulator of each channel.
+	/// Runtime route-shadow seed table from DNADG memory image at 564B:0191.
+	/// Captured from dump memory bytes at linear 0x56641.
+	/// </summary>
+	private static readonly byte[] InitialRouteShadows = {
+		0x0B, 0x0A, 0x0A, 0x09, 0x8B, 0x8B, 0x8A, 0x89, 0x85,
+		0x80, 0x81, 0x82, 0x83, 0x84, 0x85, 0x86, 0x87, 0x88
+	};
+
+	/// <summary>
+	/// Runtime primary-operator route seed table from DNADG 564B:01A3.
+	/// Captured from dump memory bytes at linear 0x56653.
 	/// </summary>
 	private static readonly byte[] InitialPrimaryRoutes = {
-		0x00, 0x01, 0x02, 0x08, 0x09, 0x0A, 0x10, 0x11, 0x12,
+		0x12, 0x11, 0x11, 0x10, 0x92, 0x92, 0x91, 0x90, 0x82,
 		0x80, 0x81, 0x82, 0x88, 0x89, 0x8A, 0x90, 0x91, 0x92
 	};
 
 	/// <summary>
-	/// Fixed OPL3 Gold carrier operator routes for 18 logical channels.
-	/// Each is the modulator route + 3, selecting the paired carrier operator.
+	/// Runtime secondary-operator route seed table from DNADG 564B:01B5.
+	/// Captured from dump memory bytes at linear 0x56665.
 	/// </summary>
 	private static readonly byte[] InitialSecondaryRoutes = {
-		0x03, 0x04, 0x05, 0x0B, 0x0C, 0x0D, 0x13, 0x14, 0x15,
-		0x83, 0x84, 0x85, 0x8B, 0x8C, 0x8D, 0x93, 0x94, 0x95
+		0x15, 0x14, 0x14, 0x13, 0x95, 0x95, 0x94, 0x93, 0x85,
+		0x93, 0x84, 0x85, 0x8B, 0x8C, 0x8D, 0x93, 0x94, 0x95
 	};
 
 	/// <summary>OPL3 F-number lookup table for one octave (C through B), 12 entries.
@@ -270,6 +278,14 @@ public sealed partial class DuneAdgPlayerEngine : IDisposable {
 	public void SetOplVolumeGain(float gain) {
 		_oplVolumeGain = Math.Clamp(gain, 0.0f, 5.0f);
 		_opl.SetOplVolumeGain(_oplVolumeGain);
+	}
+
+	/// <summary>
+	/// Enables or disables AdLib Gold surround/stereo post-processing in standalone playback.
+	/// Kept explicit so routing/dispatch parity can be validated in dry mode first.
+	/// </summary>
+	public void SetAdlibGoldPostProcessEnabled(bool enabled) {
+		_opl.SetAdlibGoldPostProcessEnabled(enabled);
 	}
 
 	/// <summary>

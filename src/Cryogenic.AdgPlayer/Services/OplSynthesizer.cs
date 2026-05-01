@@ -32,6 +32,7 @@ public sealed class OplSynthesizer : IDisposable {
 	private readonly SoftwareMixer _mixer;
 	private readonly SoundChannel _channel;
 	private readonly NullPauseHandler _pauseHandler;
+	private volatile bool _adlibGoldPostProcessEnabled;
 	private short[] _tempBuffer = new short[4096];
 	private float[] _floatBuffer = new float[4096];
 	private float[] _normalizedBuffer = new float[4096];
@@ -57,6 +58,7 @@ public sealed class OplSynthesizer : IDisposable {
 		_chip = new Opl3Chip();
 		_chip.Reset((uint)NativeOplSampleRate);
 		_adlibGold = new AdlibGold(NativeOplSampleRate);
+		_adlibGoldPostProcessEnabled = false;
 
 		_pauseHandler = new NullPauseHandler();
 		_mixer = new SoftwareMixer(AudioEngine.CrossPlatform, _pauseHandler);
@@ -72,7 +74,15 @@ public sealed class OplSynthesizer : IDisposable {
 		_channel.UserVolume = new Spice86.Audio.Common.AudioFrame(1.5f, 1.5f);
 		_channel.AppVolume = new Spice86.Audio.Common.AudioFrame(1.0f, 1.0f);
 
-		Logger.Information("OPL synthesizer initialized: {NativeRate} Hz, AdlibGold surround active", NativeOplSampleRate);
+		Logger.Information("OPL synthesizer initialized: {NativeRate} Hz, AdlibGold post-process {Mode}", NativeOplSampleRate, _adlibGoldPostProcessEnabled ? "enabled" : "disabled");
+	}
+
+	/// <summary>
+	/// Enables or disables AdLib Gold post-processing (surround/stereo stage).
+	/// Disabled by default in standalone mode until control-register parity is wired.
+	/// </summary>
+	public void SetAdlibGoldPostProcessEnabled(bool enabled) {
+		_adlibGoldPostProcessEnabled = enabled;
 	}
 
 	/// <summary>
@@ -140,9 +150,15 @@ public sealed class OplSynthesizer : IDisposable {
 		// Generate raw OPL3 PCM via NukedOPL3Sharp.
 		_chip.GenerateStream(_tempBuffer.AsSpan(0, sampleCount));
 
-		// Apply AdLib Gold surround + stereo post-processing, matching Spice86 Opl3Fm.RenderFrame.
-		// Outputs short-scale float values (same amplitude as the raw shorts) ready for AddSamplesFloat.
-		_adlibGold.Process(_tempBuffer.AsSpan(0, sampleCount), framesNeeded, _floatBuffer.AsSpan(0, sampleCount));
+		if (_adlibGoldPostProcessEnabled) {
+			// Apply AdLib Gold surround + stereo post-processing, matching Spice86 Opl3Fm.RenderFrame.
+			// Outputs short-scale float values (same amplitude as the raw shorts) ready for AddSamplesFloat.
+			_adlibGold.Process(_tempBuffer.AsSpan(0, sampleCount), framesNeeded, _floatBuffer.AsSpan(0, sampleCount));
+		} else {
+			for (int i = 0; i < sampleCount; i++) {
+				_floatBuffer[i] = _tempBuffer[i];
+			}
+		}
 
 		for (int i = 0; i < sampleCount; i++) {
 			_normalizedBuffer[i] = _floatBuffer[i] / 32768f;
