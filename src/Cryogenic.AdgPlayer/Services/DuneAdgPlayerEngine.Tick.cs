@@ -58,6 +58,10 @@ public sealed partial class DuneAdgPlayerEngine {
 	/// Mirrors AdgSchedulerTick_0756.
 	/// </summary>
 	private void ProcessTick() {
+		// Reload tempo accumulator first. Mirrors AdgSchedulerTick_0756:
+		// "add [0126], AX" where AX = SongWord(BP+0x30) = tempoWord.
+		// Replenishes Hi8 so TickInternal's tick divider fires once per Hi8(tempoWord) PIT ticks.
+		_tempoAccumulator = (ushort)(_tempoAccumulator + SongWord(_dataBase + 0x30));
 		LoopPointCheck();
 
 		for (int ch = 0; ch < ChannelCount; ch++) {
