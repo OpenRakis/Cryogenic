@@ -1207,6 +1207,45 @@ public partial class Overrides {
 	/// </code>
 	/// </remarks>
 	public Action AdgOpenSong_564B_0626_056AD6(int gotoAddress) {
+		DS = CS;
+
+		AdgByteSet(AdgTickEnabledOffset, AL);
+
+		ushort songId0 = SegWord(ES, SI);
+		DI = AdgSongIdentityCacheOffset;
+		SegWordSet(CS, DI, SI);
+		SegWordSet(CS, (ushort)(DI + 2), ES);
+		SegWordSet(CS, (ushort)(DI + 4), songId0);
+
+		ushort songId1 = SegWord(ES, (ushort)(SI + 0x4000));
+		SegWordSet(CS, (ushort)(DI + 6), songId1);
+
+		ushort songId2 = SegWord(ES, (ushort)(SI + 0x8000));
+		SegWordSet(CS, (ushort)(DI + 8), songId2);
+
+		SI = (ushort)(SI + 2);
+		AdgWordSet(AdgSongPointerOffset, SI);
+		AdgWordSet(AdgSongSegmentOffset, ES);
+
+		SI = (ushort)(SI - 2);
+		ushort loopPointOffset = SegWord(ES, SI);
+		SI = (ushort)(SI + loopPointOffset);
+		AdgWordSet(AdgEventPointerOffset, SI);
+		AdgWordSet(AdgEventSegmentOffset, ES);
+
+		AdgSilenceGoldChannels_0F53();
+		AdgUpdateGoldSurround_11C4();
+		AdgBuildChannelTable_068A();
+
+		byte masterVolume = AdgByte(AdgMasterVolumeOffset);
+		AdgByteSet(AdgCurrentVolumeOffset, masterVolume);
+		AdgApplyMasterVolumeToGold_0F21();
+		AdgByteSet(AdgDynamicsOffset, AL);
+
+		AX = 0;
+		AdgWordSet(AdgTempoAccumulatorOffset, AX);
+		AdgWordSet(AdgLoopCounterOffset, AX);
+
 		return NearJump(AdgOpenSongNearJumpOffset);
 	}
 
@@ -1336,6 +1375,33 @@ public partial class Overrides {
 	/// </code>
 	/// </remarks>
 	public Action AdgTick_564B_06F6_056BA6(int gotoAddress) {
+		DS = CS;
+
+		byte status = AdgByte(AdgStatusOffset);
+		if ((status & (byte)AdgImmediate.OneTwentyEight) == 0) {
+			AX = Make16(status, Hi8(AX));
+			BX = AdgWord(AdgMeasureOffset);
+			CX = AdgWord(AdgSubdivisionOffset);
+			return FarRet();
+		}
+
+		byte tickDivider = AdgByte(AdgTickDividerOffset);
+		tickDivider--;
+		AdgByteSet(AdgTickDividerOffset, tickDivider);
+		if (tickDivider != 0) {
+			AX = Make16(status, Hi8(AX));
+			BX = AdgWord(AdgMeasureOffset);
+			CX = AdgWord(AdgSubdivisionOffset);
+			return FarRet();
+		}
+
+		if (!AdgIsSongIdentityStillValid_0730()) {
+			AX = Make16(status, Hi8(AX));
+			BX = AdgWord(AdgMeasureOffset);
+			CX = AdgWord(AdgSubdivisionOffset);
+			return FarRet();
+		}
+
 		return NearJump(AdgTickNearJumpOffset);
 	}
 
