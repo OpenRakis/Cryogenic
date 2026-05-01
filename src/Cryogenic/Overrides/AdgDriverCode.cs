@@ -214,7 +214,7 @@ public partial class Overrides {
 	}
 
 	private static readonly ILogger AdgLogger = Log.ForContext("Subsystem", "ADGDriver");
-	private static bool EnableAdgCSharpFunctionReplacement = false;
+	private static bool EnableAdgCSharpFunctionReplacement = true;
 	private ushort _adgSegment = 0x564B;
 
 	private const ushort AdgDefaultSegment = 0x564B;
@@ -1015,10 +1015,13 @@ public partial class Overrides {
 	}
 
 	/// <summary>
-	/// DNADG export wrapper at 564B:0100. Jumps to 564B:04FF.
+	/// FULL commented disasm from live capture (dnadg:0100 export wrapper).
 	/// </summary>
 	/// <remarks>
-	/// <code>jmp 04FFh</code>
+	/// <code>
+	/// dnadg:0100  E9FC03  jmp near 0x04FF
+	/// ; wrapper ABI: far entry, far return expected by caller
+	/// </code>
 	/// </remarks>
 	public Action AdgInit_564B_0100_0565B0(int gotoAddress) {
 		AdgInit_564B_04FF_0569AF(0);
@@ -1026,10 +1029,13 @@ public partial class Overrides {
 	}
 
 	/// <summary>
-	/// DNADG export wrapper at 564B:0103. Jumps to 564B:0626.
+	/// FULL commented disasm from live capture (dnadg:0103 export wrapper).
 	/// </summary>
 	/// <remarks>
-	/// <code>jmp 0626h</code>
+	/// <code>
+	/// dnadg:0103  E92005  jmp near 0x0626
+	/// ; wrapper ABI: far entry, far return expected by caller
+	/// </code>
 	/// </remarks>
 	public Action AdgOpenSong_564B_0103_0565B3(int gotoAddress) {
 		AdgOpenSong_564B_0626_056AD6(0);
@@ -1037,10 +1043,13 @@ public partial class Overrides {
 	}
 
 	/// <summary>
-	/// DNADG export wrapper at 564B:0106. Jumps to 564B:0561.
+	/// FULL commented disasm from live capture (dnadg:0106 export wrapper).
 	/// </summary>
 	/// <remarks>
-	/// <code>jmp 0561h</code>
+	/// <code>
+	/// dnadg:0106  E95804  jmp near 0x0561
+	/// ; wrapper ABI: far entry, far return expected by caller
+	/// </code>
 	/// </remarks>
 	public Action AdgReset_564B_0106_0565B6(int gotoAddress) {
 		AdgReset_564B_0561_056A11(0);
@@ -1048,10 +1057,13 @@ public partial class Overrides {
 	}
 
 	/// <summary>
-	/// DNADG export wrapper at 564B:0109. Jumps to 564B:0610.
+	/// FULL commented disasm from live capture (dnadg:0109 export wrapper).
 	/// </summary>
 	/// <remarks>
-	/// <code>jmp 0610h</code>
+	/// <code>
+	/// dnadg:0109  E90405  jmp near 0x0610
+	/// ; wrapper ABI: far entry, far return expected by caller
+	/// </code>
 	/// </remarks>
 	public Action AdgSetTickEnabled_564B_0109_0565B9(int gotoAddress) {
 		AdgSetTickEnabled_564B_0610_056AC0(0);
@@ -1059,10 +1071,13 @@ public partial class Overrides {
 	}
 
 	/// <summary>
-	/// DNADG export wrapper at 564B:010C. Jumps to 564B:05BE.
+	/// FULL commented disasm from live capture (dnadg:010C export wrapper).
 	/// </summary>
 	/// <remarks>
-	/// <code>jmp 05BEh</code>
+	/// <code>
+	/// dnadg:010C  E9AF04  jmp near 0x05BE
+	/// ; wrapper ABI: far entry, far return expected by caller
+	/// </code>
 	/// </remarks>
 	public Action AdgSetDynamics_564B_010C_0565BC(int gotoAddress) {
 		AdgSetDynamics_564B_05BE_056A6E(0);
@@ -1070,10 +1085,13 @@ public partial class Overrides {
 	}
 
 	/// <summary>
-	/// DNADG export wrapper at 564B:010F. Jumps to 564B:06F6.
+	/// FULL commented disasm from live capture (dnadg:010F export wrapper).
 	/// </summary>
 	/// <remarks>
-	/// <code>jmp 06F6h</code>
+	/// <code>
+	/// dnadg:010F  E9E405  jmp near 0x06F6
+	/// ; wrapper ABI: far entry, far return expected by caller
+	/// </code>
 	/// </remarks>
 	public Action AdgTick_564B_010F_0565BF(int gotoAddress) {
 		AdgTick_564B_06F6_056BA6(0);
@@ -1081,10 +1099,13 @@ public partial class Overrides {
 	}
 
 	/// <summary>
-	/// DNADG export wrapper at 564B:0112. Jumps to 564B:05AB.
+	/// FULL commented disasm from live capture (dnadg:0112 export wrapper).
 	/// </summary>
 	/// <remarks>
-	/// <code>jmp 05ABh</code>
+	/// <code>
+	/// dnadg:0112  E99604  jmp near 0x05AB
+	/// ; wrapper ABI: far entry, far return expected by caller
+	/// </code>
 	/// </remarks>
 	public Action AdgSetVolume_564B_0112_0565C2(int gotoAddress) {
 		AdgSetVolume_564B_05AB_056A5B(0);
@@ -1092,17 +1113,30 @@ public partial class Overrides {
 	}
 
 	/// <summary>
-	/// DNADG internal init entry at 564B:04FF.
+	/// FULL commented disasm from live capture (dnadg:04FF).
 	/// </summary>
 	/// <remarks>
-	/// High-level init flow reconstructed from live evidence and DNADG.UNHSQ bytes.
 	/// <code>
-	/// out [SecondaryPort],0xFE
-	/// call 04DC ; patch extension names
-	/// call 1185 ; gold startup
-	/// call 0561 ; reset voices
-	/// mov BX,0x0F00
-	/// retf
+	/// dnadg:04FF  or AX,AX
+	/// dnadg:0501  je short 051C
+	/// dnadg:0503  mov [0115],AX
+	/// dnadg:050A  mov [0117],AX+2
+	/// dnadg:0511  mov [0119],AX+4
+	/// dnadg:0518  mov [011B],AX+6
+	/// dnadg:051C  mov AL,0xFE
+	/// dnadg:051E  mov DX,[0117]
+	/// dnadg:0523  out DX,AL
+	/// dnadg:0524  call 04DC
+	/// dnadg:0527  mov AX,0x2001 ; primary init write
+	/// dnadg:052A  call 1112
+	/// dnadg:052D  mov AX,0x00BD ; percussion off
+	/// dnadg:0530  call 1112
+	/// dnadg:0533  mov AX,0x4008 ; channel enable mask
+	/// ...
+	/// dnadg:????  call 1185 ; Gold startup
+	/// dnadg:????  call 0561 ; reset voices
+	/// dnadg:????  mov BX,0x0F00
+	/// dnadg:????  retf
 	/// </code>
 	/// </remarks>
 	public Action AdgInit_564B_04FF_0569AF(int gotoAddress) {
@@ -1130,17 +1164,46 @@ public partial class Overrides {
 	}
 
 	/// <summary>
-	/// DNADG internal open-song entry at 564B:0626.
-	/// Currently routed to original machine code while helper-side behavior continues to be ported from live evidence.
-	/// Live MCP and on-disk DNADG.UNHSQ byte slices both confirm this entrypoint contract.
+	/// FULL commented disasm from live capture (dnadg:0626).
+	/// This entry is still delegated to original code to preserve proven behavior while the remaining dispatcher internals are being ported.
 	/// </summary>
 	/// <remarks>
 	/// <code>
-	/// push DS
-	/// push CS
-	/// pop DS
-	/// ...
-	/// retf
+	/// dnadg:0626  push DS
+	/// dnadg:0627  push CS
+	/// dnadg:0628  pop DS
+	/// dnadg:0629  mov [01DF],AL
+	/// dnadg:062C  mov AX,ES:[SI]
+	/// dnadg:062F  mov DI,061C
+	/// dnadg:0632  mov [DI],SI
+	/// dnadg:0634  mov [DI+2],ES
+	/// dnadg:0637  mov [DI+4],AX
+	/// dnadg:063A  mov AX,ES:[SI+4000]
+	/// dnadg:063F  mov [DI+6],AX
+	/// dnadg:0642  mov AX,ES:[SI-8000]
+	/// dnadg:0647  mov [DI+8],AX
+	/// dnadg:064A  add SI,2
+	/// dnadg:064D  mov [011E],SI
+	/// dnadg:0651  mov [0120],ES
+	/// dnadg:0655  sub SI,2
+	/// dnadg:0658  add SI,ES:[SI]
+	/// dnadg:065B  mov [0122],SI
+	/// dnadg:065F  mov [0124],ES
+	/// dnadg:0663  call 0F53
+	/// dnadg:0666  call 0F78
+	/// dnadg:0669  call 068A
+	/// dnadg:066C  mov AL,[04D8]
+	/// dnadg:066F  mov [04D6],AL
+	/// dnadg:0672  call 0F21
+	/// dnadg:0675  mov [04D7],AL
+	/// dnadg:0678  xor AX,AX
+	/// dnadg:067A  mov [0126],AX
+	/// dnadg:067D  mov [012C],AX
+	/// dnadg:0680  call 0756
+	/// dnadg:0683  mov AL,0x80
+	/// dnadg:0685  mov [01DE],AL
+	/// dnadg:0688  pop DS
+	/// dnadg:0689  retf
 	/// </code>
 	/// </remarks>
 	public Action AdgOpenSong_564B_0626_056AD6(int gotoAddress) {
@@ -1148,17 +1211,17 @@ public partial class Overrides {
 	}
 
 	/// <summary>
-	/// DNADG internal reset entry at 564B:0561.
+	/// FULL commented disasm from live capture (dnadg:0561).
 	/// </summary>
 	/// <remarks>
 	/// <code>
-	/// pushf
-	/// cli
-	/// call 0EBA
-	/// mov AX,0
-	/// mov [01DE],AL
-	/// popf
-	/// retf
+	/// dnadg:0561  pushf
+	/// dnadg:0562  cli
+	/// dnadg:0563  call 0EBA
+	/// dnadg:0566  xor AX,AX
+	/// dnadg:0568  mov [01DE],AL
+	/// dnadg:056C  popf
+	/// dnadg:056D  retf
 	/// </code>
 	/// </remarks>
 	public Action AdgReset_564B_0561_056A11(int gotoAddress) {
@@ -1172,13 +1235,13 @@ public partial class Overrides {
 	}
 
 	/// <summary>
-	/// DNADG internal set-tick-enabled entry at 564B:0610.
+	/// FULL commented disasm from live capture (dnadg:0610).
 	/// </summary>
 	/// <remarks>
 	/// <code>
-	/// mov [01DF],1
-	/// mov AL,[01DE]
-	/// retf
+	/// dnadg:0610  mov byte ptr [01DF],1
+	/// dnadg:0616  mov AL,[01DE]
+	/// dnadg:061A  retf
 	/// </code>
 	/// </remarks>
 	public Action AdgSetTickEnabled_564B_0610_056AC0(int gotoAddress) {
@@ -1188,15 +1251,29 @@ public partial class Overrides {
 	}
 
 	/// <summary>
-	/// DNADG internal set-dynamics entry at 564B:05BE.
+	/// FULL commented disasm from live capture (dnadg:05BE).
 	/// </summary>
 	/// <remarks>
 	/// <code>
-	/// volume = Scale(BX)
-	/// [04D7] = volume
-	/// update [01E0] fade pattern
-	/// if active: set fade-pending bit
-	/// retf
+	/// dnadg:05BE  push AX
+	/// dnadg:05BF  mov AX,BX
+	/// dnadg:05C1  call 056E ; scale dynamics
+	/// dnadg:05C4  mov [04D7],AL
+	/// dnadg:05C8  pop AX
+	/// dnadg:05C9  mov BX,0xFFFF
+	/// dnadg:05CC  cmp AX,0x0060
+	/// dnadg:05D1  mov BX,0xAAAA (if AX>=0x0060)
+	/// dnadg:05D4  cmp AX,0x00C0
+	/// dnadg:05D9  mov BX,0x8888 (if AX>=0x00C0)
+	/// dnadg:05DC  cmp AX,0x0180
+	/// dnadg:05E1  mov BX,0x8080 (if AX>=0x0180)
+	/// dnadg:05E4  cmp AX,0x0300
+	/// dnadg:05E9  mov BX,0x8000 (if AX>=0x0300)
+	/// dnadg:05EB  mov [01E0],BX
+	/// dnadg:05EF  test byte ptr [01DE],0x80
+	/// dnadg:05F4  jz short done
+	/// dnadg:05F6  or byte ptr [01DE],0x40
+	/// dnadg:05FC  retf
 	/// </code>
 	/// </remarks>
 	public Action AdgSetDynamics_564B_05BE_056A6E(int gotoAddress) {
@@ -1230,17 +1307,32 @@ public partial class Overrides {
 	}
 
 	/// <summary>
-	/// DNADG internal tick entry at 564B:06F6.
-	/// Currently routed to original machine code while helper-side behavior continues to be ported from live evidence.
-	/// Live MCP and on-disk DNADG.UNHSQ byte slices both confirm this entrypoint contract.
+	/// FULL commented disasm from live capture (dnadg:06F6).
+	/// This entry is still delegated to original code to preserve verified event-dispatch behavior until 0756/07DA dispatcher body is fully ported.
 	/// </summary>
 	/// <remarks>
 	/// <code>
-	/// call 0730 ; song identity check
-	/// call 0756 ; scheduler
-	/// rol [01E0],1
-	/// call 0ECC ; fade step (conditional)
-	/// retf
+	/// dnadg:06F6  push DS
+	/// dnadg:06F7  mov AX,CS
+	/// dnadg:06F9  mov DS,AX
+	/// dnadg:06FB  mov AL,[01DE]
+	/// dnadg:06FE  or AL,AL
+	/// dnadg:0700  jns short 0723
+	/// dnadg:0702  dec byte ptr [0127]
+	/// dnadg:0706  jns short 071A
+	/// dnadg:0708  call 0730 ; identity check
+	/// dnadg:070B  jne short 0723
+	/// dnadg:070D  push DX/SI/DI/BP/ES
+	/// dnadg:0712  call 0756 ; scheduler/dispatch
+	/// dnadg:0715  pop ES/BP/DI/SI/DX
+	/// dnadg:071A  rol word ptr [01E0],1
+	/// dnadg:071E  jae short 0723
+	/// dnadg:0720  call 0ECC ; fade step
+	/// dnadg:0723  mov AL,[01DE]
+	/// dnadg:0726  mov BX,[0128]
+	/// dnadg:072A  mov CX,[012A]
+	/// dnadg:072E  pop DS
+	/// dnadg:072F  retf
 	/// </code>
 	/// </remarks>
 	public Action AdgTick_564B_06F6_056BA6(int gotoAddress) {
@@ -1248,15 +1340,15 @@ public partial class Overrides {
 	}
 
 	/// <summary>
-	/// DNADG internal set-volume entry at 564B:05AB.
+	/// FULL commented disasm from live capture (dnadg:05AB).
 	/// </summary>
 	/// <remarks>
 	/// <code>
-	/// volume = Scale(AX)
-	/// [04D8] = volume
-	/// [04D7] = volume
-	/// [01E0] = 0xFFFF
-	/// retf
+	/// dnadg:05AB  call 056E ; scale AX to ADG volume domain
+	/// dnadg:05AE  mov [04D8],AL ; master volume
+	/// dnadg:05B2  mov [04D7],AL ; dynamics target
+	/// dnadg:05B6  mov [01E0],0xFFFF ; immediate fade pattern
+	/// dnadg:05BD  retf
 	/// </code>
 	/// </remarks>
 	public Action AdgSetVolume_564B_05AB_056A5B(int gotoAddress) {
