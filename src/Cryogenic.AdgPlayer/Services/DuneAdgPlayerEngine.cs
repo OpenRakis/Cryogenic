@@ -423,6 +423,57 @@ public sealed partial class DuneAdgPlayerEngine : IDisposable {
 		return (byte)((axOut & 0xF0) | (ah & 0x0F));
 	}
 
+	/// <summary>
+	/// Computes a packed ADG volume nibble byte from (al=low, ah=high) components.
+	/// Faithfully ports AdgComputeScaledVolumeFromAx from 564B:056E.
+	/// Returns Lo8(AX) as the packed volume byte stored to master/dynamics registers.
+	/// </summary>
+	private static byte ComputeAdgVolume(byte al, byte ah) {
+		al = (byte)(al >> 1);
+		al = (byte)(al >> 1);
+		al = (byte)(al >> 1);
+		byte dl = al;
+		byte dh = ah;
+		byte bl = 0x78;
+		byte bh = 0xF0;
+
+		if (ah > bl) {
+			ah = bl;
+		}
+
+		ushort axDiv = Make16(0, ah);
+		al = (byte)(axDiv / bh);
+		ah = (byte)(axDiv % bh);
+
+		ushort mul1 = (ushort)(al * dl);
+		al = Lo8(mul1);
+		ah = Hi8(mul1);
+
+		byte temp = ah;
+		ah = dh;
+		dh = temp;
+
+		ah = (byte)(ah - bh);
+		ah = (byte)(0 - ah);
+		if (ah > bl) {
+			ah = bl;
+		}
+
+		axDiv = Make16(0, ah);
+		al = (byte)(axDiv / bh);
+		ah = (byte)(axDiv % bh);
+
+		ushort axOut = (ushort)(al * dl);
+		axOut = (ushort)(axOut >> 1);
+		axOut = (ushort)(axOut >> 1);
+		axOut = (ushort)(axOut >> 1);
+		axOut = (ushort)(axOut >> 1);
+
+		ah = dh;
+		axOut = (ushort)(axOut & 0x0FF0);
+		return Lo8((ushort)(axOut | ah));
+	}
+
 	// --- Public API ---
 
 	/// <summary>
@@ -461,7 +512,7 @@ public sealed partial class DuneAdgPlayerEngine : IDisposable {
 	/// </summary>
 	public void SetVolume(byte low, byte high) {
 		lock (_lock) {
-			byte packed = ComputeVolumeNibbles(low, high);
+			byte packed = ComputeAdgVolume(low, high);
 			_masterVolume = packed;
 			_targetVolume = packed;
 			_fadeBitPattern = 0xFFFF;
@@ -473,7 +524,7 @@ public sealed partial class DuneAdgPlayerEngine : IDisposable {
 	/// </summary>
 	public void SetDynamics(ushort fadeSpeed, byte volumeLow, byte volumeHigh) {
 		lock (_lock) {
-			byte packed = ComputeVolumeNibbles(volumeLow, volumeHigh);
+			byte packed = ComputeAdgVolume(volumeLow, volumeHigh);
 			_targetVolume = packed;
 
 			ushort fade;
