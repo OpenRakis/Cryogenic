@@ -13,11 +13,37 @@ using System;
 /// This class is intentionally registration-only until runtime evidence is collected.
 /// </summary>
 public partial class Overrides {
+	/// <summary>
+	/// Secondary command bytes sent to the AdLib Gold command port.
+	/// </summary>
+	/// <remarks>
+	/// These values come from live ADG traces and are used as explicit command phases.
+	/// <code>
+	/// mov AL,0xFF
+	/// out DX,AL
+	/// ...
+	/// mov AL,0xFE
+	/// out DX,AL
+	/// </code>
+	/// </remarks>
 	private enum AdgSecondaryCommand : byte {
 		ResetAndLatch = 0xFF,
 		ReleaseReset = 0xFE
 	}
 
+	/// <summary>
+	/// OPL register indexes used by DNADG during init, channel programming, and Gold surround control.
+	/// </summary>
+	/// <remarks>
+	/// This enum replaces raw register bytes so reverse-engineering intent stays visible.
+	/// <code>
+	/// mov AL,0xBD
+	/// out DX,AL
+	/// inc DX
+	/// mov AL,0x00
+	/// out DX,AL
+	/// </code>
+	/// </remarks>
 	private enum AdgOplRegister : byte {
 		WaveformControl = 0x01,
 		KeyScaleAndOutput = 0x40,
@@ -35,6 +61,17 @@ public partial class Overrides {
 		GoldSurroundControl = 0x18
 	}
 
+	/// <summary>
+	/// Playback state bits tracked in ADG status byte at 0x01DE.
+	/// </summary>
+	/// <remarks>
+	/// Flags are mirrored from observed branch/tests in the live driver.
+	/// <code>
+	/// mov AL,[0x01DE]
+	/// or AL,AL
+	/// jns ...
+	/// </code>
+	/// </remarks>
 	[Flags]
 	private enum AdgPlaybackStatus : byte {
 		None = 0x00,
@@ -83,6 +120,17 @@ public partial class Overrides {
 	private const int AdgResetChannelCount = 0x12;
 
 	/// <summary>
+	/// Registers ADG function overrides for the active remapped ADG segment.
+	/// </summary>
+	/// <remarks>
+	/// This method is the entry switch for all ADG replacement wiring.
+	/// <code>
+	/// call far ADG:0100
+	/// call far ADG:0103
+	/// ...
+	/// </code>
+	/// </remarks>
+	/// <summary>
 	/// Registers DNADG overrides.
 	/// Registration is intentionally disabled by default until the runtime ABI is validated from live MCP evidence.
 	/// </summary>
@@ -101,6 +149,9 @@ public partial class Overrides {
 	/// <summary>
 	/// Resolves the live ADG segment from the loader remap table.
 	/// </summary>
+	/// <remarks>
+	/// <code>if ActualAdpSegment != 0 then use remapped segment else default 0x564B</code>
+	/// </remarks>
 	private void ResolveAdgSegment() {
 		if (DriverLoadToolbox.ActualAdpSegment != 0) {
 			_adgSegment = DriverLoadToolbox.ActualAdpSegment;
@@ -112,6 +163,7 @@ public partial class Overrides {
 	/// <summary>
 	/// Reads one byte from the active ADG code/data segment.
 	/// </summary>
+	/// <remarks><code>mov AL, byte ptr [CS:offset]</code></remarks>
 	private byte AdgByte(ushort offset) {
 		return SegByte(_adgSegment, offset);
 	}
@@ -119,6 +171,7 @@ public partial class Overrides {
 	/// <summary>
 	/// Writes one byte to the active ADG code/data segment.
 	/// </summary>
+	/// <remarks><code>mov byte ptr [CS:offset], AL</code></remarks>
 	private void AdgByteSet(ushort offset, byte value) {
 		SegByteSet(_adgSegment, offset, value);
 	}
@@ -126,6 +179,7 @@ public partial class Overrides {
 	/// <summary>
 	/// Reads one word from the active ADG code/data segment.
 	/// </summary>
+	/// <remarks><code>mov AX, word ptr [CS:offset]</code></remarks>
 	private ushort AdgWord(ushort offset) {
 		return SegWord(_adgSegment, offset);
 	}
@@ -133,6 +187,7 @@ public partial class Overrides {
 	/// <summary>
 	/// Writes one word to the active ADG code/data segment.
 	/// </summary>
+	/// <remarks><code>mov word ptr [CS:offset], AX</code></remarks>
 	private void AdgWordSet(ushort offset, ushort value) {
 		SegWordSet(_adgSegment, offset, value);
 	}
@@ -140,6 +195,7 @@ public partial class Overrides {
 	/// <summary>
 	/// Mirrors PUSHF using the CPU stack and full FLAGS register.
 	/// </summary>
+	/// <remarks><code>pushf</code></remarks>
 	private void AdgPushFlagsToStack() {
 		Stack.Push16(State.Flags.FlagRegister16);
 	}
@@ -147,6 +203,7 @@ public partial class Overrides {
 	/// <summary>
 	/// Mirrors POPF using the CPU stack and full FLAGS register.
 	/// </summary>
+	/// <remarks><code>popf</code></remarks>
 	private void AdgPopFlagsFromStack() {
 		State.Flags.FlagRegister = Stack.Pop16();
 	}
@@ -155,6 +212,14 @@ public partial class Overrides {
 	/// Converts AX input volume to ADG internal packed attenuation format.
 	/// Observed from live execution at 564B:056E.
 	/// </summary>
+	/// <remarks>
+	/// <code>
+	/// shr AL,1
+	/// ...
+	/// div BH
+	/// mul DL
+	/// </code>
+	/// </remarks>
 	private void AdgComputeScaledVolumeFromAx() {
 		byte al = Lo8(AX);
 		byte ah = Hi8(AX);
@@ -208,6 +273,7 @@ public partial class Overrides {
 	/// Patches driver file-extension strings in caller-provided filename table.
 	/// Observed from live execution at 564B:04DC.
 	/// </summary>
+	/// <remarks><code>scan '.' then copy extension bytes from CS:04D9/04DB</code></remarks>
 	private void AdgPatchDriverFileExtensions_04DC() {
 		ES = SS;
 		SI = BP;
@@ -244,6 +310,7 @@ public partial class Overrides {
 	/// <summary>
 	/// Writes an OPL register with the exact ADG port-delay pattern.
 	/// </summary>
+	/// <remarks><code>out DX,reg ; in DX x7 ; out DX+1,val ; in DX+1 x37</code></remarks>
 	private void AdgWriteFixedOplRegister(ushort registerPort, byte registerIndex, byte registerValue) {
 		ushort savedDx = DX;
 		DX = registerPort;
@@ -267,6 +334,7 @@ public partial class Overrides {
 	/// Waits until the Gold secondary status port reports ready (bits 6/7 clear).
 	/// Observed from live execution at 564B:1149.
 	/// </summary>
+	/// <remarks><code>in AL,DX ; and AL,0xC0 ; jne loop</code></remarks>
 	private void AdgWaitSecondaryOplReady_1149() {
 		ushort savedAx = AX;
 		ushort savedDx = DX;
@@ -283,6 +351,7 @@ public partial class Overrides {
 	/// Writes AX as secondary Gold register/value after ready-wait.
 	/// Observed from live execution at 564B:1158.
 	/// </summary>
+	/// <remarks><code>wait-ready ; out DX,AL ; out DX+1,AH</code></remarks>
 	private void AdgWriteSecondaryOplRegisterWithReady_1158() {
 		ushort savedAx = AX;
 		ushort savedDx = DX;
@@ -301,6 +370,7 @@ public partial class Overrides {
 	/// <summary>
 	/// Sends one command byte to the secondary Gold command port while preserving caller registers.
 	/// </summary>
+	/// <remarks><code>mov DX,[0117] ; out DX,AL</code></remarks>
 	private void AdgSendSecondaryCommandByte(byte value) {
 		ushort savedAx = AX;
 		ushort savedCx = CX;
@@ -316,10 +386,35 @@ public partial class Overrides {
 		AdgSendSecondaryCommandByte((byte)AdgSecondaryCommand.ResetAndLatch);
 	}
 
+	/// <summary>
+	/// Issues the Gold latch/reset command sequence start byte.
+	/// </summary>
+	/// <remarks>
+	/// Address provenance: 564B:1176.
+	/// <code>
+	/// mov AL,0xFF
+	/// out DX,AL
+	/// ret
+	/// </code>
+	/// </remarks>
+
 	private void AdgSendSecondaryCommandByte_FE_116E() {
 		AdgWaitSecondaryOplReady_1149();
 		AdgSendSecondaryCommandByte((byte)AdgSecondaryCommand.ReleaseReset);
 	}
+
+	/// <summary>
+	/// Issues the Gold release command after waiting for ready state.
+	/// </summary>
+	/// <remarks>
+	/// Address provenance: 564B:116E.
+	/// <code>
+	/// call 1149
+	/// mov AL,0xFE
+	/// out DX,AL
+	/// ret
+	/// </code>
+	/// </remarks>
 
 	/// <summary>
 	/// Performs AdLib Gold startup initialization sequence.
@@ -355,6 +450,7 @@ public partial class Overrides {
 	/// <summary>
 	/// Direct write to secondary OPL address/data ports with ADG delay loops.
 	/// </summary>
+	/// <remarks><code>out secRegPort,index ; out secDataPort,value</code></remarks>
 	private void AdgWriteSecondaryRegisterDirect(byte registerIndex, byte registerValue) {
 		ushort savedDx = DX;
 		DX = AdgWord(AdgSecondaryRegisterPortOffset);
@@ -375,6 +471,7 @@ public partial class Overrides {
 	/// <summary>
 	/// Direct write to primary OPL address/data ports with ADG delay loops.
 	/// </summary>
+	/// <remarks><code>out priRegPort,index ; out priDataPort,value</code></remarks>
 	private void AdgWritePrimaryRegisterDirect(byte registerIndex, byte registerValue) {
 		ushort savedDx = DX;
 		DX = AdgWord(AdgPrimaryRegisterPortOffset);
@@ -395,6 +492,7 @@ public partial class Overrides {
 	/// <summary>
 	/// Applies a routed register write to primary/secondary chip by route sign.
 	/// </summary>
+	/// <remarks><code>if route&lt;0 then xor reg,0x80 and write secondary else write primary</code></remarks>
 	private void AdgWriteRelativeGoldRegister(byte registerIndex, byte registerValue, sbyte route) {
 		byte routedRegister = (byte)(registerIndex + (byte)route);
 		if (route < 0) {
@@ -410,6 +508,7 @@ public partial class Overrides {
 	/// Applies current ADG master volume to Gold global volume registers.
 	/// Observed from live execution at 564B:0F21.
 	/// </summary>
+	/// <remarks><code>write register 0x09 and 0x0A with packed high/low nibble attenuation</code></remarks>
 	private void AdgApplyMasterVolumeToGold_0F21() {
 		ushort savedAx = AX;
 		AX = Make16(AdgByte(AdgCurrentVolumeOffset), Hi8(AX));
@@ -436,6 +535,7 @@ public partial class Overrides {
 	/// Clears operator state across playable channels on both OPL chips.
 	/// Observed from live execution at 564B:0F53.
 	/// </summary>
+	/// <remarks><code>for channel in 0x15..0 : write 0xFF to both chips, skip percussion slots</code></remarks>
 	private void AdgSilenceGoldChannels_0F53() {
 		for (int channel = 0x15; channel >= 0; channel--) {
 			if (channel == 6 || channel == 7 || channel == 0x0E || channel == 0x0F) {
@@ -451,6 +551,7 @@ public partial class Overrides {
 	/// <summary>
 	/// Writes one secondary Gold register/value pair using 1158 semantics.
 	/// </summary>
+	/// <remarks><code>mov AX,(reg,val) ; call 1158</code></remarks>
 	private void AdgWriteSecondaryOplRegisterWithReady(byte registerIndex, byte registerValue) {
 		ushort savedAx = AX;
 		AX = Make16(registerIndex, registerValue);
@@ -462,6 +563,7 @@ public partial class Overrides {
 	/// Programs the Gold surround mask shift-register sequence.
 	/// Observed from live execution at 564B:11F4.
 	/// </summary>
+	/// <remarks><code>loop 8: write register 0x18 with clock/data transitions</code></remarks>
 	private void AdgWriteGoldSurroundMask_11F4() {
 		byte originalValue = Lo8(AX);
 		byte registerValue = Hi8(AX);
@@ -483,6 +585,7 @@ public partial class Overrides {
 	/// Refreshes Gold surround state from the current song surround table.
 	/// Observed from live execution at 564B:11C4.
 	/// </summary>
+	/// <remarks><code>for 0..0x1E: write mask-on, load table byte, write mask-off</code></remarks>
 	private void AdgUpdateGoldSurround_11C4() {
 		if (AdgByte(AdgGoldStatusOffset) == 0) {
 			return;
@@ -510,6 +613,7 @@ public partial class Overrides {
 	/// Decodes one ADG variable-length wait value from ES:SI into channel state.
 	/// Observed from live execution at 564B:0E7E.
 	/// </summary>
+	/// <remarks><code>value = (value&lt;&lt;7) | (byte&amp;0x7F) until sign bit clears</code></remarks>
 	private void AdgReadWaitValue_0E7E() {
 		ushort savedAx = AX;
 		uint value = 0;
@@ -536,6 +640,7 @@ public partial class Overrides {
 	/// Builds the 18-channel runtime state table from current song pointers.
 	/// Observed from live execution at 564B:068A.
 	/// </summary>
+	/// <remarks><code>initialize [022A..] pointers, [024E..]/[0296..] defaults, and first wait values</code></remarks>
 	private void AdgBuildChannelTable_068A() {
 		ushort currentDs = DS;
 		ES = currentDs;
@@ -606,6 +711,7 @@ public partial class Overrides {
 	/// Executes one fade-step iteration for dynamics transitions.
 	/// Observed from live execution at 564B:0ECC.
 	/// </summary>
+	/// <remarks><code>nibble-wise step toward target volume; stop/reset when reaching zero</code></remarks>
 	private void AdgFadeStep_0ECC() {
 		byte currentVolume = AdgByte(AdgCurrentVolumeOffset);
 		byte targetVolume = AdgByte(AdgDynamicsOffset);
@@ -648,6 +754,7 @@ public partial class Overrides {
 	/// <summary>
 	/// Writes one routed frequency/control register to the proper OPL chip.
 	/// </summary>
+	/// <remarks><code>route byte picks primary/secondary and register XOR 0x80 policy</code></remarks>
 	private void AdgWriteRoutedOplRegister(byte registerBase, byte value, byte channelIndex) {
 		ushort savedDx = DX;
 		byte routeRaw = AdgByte((ushort)(AdgChannelRoutingTableOffset + channelIndex));
@@ -678,6 +785,7 @@ public partial class Overrides {
 	/// <summary>
 	/// Issues note-off writes for one logical ADG channel during reset.
 	/// </summary>
+	/// <remarks><code>write A0/B0 pair from cached frequency word table</code></remarks>
 	private void AdgOplNoteOff_ResetHelper(ushort channelIndex) {
 		DX = channelIndex;
 		SI = DX;
@@ -693,6 +801,7 @@ public partial class Overrides {
 	/// Verifies that current song identity still matches the cached open-song snapshot.
 	/// Observed from live execution at 564B:0730.
 	/// </summary>
+	/// <remarks><code>compare 3 identity words at +0,+0x4000,+0x8000 against 061C cache</code></remarks>
 	private bool AdgIsSongIdentityStillValid_0730() {
 		ushort savedSi = SI;
 		ushort savedEs = ES;
@@ -714,6 +823,7 @@ public partial class Overrides {
 	/// Performs global note-off reset across all ADG channels.
 	/// Observed from live execution at 564B:0EBA.
 	/// </summary>
+	/// <remarks><code>for CX=0x12..1: call note-off helper</code></remarks>
 	private void AdgResetInternal_0EBA() {
 		ushort originalDs = DS;
 		DS = _adgSegment;
@@ -729,7 +839,12 @@ public partial class Overrides {
 		DS = originalDs;
 	}
 
+	/// <summary>
+	/// Registers all currently observed ADG export and internal function entrypoints.
+	/// </summary>
+	/// <remarks><code>DefineFunction(segment, offset, override)</code></remarks>
 	private void RegisterAdgObservedFunctionReplacements() {
+		// <code>mov si,0100h ; export table start</code>
 		// Export table validated live via MCP at 564B:0100 (ADG388).
 		DefineFunction(_adgSegment, 0x0100, AdgInit_564B_0100_0565B0, false, nameof(AdgInit_564B_0100_0565B0));
 		DefineFunction(_adgSegment, 0x0103, AdgOpenSong_564B_0103_0565B3, false, nameof(AdgOpenSong_564B_0103_0565B3));
@@ -752,6 +867,9 @@ public partial class Overrides {
 	/// <summary>
 	/// DNADG export wrapper at 564B:0100. Jumps to 564B:04FF.
 	/// </summary>
+	/// <remarks>
+	/// <code>jmp 04FFh</code>
+	/// </remarks>
 	public Action AdgInit_564B_0100_0565B0(int gotoAddress) {
 		AdgInit_564B_04FF_0569AF(0);
 		return FarRet();
@@ -760,6 +878,9 @@ public partial class Overrides {
 	/// <summary>
 	/// DNADG export wrapper at 564B:0103. Jumps to 564B:0626.
 	/// </summary>
+	/// <remarks>
+	/// <code>jmp 0626h</code>
+	/// </remarks>
 	public Action AdgOpenSong_564B_0103_0565B3(int gotoAddress) {
 		AdgOpenSong_564B_0626_056AD6(0);
 		return FarRet();
@@ -768,6 +889,9 @@ public partial class Overrides {
 	/// <summary>
 	/// DNADG export wrapper at 564B:0106. Jumps to 564B:0561.
 	/// </summary>
+	/// <remarks>
+	/// <code>jmp 0561h</code>
+	/// </remarks>
 	public Action AdgReset_564B_0106_0565B6(int gotoAddress) {
 		AdgReset_564B_0561_056A11(0);
 		return FarRet();
@@ -776,6 +900,9 @@ public partial class Overrides {
 	/// <summary>
 	/// DNADG export wrapper at 564B:0109. Jumps to 564B:0610.
 	/// </summary>
+	/// <remarks>
+	/// <code>jmp 0610h</code>
+	/// </remarks>
 	public Action AdgSetTickEnabled_564B_0109_0565B9(int gotoAddress) {
 		AdgSetTickEnabled_564B_0610_056AC0(0);
 		return FarRet();
@@ -784,6 +911,9 @@ public partial class Overrides {
 	/// <summary>
 	/// DNADG export wrapper at 564B:010C. Jumps to 564B:05BE.
 	/// </summary>
+	/// <remarks>
+	/// <code>jmp 05BEh</code>
+	/// </remarks>
 	public Action AdgSetDynamics_564B_010C_0565BC(int gotoAddress) {
 		AdgSetDynamics_564B_05BE_056A6E(0);
 		return FarRet();
@@ -792,6 +922,9 @@ public partial class Overrides {
 	/// <summary>
 	/// DNADG export wrapper at 564B:010F. Jumps to 564B:06F6.
 	/// </summary>
+	/// <remarks>
+	/// <code>jmp 06F6h</code>
+	/// </remarks>
 	public Action AdgTick_564B_010F_0565BF(int gotoAddress) {
 		AdgTick_564B_06F6_056BA6(0);
 		return FarRet();
@@ -800,6 +933,9 @@ public partial class Overrides {
 	/// <summary>
 	/// DNADG export wrapper at 564B:0112. Jumps to 564B:05AB.
 	/// </summary>
+	/// <remarks>
+	/// <code>jmp 05ABh</code>
+	/// </remarks>
 	public Action AdgSetVolume_564B_0112_0565C2(int gotoAddress) {
 		AdgSetVolume_564B_05AB_056A5B(0);
 		return FarRet();
@@ -808,6 +944,17 @@ public partial class Overrides {
 	/// <summary>
 	/// DNADG internal init entry at 564B:04FF.
 	/// </summary>
+	/// <remarks>
+	/// High-level init flow reconstructed from live evidence and DNADG.UNHSQ bytes.
+	/// <code>
+	/// out [SecondaryPort],0xFE
+	/// call 04DC ; patch extension names
+	/// call 1185 ; gold startup
+	/// call 0561 ; reset voices
+	/// mov BX,0x0F00
+	/// retf
+	/// </code>
+	/// </remarks>
 	public Action AdgInit_564B_04FF_0569AF(int gotoAddress) {
 		if (AX != 0) {
 			AdgWordSet(AdgPrimaryRegisterPortOffset, AX);
@@ -837,6 +984,15 @@ public partial class Overrides {
 	/// Currently routed to original machine code while helper-side behavior continues to be ported from live evidence.
 	/// Live MCP and on-disk DNADG.UNHSQ byte slices both confirm this entrypoint contract.
 	/// </summary>
+	/// <remarks>
+	/// <code>
+	/// push DS
+	/// push CS
+	/// pop DS
+	/// ...
+	/// retf
+	/// </code>
+	/// </remarks>
 	public Action AdgOpenSong_564B_0626_056AD6(int gotoAddress) {
 		return NearJump(0x0626);
 	}
@@ -844,6 +1000,17 @@ public partial class Overrides {
 	/// <summary>
 	/// DNADG internal reset entry at 564B:0561.
 	/// </summary>
+	/// <remarks>
+	/// <code>
+	/// pushf
+	/// cli
+	/// call 0EBA
+	/// mov AX,0
+	/// mov [01DE],AL
+	/// popf
+	/// retf
+	/// </code>
+	/// </remarks>
 	public Action AdgReset_564B_0561_056A11(int gotoAddress) {
 		AdgPushFlagsToStack();
 		InterruptFlag = false;
@@ -857,6 +1024,13 @@ public partial class Overrides {
 	/// <summary>
 	/// DNADG internal set-tick-enabled entry at 564B:0610.
 	/// </summary>
+	/// <remarks>
+	/// <code>
+	/// mov [01DF],1
+	/// mov AL,[01DE]
+	/// retf
+	/// </code>
+	/// </remarks>
 	public Action AdgSetTickEnabled_564B_0610_056AC0(int gotoAddress) {
 		AdgByteSet(AdgTickEnabledOffset, 1);
 		AX = Make16(AdgByte(AdgStatusOffset), Hi8(AX));
@@ -866,6 +1040,15 @@ public partial class Overrides {
 	/// <summary>
 	/// DNADG internal set-dynamics entry at 564B:05BE.
 	/// </summary>
+	/// <remarks>
+	/// <code>
+	/// volume = Scale(BX)
+	/// [04D7] = volume
+	/// update [01E0] fade pattern
+	/// if active: set fade-pending bit
+	/// retf
+	/// </code>
+	/// </remarks>
 	public Action AdgSetDynamics_564B_05BE_056A6E(int gotoAddress) {
 		ushort savedAx = AX;
 		AX = BX;
@@ -901,6 +1084,15 @@ public partial class Overrides {
 	/// Currently routed to original machine code while helper-side behavior continues to be ported from live evidence.
 	/// Live MCP and on-disk DNADG.UNHSQ byte slices both confirm this entrypoint contract.
 	/// </summary>
+	/// <remarks>
+	/// <code>
+	/// call 0730 ; song identity check
+	/// call 0756 ; scheduler
+	/// rol [01E0],1
+	/// call 0ECC ; fade step (conditional)
+	/// retf
+	/// </code>
+	/// </remarks>
 	public Action AdgTick_564B_06F6_056BA6(int gotoAddress) {
 		return NearJump(0x06F6);
 	}
@@ -908,6 +1100,15 @@ public partial class Overrides {
 	/// <summary>
 	/// DNADG internal set-volume entry at 564B:05AB.
 	/// </summary>
+	/// <remarks>
+	/// <code>
+	/// volume = Scale(AX)
+	/// [04D8] = volume
+	/// [04D7] = volume
+	/// [01E0] = 0xFFFF
+	/// retf
+	/// </code>
+	/// </remarks>
 	public Action AdgSetVolume_564B_05AB_056A5B(int gotoAddress) {
 		AdgComputeScaledVolumeFromAx();
 		byte scaledVolume = Lo8(AX);
