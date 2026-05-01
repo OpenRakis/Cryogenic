@@ -2,6 +2,16 @@
 
 Build ADG (AdLib Gold) support in two strict tracks: first a runtime-evidence-driven DNADG override rewrite in Cryogenic using Spice86 MCP (CFG + breakpoints + memory correlation), then a faithful AdgPlayer fork from AdpPlayer where only driver logic changes. This keeps parity risk low and enforces 1:1 behavior before any code-sharing refactor.
 
+## Documentation Standard (Mandatory)
+
+Every ADG override function must use the heavy documentation pattern used in AdpDriverCode.
+
+1. Include a summary that states the exact routine address and behavioral purpose.
+2. Include a FULL commented asm block under remarks for the routine, based on live evidence artifacts.
+3. Document register, FLAGS, and stack expectations when relevant (push/pop/pushf/popf and near/far return contract).
+4. If a routine is intentionally delegated to original machine code, document why, what evidence supports delegation, and what is still missing before full C# port.
+5. Keep docs synchronized with implementation changes in the same edit; no routine change is complete until the asm doc block is updated.
+
 **Steps**
 1. Phase 0 - Setup and evidence harness: lock runtime arguments to -a "ADG388" and --OplMode Opl3Gold, run with --UseCodeOverride false first, and establish artifact naming under dump/live for every capture. This creates a reproducible baseline before touching overrides.
 2. Phase 1 - Static DNADG ASM dossier (depends on 1): analyze doc/DUNECDVF/C/DUNECD/DUNE.DAT_/DNADG.UNHSQ first, map export jump stubs, internal routine clusters, suspected scheduler/event/pitch/instrument paths, and candidate breakpoints. Produce an offset map used by live tracing.
