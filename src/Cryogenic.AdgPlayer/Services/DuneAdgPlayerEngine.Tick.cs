@@ -58,9 +58,6 @@ public sealed partial class DuneAdgPlayerEngine {
 	/// Mirrors AdgSchedulerTick_0756.
 	/// </summary>
 	private void ProcessTick() {
-		ushort tempoWord = SongWord(_dataBase + 0x30);
-		_measure = (ushort)(_measure + tempoWord);
-
 		LoopPointCheck();
 
 		for (int ch = 0; ch < ChannelCount; ch++) {
@@ -670,6 +667,9 @@ public sealed partial class DuneAdgPlayerEngine {
 	/// </summary>
 	private void SilenceAllChannels() {
 		for (int ch = ChannelCount - 1; ch >= 0; ch--) {
+			if (ch == 6 || ch == 7 || ch == 14 || ch == 15) {
+				continue;
+			}
 			NoteOffOpl(ch);
 		}
 	}
