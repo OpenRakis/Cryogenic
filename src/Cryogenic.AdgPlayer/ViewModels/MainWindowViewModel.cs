@@ -195,7 +195,24 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 					break;
 				}
 			}
+
+			if (TryLoadPath(AdgPath)) {
+				Status = "Loaded.";
+			}
+
 			UpdateAllPlaylistDisplays();
+		}
+	}
+
+	partial void OnSelectedPlaylistItemChanged(PlaylistItem? value) {
+		if (value is null) {
+			return;
+		}
+
+		AdgPath = value.Path;
+		SelectedFileName = value.FileName;
+		if (TryLoadPath(value.Path)) {
+			Status = "Loaded.";
 		}
 	}
 
