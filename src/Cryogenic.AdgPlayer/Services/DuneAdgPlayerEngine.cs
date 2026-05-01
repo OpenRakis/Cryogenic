@@ -611,7 +611,6 @@ public sealed partial class DuneAdgPlayerEngine : IDisposable {
 
 				InitOplChip();
 				InitializeRoutingTables();
-				UpdateGoldSurround();
 				BuildChannelTable();
 
 				_tempoAccumulator = 0;
