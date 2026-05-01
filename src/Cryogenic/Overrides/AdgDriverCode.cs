@@ -270,6 +270,10 @@ public partial class Overrides {
 	private const ushort AdgChannelStateScratchOffset = 0x021C;
 	private const ushort AdgChannelTlShapingOffset = 0x00FC;
 	private const ushort AdgChannelEnvShapingOffset = 0x0120;
+	private const ushort AdgChannelPatch4TlShapingOffset = 0x0240;
+	private const ushort AdgChannelPatch4EnvShapingOffset = 0x0264;
+	private const ushort AdgChannelPatch4CurrentOperatorLevelOffset = 0x0288;
+	private const ushort AdgChannelPatch4VolumeModulationOffset = 0x02AC;
 	private const ushort AdgChannelCurrentOperatorLevelOffset = 0x0144;
 	private const ushort AdgChannelConnectionShapingOffset = 0x0168;
 	private const ushort AdgChannelPrimaryOperatorRouteOffset = 0x01A3;
@@ -1326,6 +1330,8 @@ public partial class Overrides {
 		AdgWriteSecondaryRegisterDirect((byte)AdgOplRegister.SecondaryControl, surroundMask);
 	}
 
+
+#pragma warning disable S907
 	private void AdgConfigureInstrumentRouting_090D() {
 		BP = AdgWord(AdgFadeScratchOffset);
 		CX = AdgWord(AdgFadeScratch2Offset);
@@ -1338,7 +1344,50 @@ public partial class Overrides {
 
 		byte patchType = SegByte(ES, SI);
 		if (patchType == (byte)AdgImmediate.Four) {
-			throw FailAsUntested("ADG patch-type 4 routing path 564B:092A is not yet observed.");
+			BX = 0x0009;
+			AX = 0;
+			if ((BP & BX) != 0) {
+				BP = (ushort)(BP | BX);
+				goto RoutingWriteBack;
+			}
+
+			BX = 0x0012;
+			AX = 0x0101;
+			if ((BP & BX) != 0) {
+				BP = (ushort)(BP | BX);
+				goto RoutingWriteBack;
+			}
+
+			BX = 0x0024;
+			AX = 0x0202;
+			if ((BP & BX) != 0) {
+				BP = (ushort)(BP | BX);
+				goto RoutingWriteBack;
+			}
+
+			BX = 0x0009;
+			AX = 0x8080;
+			if ((CX & BX) != 0) {
+				CX = (ushort)(CX | BX);
+				BX = Make16(Lo8(BX), (byte)(Hi8(BX) | 0x80));
+				goto RoutingWriteBack;
+			}
+
+			BX = 0x0012;
+			AX = 0x8181;
+			if ((CX & BX) != 0) {
+				CX = (ushort)(CX | BX);
+				BX = Make16(Lo8(BX), (byte)(Hi8(BX) | 0x80));
+				goto RoutingWriteBack;
+			}
+
+			BX = 0x0024;
+			AX = 0x8282;
+			if ((CX & BX) != 0) {
+				CX = (ushort)(CX | BX);
+				BX = Make16(Lo8(BX), (byte)(Hi8(BX) | 0x80));
+				goto RoutingWriteBack;
+			}
 		}
 
 		BX = (ushort)(~BP & 0x01C0);
@@ -1352,21 +1401,55 @@ public partial class Overrides {
 			if ((BX & 0x01C0) == 0) {
 				byte bh = (byte)(((Lo8(BX) >> 3) ^ Lo8(BX)) & 0x07);
 				if (bh != 0) {
-					throw FailAsUntested("ADG complex routing resolver 564B:0A2E requires more live evidence.");
+					bool carryBh = (bh & 0x01) != 0;
+					bh = (byte)(bh >> 1);
+					if (carryBh) {
+						goto RoutingChooseSecondary0;
+					}
+					carryBh = (bh & 0x01) != 0;
+					bh = (byte)(bh >> 1);
+					if (carryBh) {
+						goto RoutingChooseSecondary1;
+					}
+					goto RoutingChooseSecondary2;
 				}
 
 				AX = BP;
 				byte folded = (byte)((Lo8(AX) ^ (Lo8(AX) >> 3)) & 0x07);
 				if (folded != 0) {
-					throw FailAsUntested("ADG alternate routing resolver 564B:0A38 is not yet observed.");
+					BX = (ushort)~BP;
+					bool carryFolded = (folded & 0x01) != 0;
+					folded = (byte)(folded >> 1);
+					if (carryFolded) {
+						goto RoutingChoosePrimary0;
+					}
+					carryFolded = (folded & 0x01) != 0;
+					folded = (byte)(folded >> 1);
+					if (carryFolded) {
+						goto RoutingChoosePrimary1;
+					}
+					goto RoutingChoosePrimary2;
 				}
 
 				BX = (ushort)(BX & 0x003F);
 				if (BX == 0) {
-					throw FailAsUntested("ADG zero-mask routing resolver 564B:09EC is not yet observed.");
+					BX = (ushort)~BP;
+					if ((BX & 0x0024) != 0) {
+						goto RoutingChoosePrimary2;
+					}
+					if ((BX & 0x0012) != 0) {
+						goto RoutingChoosePrimary1;
+					}
+					goto RoutingChoosePrimary0;
 				}
 
-				throw FailAsUntested("ADG sparse routing resolver 564B:0A46 requires more live evidence.");
+				if ((BX & 0x0024) != 0) {
+					goto RoutingChooseSecondary2;
+				}
+				if ((BX & 0x0012) != 0) {
+					goto RoutingChooseSecondary1;
+				}
+				goto RoutingChooseSecondary0;
 			}
 
 			BX = (ushort)((BX & 0x01C0) >> 4);
@@ -1377,6 +1460,76 @@ public partial class Overrides {
 			BX = Make16(Lo8(BX), (byte)(Hi8(BX) | 0x80));
 		}
 
+		goto RoutingWriteBack;
+
+	RoutingChoosePrimary0:
+		AX = 0;
+		BX = (ushort)(BX & 0x0001);
+		if (BX != 0) {
+			BP = (ushort)(BP | BX);
+			goto RoutingWriteBack;
+		}
+		AX = 0x0308;
+		BX = Make16(0x08, Hi8(BX));
+		BP = (ushort)(BP | BX);
+		goto RoutingWriteBack;
+
+	RoutingChoosePrimary1:
+		AX = 0x0101;
+		BX = (ushort)(BX & 0x0002);
+		if (BX != 0) {
+			BP = (ushort)(BP | BX);
+			goto RoutingWriteBack;
+		}
+		AX = 0x0409;
+		BX = Make16(0x10, Hi8(BX));
+		BP = (ushort)(BP | BX);
+		goto RoutingWriteBack;
+
+	RoutingChoosePrimary2:
+		AX = 0x0202;
+		BX = (ushort)(BX & 0x0004);
+		if (BX == 0) {
+			AX = 0x050A;
+			BX = Make16(0x20, Hi8(BX));
+		}
+		BP = (ushort)(BP | BX);
+		goto RoutingWriteBack;
+
+	RoutingChooseSecondary0:
+		AX = 0x8080;
+		BX = (ushort)(BX & 0x0001);
+		if (BX == 0) {
+			AX = 0x8388;
+			BX = Make16(0x08, Hi8(BX));
+		}
+		CX = (ushort)(CX | BX);
+		BX = Make16(Lo8(BX), (byte)(Hi8(BX) | 0x80));
+		goto RoutingWriteBack;
+
+	RoutingChooseSecondary1:
+		AX = 0x8181;
+		BX = (ushort)(BX & 0x0002);
+		if (BX == 0) {
+			AX = 0x8489;
+			BX = Make16(0x10, Hi8(BX));
+		}
+		CX = (ushort)(CX | BX);
+		BX = Make16(Lo8(BX), (byte)(Hi8(BX) | 0x80));
+		goto RoutingWriteBack;
+
+	RoutingChooseSecondary2:
+		AX = 0x8282;
+		BX = (ushort)(BX & 0x0004);
+		if (BX == 0) {
+			AX = 0x858A;
+			BX = Make16(0x20, Hi8(BX));
+		}
+		CX = (ushort)(CX | BX);
+		BX = Make16(Lo8(BX), (byte)(Hi8(BX) | 0x80));
+
+	RoutingWriteBack:
+
 		AdgWordSet((ushort)(DI + AdgChannelStateScratchOffset), BX);
 		AdgWordSet(AdgFadeScratchOffset, BP);
 		AdgWordSet(AdgFadeScratch2Offset, CX);
@@ -1386,6 +1539,7 @@ public partial class Overrides {
 		AdgIndexedByteSet(AdgChannelRouteShadowOffset, DX, Hi8(AX));
 		AdgIndexedByteSet(AdgChannelSecondaryOperatorRouteOffset, DX, Lo8(AX));
 	}
+#pragma warning restore S907
 
 	private void AdgProgramChange_0831(ushort eventWord) {
 		AdgReadWaitValue_0E7E();
@@ -1424,7 +1578,14 @@ public partial class Overrides {
 		byte patchType = SegByte(ES, SI);
 		AdgByteSet((ushort)(DI + AdgChannelPatchTypeOffset), patchType);
 		if (patchType == (byte)AdgImmediate.Four) {
-			throw FailAsUntested("ADG patch-type 4 program change path 564B:08BD is not yet observed.");
+			AX = Make16(SegByte(ES, (ushort)(SI + 0x32)), SegByte(ES, (ushort)(SI + 0x3F)));
+			BX = Make16(SegByte(ES, (ushort)(SI + 0x2A)), SegByte(ES, (ushort)(SI + 0x37)));
+			BX = (ushort)(BX & 0x0303);
+			BX = RotateRight16(BX, 2);
+			AX = (ushort)(AX | BX);
+			AdgWordSet((ushort)(DI + AdgChannelPatch4EnvShapingOffset), AX);
+			AdgWordSet((ushort)(DI + AdgChannelPatch4TlShapingOffset), SegWord(ES, (ushort)(SI + 0x46)));
+			AdgWordSet((ushort)(DI + AdgChannelPatch4VolumeModulationOffset), SegWord(ES, (ushort)(SI + 0x4E)));
 		}
 
 		AdgWriteInstrumentPatch_0F95(patchOffset, DX);
@@ -1474,7 +1635,52 @@ public partial class Overrides {
 
 		AdgWordSet((ushort)(DI + AdgChannelCurrentOperatorLevelOffset), operatorLevel);
 		if (AdgByte((ushort)(DI + AdgChannelPatchTypeOffset)) == (byte)AdgImmediate.Four) {
-			throw FailAsUntested("ADG patch-type 4 envelope path 564B:0CCB is not yet observed.");
+			BX = AdgWord((ushort)(DI + AdgChannelPatch4EnvShapingOffset));
+			CX = AdgWord((ushort)(DI + AdgChannelPatch4TlShapingOffset));
+
+			if (Lo8(CX) != 0) {
+				byte scale = inverseVelocity;
+				byte shaping = Lo8(CX);
+				if ((sbyte)scale < 0) {
+					shaping = (byte)(0 - shaping);
+					scale = directVelocity;
+				}
+				shaping = (byte)(0 - (byte)(shaping - (byte)AdgImmediate.Four));
+				scale = (byte)(scale >> shaping);
+				byte value = (byte)((Lo8(BX) & 0x3F) + scale);
+				if (value > 0x3F) {
+					value = 0x3F;
+				}
+				value = (byte)((Lo8(BX) & 0xC0) | value);
+				BX = Make16(value, Hi8(BX));
+				SI = BX;
+				byte route = AdgIndexedByte(AdgChannelPrimaryOperatorRouteOffset, channelIndex);
+				route = (byte)(route + 0x08);
+				AdgWriteRouteSelectedRegister_1101((byte)AdgOplRegister.KeyScaleAndOutput, value, route);
+				BX = SI;
+			}
+
+			if (Hi8(CX) != 0) {
+				byte scale = inverseVelocity;
+				byte shaping = Hi8(CX);
+				if ((sbyte)scale < 0) {
+					shaping = (byte)(0 - shaping);
+					scale = directVelocity;
+				}
+				byte shift = (byte)((byte)AdgImmediate.Four - shaping);
+				scale = (byte)(scale >> shift);
+				byte value = (byte)((Hi8(BX) & 0x3F) + scale);
+				if (value > 0x3F) {
+					value = 0x3F;
+				}
+				value = (byte)((Hi8(BX) & 0xC0) | value);
+				BX = Make16(Lo8(BX), value);
+				byte route = AdgIndexedByte(AdgChannelSecondaryOperatorRouteOffset, channelIndex);
+				route = (byte)(route + 0x08);
+				AdgWriteRouteSelectedRegister_1101((byte)AdgOplRegister.KeyScaleAndOutput, value, route);
+			}
+
+			AdgWordSet((ushort)(DI + AdgChannelPatch4CurrentOperatorLevelOffset), BX);
 		}
 
 		ushort connectionShape = AdgWord((ushort)(DI + AdgChannelConnectionShapingOffset));
@@ -1542,7 +1748,48 @@ public partial class Overrides {
 
 		AdgWordSet((ushort)(DI + AdgChannelCurrentOperatorLevelOffset), operatorLevel);
 		if (AdgByte((ushort)(DI + AdgChannelPatchTypeOffset)) == (byte)AdgImmediate.Four) {
-			throw FailAsUntested("ADG patch-type 4 volume modulation path 564B:0BA7 is not yet observed.");
+			BX = AdgWord((ushort)(DI + AdgChannelPatch4CurrentOperatorLevelOffset));
+			CX = AdgWord((ushort)(DI + AdgChannelPatch4VolumeModulationOffset));
+
+			if (Lo8(CX) != 0) {
+				byte scale = directVelocity;
+				byte shaping = Lo8(CX);
+				if ((sbyte)scale < 0) {
+					shaping = (byte)(0 - shaping);
+					scale = inverseVelocity;
+				}
+				shaping = (byte)(0 - (byte)(shaping - (byte)AdgImmediate.Four));
+				scale = (byte)(scale >> shaping);
+				byte value = (byte)(Lo8(BX) & 0x3F);
+				value = value >= scale ? (byte)(value - scale) : (byte)0;
+				value = (byte)((Lo8(BX) & 0xC0) | value);
+				BX = Make16(value, Hi8(BX));
+				SI = BX;
+				byte route = AdgIndexedByte(AdgChannelPrimaryOperatorRouteOffset, DX);
+				route = (byte)(route + 0x08);
+				AdgWriteRouteSelectedRegister_1101((byte)AdgOplRegister.KeyScaleAndOutput, value, route);
+				BX = SI;
+			}
+
+			if (Hi8(CX) != 0) {
+				byte scale = directVelocity;
+				byte shaping = Hi8(CX);
+				if ((sbyte)scale < 0) {
+					shaping = (byte)(0 - shaping);
+					scale = inverseVelocity;
+				}
+				byte shift = (byte)((byte)AdgImmediate.Four - shaping);
+				scale = (byte)(scale >> shift);
+				byte value = (byte)(Hi8(BX) & 0x3F);
+				value = value >= scale ? (byte)(value - scale) : (byte)0;
+				value = (byte)((Hi8(BX) & 0xC0) | value);
+				BX = Make16(Lo8(BX), value);
+				byte route = AdgIndexedByte(AdgChannelSecondaryOperatorRouteOffset, DX);
+				route = (byte)(route + 0x08);
+				AdgWriteRouteSelectedRegister_1101((byte)AdgOplRegister.KeyScaleAndOutput, value, route);
+			}
+
+			AdgWordSet((ushort)(DI + AdgChannelPatch4CurrentOperatorLevelOffset), BX);
 		}
 
 		ushort connectionModulation = AdgWord((ushort)(DI + AdgChannelConnectionModulationOffset));
