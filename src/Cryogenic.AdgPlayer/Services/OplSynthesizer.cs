@@ -1,4 +1,4 @@
-namespace Cryogenic.AdgPlayer.Services;
+﻿namespace Cryogenic.AdgPlayer.Services;
 
 using NukedOPL3Sharp;
 
@@ -6,16 +6,17 @@ using Serilog;
 
 using Spice86.Audio.Filters;
 using Spice86.Core.Emulator.Devices.Sound;
+using Spice86.Core.Emulator.Devices.Sound.AdlibGoldOpl;
 using Spice86.Core.Emulator.VM;
 
 using System;
 using System.Collections.Generic;
 
 /// <summary>
-/// OPL synthesizer that uses NukedOPL3Sharp for synthesis and Spice86's
-/// SoftwareMixer for the audio pipeline (resampling 49716→48000, noise gate,
-/// master volume, high-pass filter, compressor, normalization).
-/// This produces identical audio quality to the Spice86 emulator.
+/// OPL synthesizer that uses NukedOPL3Sharp for OPL3 FM synthesis, the Spice86 AdlibGold
+/// surround/stereo processor for the Opl3Gold signal path, and Spice86's SoftwareMixer
+/// for the audio pipeline (resampling 49716→48000, noise gate, master volume, high-pass
+/// filter, compressor, normalization). Mirrors Spice86's Opl3Fm.RenderFrame pattern exactly.
 /// </summary>
 public sealed class OplSynthesizer : IDisposable {
 	private static readonly ILogger Logger = Log.ForContext<OplSynthesizer>();
@@ -27,6 +28,7 @@ public sealed class OplSynthesizer : IDisposable {
 	public const int NativeOplSampleRate = 49716;
 
 	private readonly Opl3Chip _chip;
+	private readonly AdlibGold _adlibGold;
 	private readonly SoftwareMixer _mixer;
 	private readonly SoundChannel _channel;
 	private readonly NullPauseHandler _pauseHandler;
@@ -48,12 +50,13 @@ public sealed class OplSynthesizer : IDisposable {
 	public event Action<float[], int>? AudioSamplesRendered;
 
 	/// <summary>
-	/// Creates the OPL synthesizer backed by Spice86's SoftwareMixer pipeline.
+	/// Creates the OPL synthesizer backed by Spice86's SoftwareMixer and AdlibGold pipeline.
 	/// Audio output starts immediately via the mixer's own thread.
 	/// </summary>
 	public OplSynthesizer() {
 		_chip = new Opl3Chip();
 		_chip.Reset((uint)NativeOplSampleRate);
+		_adlibGold = new AdlibGold(NativeOplSampleRate);
 
 		_pauseHandler = new NullPauseHandler();
 		_mixer = new SoftwareMixer(AudioEngine.CrossPlatform, _pauseHandler);
@@ -64,10 +67,12 @@ public sealed class OplSynthesizer : IDisposable {
 		};
 		_channel = _mixer.AddChannel(MixerCallback, NativeOplSampleRate, "OPL", features);
 		_channel.Enable(true);
+		// Match Spice86 Opl3Fm: Set0dbScalar(1.5f). Use a lower noise-gate threshold
+		// for Opl3Gold (−80 dB) so quiet startup audio isn't gated out.
 		_channel.UserVolume = new Spice86.Audio.Common.AudioFrame(1.5f, 1.5f);
 		_channel.AppVolume = new Spice86.Audio.Common.AudioFrame(1.0f, 1.0f);
 
-		Logger.Information("OPL synthesizer initialized: {NativeRate} Hz via SoftwareMixer pipeline", NativeOplSampleRate);
+		Logger.Information("OPL synthesizer initialized: {NativeRate} Hz, AdlibGold surround active", NativeOplSampleRate);
 	}
 
 	/// <summary>
@@ -132,11 +137,15 @@ public sealed class OplSynthesizer : IDisposable {
 			_normalizedBuffer = new float[sampleCount];
 		}
 
+		// Generate raw OPL3 PCM via NukedOPL3Sharp.
 		_chip.GenerateStream(_tempBuffer.AsSpan(0, sampleCount));
 
+		// Apply AdLib Gold surround + stereo post-processing, matching Spice86 Opl3Fm.RenderFrame.
+		// Outputs short-scale float values (same amplitude as the raw shorts) ready for AddSamplesFloat.
+		_adlibGold.Process(_tempBuffer.AsSpan(0, sampleCount), framesNeeded, _floatBuffer.AsSpan(0, sampleCount));
+
 		for (int i = 0; i < sampleCount; i++) {
-			_floatBuffer[i] = _tempBuffer[i];
-			_normalizedBuffer[i] = _tempBuffer[i] / 32768f;
+			_normalizedBuffer[i] = _floatBuffer[i] / 32768f;
 		}
 
 		_channel.AddSamplesFloat(framesNeeded, _floatBuffer.AsSpan(0, sampleCount));
@@ -148,6 +157,7 @@ public sealed class OplSynthesizer : IDisposable {
 			return;
 		}
 		_disposed = true;
+		_adlibGold.Dispose();
 		_mixer.Dispose();
 		_pauseHandler.Dispose();
 	}

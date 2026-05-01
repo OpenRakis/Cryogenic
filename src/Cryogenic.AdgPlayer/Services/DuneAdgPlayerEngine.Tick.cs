@@ -381,7 +381,7 @@ public sealed partial class DuneAdgPlayerEngine {
 		if (scaleConnection > 0x0F) {
 			scaleConnection = (byte)((scaleConnection & 0x0F) | 0x0E);
 		}
-		scaleConnection = (byte)((scaleConnection & 0x0F) | (Hi8(connectionModulation) & 0x30));
+		scaleConnection = (byte)((scaleConnection & 0x0F) | (Hi8(connectionModulation) & 0x30) | 0x30);
 		_channelConnectionCurrent[ch] = scaleConnection;
 		WriteRelativeGoldRegister(0xC0, scaleConnection, unchecked((sbyte)_channelRoutingTable[ch]));
 	}
@@ -453,7 +453,7 @@ public sealed partial class DuneAdgPlayerEngine {
 		if (connectionScale > 0x0F) {
 			connectionScale = (byte)((connectionScale & 0x0F) | 0x0E);
 		}
-		connectionScale = (byte)((connectionScale & 0x0F) | (Hi8(connectionShape) & 0x30));
+		connectionScale = (byte)((connectionScale & 0x0F) | (Hi8(connectionShape) & 0x30) | 0x30);
 		_channelConnectionCurrent[ch] = connectionScale;
 		WriteRelativeGoldRegister(0xC0, connectionScale, unchecked((sbyte)_channelRoutingTable[ch]));
 	}
