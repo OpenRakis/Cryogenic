@@ -235,10 +235,12 @@ public partial class Overrides {
 	private const ushort AdgMeasureOffset = 0x0128;
 	private const ushort AdgSubdivisionOffset = 0x012A;
 	private const ushort AdgLoopCounterOffset = 0x012C;
+	private const ushort AdgOperationHandlerTableOffset = 0x012E;
 	private const ushort AdgFadeScratchOffset = 0x013E;
 	private const ushort AdgFadeScratch2Offset = 0x0140;
 	private const ushort AdgSurroundMaskOffset = 0x017E;
 	private const ushort AdgChannelTableBase = 0x01E2;
+	private const ushort AdgLoopSnapshotBase = 0x03B6;
 	private const ushort AdgChannelSourceOffsetsBase = 0x022A;
 	private const ushort AdgChannelInitWordsBase = 0x024E;
 	private const ushort AdgChannelInitWords2Base = 0x0296;
@@ -251,24 +253,47 @@ public partial class Overrides {
 	private const ushort AdgSongIdentityMagic2Offset = 0x0622;
 	private const ushort AdgSongIdentityMagic3Offset = 0x0624;
 	private const ushort AdgTickDividerOffset = 0x0127;
+	private const ushort AdgSongLoopStartMeasureOffset = 0x002A;
+	private const ushort AdgSongLoopEndMeasureOffset = 0x002C;
+	private const ushort AdgSongLoopRepeatCountOffset = 0x002E;
+	private const ushort AdgChannelPitchBendCounterOffset = 0x00B4;
+	private const ushort AdgChannelPitchAccumulatorOffset = 0x00D8;
 	private const ushort AdgAuxRegisterPortOffset1 = 0x0119;
 	private const ushort AdgAuxRegisterPortOffset2 = 0x011B;
 	private const ushort AdgVolumeHighNibbleWordMask = 0x0FF0;
 	private const ushort AdgChannelWaitValueEventPointerOffset = 0x0024;
 	private const ushort AdgChannelStateEventSourceOffset = 0x0048;
+	private const ushort AdgChannelInstrumentOffset = 0x006C;
+	private const ushort AdgChannelCurrentNoteOffset = 0x006D;
+	private const ushort AdgChannelPitchModeOffset = 0x0090;
+	private const ushort AdgChannelPitchTransposeOffset = 0x0091;
 	private const ushort AdgChannelStateScratchOffset = 0x021C;
+	private const ushort AdgChannelTlShapingOffset = 0x00FC;
+	private const ushort AdgChannelEnvShapingOffset = 0x0120;
+	private const ushort AdgChannelCurrentOperatorLevelOffset = 0x0144;
+	private const ushort AdgChannelConnectionShapingOffset = 0x0168;
+	private const ushort AdgChannelPrimaryOperatorRouteOffset = 0x01A3;
+	private const ushort AdgChannelConnectionModulationOffset = 0x01B0;
+	private const ushort AdgChannelConnectionCurrentOffset = 0x01B1;
+	private const ushort AdgChannelRouteShadowOffset = 0x0191;
+	private const ushort AdgChannelSecondaryOperatorRouteOffset = 0x01B5;
+	private const ushort AdgChannelVolumeModulationOffset = 0x018C;
+	private const ushort AdgChannelPatchTypeOffset = 0x02D0;
 	private const ushort AdgIdentityWordSecondPlaneOffset = 0x4000;
 	private const ushort AdgIdentityWordThirdPlaneOffset = 0x8000;
+	private const ushort AdgFrequencyLookupTableOffset = 0x0142;
+	private const ushort AdgPitchBendFractionsTableOffset = 0x01C7;
+	private const ushort AdgPortamentoFractionsTableOffset = 0x01D4;
 	private const ushort AdgDynamicsThresholdSlow = 0x0060;
 	private const ushort AdgDynamicsThresholdMedium = 0x00C0;
 	private const ushort AdgDynamicsThresholdFast = 0x0180;
 	private const ushort AdgDynamicsThresholdFastest = 0x0300;
 	private const ushort AdgDriverInitBxResult = 0x0F00;
-	private const ushort AdgOpenSongNearJumpOffset = 0x0626;
-	private const ushort AdgTickNearJumpOffset = 0x06F6;
 	private const byte AdgLastLogicalChannelIndex = 0x15;
 	private const byte AdgFadeHighNibbleIncrement = 0x10;
 	private const byte AdgFadeHighNibbleDecrement = 0x20;
+	private const ushort AdgLoopSnapshotWordCount = 0x0024;
+	private const int AdgObservedOperationHandlerCount = 8;
 	private const int AdgResetChannelCount = (byte)AdgImmediate.Eighteen;
 
 	/// <summary>
@@ -339,6 +364,77 @@ public partial class Overrides {
 	/// <remarks><code>mov word ptr [CS:offset], AX</code></remarks>
 	private void AdgWordSet(ushort offset, ushort value) {
 		SegWordSet(_adgSegment, offset, value);
+	}
+
+	private static ushort AdgChannelSlotOffset(ushort relativeOffset, ushort channelIndex) {
+		return (ushort)(AdgChannelTableBase + relativeOffset + (channelIndex << 1));
+	}
+
+	private byte AdgChannelByte(ushort relativeOffset, ushort channelIndex) {
+		return AdgByte(AdgChannelSlotOffset(relativeOffset, channelIndex));
+	}
+
+	private void AdgChannelByteSet(ushort relativeOffset, ushort channelIndex, byte value) {
+		AdgByteSet(AdgChannelSlotOffset(relativeOffset, channelIndex), value);
+	}
+
+	private ushort AdgChannelWord(ushort relativeOffset, ushort channelIndex) {
+		return AdgWord(AdgChannelSlotOffset(relativeOffset, channelIndex));
+	}
+
+	private void AdgChannelWordSet(ushort relativeOffset, ushort channelIndex, ushort value) {
+		AdgWordSet(AdgChannelSlotOffset(relativeOffset, channelIndex), value);
+	}
+
+	private byte AdgIndexedByte(ushort baseOffset, ushort channelIndex) {
+		return AdgByte((ushort)(baseOffset + channelIndex));
+	}
+
+	private void AdgIndexedByteSet(ushort baseOffset, ushort channelIndex, byte value) {
+		AdgByteSet((ushort)(baseOffset + channelIndex), value);
+	}
+
+	private ushort AdgIndexedWord(ushort baseOffset, ushort channelIndex) {
+		return AdgWord((ushort)(baseOffset + (channelIndex << 1)));
+	}
+
+	private void AdgIndexedWordSet(ushort baseOffset, ushort channelIndex, ushort value) {
+		AdgWordSet((ushort)(baseOffset + (channelIndex << 1)), value);
+	}
+
+	private void AdgWriteRouteSelectedRegister_1101(byte registerBase, byte registerValue, byte routeByte) {
+		sbyte route = unchecked((sbyte)routeByte);
+		AdgWriteRelativeGoldRegister(registerBase, registerValue, route);
+	}
+
+	private void AdgWriteChannelRegister_10ED(byte registerBase, byte registerValue, ushort channelIndex) {
+		byte routeByte = AdgIndexedByte(AdgChannelRoutingTableOffset, channelIndex);
+		AdgWriteRouteSelectedRegister_1101(registerBase, registerValue, routeByte);
+	}
+
+	private void AdgWriteFrequencyWord_10E0(ushort channelIndex, ushort frequencyWord) {
+		AdgWriteChannelRegister_10ED((byte)AdgOplRegister.FrequencyLow, Lo8(frequencyWord), channelIndex);
+		AdgWriteChannelRegister_10ED((byte)AdgOplRegister.FrequencyHigh, Hi8(frequencyWord), channelIndex);
+	}
+
+	private void AdgNoteOn_10A9(ushort channelIndex, ushort rawPitch) {
+		ushort noteWord = (ushort)(rawPitch + 0x0030);
+		if (noteWord >= 0x0060) {
+			noteWord = 0;
+		}
+
+		byte octave = (byte)(noteWord / (byte)AdgImmediate.Twelve);
+		byte semitone = (byte)(noteWord % (byte)AdgImmediate.Twelve);
+		ushort frequencyWord = AdgWord((ushort)(AdgFrequencyLookupTableOffset + (semitone << 1)));
+		frequencyWord = Make16(Lo8(frequencyWord), (byte)(Hi8(frequencyWord) | (octave << 2)));
+		AdgIndexedWordSet(AdgFrequencyWordTableOffset, channelIndex, frequencyWord);
+		frequencyWord = Make16(Lo8(frequencyWord), (byte)(Hi8(frequencyWord) | (byte)AdgImmediate.ThirtyTwo));
+		AdgWriteFrequencyWord_10E0(channelIndex, frequencyWord);
+	}
+
+	private void AdgNoteOff_10D8(ushort channelIndex) {
+		ushort frequencyWord = AdgIndexedWord(AdgFrequencyWordTableOffset, channelIndex);
+		AdgWriteFrequencyWord_10E0(channelIndex, frequencyWord);
 	}
 
 	/// <summary>
@@ -858,6 +954,53 @@ public partial class Overrides {
 	}
 
 	/// <summary>
+	/// Resets only the runtime scheduler state while reusing the current channel source table.
+	/// Observed from live execution at 564B:06B9.
+	/// </summary>
+	/// <remarks>
+	/// <code>
+	/// dnadg:06B9  mov [0128],1
+	/// dnadg:06BF  mov [012A],0x60
+	/// dnadg:06C5  mov CX,0x12
+	/// dnadg:06C8  mov DI,0x01E2
+	/// dnadg:06CB  mov SI,[DI+0x48]
+	/// dnadg:06CE  mov [DI+0x24],SI
+	/// dnadg:06D1  mov [DI],0xFFFF
+	/// dnadg:06D5  mov [DI+0x021C],0
+	/// dnadg:06DB  or SI,SI
+	/// dnadg:06DF  mov AX,CX / call 0E7E / inc word ptr [DI]
+	/// dnadg:06E8  add DI,2 / loop 06CB
+	/// dnadg:06ED  xor AX,AX
+	/// dnadg:06EF  mov [013E],AX
+	/// dnadg:06F2  mov [0140],AX
+	/// </code>
+	/// </remarks>
+	private void AdgResetSchedulerState_06B9() {
+		AdgWordSet(AdgMeasureOffset, 1);
+		AdgWordSet(AdgSubdivisionOffset, (byte)AdgImmediate.NinetySix);
+		CX = (byte)AdgImmediate.Eighteen;
+		DI = AdgChannelTableBase;
+		while (CX != 0) {
+			SI = AdgWord((ushort)(DI + AdgChannelStateEventSourceOffset));
+			AdgWordSet((ushort)(DI + AdgChannelWaitValueEventPointerOffset), SI);
+			AdgWordSet(DI, ushort.MaxValue);
+			AdgWordSet((ushort)(DI + AdgChannelStateScratchOffset), 0);
+			if (SI != 0) {
+				AX = CX;
+				AdgReadWaitValue_0E7E();
+				AdgWordSet(DI, (ushort)(AdgWord(DI) + 1));
+				CX = AX;
+			}
+			DI = (ushort)(DI + 2);
+			CX--;
+		}
+
+		AX = 0;
+		AdgWordSet(AdgFadeScratchOffset, AX);
+		AdgWordSet(AdgFadeScratch2Offset, AX);
+	}
+
+	/// <summary>
 	/// Executes one fade-step iteration for dynamics transitions.
 	/// Observed from live execution at 564B:0ECC.
 	/// </summary>
@@ -967,6 +1110,769 @@ public partial class Overrides {
 		return word0 == AdgWord(AdgSongIdentityMagic1Offset)
 			&& word1 == AdgWord(AdgSongIdentityMagic2Offset)
 			&& word2 == AdgWord(AdgSongIdentityMagic3Offset);
+	}
+
+	/// <summary>
+	/// Checks and applies ADG loop snapshot save/restore transitions.
+	/// Observed from live execution at 564B:07DA.
+	/// </summary>
+	/// <remarks>
+	/// <code>
+	/// dnadg:07DA  cmp [012C],0
+	/// dnadg:07DF  jne short 080C
+	/// dnadg:07E1  mov AX,ES:[BX+2A]
+	/// dnadg:07E5  cmp AX,[0128]
+	/// dnadg:07E9  jne short 080B
+	/// dnadg:07EB  cmp [012A],0x60
+	/// dnadg:07F0  jne short 080B
+	/// dnadg:07F2  push DI / push ES
+	/// dnadg:07F4  mov SI,DI
+	/// dnadg:07F6  add DI,0x01D4
+	/// dnadg:07FA  push DS / pop ES
+	/// dnadg:07FC  mov CX,0x24
+	/// dnadg:07FF  rep movs word ptr ES:[DI],word ptr DS:[SI]
+	/// dnadg:0803  mov AX,ES:[BX+2E]
+	/// dnadg:0807  dec AX
+	/// dnadg:0808  mov [012C],AX
+	/// dnadg:080B  ret near
+	/// dnadg:080C  mov AX,ES:[BX+2C]
+	/// dnadg:0810  cmp AX,[0128]
+	/// dnadg:0814  jne short 080B
+	/// dnadg:0816  dec [012C]
+	/// dnadg:081A  push DI / push ES
+	/// dnadg:081C  lea SI,[DI+0x01D4]
+	/// dnadg:0820  push DS / pop ES
+	/// dnadg:0822  mov CX,0x24
+	/// dnadg:0825  rep movs word ptr ES:[DI],word ptr DS:[SI]
+	/// dnadg:0829  mov AX,ES:[BX+2A]
+	/// dnadg:082D  mov [0128],AX
+	/// dnadg:0830  ret near
+	/// </code>
+	/// </remarks>
+	private void AdgCheckLoopPoint_07DA() {
+		if (AdgWord(AdgLoopCounterOffset) == 0) {
+			AX = SegWord(ES, (ushort)(BX + AdgSongLoopStartMeasureOffset));
+			if (AX != AdgWord(AdgMeasureOffset)) {
+				return;
+			}
+
+			if (AdgWord(AdgSubdivisionOffset) != (byte)AdgImmediate.NinetySix) {
+				return;
+			}
+
+			ushort savedDi = DI;
+			ushort savedEs = ES;
+			SI = DI;
+			DI = (ushort)(DI + AdgLoopSnapshotBase);
+			ES = _adgSegment;
+			CX = AdgLoopSnapshotWordCount;
+			while (CX != 0) {
+				ushort value = SegWord(_adgSegment, SI);
+				SegWordSet(ES, DI, value);
+				SI = (ushort)(SI + 2);
+				DI = (ushort)(DI + 2);
+				CX--;
+			}
+			ES = savedEs;
+			DI = savedDi;
+
+			AX = SegWord(ES, (ushort)(BX + AdgSongLoopRepeatCountOffset));
+			AX--;
+			AdgWordSet(AdgLoopCounterOffset, AX);
+			return;
+		}
+
+		AX = SegWord(ES, (ushort)(BX + AdgSongLoopEndMeasureOffset));
+		if (AX != AdgWord(AdgMeasureOffset)) {
+			return;
+		}
+
+		AdgWordSet(AdgLoopCounterOffset, (ushort)(AdgWord(AdgLoopCounterOffset) - 1));
+		ushort restoredDi = DI;
+		ushort restoredEs = ES;
+		SI = (ushort)(DI + AdgLoopSnapshotBase);
+		ES = _adgSegment;
+		CX = AdgLoopSnapshotWordCount;
+		while (CX != 0) {
+			ushort value = SegWord(_adgSegment, SI);
+			SegWordSet(ES, DI, value);
+			SI = (ushort)(SI + 2);
+			DI = (ushort)(DI + 2);
+			CX--;
+		}
+		ES = restoredEs;
+		DI = restoredDi;
+		AX = SegWord(ES, (ushort)(BX + AdgSongLoopStartMeasureOffset));
+		AdgWordSet(AdgMeasureOffset, AX);
+	}
+
+	/// <summary>
+	/// Observed scheduler-side vibrato path from 564B:07AD.
+	/// </summary>
+	/// <remarks>
+	/// <code>
+	/// dnadg:07AD  cmp byte ptr [DI+0x00B4],0
+	/// dnadg:07B2  je short 0798
+	/// dnadg:07B4  mov SI,[DI+0x24]
+	/// dnadg:07B7  or SI,SI
+	/// dnadg:07B9  je short 0798
+	/// dnadg:07BD  dec byte ptr [DI+0x00B4]
+	/// dnadg:07C1  mov AX,[DI+0x00D8]
+	/// dnadg:07C5  add AL,AH
+	/// dnadg:07C7  mov byte ptr [DI+0x00D8],AL
+	/// dnadg:07CB  mov DX,DI
+	/// dnadg:07CD  sub DX,0x01E2
+	/// dnadg:07D1  shr DX,1
+	/// dnadg:07D3  call 0D8B
+	/// </code>
+	/// </remarks>
+	private void AdgAdvancePitchModulation_07AD() {
+		if (AdgByte((ushort)(DI + AdgChannelPitchBendCounterOffset)) == 0) {
+			return;
+		}
+
+		SI = AdgWord((ushort)(DI + AdgChannelWaitValueEventPointerOffset));
+		if (SI == 0) {
+			return;
+		}
+
+		AdgByteSet(
+			(ushort)(DI + AdgChannelPitchBendCounterOffset),
+			(byte)(AdgByte((ushort)(DI + AdgChannelPitchBendCounterOffset)) - 1));
+
+		AX = AdgWord((ushort)(DI + AdgChannelPitchAccumulatorOffset));
+		AX = Make16((byte)(Lo8(AX) + Hi8(AX)), Hi8(AX));
+		AdgByteSet((ushort)(DI + AdgChannelPitchAccumulatorOffset), Lo8(AX));
+
+		DX = (ushort)(DI - AdgChannelTableBase);
+		DX = (ushort)(DX >> 1);
+		AdgPitchBendBody_0D8B(AX);
+	}
+
+	private void AdgClearScratchMask_0ACD() {
+		if (AdgWord(DI) < 0x0030) {
+			return;
+		}
+
+		byte nextEventByte = SegByte(ES, SI);
+		if (nextEventByte != (byte)AdgImmediate.TwoFiftyFive && (nextEventByte & (byte)AdgImmediate.F0Mask) != 0xC0) {
+			return;
+		}
+
+		ushort previousScratch = AdgWord((ushort)(DI + AdgChannelStateScratchOffset));
+		AdgWordSet((ushort)(DI + AdgChannelStateScratchOffset), 0);
+		ushort scratchMask = (ushort)~previousScratch;
+		if ((scratchMask & 0x8000) == 0) {
+			AdgWordSet(AdgFadeScratch2Offset, (ushort)(AdgWord(AdgFadeScratch2Offset) & scratchMask));
+			return;
+		}
+
+		AdgWordSet(AdgFadeScratchOffset, (ushort)(AdgWord(AdgFadeScratchOffset) & scratchMask));
+	}
+
+	private void AdgWriteInstrumentOperator_102C(byte routeByte, ushort patchOffset, byte waveform) {
+		AdgWriteRouteSelectedRegister_1101((byte)AdgOplRegister.Opl3Mode + 0xDB, (byte)(waveform & 0x07), routeByte);
+
+		byte tlValue = (byte)((Make16(SegByte(ES, (ushort)(patchOffset + 0x02)), (byte)(SegByte(ES, (ushort)(patchOffset + 0x0A)) << 2)) >> 2) & 0xFF);
+		AdgWriteRouteSelectedRegister_1101((byte)AdgOplRegister.KeyScaleAndOutput, tlValue, routeByte);
+
+		ushort attackDecay = (ushort)(Make16((byte)(SegByte(ES, (ushort)(patchOffset + 0x08)) << 4), SegByte(ES, (ushort)(patchOffset + 0x05))) << 4);
+		AdgWriteRouteSelectedRegister_1101((byte)AdgOplRegister.AttackDecay, Hi8(attackDecay), routeByte);
+
+		ushort sustainRelease = (ushort)(Make16((byte)(SegByte(ES, (ushort)(patchOffset + 0x09)) << 4), SegByte(ES, (ushort)(patchOffset + 0x06))) << 4);
+		AdgWriteRouteSelectedRegister_1101((byte)AdgOplRegister.SustainRelease, Hi8(sustainRelease), routeByte);
+
+		ushort opFlags = 0;
+		opFlags = RotateRight16(Make16(SegByte(ES, (ushort)(patchOffset + 0x0B)), Hi8(opFlags)), 1);
+		opFlags = RotateRight16(Make16(SegByte(ES, (ushort)(patchOffset + 0x05)), Hi8(opFlags)), 1);
+		opFlags = RotateRight16(Make16(SegByte(ES, (ushort)(patchOffset + 0x0A)), Hi8(opFlags)), 1);
+		opFlags = RotateRight16(Make16(SegByte(ES, (ushort)(patchOffset + 0x09)), Hi8(opFlags)), 1);
+		opFlags = Make16(SegByte(ES, (ushort)(patchOffset + 0x01)), Hi8(opFlags));
+		opFlags = (ushort)(opFlags & 0xF00F);
+		AdgWriteRouteSelectedRegister_1101(0x20, (byte)(Hi8(opFlags) | Lo8(opFlags)), routeByte);
+	}
+
+	private void AdgWriteInstrumentPatch_0F95(ushort patchOffset, ushort channelIndex) {
+		byte channelRoute = AdgIndexedByte(AdgChannelRoutingTableOffset, channelIndex);
+		byte primaryRoute = AdgIndexedByte(AdgChannelPrimaryOperatorRouteOffset, channelIndex);
+		byte secondaryRoute = AdgIndexedByte(AdgChannelSecondaryOperatorRouteOffset, channelIndex);
+
+		ushort connectionValue = Make16(SegByte(ES, (ushort)(patchOffset + 0x0F)), SegByte(ES, (ushort)(patchOffset + 0x1A)));
+		connectionValue = (ushort)(connectionValue >> 1);
+		connectionValue = Make16((byte)~Lo8(connectionValue), SegByte(ES, (ushort)(patchOffset + 0x04)));
+		connectionValue = (ushort)(connectionValue << 1);
+		byte connectionByte = (byte)(Hi8(connectionValue) & 0x0F);
+		AdgWriteRouteSelectedRegister_1101((byte)AdgOplRegister.FeedbackConnection, connectionByte, channelRoute);
+
+		AdgWriteInstrumentOperator_102C(primaryRoute, patchOffset, SegByte(ES, (ushort)(patchOffset + 0x1C)));
+		AdgWriteInstrumentOperator_102C(secondaryRoute, (ushort)(patchOffset + 0x0D), SegByte(ES, (ushort)(patchOffset + 0x1D)));
+
+		if ((secondaryRoute & 0x10) != 0) {
+			return;
+		}
+
+		byte surroundIndex = (byte)(secondaryRoute & 0x03);
+		if (unchecked((sbyte)secondaryRoute) < 0) {
+			surroundIndex = (byte)(surroundIndex + 3);
+		}
+		byte surroundMask = (byte)(1 << surroundIndex);
+		if (SegByte(ES, patchOffset) == (byte)AdgImmediate.Four) {
+			return;
+		}
+
+		surroundMask = (byte)~surroundMask;
+		surroundMask = (byte)(surroundMask & AdgByte(AdgSurroundMaskOffset));
+		AdgByteSet(AdgSurroundMaskOffset, surroundMask);
+		AdgWriteSecondaryRegisterDirect((byte)AdgOplRegister.SecondaryControl, surroundMask);
+	}
+
+	private void AdgConfigureInstrumentRouting_090D() {
+		BP = AdgWord(AdgFadeScratchOffset);
+		CX = AdgWord(AdgFadeScratch2Offset);
+		AX = (ushort)~AdgWord((ushort)(DI + AdgChannelStateScratchOffset));
+		if ((AX & 0x8000) == 0) {
+			CX = (ushort)(CX & AX);
+		} else {
+			BP = (ushort)(BP & AX);
+		}
+
+		byte patchType = SegByte(ES, SI);
+		if (patchType == (byte)AdgImmediate.Four) {
+			throw FailAsUntested("ADG patch-type 4 routing path 564B:092A is not yet observed.");
+		}
+
+		BX = (ushort)(~BP & 0x01C0);
+		if (BX != 0) {
+			BX = (ushort)(BX >> 4);
+			AX = AdgWord((ushort)(0x08ED + BX));
+			BX = AdgWord((ushort)(0x08EF + BX));
+			BP = (ushort)(BP | BX);
+		} else {
+			BX = (ushort)~CX;
+			if ((BX & 0x01C0) == 0) {
+				byte bh = (byte)(((Lo8(BX) >> 3) ^ Lo8(BX)) & 0x07);
+				if (bh != 0) {
+					throw FailAsUntested("ADG complex routing resolver 564B:0A2E requires more live evidence.");
+				}
+
+				AX = BP;
+				byte folded = (byte)((Lo8(AX) ^ (Lo8(AX) >> 3)) & 0x07);
+				if (folded != 0) {
+					throw FailAsUntested("ADG alternate routing resolver 564B:0A38 is not yet observed.");
+				}
+
+				BX = (ushort)(BX & 0x003F);
+				if (BX == 0) {
+					throw FailAsUntested("ADG zero-mask routing resolver 564B:09EC is not yet observed.");
+				}
+
+				throw FailAsUntested("ADG sparse routing resolver 564B:0A46 requires more live evidence.");
+			}
+
+			BX = (ushort)((BX & 0x01C0) >> 4);
+			AX = AdgWord((ushort)(0x08ED + BX));
+			BX = AdgWord((ushort)(0x08EF + BX));
+			AX = (ushort)(AX | 0x8080);
+			CX = (ushort)(CX | BX);
+			BX = Make16(Lo8(BX), (byte)(Hi8(BX) | 0x80));
+		}
+
+		AdgWordSet((ushort)(DI + AdgChannelStateScratchOffset), BX);
+		AdgWordSet(AdgFadeScratchOffset, BP);
+		AdgWordSet(AdgFadeScratch2Offset, CX);
+		AdgIndexedByteSet(AdgChannelRoutingTableOffset, DX, Hi8(AX));
+		AdgIndexedByteSet(AdgChannelPrimaryOperatorRouteOffset, DX, Lo8(AX));
+		AX = (ushort)(AX + 0x0303);
+		AdgIndexedByteSet(AdgChannelRouteShadowOffset, DX, Hi8(AX));
+		AdgIndexedByteSet(AdgChannelSecondaryOperatorRouteOffset, DX, Lo8(AX));
+	}
+
+	private void AdgProgramChange_0831(ushort eventWord) {
+		AdgReadWaitValue_0E7E();
+		byte instrumentIndex = Hi8(eventWord);
+		AdgByteSet((ushort)(DI + AdgChannelInstrumentOffset), instrumentIndex);
+		ushort patchOffset = (ushort)(AdgWord(AdgEventPointerOffset) + instrumentIndex * 0x28);
+		SI = patchOffset;
+		ES = AdgWord(AdgEventSegmentOffset);
+
+		AdgConfigureInstrumentRouting_090D();
+		AdgWordSet((ushort)(DI + AdgChannelPitchModeOffset), SegWord(ES, (ushort)(SI + 0x21)));
+
+		AX = Make16(SegByte(ES, (ushort)(SI + 0x0A)), SegByte(ES, (ushort)(SI + 0x17)));
+		BX = Make16(SegByte(ES, (ushort)(SI + 0x0F)), SegByte(ES, (ushort)(SI + 0x02)));
+		BX = (ushort)(BX & 0x0303);
+		BX = RotateRight16(BX, 2);
+		AX = (ushort)(AX | BX);
+		AdgWordSet((ushort)(DI + AdgChannelEnvShapingOffset), AX);
+		AdgWordSet((ushort)(DI + AdgChannelTlShapingOffset), SegWord(ES, (ushort)(SI + 0x1E)));
+		AdgWordSet((ushort)(DI + AdgChannelVolumeModulationOffset), SegWord(ES, (ushort)(SI + 0x26)));
+
+		AX = Make16((byte)~SegByte(ES, (ushort)(SI + 0x0E)), SegByte(ES, (ushort)(SI + 0x04)));
+		AX = RotateRight16(AX, 1);
+		AX = (ushort)(AX << 1);
+		AX = Make16(SegByte(ES, (ushort)(SI + 0x20)), Hi8(AX));
+		AdgWordSet((ushort)(DI + AdgChannelConnectionShapingOffset), AX);
+
+		AX = Make16(SegByte(ES, (ushort)(SI + 0x1B)), Hi8(AX));
+		AdgWordSet((ushort)(DI + AdgChannelConnectionModulationOffset), AX);
+
+		AX = SegWord(ES, (ushort)(SI + 0x23));
+		AdgByteSet((ushort)(DI + AdgChannelPitchAccumulatorOffset + 1), Hi8(AX));
+		AX = Make16(0, Lo8(AX));
+		AdgWordSet((ushort)(DI + AdgChannelPitchBendCounterOffset), AX);
+
+		byte patchType = SegByte(ES, SI);
+		AdgByteSet((ushort)(DI + AdgChannelPatchTypeOffset), patchType);
+		if (patchType == (byte)AdgImmediate.Four) {
+			throw FailAsUntested("ADG patch-type 4 program change path 564B:08BD is not yet observed.");
+		}
+
+		AdgWriteInstrumentPatch_0F95(patchOffset, DX);
+	}
+
+	private void AdgEnvelopeSetup_0C47(byte velocity, ushort channelIndex) {
+		byte directVelocity = velocity;
+		byte inverseVelocity = (byte)(0x80 - velocity);
+		ushort operatorLevel = AdgWord((ushort)(DI + AdgChannelCurrentOperatorLevelOffset));
+		ushort tlShaping = AdgWord((ushort)(DI + AdgChannelTlShapingOffset));
+
+		if (Lo8(tlShaping) != 0) {
+			byte shaping = Lo8(tlShaping);
+			byte scale = inverseVelocity;
+			if ((shaping & (byte)AdgImmediate.OneTwentyEight) != 0) {
+				shaping = (byte)(0 - shaping);
+				scale = directVelocity;
+			}
+			shaping = (byte)(0 - (byte)(shaping - (byte)AdgImmediate.Four));
+			scale = (byte)(scale >> shaping);
+			byte value = (byte)((Lo8(operatorLevel) & 0x3F) + scale);
+			if (value > 0x3F) {
+				value = 0x3F;
+			}
+			value = (byte)((Lo8(operatorLevel) & 0xC0) | value);
+			operatorLevel = Make16(value, Hi8(operatorLevel));
+			AdgWriteRouteSelectedRegister_1101((byte)AdgOplRegister.KeyScaleAndOutput, value, AdgIndexedByte(AdgChannelPrimaryOperatorRouteOffset, channelIndex));
+		}
+
+		if (Hi8(tlShaping) != 0) {
+			byte shaping = Hi8(tlShaping);
+			byte scale = inverseVelocity;
+			if ((shaping & (byte)AdgImmediate.OneTwentyEight) != 0) {
+				shaping = (byte)(0 - shaping);
+				scale = directVelocity;
+			}
+			byte shift = (byte)((byte)AdgImmediate.Four - shaping);
+			scale = (byte)(scale >> shift);
+			byte value = (byte)((Hi8(operatorLevel) & 0x3F) + scale);
+			if (value > 0x3F) {
+				value = 0x3F;
+			}
+			value = (byte)((Hi8(operatorLevel) & 0xC0) | value);
+			operatorLevel = Make16(Lo8(operatorLevel), value);
+			AdgWriteRouteSelectedRegister_1101((byte)AdgOplRegister.KeyScaleAndOutput, value, AdgIndexedByte(AdgChannelSecondaryOperatorRouteOffset, channelIndex));
+		}
+
+		AdgWordSet((ushort)(DI + AdgChannelCurrentOperatorLevelOffset), operatorLevel);
+		if (AdgByte((ushort)(DI + AdgChannelPatchTypeOffset)) == (byte)AdgImmediate.Four) {
+			throw FailAsUntested("ADG patch-type 4 envelope path 564B:0CCB is not yet observed.");
+		}
+
+		ushort connectionShape = AdgWord((ushort)(DI + AdgChannelConnectionShapingOffset));
+		if (Lo8(connectionShape) == 0) {
+			AdgByteSet((ushort)(DI + AdgChannelConnectionCurrentOffset), Hi8(connectionShape));
+			return;
+		}
+
+		byte connectionScaleMode = Lo8(connectionShape);
+		byte connectionScale = inverseVelocity;
+		if ((connectionScaleMode & (byte)AdgImmediate.OneTwentyEight) != 0) {
+			connectionScaleMode = (byte)(0 - connectionScaleMode);
+			connectionScale = directVelocity;
+		}
+		connectionScaleMode = (byte)(0 - (byte)(connectionScaleMode - (byte)AdgImmediate.Six));
+		connectionScale = (byte)(connectionScale >> connectionScaleMode);
+		connectionScale = (byte)(connectionScale & 0xFE);
+		connectionScale = (byte)(connectionScale + Hi8(connectionShape));
+		if (connectionScale > 0x0F) {
+			connectionScale = (byte)((connectionScale & 0x0F) | 0x0E);
+		}
+		connectionScale = (byte)((connectionScale & 0x0F) | (Hi8(connectionShape) & 0x30));
+		AdgByteSet((ushort)(DI + AdgChannelConnectionCurrentOffset), connectionScale);
+		AdgWriteChannelRegister_10ED((byte)AdgOplRegister.FeedbackConnection, connectionScale, channelIndex);
+	}
+
+	private void AdgVolumeModulation_0B2E(ushort eventWord) {
+		AdgReadWaitValue_0E7E();
+		byte directVelocity = Hi8(eventWord);
+		byte inverseVelocity = (byte)(0x80 - directVelocity);
+		ushort operatorLevel = AdgWord((ushort)(DI + AdgChannelCurrentOperatorLevelOffset));
+		ushort volumeShape = AdgWord((ushort)(DI + AdgChannelVolumeModulationOffset));
+
+		if (Lo8(volumeShape) != 0) {
+			byte shaping = Lo8(volumeShape);
+			byte scale = directVelocity;
+			if ((shaping & (byte)AdgImmediate.OneTwentyEight) != 0) {
+				shaping = (byte)(0 - shaping);
+				scale = inverseVelocity;
+			}
+			shaping = (byte)(0 - (byte)(shaping - (byte)AdgImmediate.Four));
+			scale = (byte)(scale >> shaping);
+			byte value = (byte)(Lo8(operatorLevel) & 0x3F);
+			value = value >= scale ? (byte)(value - scale) : (byte)0;
+			value = (byte)((Lo8(operatorLevel) & 0xC0) | value);
+			operatorLevel = Make16(value, Hi8(operatorLevel));
+			AdgWriteRouteSelectedRegister_1101((byte)AdgOplRegister.KeyScaleAndOutput, value, AdgIndexedByte(AdgChannelPrimaryOperatorRouteOffset, DX));
+		}
+
+		if (Hi8(volumeShape) != 0) {
+			byte shaping = Hi8(volumeShape);
+			byte scale = directVelocity;
+			if ((shaping & (byte)AdgImmediate.OneTwentyEight) != 0) {
+				shaping = (byte)(0 - shaping);
+				scale = inverseVelocity;
+			}
+			byte shift = (byte)((byte)AdgImmediate.Four - shaping);
+			scale = (byte)(scale >> shift);
+			byte value = (byte)(Hi8(operatorLevel) & 0x3F);
+			value = value >= scale ? (byte)(value - scale) : (byte)0;
+			value = (byte)((Hi8(operatorLevel) & 0xC0) | value);
+			operatorLevel = Make16(Lo8(operatorLevel), value);
+			AdgWriteRouteSelectedRegister_1101((byte)AdgOplRegister.KeyScaleAndOutput, value, AdgIndexedByte(AdgChannelSecondaryOperatorRouteOffset, DX));
+		}
+
+		AdgWordSet((ushort)(DI + AdgChannelCurrentOperatorLevelOffset), operatorLevel);
+		if (AdgByte((ushort)(DI + AdgChannelPatchTypeOffset)) == (byte)AdgImmediate.Four) {
+			throw FailAsUntested("ADG patch-type 4 volume modulation path 564B:0BA7 is not yet observed.");
+		}
+
+		ushort connectionModulation = AdgWord((ushort)(DI + AdgChannelConnectionModulationOffset));
+		if (Lo8(connectionModulation) == 0) {
+			return;
+		}
+
+		byte shapingMode = Lo8(connectionModulation);
+		byte scaleConnection = directVelocity;
+		if ((shapingMode & (byte)AdgImmediate.OneTwentyEight) != 0) {
+			shapingMode = (byte)(0 - shapingMode);
+			scaleConnection = inverseVelocity;
+		}
+		shapingMode = (byte)(0 - (byte)(shapingMode - (byte)AdgImmediate.Six));
+		scaleConnection = (byte)(scaleConnection >> shapingMode);
+		scaleConnection = (byte)(scaleConnection & 0xFE);
+		scaleConnection = (byte)(scaleConnection + Hi8(connectionModulation));
+		if (scaleConnection > 0x0F) {
+			scaleConnection = (byte)((scaleConnection & 0x0F) | 0x0E);
+		}
+		scaleConnection = (byte)((scaleConnection & 0x0F) | (Hi8(connectionModulation) & 0x30));
+		AdgByteSet((ushort)(DI + AdgChannelConnectionCurrentOffset), scaleConnection);
+		AdgWriteChannelRegister_10ED((byte)AdgOplRegister.FeedbackConnection, scaleConnection, DX);
+	}
+
+	private void AdgPitchBendBody_0D8B(ushort input) {
+		byte note = AdgByte((ushort)(DI + AdgChannelCurrentNoteOffset));
+		if (note == 0) {
+			return;
+		}
+
+		ushort ax = Make16(Lo8(input), 0);
+		ushort cx = Make16(note, 0);
+		ushort temp = cx;
+		cx = ax;
+		ax = temp;
+
+		byte quotient = (byte)((Lo8(ax) - 0x18) / (byte)AdgImmediate.Twelve);
+		byte remainder = (byte)((Lo8(ax) - 0x18) % (byte)AdgImmediate.Twelve);
+		cx = Make16(quotient, remainder);
+		temp = cx;
+		cx = ax;
+		ax = temp;
+
+		byte octave = Lo8(cx);
+		byte semitone = Hi8(cx);
+		if (AdgByte((ushort)(DI + AdgChannelPitchModeOffset)) == 0) {
+			bool negative = ax < 0x0040;
+			ax = (ushort)(ax - 0x0040);
+			if (negative) {
+				ax = (ushort)(0 - ax);
+				ax = RotateRight16(ax, 5);
+				byte delta = Lo8(ax);
+				if (semitone >= delta) {
+					semitone = (byte)(semitone - delta);
+				} else {
+					semitone = (byte)(semitone + (byte)AdgImmediate.Twelve - delta);
+					octave = (byte)(octave - 1);
+					if ((octave & (byte)AdgImmediate.OneTwentyEight) != 0) {
+						octave = 0;
+						semitone = 0;
+					}
+				}
+
+				byte fraction = AdgByte((ushort)(AdgPitchBendFractionsTableOffset + semitone));
+				ushort mul = (ushort)(fraction * Hi8(ax));
+				byte adjustment = Hi8(mul);
+				ushort frequency = AdgWord((ushort)(AdgFrequencyLookupTableOffset + (semitone << 1)));
+				int result = Lo8(frequency) - adjustment;
+				ax = Make16((byte)result, (byte)(Hi8(frequency) - (result < 0 ? 1 : 0)));
+			} else {
+				ax = (ushort)(ax + 1);
+				ax = RotateRight16(ax, 5);
+				byte delta = Lo8(ax);
+				semitone = (byte)(semitone + delta);
+				if (semitone >= (byte)AdgImmediate.Twelve) {
+					semitone = (byte)(semitone - (byte)AdgImmediate.Twelve);
+					octave = (byte)(octave + 1);
+				}
+
+				byte fraction = AdgByte((ushort)(AdgPitchBendFractionsTableOffset + semitone + 1));
+				ushort mul = (ushort)(fraction * Hi8(ax));
+				byte adjustment = Hi8(mul);
+				ushort frequency = AdgWord((ushort)(AdgFrequencyLookupTableOffset + (semitone << 1)));
+				int result = Lo8(frequency) + adjustment;
+				ax = Make16((byte)result, (byte)(Hi8(frequency) + (result > 0xFF ? 1 : 0)));
+			}
+		} else {
+			bool negative = ax < 0x0040;
+			ax = (ushort)(ax - 0x0040);
+			if (negative) {
+				ax = (ushort)(0 - ax);
+				byte delta = (byte)(ax / 5);
+				byte remainderPort = (byte)(ax % 5);
+				if (semitone >= delta) {
+					semitone = (byte)(semitone - delta);
+				} else {
+					semitone = (byte)(semitone + (byte)AdgImmediate.Twelve - delta);
+					octave = (byte)(octave - 1);
+					if ((octave & (byte)AdgImmediate.OneTwentyEight) != 0) {
+						octave = 0;
+						semitone = 0;
+					}
+				}
+
+				ushort tableBase = (ushort)(AdgPortamentoFractionsTableOffset + (semitone >= 6 ? 5 : 0));
+				byte adjustment = AdgByte((ushort)(tableBase + remainderPort));
+				ushort frequency = AdgWord((ushort)(AdgFrequencyLookupTableOffset + (semitone << 1)));
+				int result = Lo8(frequency) - adjustment;
+				ax = Make16((byte)result, (byte)(Hi8(frequency) - (result < 0 ? 1 : 0)));
+			} else {
+				byte delta = (byte)(ax / 5);
+				byte remainderPort = (byte)(ax % 5);
+				semitone = (byte)(semitone + delta);
+				if (semitone >= (byte)AdgImmediate.Twelve) {
+					semitone = (byte)(semitone - (byte)AdgImmediate.Twelve);
+					octave = (byte)(octave + 1);
+				}
+
+				ushort tableBase = (ushort)(AdgPortamentoFractionsTableOffset + (semitone >= 6 ? 5 : 0));
+				byte adjustment = AdgByte((ushort)(tableBase + remainderPort));
+				ushort frequency = AdgWord((ushort)(AdgFrequencyLookupTableOffset + (semitone << 1)));
+				int result = Lo8(frequency) + adjustment;
+				ax = Make16((byte)result, (byte)(Hi8(frequency) + (result > 0xFF ? 1 : 0)));
+			}
+		}
+
+		byte blockBits = (byte)(octave << 2);
+		ax = Make16(Lo8(ax), (byte)(Hi8(ax) | blockBits));
+		AdgIndexedWordSet(AdgFrequencyWordTableOffset, DX, ax);
+		ax = Make16(Lo8(ax), (byte)(Hi8(ax) | (byte)AdgImmediate.ThirtyTwo));
+		AdgWriteFrequencyWord_10E0(DX, ax);
+	}
+
+	private void AdgPitchBend_0D86(ushort eventWord) {
+		AX = Make16(Hi8(eventWord), Hi8(eventWord));
+		AdgReadWaitValue_0E7E();
+		AdgPitchBendBody_0D8B(AX);
+	}
+
+	private void AdgNoteOn_0A82(ushort eventWord) {
+		byte velocity = SegByte(ES, SI);
+		SI = (ushort)(SI + 1);
+		AX = Make16(velocity, Hi8(eventWord));
+		AdgReadWaitValue_0E7E();
+		AdgEnvelopeSetup_0C47(velocity, DX);
+		if (AdgByte((ushort)(DI + AdgChannelCurrentNoteOffset)) != 0) {
+			AdgNoteOff_10D8(DX);
+		}
+
+		byte note = (byte)(Hi8(eventWord) + AdgByte((ushort)(DI + AdgChannelPitchTransposeOffset)));
+		AdgByteSet((ushort)(DI + AdgChannelCurrentNoteOffset), note);
+		AdgByteSet((ushort)(DI + AdgChannelPitchBendCounterOffset), AdgByte((ushort)(DI + AdgChannelPitchBendCounterOffset + 1)));
+		AdgByteSet((ushort)(DI + AdgChannelPitchAccumulatorOffset), 0x40);
+		AdgNoteOn_10A9(DX, (ushort)(note - 0x48));
+	}
+
+	private void AdgNoteOff_0AB6(ushort eventWord) {
+		SI = (ushort)(SI + 1);
+		AdgReadWaitValue_0E7E();
+		byte note = (byte)(Hi8(eventWord) + AdgByte((ushort)(DI + AdgChannelPitchTransposeOffset)));
+		if (AdgByte((ushort)(DI + AdgChannelCurrentNoteOffset)) != note) {
+			return;
+		}
+
+		AdgByteSet((ushort)(DI + AdgChannelCurrentNoteOffset), 0);
+		AdgClearScratchMask_0ACD();
+		AdgNoteOff_10D8(DX);
+	}
+
+	private void AdgEndOfTrack_0AF5() {
+		AdgWordSet(DI, ushort.MaxValue);
+		byte pointerLo = AdgByte((ushort)(DI + AdgChannelWaitValueEventPointerOffset));
+		AdgByteSet((ushort)(DI + AdgChannelWaitValueEventPointerOffset), (byte)(pointerLo - 2));
+		if (DX != 0) {
+			AdgClearScratchMask_0ACD();
+			return;
+		}
+
+		byte tickFlag = (byte)(AdgByte(AdgTickEnabledOffset) - 1);
+		AdgByteSet(AdgTickEnabledOffset, tickFlag);
+		if (tickFlag == 0) {
+			AX = ushort.MaxValue;
+			DI = AdgChannelTableBase;
+			CX = (byte)AdgImmediate.Eighteen;
+			while (CX != 0) {
+				AdgWordSet(DI, AX);
+				DI = (ushort)(DI + 2);
+				CX--;
+			}
+			AdgReset_564B_0561_056A11(0);
+			return;
+		}
+
+		if ((tickFlag & (byte)AdgImmediate.OneTwentyEight) != 0) {
+			AdgByteSet(AdgTickEnabledOffset, (byte)(tickFlag + 1));
+		}
+
+		AdgResetSchedulerState_06B9();
+		BX = AdgWord(AdgSongPointerOffset);
+		ES = AdgWord(AdgSongSegmentOffset);
+		DI = AdgChannelTableBase;
+		AdgCheckLoopPoint_07DA();
+		AdgWordSet(DI, (ushort)(AdgWord(DI) - 1));
+	}
+
+	/// <summary>
+	/// Maps the observed ADG scheduler handler slot to the eventual C# opcode body.
+	/// </summary>
+	/// <remarks>
+	/// Original dispatch is <c>call near word ptr DS:[BX+0x012E]</c> after
+	/// <c>(eventWord &amp; 0x70) &gt;&gt; 4</c>. The live hot path confirms eight slots.
+	/// </remarks>
+	private void AdgDispatchObservedEvent_0756(ushort eventWord) {
+		ushort operationIndex = (ushort)((eventWord & 0x0070) >> 4);
+		if (operationIndex >= AdgObservedOperationHandlerCount) {
+			throw FailAsUntested($"ADG scheduler observed invalid handler index {operationIndex:X}.");
+		}
+
+		switch (operationIndex) {
+			case 0:
+				AdgNoteOff_0AB6(eventWord);
+				return;
+			case 1:
+				AdgNoteOn_0A82(eventWord);
+				return;
+			case 2:
+			case 3:
+				AdgReadWaitValue_0E7E();
+				return;
+			case 4:
+				AdgProgramChange_0831(eventWord);
+				return;
+			case 5:
+				AdgVolumeModulation_0B2E(eventWord);
+				return;
+			case 6:
+				AdgPitchBend_0D86(eventWord);
+				return;
+			case 7:
+				AdgEndOfTrack_0AF5();
+				return;
+			default:
+				throw FailAsUntested($"ADG scheduler unhandled operation index {operationIndex:X}.");
+		}
+	}
+
+	/// <summary>
+	/// Main ADG scheduler body observed at 564B:0756.
+	/// </summary>
+	/// <remarks>
+	/// <code>
+	/// dnadg:0756  les BX,[011E]
+	/// dnadg:075A  mov AX,ES:[BX+0x30]
+	/// dnadg:075E  add [0126],AX
+	/// dnadg:0762  mov DI,0x01E2
+	/// dnadg:0765  call 07DA
+	/// dnadg:0768  mov CX,0x12
+	/// dnadg:076B  dec word ptr [DI]
+	/// dnadg:076D  jne short 07AD
+	/// dnadg:076F  mov SI,[DI+0x24]
+	/// dnadg:0772  or SI,SI
+	/// dnadg:0774  je short 0798
+	/// dnadg:0778  lods AX,ES:[SI]
+	/// dnadg:077A  mov DX,DI / sub DX,0x01E2 / shr DX,1
+	/// dnadg:0782  mov BX,AX
+	/// dnadg:0784  and BX,0x0070
+	/// dnadg:0787  shr BX / shr BX / shr BX
+	/// dnadg:078D  call word ptr DS:[BX+0x012E]
+	/// dnadg:0793  cmp word ptr [DI],0
+	/// dnadg:0796  je short 076F
+	/// dnadg:0798  add DI,2
+	/// dnadg:079B  loop 076B
+	/// dnadg:079D  dec byte ptr [012A]
+	/// dnadg:07A3  mov byte ptr [012A],0x60 / inc word ptr [0128]
+	/// </code>
+	/// </remarks>
+	private void AdgSchedulerTick_0756() {
+		ushort savedBx = BX;
+		ushort savedDi = DI;
+		ushort savedSi = SI;
+		ushort savedDx = DX;
+		ushort savedEs = ES;
+
+		BX = AdgWord(AdgSongPointerOffset);
+		ES = AdgWord(AdgSongSegmentOffset);
+		AX = SegWord(ES, (ushort)(BX + 0x30));
+		AdgWordSet(AdgTempoAccumulatorOffset, (ushort)(AdgWord(AdgTempoAccumulatorOffset) + AX));
+
+		DI = AdgChannelTableBase;
+		AdgCheckLoopPoint_07DA();
+		CX = (byte)AdgImmediate.Eighteen;
+		while (CX != 0) {
+			AdgWordSet(DI, (ushort)(AdgWord(DI) - 1));
+			if (AdgWord(DI) != 0) {
+				AdgAdvancePitchModulation_07AD();
+				DI = (ushort)(DI + 2);
+				CX--;
+				continue;
+			}
+
+			while (AdgWord(DI) == 0) {
+				SI = AdgWord((ushort)(DI + AdgChannelWaitValueEventPointerOffset));
+				if (SI == 0) {
+					break;
+				}
+
+				AX = SegWord(ES, SI);
+				SI = (ushort)(SI + 2);
+				AdgWordSet((ushort)(DI + AdgChannelWaitValueEventPointerOffset), SI);
+				DX = (ushort)(DI - AdgChannelTableBase);
+				DX = (ushort)(DX >> 1);
+				AdgDispatchObservedEvent_0756(AX);
+			}
+
+			DI = (ushort)(DI + 2);
+			CX--;
+		}
+
+		AdgByteSet(AdgSubdivisionOffset, (byte)(AdgByte(AdgSubdivisionOffset) - 1));
+		if (AdgByte(AdgSubdivisionOffset) == 0) {
+			AdgByteSet(AdgSubdivisionOffset, (byte)AdgImmediate.NinetySix);
+			AdgWordSet(AdgMeasureOffset, (ushort)(AdgWord(AdgMeasureOffset) + 1));
+		}
+
+		ES = savedEs;
+		DX = savedDx;
+		SI = savedSi;
+		DI = savedDi;
+		BX = savedBx;
 	}
 
 	/// <summary>
@@ -1246,7 +2152,9 @@ public partial class Overrides {
 		AdgWordSet(AdgTempoAccumulatorOffset, AX);
 		AdgWordSet(AdgLoopCounterOffset, AX);
 
-		return NearJump(AdgOpenSongNearJumpOffset);
+		AdgSchedulerTick_0756();
+		AdgByteSet(AdgStatusOffset, (byte)AdgImmediate.OneTwentyEight);
+		return FarRet();
 	}
 
 	/// <summary>
@@ -1402,7 +2310,32 @@ public partial class Overrides {
 			return FarRet();
 		}
 
-		return NearJump(AdgTickNearJumpOffset);
+		ushort savedDx = DX;
+		ushort savedSi = SI;
+		ushort savedDi = DI;
+		ushort savedBp = BP;
+		ushort savedEs = ES;
+
+		AdgSchedulerTick_0756();
+
+		ES = savedEs;
+		BP = savedBp;
+		DI = savedDi;
+		SI = savedSi;
+		DX = savedDx;
+
+		ushort fadePattern = AdgWord(AdgFadePatternOffset);
+		bool shouldFade = (fadePattern & 0x8000) != 0;
+		fadePattern = (ushort)((fadePattern << 1) | (shouldFade ? 1 : 0));
+		AdgWordSet(AdgFadePatternOffset, fadePattern);
+		if (shouldFade) {
+			AdgFadeStep_0ECC();
+		}
+
+		AX = Make16(AdgByte(AdgStatusOffset), Hi8(AX));
+		BX = AdgWord(AdgMeasureOffset);
+		CX = AdgWord(AdgSubdivisionOffset);
+		return FarRet();
 	}
 
 	/// <summary>
