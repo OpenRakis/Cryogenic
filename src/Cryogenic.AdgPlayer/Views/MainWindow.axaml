@@ -1,0 +1,242 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Cryogenic.AdgPlayer.ViewModels"
+        xmlns:b="using:Cryogenic.AdgPlayer.Behaviors"
+        xmlns:v="using:Cryogenic.AdgPlayer.Views"
+        x:Class="Cryogenic.AdgPlayer.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Title="Cryogenic ADG Player — OPL3 FM Synthesis"
+        Width="1280"
+        Height="900"
+        MinWidth="900"
+        MinHeight="600"
+        Background="#0D1117"
+        WindowStartupLocation="CenterScreen">
+
+    <Window.Styles>
+        <Style Selector="TextBlock.mono">
+            <Setter Property="FontFamily" Value="Cascadia Mono, Consolas, Courier New" />
+            <Setter Property="FontSize" Value="11" />
+        </Style>
+        <Style Selector="TextBlock.label">
+            <Setter Property="Foreground" Value="#8B949E" />
+            <Setter Property="FontSize" Value="11" />
+        </Style>
+        <Style Selector="Button.transport">
+            <Setter Property="Width" Value="40" />
+            <Setter Property="Height" Value="40" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="CornerRadius" Value="20" />
+            <Setter Property="Background" Value="#21262D" />
+            <Setter Property="Foreground" Value="#E6EDF3" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Button.transport:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#30363D" />
+        </Style>
+        <Style Selector="Button.transport-primary">
+            <Setter Property="Width" Value="48" />
+            <Setter Property="Height" Value="48" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="CornerRadius" Value="24" />
+            <Setter Property="Background" Value="#1F6FEB" />
+            <Setter Property="Foreground" Value="#FFFFFF" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Button.transport-primary:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#388BFD" />
+        </Style>
+        <Style Selector="TextBlock.panel-header">
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="#8B949E" />
+            <Setter Property="Margin" Value="0,0,0,4" />
+        </Style>
+        <Style Selector="ListBox">
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+        <Style Selector="ListBoxItem">
+            <Setter Property="Padding" Value="2,0" />
+            <Setter Property="MinHeight" Value="0" />
+        </Style>
+        <Style Selector="ListBoxItem:selected">
+            <Setter Property="Background" Value="#0969DA" />
+        </Style>
+        <Style Selector="ListBoxItem:pointerover">
+            <Setter Property="Background" Value="#21262D" />
+        </Style>
+    </Window.Styles>
+
+    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,120,*" Margin="14,10,14,8">
+
+        <!-- Row 0: Title bar -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="10" Margin="0,0,0,8">
+            <TextBlock Text="♪" FontSize="20" Foreground="#58A6FF" VerticalAlignment="Center" />
+            <TextBlock Text="Cryogenic ADG Player" FontSize="18" FontWeight="SemiBold" Foreground="#E6EDF3" VerticalAlignment="Center" />
+            <TextBlock Text="NukedOPL3 / FM Synthesis" FontSize="11" Foreground="#484F58" VerticalAlignment="Center" Margin="8,3,0,0" />
+        </StackPanel>
+
+        <!-- Row 1: File selector -->
+        <Grid Grid.Row="1" ColumnDefinitions="Auto,*,Auto,Auto" Margin="0,0,0,6">
+            <Button Grid.Column="0" Content="Browse" Command="{Binding BrowseFileCommand}" Margin="0,0,6,0" />
+            <TextBox Grid.Column="1" Text="{Binding AdgPath}" Watermark="ADG/HSQ/ADP file path..." FontSize="11" />
+            <Button Grid.Column="2" Content="Add Files" Command="{Binding BrowsePlaylistFilesCommand}" Margin="8,0,0,0" />
+            <Button Grid.Column="3" Content="Load" Command="{Binding LoadCommand}" Margin="8,0,0,0" />
+        </Grid>
+
+        <!-- Row 2: Transport + Volume controls -->
+        <Grid Grid.Row="2" ColumnDefinitions="Auto,Auto,*" Margin="0,0,0,6">
+            <!-- Transport buttons -->
+            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="5">
+                <Button Classes="transport-primary" Content="▶" FontSize="18" Command="{Binding PlayCommand}" />
+                <Button Classes="transport" Content="⏮" FontSize="14" Command="{Binding PreviousTrackCommand}" />
+                <Button Classes="transport" Content="⏸" FontSize="16" Command="{Binding PauseCommand}" />
+                <Button Classes="transport" Content="■" FontSize="16" Command="{Binding StopCommand}" />
+                <Button Classes="transport" Content="⏭" FontSize="14" Command="{Binding NextTrackCommand}" />
+            </StackPanel>
+
+            <!-- Volume controls -->
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" Margin="16,0,0,0" VerticalAlignment="Center">
+                <TextBlock Classes="label" Text="Master" VerticalAlignment="Center" />
+                <Slider Minimum="0" Maximum="255" Value="{Binding MasterVolume}" Width="110" VerticalAlignment="Center" />
+                <TextBlock Classes="mono" Foreground="#58A6FF" Text="{Binding MasterVolume, StringFormat={}{0}}" Width="28" VerticalAlignment="Center" />
+                <TextBlock Classes="label" Text="OPL" VerticalAlignment="Center" Margin="10,0,0,0" />
+                <Slider Minimum="0" Maximum="300" Value="{Binding OplVolume}" Width="110" VerticalAlignment="Center" />
+                <TextBlock Classes="mono" Foreground="#58A6FF" Text="{Binding OplVolume, StringFormat={}{0}%}" Width="36" VerticalAlignment="Center" />
+            </StackPanel>
+
+            <!-- Position / status -->
+            <StackPanel Grid.Column="2" Orientation="Vertical" Margin="16,0,0,0" VerticalAlignment="Center">
+                <TextBlock Classes="mono" Foreground="#E6EDF3" Text="{Binding PositionText}" />
+                <TextBlock Classes="mono" Foreground="#8B949E" Text="{Binding TickInfo}" />
+            </StackPanel>
+        </Grid>
+
+        <!-- Row 3: Volume info + status bar -->
+        <Grid Grid.Row="3" ColumnDefinitions="*,Auto" Margin="0,0,0,4">
+            <TextBlock Grid.Column="0" Classes="mono" Foreground="#484F58" Text="{Binding VolumeInfo}" />
+            <TextBlock Grid.Column="1" Classes="mono" Foreground="#58A6FF" Text="{Binding Status}" HorizontalAlignment="Right" />
+        </Grid>
+
+        <!-- Row 4: Header info -->
+        <Border Grid.Row="4" CornerRadius="4" Background="#161B22" Padding="6,4" Margin="0,0,0,4">
+            <TextBlock Classes="mono" Foreground="#C9D1D9" Text="{Binding HeaderInfo}" TextWrapping="Wrap" />
+        </Border>
+
+        <!-- Row 5: Channel state bar -->
+        <Border Grid.Row="5" CornerRadius="4" Background="#161B22" Padding="6,3" Margin="0,0,0,4">
+            <TextBlock Classes="mono" Foreground="#7EE787" Text="{Binding ChannelStateText}" TextWrapping="Wrap" FontSize="10" />
+        </Border>
+
+        <!-- Row 6: Waveform + Volume feedback (50/50 split) -->
+        <Grid Grid.Row="6" ColumnDefinitions="*,6,*" Margin="0,0,0,0">
+            <Border Grid.Column="0" CornerRadius="6" ClipToBounds="True" Background="#080C10" Margin="0,0,3,0">
+                <v:WaveformControl x:Name="Waveform" />
+            </Border>
+
+            <GridSplitter Grid.Column="1"
+                          Width="6"
+                          HorizontalAlignment="Stretch"
+                          VerticalAlignment="Stretch"
+                          ResizeDirection="Columns"
+                          ResizeBehavior="PreviousAndNext"
+                          ShowsPreview="True"
+                          Background="#21262D" />
+
+            <Border Grid.Column="2" CornerRadius="6" ClipToBounds="True" Background="#080C10" Margin="3,0,0,0">
+                <v:VolumeFeedbackControl x:Name="VolumeFeedback" />
+            </Border>
+        </Grid>
+
+        <!-- Row 7: Bottom panels (Playlist | Channel Events | OPL Writes | Logs) -->
+        <Grid Grid.Row="7" ColumnDefinitions="0.8*,*,*,*" Margin="0,6,0,0">
+
+            <!-- Playlist -->
+            <Border Grid.Column="0" CornerRadius="4" Background="#161B22" Padding="4" Margin="0,0,3,0">
+                <Grid RowDefinitions="Auto,Auto,*" RowSpacing="4">
+                    <TextBlock Grid.Row="0" Classes="panel-header" Text="PLAYLIST" />
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="4">
+                        <Button Content="Play" Command="{Binding PlaySelectedTrackCommand}" Padding="6,2" />
+                        <Button Content="Remove" Command="{Binding RemoveSelectedTrackCommand}" Padding="6,2" />
+                        <Button Content="Clear" Command="{Binding ClearPlaylistCommand}" Padding="6,2" />
+                    </StackPanel>
+                    <ListBox Grid.Row="2" ItemsSource="{Binding Playlist}" SelectedItem="{Binding SelectedPlaylistItem}" ScrollViewer.VerticalScrollBarVisibility="Auto">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate x:DataType="vm:PlaylistItem">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <TextBlock Classes="mono"
+                                               Foreground="{Binding CurrentTrackIconColor}"
+                                               Text="{Binding CurrentTrackIcon}"
+                                               Width="12"
+                                               TextAlignment="Center" />
+                                    <TextBlock Classes="mono"
+                                               Foreground="{Binding CurrentTrackTextColor}"
+                                               Text="{Binding Display}"
+                                               TextWrapping="NoWrap"
+                                               ToolTip.Tip="{Binding Tooltip}" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
+            </Border>
+
+            <!-- Channel Events -->
+            <Border Grid.Column="1" CornerRadius="4" Background="#161B22" Padding="4" Margin="3,0,3,0">
+                <Grid RowDefinitions="Auto,*">
+                    <TextBlock Grid.Row="0" Classes="panel-header" Text="CHANNEL EVENTS" />
+                    <ListBox Grid.Row="1" ItemsSource="{Binding ChannelEvents}" ScrollViewer.VerticalScrollBarVisibility="Auto">
+                        <Interaction.Behaviors>
+                            <b:ScrollToEndBehavior />
+                        </Interaction.Behaviors>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate x:DataType="vm:ChannelEventItem">
+                                <TextBlock Classes="mono" Foreground="#FFA657" Text="{Binding Display}" TextWrapping="NoWrap" />
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
+            </Border>
+
+            <!-- OPL Writes -->
+            <Border Grid.Column="2" CornerRadius="4" Background="#161B22" Padding="4" Margin="3,0,3,0">
+                <Grid RowDefinitions="Auto,*">
+                    <TextBlock Grid.Row="0" Classes="panel-header" Text="OPL REGISTER WRITES" />
+                    <ListBox Grid.Row="1" ItemsSource="{Binding OplWrites}" ScrollViewer.VerticalScrollBarVisibility="Auto">
+                        <Interaction.Behaviors>
+                            <b:ScrollToEndBehavior />
+                        </Interaction.Behaviors>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate x:DataType="vm:OplWriteItem">
+                                <TextBlock Classes="mono" Foreground="#D2A8FF" Text="{Binding Display}" TextWrapping="NoWrap" />
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
+            </Border>
+
+            <!-- Logs -->
+            <Border Grid.Column="3" CornerRadius="4" Background="#161B22" Padding="4" Margin="3,0,0,0">
+                <Grid RowDefinitions="Auto,*">
+                    <TextBlock Grid.Row="0" Classes="panel-header" Text="LOG" />
+                    <ListBox Grid.Row="1" x:Name="LogList" ItemsSource="{Binding Logs}" ScrollViewer.VerticalScrollBarVisibility="Auto">
+                        <Interaction.Behaviors>
+                            <b:ScrollToEndBehavior />
+                        </Interaction.Behaviors>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate x:DataType="vm:LogDisplayItem">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <TextBlock Classes="mono" Foreground="#484F58" Text="{Binding Timestamp}" />
+                                    <TextBlock Classes="mono" Foreground="#C9D1D9" Text="{Binding Message}" TextWrapping="NoWrap" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
+            </Border>
+
+        </Grid>
+    </Grid>
+</Window>
