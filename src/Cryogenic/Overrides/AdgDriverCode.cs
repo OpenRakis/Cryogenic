@@ -85,62 +85,113 @@ public partial class Overrides {
 	/// Common immediate values extracted from live ADG instruction streams.
 	/// </summary>
 	private enum AdgImmediate : byte {
+		/// <summary>Literal zero byte used for reset/clear writes.</summary>
 		Zero = 0x00,
+		/// <summary>Literal one byte used for enable and single-step flags.</summary>
 		One = 0x01,
+		/// <summary>Literal two byte used for bit toggles and increments.</summary>
 		Two = 0x02,
+		/// <summary>Literal three byte used in shift/divide helpers.</summary>
 		Three = 0x03,
+		/// <summary>Literal four byte used for Gold surround latch bit.</summary>
 		Four = 0x04,
+		/// <summary>Logical channel index 6 (percussion skip slot).</summary>
 		Six = 0x06,
+		/// <summary>Literal seven used in OPL address-port wait loops.</summary>
 		Seven = 0x07,
+		/// <summary>Literal eight used in surround serializer loop count.</summary>
 		Eight = 0x08,
+		/// <summary>Literal nine used in extension string scan window.</summary>
 		Nine = 0x09,
+		/// <summary>Literal ten.</summary>
 		Ten = 0x0A,
+		/// <summary>Literal twelve.</summary>
 		Twelve = 0x0C,
+		/// <summary>Logical channel index 14 (percussion skip slot).</summary>
 		Fourteen = 0x0E,
+		/// <summary>Logical channel index 15 (percussion skip slot).</summary>
 		Fifteen = 0x0F,
+		/// <summary>Total ADG logical channel count.</summary>
 		Eighteen = 0x12,
+		/// <summary>Upper bound (exclusive) for Gold surround channel traversal.</summary>
 		ThirtyOne = 0x1F,
+		/// <summary>Waveform-control value used during init.</summary>
 		ThirtyTwo = 0x20,
+		/// <summary>Data-port delay loop count for direct secondary/primary writes.</summary>
 		ThirtyFive = 35,
+		/// <summary>Data-port delay loop count for fixed write helper.</summary>
 		ThirtySeven = 37,
+		/// <summary>Default ADG subdivision tick seed.</summary>
 		NinetySix = 0x60,
+		/// <summary>Volume clamp threshold used by scaling routine.</summary>
 		OneTwenty = 0x78,
+		/// <summary>High-bit mask and sign bit constant.</summary>
 		OneTwentyEight = 0x80,
+		/// <summary>Gold volume command bit prefix.</summary>
 		OneTwentyNine = 0x81,
+		/// <summary>Status-ready mask for secondary OPL polling.</summary>
 		OneNinetyTwoMask = 0xC0,
+		/// <summary>Mask used to clear Gold surround latch bit 2.</summary>
 		TwoFiftyOneMask = 0xFB,
+		/// <summary>Mask used to clear Gold surround clock bit 1.</summary>
 		TwoFiftyThreeMask = 0xFD,
+		/// <summary>Mask used to keep serialized surround data as 7-bit lane.</summary>
 		TwoFiftyFourMask = 0xFE,
+		/// <summary>All-bits-set byte.</summary>
 		TwoFiftyFive = 0xFF,
+		/// <summary>ASCII '.' used in extension patch scanning.</summary>
 		DotAscii = 0x2E,
+		/// <summary>High-nibble extraction mask.</summary>
 		F0Mask = 0xF0,
+		/// <summary>Low 8-bit word seed for 0x00FF patterns.</summary>
 		Ff16Lo = 0xFF,
+		/// <summary>Variable-length decode payload mask.</summary>
 		SevenBitMask = 0x7F,
+		/// <summary>Mask used to clear fade-pending status bit.</summary>
 		FadeClearMask = 0xBF,
+		/// <summary>Mask used to derive Gold present bit from status register.</summary>
 		GoldPresentMask = 0x20
 	}
 
 	/// <summary>
 	/// Named fade-pattern words written to ADG fade state.
 	/// </summary>
+	/// <remarks>
+	/// These 16-bit patterns are rotated by the original driver to control fade cadence.
+	/// </remarks>
 	private enum AdgFadePattern : ushort {
+		/// <summary>Single terminal step when target volume is reached.</summary>
 		SingleStep = 0x0001,
+		/// <summary>Fastest repeating fade cadence.</summary>
 		Fastest = 0x8000,
+		/// <summary>Fast repeating fade cadence.</summary>
 		Fast = 0x8080,
+		/// <summary>Medium repeating fade cadence.</summary>
 		Medium = 0x8888,
+		/// <summary>Slow repeating fade cadence.</summary>
 		Slow = 0xAAAA,
+		/// <summary>Immediate transition (no staggered fade cadence).</summary>
 		Immediate = 0xFFFF
 	}
 
 	/// <summary>
-	/// Fixed Gold init command words observed at 564B:1185.
+	/// Fixed Gold initialization command words observed at 564B:1185.
 	/// </summary>
+	/// <remarks>
+	/// Each word encodes <c>AL=register</c> and <c>AH=value</c> for helper 1158.
+	/// </remarks>
 	private enum AdgGoldInitWord : ushort {
+		/// <summary>Gold control register 0x06 set to 0xFB.</summary>
 		Fb06 = 0xFB06,
+		/// <summary>Gold control register 0x07 set to 0xF7.</summary>
 		F707 = 0xF707,
+		/// <summary>Gold control register 0x04 set to 0xF7.</summary>
 		F704 = 0xF704,
+		/// <summary>Gold control register 0x05 set to 0xF7.</summary>
 		F705 = 0xF705,
+		/// <summary>Gold global-volume high register 0x09 set to 0xFF.</summary>
 		Ff09 = 0xFF09,
+		/// <summary>Gold global-volume low register 0x0A set to 0xFF.</summary>
 		Ff0A = 0xFF0A
 	}
 
@@ -202,6 +253,22 @@ public partial class Overrides {
 	private const ushort AdgTickDividerOffset = 0x0127;
 	private const ushort AdgAuxRegisterPortOffset1 = 0x0119;
 	private const ushort AdgAuxRegisterPortOffset2 = 0x011B;
+	private const ushort AdgVolumeHighNibbleWordMask = 0x0FF0;
+	private const ushort AdgChannelWaitValueEventPointerOffset = 0x0024;
+	private const ushort AdgChannelStateEventSourceOffset = 0x0048;
+	private const ushort AdgChannelStateScratchOffset = 0x021C;
+	private const ushort AdgIdentityWordSecondPlaneOffset = 0x4000;
+	private const ushort AdgIdentityWordThirdPlaneOffset = 0x8000;
+	private const ushort AdgDynamicsThresholdSlow = 0x0060;
+	private const ushort AdgDynamicsThresholdMedium = 0x00C0;
+	private const ushort AdgDynamicsThresholdFast = 0x0180;
+	private const ushort AdgDynamicsThresholdFastest = 0x0300;
+	private const ushort AdgDriverInitBxResult = 0x0F00;
+	private const ushort AdgOpenSongNearJumpOffset = 0x0626;
+	private const ushort AdgTickNearJumpOffset = 0x06F6;
+	private const byte AdgLastLogicalChannelIndex = 0x15;
+	private const byte AdgFadeHighNibbleIncrement = 0x10;
+	private const byte AdgFadeHighNibbleDecrement = 0x20;
 	private const int AdgResetChannelCount = (byte)AdgImmediate.Eighteen;
 
 	/// <summary>
@@ -347,7 +414,7 @@ public partial class Overrides {
 		axOut = (ushort)(axOut >> 1);
 
 		ah = dh;
-		axOut = (ushort)(axOut & 0x0FF0);
+		axOut = (ushort)(axOut & AdgVolumeHighNibbleWordMask);
 		AX = (ushort)(axOut | ah);
 	}
 
@@ -479,11 +546,6 @@ public partial class Overrides {
 		AdgSendSecondaryCommandByte((byte)AdgSecondaryCommand.ResetAndLatch);
 	}
 
-	private void AdgSendSecondaryCommandByte_FE_116E() {
-		AdgWaitSecondaryOplReady_1149();
-		AdgSendSecondaryCommandByte((byte)AdgSecondaryCommand.ReleaseReset);
-	}
-
 	/// <summary>
 	/// Issues the Gold release command after waiting for ready state.
 	/// </summary>
@@ -496,6 +558,10 @@ public partial class Overrides {
 	/// ret
 	/// </code>
 	/// </remarks>
+	private void AdgSendSecondaryCommandByte_FE_116E() {
+		AdgWaitSecondaryOplReady_1149();
+		AdgSendSecondaryCommandByte((byte)AdgSecondaryCommand.ReleaseReset);
+	}
 
 	/// <summary>
 	/// Performs AdLib Gold startup initialization sequence.
@@ -618,7 +684,7 @@ public partial class Overrides {
 	/// </summary>
 	/// <remarks><code>for channel in 0x15..0 : write 0xFF to both chips, skip percussion slots</code></remarks>
 	private void AdgSilenceGoldChannels_0F53() {
-		for (int channel = 0x15; channel >= 0; channel--) {
+		for (int channel = AdgLastLogicalChannelIndex; channel >= (byte)AdgImmediate.Zero; channel--) {
 			if (channel == (byte)AdgImmediate.Six
 				|| channel == (byte)AdgImmediate.Seven
 				|| channel == (byte)AdgImmediate.Fourteen
@@ -707,7 +773,7 @@ public partial class Overrides {
 			byte current = SegByte(ES, SI);
 			SI = (ushort)(SI + 1);
 			value = (value << (byte)AdgImmediate.Seven) | (uint)(current & (byte)AdgImmediate.SevenBitMask);
-			if (value > 0xFFFF) {
+			if (value > ushort.MaxValue) {
 				overflow = true;
 			}
 			if ((current & (byte)AdgImmediate.OneTwentyEight) == 0) {
@@ -715,8 +781,8 @@ public partial class Overrides {
 			}
 		}
 
-		AdgWordSet(DI, overflow ? (ushort)0xFFFF : (ushort)value);
-		AdgWordSet((ushort)(DI + 0x24), SI);
+		AdgWordSet(DI, overflow ? ushort.MaxValue : (ushort)value);
+		AdgWordSet((ushort)(DI + AdgChannelWaitValueEventPointerOffset), SI);
 		AX = savedAx;
 	}
 
@@ -770,10 +836,10 @@ public partial class Overrides {
 		DI = AdgChannelTableBase;
 		CX = AdgResetChannelCount;
 		while (CX != 0) {
-			ushort eventOffset = AdgWord((ushort)(DI + 0x48));
-			AdgWordSet((ushort)(DI + 0x24), eventOffset);
-			AdgWordSet(DI, 0xFFFF);
-			AdgWordSet((ushort)(DI + 0x021C), 0);
+			ushort eventOffset = AdgWord((ushort)(DI + AdgChannelStateEventSourceOffset));
+			AdgWordSet((ushort)(DI + AdgChannelWaitValueEventPointerOffset), eventOffset);
+			AdgWordSet(DI, ushort.MaxValue);
+			AdgWordSet((ushort)(DI + AdgChannelStateScratchOffset), 0);
 			if (eventOffset != 0) {
 				ushort currentCx = CX;
 				SI = eventOffset;
@@ -818,9 +884,9 @@ public partial class Overrides {
 		byte currentHighNibble = (byte)(updatedVolume & (byte)AdgImmediate.F0Mask);
 		byte targetHighNibble = (byte)(targetVolume & (byte)AdgImmediate.F0Mask);
 		if (currentHighNibble != targetHighNibble) {
-			updatedVolume = (byte)(updatedVolume + 0x10);
+			updatedVolume = (byte)(updatedVolume + AdgFadeHighNibbleIncrement);
 			if (currentHighNibble > targetHighNibble) {
-				updatedVolume = (byte)(updatedVolume - 0x20);
+				updatedVolume = (byte)(updatedVolume - AdgFadeHighNibbleDecrement);
 			}
 		}
 
@@ -847,18 +913,18 @@ public partial class Overrides {
 		ushort registerPort = signedRoute < 0 ? AdgWord(AdgSecondaryRegisterPortOffset) : AdgWord(AdgPrimaryRegisterPortOffset);
 
 		if (signedRoute < 0) {
-			routedRegister = (byte)(routedRegister ^ 0x80);
+			routedRegister = (byte)(routedRegister ^ (byte)AdgImmediate.OneTwentyEight);
 		}
 
 		Machine.IoPortDispatcher.WriteByte(registerPort, routedRegister);
-		for (int i = 0; i < 7; i++) {
+		for (int i = 0; i < (byte)AdgImmediate.Seven; i++) {
 			Machine.IoPortDispatcher.ReadByte(registerPort);
 		}
 
 		ushort dataPort = (ushort)(registerPort + 1);
 		Machine.IoPortDispatcher.WriteByte(dataPort, value);
 		byte delayData = 0;
-		for (int i = 0; i < 37; i++) {
+		for (int i = 0; i < (byte)AdgImmediate.ThirtySeven; i++) {
 			delayData = Machine.IoPortDispatcher.ReadByte(dataPort);
 		}
 
@@ -893,8 +959,8 @@ public partial class Overrides {
 		ES = AdgWord((ushort)(AdgSongIdentityCacheOffset + 2));
 		SI = AdgWord(AdgSongIdentityCacheOffset);
 		ushort word0 = SegWord(ES, SI);
-		ushort word1 = SegWord(ES, (ushort)(SI + 0x4000));
-		ushort word2 = SegWord(ES, (ushort)(SI + 0x8000));
+		ushort word1 = SegWord(ES, (ushort)(SI + AdgIdentityWordSecondPlaneOffset));
+		ushort word2 = SegWord(ES, (ushort)(SI + AdgIdentityWordThirdPlaneOffset));
 
 		SI = savedSi;
 		ES = savedEs;
@@ -1059,7 +1125,7 @@ public partial class Overrides {
 		AdgWriteFixedOplRegister(AdgWord(AdgSecondaryRegisterPortOffset), (byte)AdgOplRegister.SecondaryControl, (byte)AdgImmediate.Zero);
 		AdgInitializeGoldHardware_1185();
 		AdgReset_564B_0561_056A11(0);
-		BX = 0x0F00;
+		BX = AdgDriverInitBxResult;
 		return FarRet();
 	}
 
@@ -1078,7 +1144,7 @@ public partial class Overrides {
 	/// </code>
 	/// </remarks>
 	public Action AdgOpenSong_564B_0626_056AD6(int gotoAddress) {
-		return NearJump(0x0626);
+		return NearJump(AdgOpenSongNearJumpOffset);
 	}
 
 	/// <summary>
@@ -1141,16 +1207,16 @@ public partial class Overrides {
 		AX = savedAx;
 
 		ushort fadePattern = (ushort)AdgFadePattern.Immediate;
-		if (AX >= 0x0060) {
+		if (AX >= AdgDynamicsThresholdSlow) {
 			fadePattern = (ushort)AdgFadePattern.Slow;
 		}
-		if (AX >= 0x00C0) {
+		if (AX >= AdgDynamicsThresholdMedium) {
 			fadePattern = (ushort)AdgFadePattern.Medium;
 		}
-		if (AX >= 0x0180) {
+		if (AX >= AdgDynamicsThresholdFast) {
 			fadePattern = (ushort)AdgFadePattern.Fast;
 		}
-		if (AX >= 0x0300) {
+		if (AX >= AdgDynamicsThresholdFastest) {
 			fadePattern = (ushort)AdgFadePattern.Fastest;
 		}
 		AdgWordSet(AdgFadePatternOffset, fadePattern);
@@ -1178,7 +1244,7 @@ public partial class Overrides {
 	/// </code>
 	/// </remarks>
 	public Action AdgTick_564B_06F6_056BA6(int gotoAddress) {
-		return NearJump(0x06F6);
+		return NearJump(AdgTickNearJumpOffset);
 	}
 
 	/// <summary>
