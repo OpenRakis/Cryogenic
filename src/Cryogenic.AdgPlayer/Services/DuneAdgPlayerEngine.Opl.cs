@@ -158,25 +158,27 @@ public sealed partial class DuneAdgPlayerEngine {
 
 	/// <summary>
 	/// Initializes OPL3 Gold chip: resets, enables waveform select, sets OPL3 mode on secondary.
-	/// Mirrors the init sequence from AdgInitializeGoldHardware equivalents.
+	/// Mirrors the init sequence from AdgInitializeOplRegisters_2306 in the DNADG driver.
 	/// All register writes are also fired on <see cref="OplRegisterWritten"/> so the MCP
 	/// adg_opl_log tool captures the full initialization sequence.
 	/// </summary>
 	private void InitOplChip() {
 		_opl.Reset();
 
-		// Primary chip: waveform select enable (reg 0x01, bit 5)
+		// Primary chip: waveform select enable (reg 0x01, bit 5). Mirrors driver line 2306.
 		WriteAndFireOplRegister(0x01, 0x20);
-		// Primary chip: rhythm mode off
+		// Primary chip: rhythm mode off (reg 0xBD). Mirrors driver line 2307.
 		WriteAndFireOplRegister(0xBD, 0x00);
-		// Primary chip: CSM/keyboard split off
-		WriteAndFireOplRegister(0x08, 0x00);
+		// Primary chip: CSM off, keyboard split enabled (reg 0x08 = 0x40). Mirrors driver line 2308.
+		WriteAndFireOplRegister(0x08, 0x40);
 
-		// Secondary chip: OPL3 mode enable (reg 0x105)
+		// Secondary chip: OPL3 mode enable (reg 0x105). Mirrors driver line 2309.
 		WriteAndFireOplRegister(0x105, 0x01);
-		// Secondary chip: waveform select enable
+		// Secondary chip: 4-operator channel enable = all disabled (reg 0x104 = 0). Mirrors driver line 2310.
+		WriteAndFireOplRegister(0x104, 0x00);
+		// Secondary chip: waveform select enable.
 		WriteAndFireOplRegister(0x101, 0x20);
-		// Secondary chip: rhythm mode off
+		// Secondary chip: rhythm mode off.
 		WriteAndFireOplRegister(0x1BD, 0x00);
 		_opl.InitializeGoldHardware();
 	}
@@ -210,20 +212,14 @@ public sealed partial class DuneAdgPlayerEngine {
 
 	/// <summary>
 	/// Replays DNADG's Gold surround initialization from the current song table.
-	/// Mirrors AdgUpdateGoldSurround_11C4 using the standalone Gold processor.
+	/// Mirrors AdgUpdateGoldSurround_11C4.
+	/// In standalone playback AdLib Gold hardware is absent (GoldStatus = 0),
+	/// so the driver's opening guard `cmp byte [GoldStatus], 0 / je return` fires
+	/// and the full loop is skipped. Replicate that guard here to avoid
+	/// corrupting the surround-control state with unvalidated register writes.
 	/// </summary>
 	private void UpdateGoldSurround() {
-		ushort surroundPointer = _eventBase;
-		byte registerValue = 0;
-		for (byte channelIndex = 0; channelIndex < 0x1F; channelIndex++) {
-			registerValue = WriteGoldSurroundMask(channelIndex, registerValue);
-			_opl.WriteGoldSurroundControl((byte)(registerValue | 0x04));
-
-			byte mask = SongByte16(surroundPointer);
-			surroundPointer = (ushort)(surroundPointer + 1);
-			registerValue = WriteGoldSurroundMask(mask, registerValue);
-			_opl.WriteGoldSurroundControl((byte)(registerValue & 0xFB));
-		}
+		// AdLib Gold hardware not present in standalone mode — match driver no-op path.
 	}
 }
 

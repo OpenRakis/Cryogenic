@@ -54,10 +54,15 @@ public sealed partial class DuneAdgPlayerEngine : IDisposable {
 	private readonly byte[] _channelPitchTranspose = new byte[ChannelCount];
 	private readonly byte[] _channelPitchBendCounter = new byte[ChannelCount];
 	private readonly byte[] _channelPitchBendCounterInit = new byte[ChannelCount];
+	private readonly byte[] _channelPitchBendSpeed = new byte[ChannelCount];
 	private readonly byte[] _channelPitchAccumulator = new byte[ChannelCount];
 	private readonly ushort[] _channelTlShaping = new ushort[ChannelCount];
 	private readonly ushort[] _channelEnvShaping = new ushort[ChannelCount];
 	private readonly ushort[] _channelCurrentOperatorLevel = new ushort[ChannelCount];
+	private readonly ushort[] _channelPatch4EnvShaping = new ushort[ChannelCount];
+	private readonly ushort[] _channelPatch4TlShaping = new ushort[ChannelCount];
+	private readonly ushort[] _channelPatch4VolModShaping = new ushort[ChannelCount];
+	private readonly ushort[] _channelPatch4CurrentOperatorLevel = new ushort[ChannelCount];
 	private readonly ushort[] _channelConnShaping = new ushort[ChannelCount];
 	private readonly ushort[] _channelVolModShaping = new ushort[ChannelCount];
 	private readonly ushort[] _channelConnModulation = new ushort[ChannelCount];
@@ -79,7 +84,7 @@ public sealed partial class DuneAdgPlayerEngine : IDisposable {
 	// --- Global ADG state ---
 	private ushort _fadeScratch;
 	private ushort _fadeScratch2;
-	private byte _surroundMask = 0xFF;
+	private byte _surroundMask = 0x00;
 	private byte _tickEnabled;
 	private byte _loopCounter;
 	/// <summary>16-bit tempo accumulator. Hi8 is decremented every PIT tick; ProcessTick
