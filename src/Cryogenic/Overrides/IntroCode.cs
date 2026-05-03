@@ -167,7 +167,7 @@ public partial class Overrides {
 	/// Body: <c>jmp loc_0076a</c> only.
 	/// Source: seg000:02FE–0300 in <c>doc/DNCDPRG.lst</c>.
 	/// </remarks>
-	public Action Unknown_1000_02FE_0102FE(int gotoAddress) {
+	public Action Loc002fe_1000_02FE_0102FE(int gotoAddress) {
 		return NearRet();
 	}
 
@@ -186,7 +186,7 @@ public partial class Overrides {
 	/// Confirmed in Ghidra symbols as <c>unknown_1000_0301_10301</c>.
 	/// Source: seg000:0301–0308 in <c>doc/DNCDPRG.lst</c>.
 	/// </remarks>
-	public Action Unknown_1000_0301_010301(int gotoAddress) {
+	public Action Loc00301_1000_0301_010301(int gotoAddress) {
 		return NearRet();
 	}
 
