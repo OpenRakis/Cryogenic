@@ -35,7 +35,7 @@ try {
 		.Build();
 
 	await host.RunAsync();
-} catch (Exception ex) {
+} catch (Exception ex) when (ex is not OutOfMemoryException and not StackOverflowException) {
 	Log.Fatal(ex, "ADG MCP server terminated unexpectedly");
 } finally {
 	Log.CloseAndFlush();
