@@ -17,6 +17,8 @@ public partial class Overrides {
 	/// </summary>
 	public void DefineInitCodeOverrides() {
 		DefineFunction(cs1, 0xDA53, VgaInitRelated_1000_DA53_01DA53);
+		DefineFunction(cs1, 0x00B0, Initialize2_1000_00B0_0100B0);
+		DefineFunction(cs1, 0x00D1, InitializeResources_1000_00D1_0100D1);
 	}
 
 	/// <summary>
@@ -32,5 +34,25 @@ public partial class Overrides {
 		this.globalsOnDs.Set1138_DC6A_Word16(0);
 		this.globalsOnDs.Set1138_46D7_Byte8(0);
 		return NearRet();
+	}
+
+	/// <summary>
+	/// Override for CS1:00B0 — initialize_2 (seg000:00B0).
+	/// Confirmed executed in dump/spice86dumpExecutionFlow.json.
+	/// </summary>
+	/// <param name="gotoAddress">Target address for potential jumps.</param>
+	/// <returns>Never returns; throws until implemented.</returns>
+	public Action Initialize2_1000_00B0_0100B0(int gotoAddress) {
+		throw FailAsUntested("Initialize2 (seg000:00B0) not yet implemented");
+	}
+
+	/// <summary>
+	/// Override for CS1:00D1 — initialize_resources (seg000:00D1).
+	/// Confirmed executed in dump/spice86dumpExecutionFlow.json.
+	/// </summary>
+	/// <param name="gotoAddress">Target address for potential jumps.</param>
+	/// <returns>Never returns; throws until implemented.</returns>
+	public Action InitializeResources_1000_00D1_0100D1(int gotoAddress) {
+		throw FailAsUntested("InitializeResources (seg000:00D1) not yet implemented");
 	}
 }

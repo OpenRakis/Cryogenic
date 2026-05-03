@@ -40,6 +40,7 @@ public partial class Overrides {
 		DefineFunction(cs1, 0xDAA3, InitMapCursorTypeDC58To0_1000_DAA3_01DAA3);
 		DefineFunction(cs1, 0xDAAA, SetSiToMapCursorTypeDC58_1000_DAAA_01DAAA);
 		DefineFunction(cs1, 0x5B96, UnknownMemcopy_1000_5B96_015B96);
+		DefineFunction(cs1, 0x0169, Map2ResourceFunc_1000_0169_010169);
 	}
 
 	public Action InitMapCursorTypeDC58To0_1000_DAA3_01DAA3(int gotoAddress) {
@@ -82,5 +83,15 @@ public partial class Overrides {
 		uint destinationAddress = MemoryUtils.ToPhysicalAddress(DS, DI);
 		Memory.MemCopy(sourceAddress, destinationAddress, 4 * 2);
 		return NearRet();
+	}
+
+	/// <summary>
+	/// Override for CS1:0169 — map2_resource_func (seg000:0169).
+	/// Confirmed executed in dump/spice86dumpExecutionFlow.json.
+	/// </summary>
+	/// <param name="gotoAddress">Target address for potential jumps.</param>
+	/// <returns>Never returns; throws until implemented.</returns>
+	public Action Map2ResourceFunc_1000_0169_010169(int gotoAddress) {
+		throw FailAsUntested("Map2ResourceFunc (seg000:0169) not yet implemented");
 	}
 }

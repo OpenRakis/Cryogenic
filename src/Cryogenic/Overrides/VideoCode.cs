@@ -17,6 +17,7 @@ public partial class Overrides {
 		DefineFunction(cs1, 0xC921, GetHnmResourceFlagNamePtrByIndexAXToBx_1000_C921_01C921);
 		DefineFunction(cs1, 0xCA59, VideoPlayRelated_1000_CA59_01CA59);
 		DefineFunction(cs1, 0xCC85, CheckIfHnmComplete_1000_CC85_01CC85);
+		DefineFunction(cs1, 0x02E0, DrawStars_1000_02E0_0102E0);
 	}
 
 	/// <summary>
@@ -68,5 +69,16 @@ public partial class Overrides {
 		globalsOnDs.Set1138_DC22_Word16_VideoPlayRelatedIndex(value);
 		_loggerService.Debug("videoPlayRelated value:{@Value}", value);
 		return NearRet();
+	}
+
+	/// <summary>
+	/// Override for CS1:02E0 — draw_stars (seg000:02E0, previously unknown_1000_02E0_102E0).
+	/// Confirmed executed in dump/spice86dumpExecutionFlow.json.
+	/// Identified from the Ghidra LST semantic name draw_stars.
+	/// </summary>
+	/// <param name="gotoAddress">Target address for potential jumps.</param>
+	/// <returns>Never returns; throws until implemented.</returns>
+	public Action DrawStars_1000_02E0_0102E0(int gotoAddress) {
+		throw FailAsUntested("DrawStars (seg000:02E0) not yet implemented");
 	}
 }

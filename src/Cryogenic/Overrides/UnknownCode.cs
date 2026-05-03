@@ -43,6 +43,7 @@ public partial class Overrides {
 		DefineFunction(cs1, 0x3AE9, Fill47F8WithFF_1000_3AE9_013AE9);
 		DefineFunction(cs1, 0xB2B9, Inc2788_1000_B2B9_01B2B9);
 		DefineFunction(cs1, 0xDE4E, SetCEE8To0_1000_DE4E_01DE4E);
+		DefineFunction(cs1, 0x0911, RemoveAllFrameTasks_1000_0911_010911);
 	}
 
 	public Action CheckPcmEnabled_1000_AE2F_1AE2F(int gotoAddress) {
@@ -194,5 +195,16 @@ public partial class Overrides {
 		value += 0x2F13;
 		Alu16.Sub(value, globalsOnDs.Get1138_CE68_Word16_allocatorLastFreeSegment());
 		return NearRet();
+	}
+
+	/// <summary>
+	/// Override for CS1:0911 — remove_all_frame_tasks (seg000:0911, previously unknown_1000_0911_10911).
+	/// Confirmed executed in dump/spice86dumpExecutionFlow.json.
+	/// Identified from the Ghidra LST semantic name remove_all_frame_tasks.
+	/// </summary>
+	/// <param name="gotoAddress">Target address for potential jumps.</param>
+	/// <returns>Never returns; throws until implemented.</returns>
+	public Action RemoveAllFrameTasks_1000_0911_010911(int gotoAddress) {
+		throw FailAsUntested("RemoveAllFrameTasks (seg000:0911) not yet implemented");
 	}
 }
