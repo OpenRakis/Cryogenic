@@ -204,7 +204,7 @@ public sealed class OplSynthesizer : IDisposable {
 			_normalizedBuffer[i] = _floatBuffer[i] / 32768f;
 		}
 
-		_channel.AddSamplesFloat(framesNeeded, _floatBuffer.AsSpan(0, sampleCount));
+		_channel.AddSamplesFloat(framesNeeded, _normalizedBuffer.AsSpan(0, sampleCount));
 		AudioSamplesRendered?.Invoke(_normalizedBuffer, sampleCount);
 	}
 
