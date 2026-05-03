@@ -33,8 +33,8 @@ public sealed partial class DuneAdgPlayerEngine {
 			byte[] result = DecompressHsq(source, uncompressedSize);
 			HsqLogger.Information("HSQ decompressed: {SrcLen} → {DstLen} bytes", source.Length, result.Length);
 			return result;
-		} catch {
-			HsqLogger.Warning("HSQ decompression failed, using raw data");
+		} catch (Exception ex) {
+			HsqLogger.Warning(ex, "HSQ decompression failed, using raw data");
 			return null;
 		}
 	}

@@ -1,0 +1,30 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+		<TargetFramework>net10.0</TargetFramework>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+		<NoWarn>NU1903</NoWarn>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<!-- MCP server SDK -->
+		<PackageReference Include="ModelContextProtocol" Version="1.2.0" />
+		<!-- Logging: same versions as AdgPlayer -->
+		<PackageReference Include="Serilog" Version="4.3.1" />
+		<PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
+		<PackageReference Include="Serilog.Extensions.Logging" Version="9.0.1" />
+		<!-- OPL engine: same version as AdgPlayer via Spice86.Core -->
+		<PackageReference Include="Spice86.Core" Version="12.0.0" />
+	</ItemGroup>
+
+	<!-- Link AdgPlayer engine source files directly to avoid duplicating code -->
+	<ItemGroup>
+		<Compile Include="..\Cryogenic.AdgPlayer\Services\DuneAdgPlayerEngine.cs" Link="Engine\DuneAdgPlayerEngine.cs" />
+		<Compile Include="..\Cryogenic.AdgPlayer\Services\DuneAdgPlayerEngine.Hsq.cs" Link="Engine\DuneAdgPlayerEngine.Hsq.cs" />
+		<Compile Include="..\Cryogenic.AdgPlayer\Services\DuneAdgPlayerEngine.Opl.cs" Link="Engine\DuneAdgPlayerEngine.Opl.cs" />
+		<Compile Include="..\Cryogenic.AdgPlayer\Services\DuneAdgPlayerEngine.Tick.cs" Link="Engine\DuneAdgPlayerEngine.Tick.cs" />
+		<Compile Include="..\Cryogenic.AdgPlayer\Services\OplSynthesizer.cs" Link="Engine\OplSynthesizer.cs" />
+	</ItemGroup>
+</Project>

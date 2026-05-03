@@ -25,8 +25,8 @@ public sealed partial class DuneAdgPlayerEngine : IDisposable {
 
 	// --- PIT timing ---
 	private const int PitInputClock = 1193182;
-	private int _pitReloadValue = 0x1745;
-	private long _samplesPerTickThreshold;
+	private readonly int _pitReloadValue = 0x1745;
+	private readonly long _samplesPerTickThreshold;
 	private long _sampleAccumulator;
 
 	// --- Song data ---
@@ -371,6 +371,24 @@ public sealed partial class DuneAdgPlayerEngine : IDisposable {
 			_sampleAccumulator += (long)frameCount * PitInputClock;
 			while (_sampleAccumulator >= _samplesPerTickThreshold) {
 				_sampleAccumulator -= _samplesPerTickThreshold;
+				_totalTickCount++;
+				TickInternal();
+			}
+		}
+	}
+
+	/// <summary>
+	/// Advances the engine by a fixed number of raw PIT ticks without requiring audio hardware.
+	/// Each call to <see cref="TickInternal"/> corresponds to one PIT interrupt (at the configured
+	/// PIT reload rate). Use this for headless inspection and MCP-driven testing.
+	/// Has no effect when the engine is not in the playing state.
+	/// </summary>
+	public void AdvanceTicks(int tickCount) {
+		if (!_playing || _paused) {
+			return;
+		}
+		lock (_lock) {
+			for (int i = 0; i < tickCount; i++) {
 				_totalTickCount++;
 				TickInternal();
 			}
