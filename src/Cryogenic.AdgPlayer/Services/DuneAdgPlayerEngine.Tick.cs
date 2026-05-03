@@ -226,7 +226,7 @@ public sealed partial class DuneAdgPlayerEngine {
 
 		_channelPitchBendCounter[ch] = (byte)(_channelPitchBendCounter[ch] - 1);
 		byte accumulator = _channelPitchAccumulator[ch];
-		byte speed = _channelPitchBendCounterInit[ch];
+		byte speed = _channelPitchBendSpeed[ch];
 		accumulator = (byte)(accumulator + speed);
 		_channelPitchAccumulator[ch] = accumulator;
 		PitchBendBody(ch, Make16(accumulator, speed));
@@ -584,7 +584,8 @@ public sealed partial class DuneAdgPlayerEngine {
 		_channelConnModulation[ch] = ax;
 
 		ax = SongWord16((ushort)(patchOffset + 0x23));
-		_channelPitchBendCounterInit[ch] = Hi8(ax);
+		_channelPitchBendSpeed[ch] = Hi8(ax);
+		_channelPitchBendCounterInit[ch] = Lo8(ax);
 		_channelPitchBendCounter[ch] = 0;
 
 		byte patchType = SongByte16(patchOffset);

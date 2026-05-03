@@ -23,7 +23,7 @@ internal static class Program {
 		try {
 			Log.Information("Cryogenic ADG Player starting");
 			BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
-		} catch (Exception ex) {
+		} catch (Exception ex) when (ex is not OutOfMemoryException and not StackOverflowException) {
 			Log.Fatal(ex, "Unhandled exception");
 		} finally {
 			Log.CloseAndFlush();

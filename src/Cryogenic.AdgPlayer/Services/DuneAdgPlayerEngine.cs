@@ -645,7 +645,7 @@ public sealed partial class DuneAdgPlayerEngine : IDisposable {
 				_tickEnabled = 1;
 				_fadeScratch = 0;
 				_fadeScratch2 = 0;
-				_surroundMask = 0xFF;
+				_surroundMask = 0x00;
 				_totalTickCount = 0;
 				_totalSamplesRendered = 0;
 

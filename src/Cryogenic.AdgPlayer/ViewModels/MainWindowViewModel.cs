@@ -404,7 +404,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 
 			// Update currently playing track visual indicator
 			UpdateCurrentlyPlayingTrack();
-		} catch (Exception ex) {
+		} catch (Exception ex) when (ex is IOException or InvalidOperationException or ArgumentException or FormatException) {
 			Status = $"Play failed: {ex.Message}";
 			Logger.Error(ex, "Play failed");
 			RefreshTransportState();
@@ -552,7 +552,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 
 		try {
 			return TryLoadPath(resolvedPath);
-		} catch (Exception ex) {
+		} catch (Exception ex) when (ex is IOException or InvalidOperationException or ArgumentException or FormatException) {
 			Status = $"Load failed: {ex.Message}";
 			Logger.Error(ex, "Load failed");
 			return false;
@@ -582,7 +582,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 			UpdateHeaderInfo();
 			Logger.Information("Loaded {File}", SelectedFileName);
 			return true;
-		} catch (Exception ex) {
+		} catch (Exception ex) when (ex is IOException or InvalidOperationException or ArgumentException or FormatException) {
 			Status = $"Load failed: {ex.Message}";
 			Logger.Error(ex, "Load failed");
 			return false;
@@ -768,7 +768,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 				tooltip.Append($"Loop: Measure {headerInfo.LoopStartMeasure}→{headerInfo.LoopEndMeasure} (×{headerInfo.LoopCount})");
 				item.Tooltip = tooltip.ToString();
 			}
-		} catch (Exception ex) {
+		} catch (Exception ex) when (ex is IOException or InvalidOperationException or ArgumentException or FormatException) {
 			Logger.Warning(ex, "Failed to extract header info for playlist item {FileName}", item.FileName);
 			item.Tooltip = $"Error loading header for {item.FileName}";
 		}
