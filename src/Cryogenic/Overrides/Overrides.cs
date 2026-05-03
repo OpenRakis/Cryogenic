@@ -133,6 +133,9 @@ public partial class Overrides : CSharpOverrideHelper {
 		DefineHnmCodeOverrides();
 		DefineInitCodeOverrides();
 		DefineIntroCodeOverrides();
+		DefineFrameTaskCodeOverrides();
+		DefineParticleCodeOverrides();
+		DefineCharacterRoomCodeOverrides();
 		DefineMapCodeOverrides();
 		DefineMenuCodeOverrides();
 		DefineScriptedSceneCodeOverrides();
