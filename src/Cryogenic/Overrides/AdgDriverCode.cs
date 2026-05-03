@@ -1407,7 +1407,6 @@ public partial class Overrides {
 						goto RoutingChooseSecondary0;
 					}
 					carryBh = (bh & 0x01) != 0;
-					bh = (byte)(bh >> 1);
 					if (carryBh) {
 						goto RoutingChooseSecondary1;
 					}
@@ -1424,7 +1423,6 @@ public partial class Overrides {
 						goto RoutingChoosePrimary0;
 					}
 					carryFolded = (folded & 0x01) != 0;
-					folded = (byte)(folded >> 1);
 					if (carryFolded) {
 						goto RoutingChoosePrimary1;
 					}

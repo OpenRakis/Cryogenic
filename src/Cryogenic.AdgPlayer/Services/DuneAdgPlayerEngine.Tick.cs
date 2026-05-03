@@ -365,7 +365,6 @@ public sealed partial class DuneAdgPlayerEngine {
 				goto Label0A01;
 			}
 			carry = (alHash & 0x01) != 0;
-			alHash = (byte)(alHash >> 1);
 			if (carry) {
 				goto Label0A0F;
 			}

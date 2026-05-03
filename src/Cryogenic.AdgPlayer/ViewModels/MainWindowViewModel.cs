@@ -30,7 +30,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 	];
 
 	private readonly Window _window;
-	private DuneAdgPlayerEngine _engine;
+	private readonly DuneAdgPlayerEngine _engine;
 	private WaveformControl _waveformControl;
 	private VolumeFeedbackControl _volumeFeedbackControl;
 	private readonly DispatcherTimer _statusTimer;
@@ -585,8 +585,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 			return requestedPath;
 		}
 
-		string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(requestedPath);
-		string hsqCandidate = Path.Combine(directory, fileNameWithoutExtension + ".HSQ");
+		string hsqCandidate = Path.ChangeExtension(requestedPath, ".HSQ");
 		if (File.Exists(hsqCandidate)) {
 			return hsqCandidate;
 		}
@@ -729,7 +728,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 				tooltip.Append($"Loop: Measure {headerInfo.LoopStartMeasure}→{headerInfo.LoopEndMeasure} (×{headerInfo.LoopCount})");
 				item.Tooltip = tooltip.ToString();
 			}
-		} catch {
+		} catch (Exception ex) {
+			Logger.Warning(ex, "Failed to extract header info for playlist item {FileName}", item.FileName);
 			item.Tooltip = $"Error loading header for {item.FileName}";
 		}
 	}
