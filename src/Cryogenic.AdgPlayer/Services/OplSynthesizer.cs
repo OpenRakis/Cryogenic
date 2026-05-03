@@ -61,7 +61,9 @@ public sealed class OplSynthesizer : IDisposable {
 		_chip = new Opl3Chip();
 		_chip.Reset((uint)NativeOplSampleRate);
 		_adlibGold = new AdlibGold(NativeOplSampleRate);
-		_adlibGoldPostProcessEnabled = true;
+		// AdLib Gold surround programming must be validated against the live driver before enabling.
+		// Default to plain OPL3 output so the audio pipeline produces sound on first use.
+		_adlibGoldPostProcessEnabled = false;
 
 		_pauseHandler = new NullPauseHandler();
 		_mixer = new SoftwareMixer(AudioEngine.CrossPlatform, _pauseHandler);
