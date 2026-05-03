@@ -782,6 +782,7 @@ public sealed partial class DuneAdgPlayerEngine : IDisposable {
 	/// <summary>
 	/// Extracts song header info from raw file data without loading the full song.
 	/// Handles both HSQ-compressed and raw ADP data.
+	/// Does NOT create an engine instance — safe to call for playlist inspection.
 	/// </summary>
 	public static bool TryExtractHeaderInfo(byte[] fileData, out SongHeaderInfo? headerInfo) {
 		headerInfo = null;
@@ -790,12 +791,10 @@ public sealed partial class DuneAdgPlayerEngine : IDisposable {
 		}
 
 		bool wasCompressed = false;
-		byte[]? decompressed = null;
 		byte[] data = fileData;
 
-		// Try HSQ decompression using a temporary instance
-		DuneAdgPlayerEngine tempEngine = new DuneAdgPlayerEngine();
-		decompressed = tempEngine.TryDecompressHsqInternal(fileData);
+		// Try HSQ decompression using the static helper — no engine instantiation needed.
+		byte[]? decompressed = TryDecompressHsq(fileData);
 		if (decompressed != null) {
 			data = decompressed;
 			wasCompressed = true;
@@ -846,10 +845,6 @@ public sealed partial class DuneAdgPlayerEngine : IDisposable {
 
 		headerInfo = info;
 		return true;
-	}
-
-	private byte[]? TryDecompressHsqInternal(byte[] fileData) {
-		return TryDecompressHsq(fileData);
 	}
 }
 

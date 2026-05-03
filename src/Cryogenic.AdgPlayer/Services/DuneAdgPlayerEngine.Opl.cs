@@ -159,24 +159,35 @@ public sealed partial class DuneAdgPlayerEngine {
 	/// <summary>
 	/// Initializes OPL3 Gold chip: resets, enables waveform select, sets OPL3 mode on secondary.
 	/// Mirrors the init sequence from AdgInitializeGoldHardware equivalents.
+	/// All register writes are also fired on <see cref="OplRegisterWritten"/> so the MCP
+	/// adg_opl_log tool captures the full initialization sequence.
 	/// </summary>
 	private void InitOplChip() {
 		_opl.Reset();
 
 		// Primary chip: waveform select enable (reg 0x01, bit 5)
-		_opl.WriteRegister(0x01, 0x20);
+		WriteAndFireOplRegister(0x01, 0x20);
 		// Primary chip: rhythm mode off
-		_opl.WriteRegister(0xBD, 0x00);
+		WriteAndFireOplRegister(0xBD, 0x00);
 		// Primary chip: CSM/keyboard split off
-		_opl.WriteRegister(0x08, 0x00);
+		WriteAndFireOplRegister(0x08, 0x00);
 
 		// Secondary chip: OPL3 mode enable (reg 0x105)
-		_opl.WriteRegister(0x105, 0x01);
+		WriteAndFireOplRegister(0x105, 0x01);
 		// Secondary chip: waveform select enable
-		_opl.WriteRegister(0x101, 0x20);
+		WriteAndFireOplRegister(0x101, 0x20);
 		// Secondary chip: rhythm mode off
-		_opl.WriteRegister(0x1BD, 0x00);
+		WriteAndFireOplRegister(0x1BD, 0x00);
 		_opl.InitializeGoldHardware();
+	}
+
+	/// <summary>
+	/// Writes a register directly to the OPL chip and fires <see cref="OplRegisterWritten"/>.
+	/// Used for initialization writes that bypass the channel routing table.
+	/// </summary>
+	private void WriteAndFireOplRegister(ushort register, byte value) {
+		_opl.WriteRegister(register, value);
+		OplRegisterWritten?.Invoke(register, value, _totalTickCount);
 	}
 
 	/// <summary>
@@ -216,6 +227,3 @@ public sealed partial class DuneAdgPlayerEngine {
 	}
 }
 
-
-/// <summary>
-/// Writes a register/value pair to the OPL synthesizer.

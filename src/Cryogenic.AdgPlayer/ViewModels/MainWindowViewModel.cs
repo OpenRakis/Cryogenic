@@ -14,19 +14,23 @@ using Cryogenic.AdgPlayer.Views;
 using Serilog;
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Text;
 
 /// <summary>
 /// Main window view model: manages file loading, playback, volume, waveform,
-/// channel events, OPL writes, and Serilog log display for the standalone ADP OPL3 player.
+/// channel events, OPL writes, and Serilog log display for the standalone ADG OPL3 player.
 /// </summary>
 public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 	private static readonly ILogger Logger = Log.ForContext<MainWindowViewModel>();
 
 	private static readonly string[] DefaultSongCandidates = [
-		@"C:\Users\noalm\source\repos\Cryogenic\doc\DUNECDVF\C\DUNECD\DUNE.DAT_\ARRAKIS.ADG",
+		// Bundled repo asset (relative to the binary at src/*/bin/Debug/net10.0/)
+		Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "doc", "DUNECDVF", "C", "DUNECD", "DUNE.DAT_", "ARRAKIS_AGD.HSQ")),
+		// Developer checkout path
+		@"C:\Users\noalm\source\repos\Cryogenic\doc\DUNECDVF\C\DUNECD\DUNE.DAT_\ARRAKIS_AGD.HSQ",
 	];
 
 	private readonly Window _window;
@@ -37,6 +41,13 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 	private string _loadedPath = "";
 	private int _playlistIndex = -1;
 	private PlaylistItem? _currentlyPlayingTrack = null;
+
+	// Ring buffers for events produced by the audio thread.
+	// The timer drains these in bulk on the UI thread — prevents flooding Dispatcher with
+	// thousands of individual Post() calls per second (one per OPL write + channel event).
+	private const int EventRingCapacity = 512;
+	private readonly ConcurrentQueue<ChannelEventItem> _pendingChannelEvents = new();
+	private readonly ConcurrentQueue<OplWriteItem> _pendingOplWrites = new();
 
 	[ObservableProperty]
 	private string _adgPath = ResolveDefaultSongPath();
@@ -114,7 +125,10 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 		_statusTimer = new DispatcherTimer {
 			Interval = TimeSpan.FromMilliseconds(100)
 		};
-		_statusTimer.Tick += (_, _) => RefreshTransportState();
+		_statusTimer.Tick += (_, _) => {
+			RefreshTransportState();
+			DrainPendingEvents();
+		};
 		_statusTimer.Start();
 
 		// Set default file name
@@ -380,6 +394,9 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 
 			ChannelEvents.Clear();
 			OplWrites.Clear();
+			// Flush ring buffers so stale pre-play events do not appear after the Clear.
+			while (_pendingChannelEvents.TryDequeue(out _)) { }
+			while (_pendingOplWrites.TryDequeue(out _)) { }
 			_engine.Play();
 			RefreshTransportState();
 			Status = "Playing.";
@@ -446,32 +463,55 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 	}
 
 	private void OnChannelEvent(int channel, string eventType, string detail, long tick) {
-		Dispatcher.UIThread.Post(() => {
-			ChannelEventItem item = new ChannelEventItem {
-				Channel = channel,
-				EventType = eventType,
-				Detail = detail,
-				Tick = tick
-			};
-			ChannelEvents.Add(item);
-			while (ChannelEvents.Count > 500) {
-				ChannelEvents.RemoveAt(0);
-			}
+		// Called from the audio thread — enqueue only; never post to UI dispatcher here.
+		_pendingChannelEvents.Enqueue(new ChannelEventItem {
+			Channel = channel,
+			EventType = eventType,
+			Detail = detail,
+			Tick = tick
 		});
+		// Bound the ring buffer; drop oldest entry when over capacity.
+		while (_pendingChannelEvents.Count > EventRingCapacity) {
+			_pendingChannelEvents.TryDequeue(out _);
+		}
 	}
 
 	private void OnOplWrite(ushort register, byte value, long tick) {
-		Dispatcher.UIThread.Post(() => {
-			OplWriteItem item = new OplWriteItem {
-				Register = register,
-				Value = value,
-				Tick = tick
-			};
-			OplWrites.Add(item);
-			while (OplWrites.Count > 500) {
-				OplWrites.RemoveAt(0);
-			}
+		// Called from the audio thread — enqueue only; never post to UI dispatcher here.
+		_pendingOplWrites.Enqueue(new OplWriteItem {
+			Register = register,
+			Value = value,
+			Tick = tick
 		});
+		while (_pendingOplWrites.Count > EventRingCapacity) {
+			_pendingOplWrites.TryDequeue(out _);
+		}
+	}
+
+	/// <summary>
+	/// Drains the audio-thread event queues onto the UI collections.
+	/// Called by the 100 ms <see cref="DispatcherTimer"/> tick — always on the UI thread.
+	/// Limits per-tick additions so the UI list never grows unbounded.
+	/// </summary>
+	private void DrainPendingEvents() {
+		const int maxPerTick = 100;
+		int added = 0;
+		while (added < maxPerTick && _pendingChannelEvents.TryDequeue(out ChannelEventItem? chItem) && chItem is not null) {
+			ChannelEvents.Add(chItem);
+			added++;
+		}
+		while (ChannelEvents.Count > 500) {
+			ChannelEvents.RemoveAt(0);
+		}
+
+		added = 0;
+		while (added < maxPerTick && _pendingOplWrites.TryDequeue(out OplWriteItem? oplItem) && oplItem is not null) {
+			OplWrites.Add(oplItem);
+			added++;
+		}
+		while (OplWrites.Count > 500) {
+			OplWrites.RemoveAt(0);
+		}
 	}
 
 	private void WireSerilogSink() {

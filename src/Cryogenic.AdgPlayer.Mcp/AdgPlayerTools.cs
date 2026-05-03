@@ -10,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Text.Json;
 
@@ -25,7 +26,8 @@ public sealed class AdgPlayerTools {
 	private static readonly ILogger Logger = Log.ForContext<AdgPlayerTools>();
 
 	private static readonly string[] DefaultSearchDirs = [
-		Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "doc", "DUNECDVF", "C", "DUNECD", "DUNE.DAT_"),
+		// Canonicalize relative segments so Path.Combine cannot silently drop earlier arguments.
+		Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "doc", "DUNECDVF", "C", "DUNECD", "DUNE.DAT_")),
 		@"C:\Users\noalm\source\repos\Cryogenic\doc\DUNECDVF\C\DUNECD\DUNE.DAT_",
 		@"C:\Jeux\DUNE"
 	];
@@ -49,19 +51,14 @@ public sealed class AdgPlayerTools {
 			? [directory]
 			: [..DefaultSearchDirs];
 
-		List<string> found = new List<string>();
-		foreach (string dir in searchDirs) {
-			string expanded = dir;
-			if (!Directory.Exists(expanded)) {
-				continue;
-			}
-			foreach (string file in Directory.GetFiles(expanded, "*", SearchOption.TopDirectoryOnly)) {
+		List<string> found = searchDirs
+			.Where(Directory.Exists)
+			.SelectMany(dir => Directory.GetFiles(dir, "*", SearchOption.TopDirectoryOnly))
+			.Where(file => {
 				string ext = Path.GetExtension(file).ToUpperInvariant();
-				if (ext is ".HSQ" or ".ADG" or ".AGD") {
-					found.Add(file);
-				}
-			}
-		}
+				return ext is ".HSQ" or ".ADG" or ".AGD";
+			})
+			.ToList();
 
 		if (found.Count == 0) {
 			return "No ADG/HSQ files found. Ensure the repo submodule contains doc/DUNECDVF/C/DUNECD/DUNE.DAT_/ with ARRAKIS_AGD.HSQ and MORNING.HSQ.";
