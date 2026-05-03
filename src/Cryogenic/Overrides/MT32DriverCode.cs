@@ -1,10 +1,15 @@
 ﻿namespace Cryogenic.Overrides;
 
+using Cryogenic.Mt32DriverDebug;
+using Cryogenic.Services;
+
 using Serilog;
 
 using Spice86.Shared.Utils;
 
 using System;
+using System.IO;
+using System.Text;
 
 /// <summary>
 /// Partial class containing Roland MT-32 MIDI driver (DNMID) overrides.
@@ -59,8 +64,60 @@ public partial class Overrides {
 	private const ushort LiveMt32DriverSegment = 0x5BAE;
 	private const ushort LiveMt32OutOffsetA = 0x0577;
 	private const ushort LiveMt32OutOffsetB = 0x05D0;
-	private static bool EnableMt32CSharpFunctionReplacement = false;
+	/// <summary>
+	/// True when the MT-32 C# driver overrides are active.
+	/// Enabled only when the game's <c>-a</c> argument starts with <c>MID</c>, which is the
+	/// token the game uses when the MT-32 driver is requested (e.g. <c>"MID330 SBP2227"</c>).
+	/// </summary>
+	private bool EnableMt32CSharpFunctionReplacement;
 	private int _firstDispatchCount = 0;
+
+	/// <summary>
+	/// Sets <see cref="EnableMt32CSharpFunctionReplacement"/> from the emulated-exe args.
+	/// Must be called before <c>DefineOverrides()</c> so that <c>DefineMT32DriverCodeOverrides</c>
+	/// sees the correct value when deciding whether to register function replacements.
+	/// </summary>
+	private void DetectMt32DriverEnabled() {
+		MusicDriverType driverType = MusicDriverDetection.DetectFromExeArgs(Configuration.ExeArgs ?? string.Empty);
+		EnableMt32CSharpFunctionReplacement = driverType == MusicDriverType.Dnmid;
+	}
+
+	/// <summary>
+	/// When the MT-32 driver is active, validates the music folder path from
+	/// <see cref="Program.MusicFolderPath"/> and instantiates <see cref="MusicFolderPlayer"/>.
+	/// Called once from the <c>Overrides</c> constructor after <c>DefineOverrides()</c>.
+	/// </summary>
+	private void InitializeMusicFolderPlayer() {
+		if (!EnableMt32CSharpFunctionReplacement) {
+			Mt32Logger.Information("MT-32 driver not active (ExeArgs='{ExeArgs}'). MusicFolder replacement disabled.", Configuration.ExeArgs ?? string.Empty);
+			return;
+		}
+		string musicFolderPath = Program.MusicFolderPath;
+		if (string.IsNullOrEmpty(musicFolderPath)) {
+			Mt32Logger.Information("MusicFolder not configured, replacement disabled.");
+			return;
+		}
+		if (!Directory.Exists(musicFolderPath)) {
+			Mt32Logger.Warning("MusicFolder path '{Path}' does not exist. Replacement disabled.", musicFolderPath);
+			return;
+		}
+		_musicFolderPlayer = new MusicFolderPlayer(musicFolderPath);
+	}
+
+	/// <summary>
+	/// Computes a 2-byte content fingerprint from the song data block at <paramref name="physicalAddress"/>.
+	/// The fingerprint is a lowercase hexadecimal string of the first 2 bytes and is used as the
+	/// stable key in <c>fingerprints.json</c>.
+	/// </summary>
+	/// <param name="physicalAddress">20-bit physical address of the song data block (ES:SI linearised).</param>
+	/// <returns>Lowercase 4-character hex string, e.g. <c>"a3f2"</c>.</returns>
+	private string ComputeSongFingerprint(uint physicalAddress) {
+		StringBuilder sb = new StringBuilder(4);
+		for (int i = 0; i < 2; i++) {
+			sb.Append(Memory.UInt8[physicalAddress + (uint)i].ToString("x2", System.Globalization.CultureInfo.InvariantCulture));
+		}
+		return sb.ToString();
+	}
 
 	private const string MusicDriverInitAlias = "MusicDriver_Init";
 	private const string MusicDriverOpenSongAlias = "MusicDriver_OpenSong";
@@ -405,6 +462,20 @@ public partial class Overrides {
 	public Action MidiOpen_F000_0103_F0103(int gotoAddress) {
 		Cryogenic.CryogenicMcpTools.RecordMt32Call("F000:0103");
 		Mt32Logger.Debug("[MIDI:F000:0103] Open entry called (Alias={Alias})", MusicDriverOpenSongAlias);
+		if (_musicFolderPlayer is not null) {
+			uint physAddr = MemoryUtils.ToPhysicalAddress(ES, SI);
+			string fingerprint = ComputeSongFingerprint(physAddr);
+			string songName = _musicFolderPlayer.ResolveName(fingerprint);
+			byte masterVol = MidiCsByte(0x013F);
+			float normVol = Math.Clamp(masterVol / 127.0f, 0.0f, 1.0f);
+			_musicFolderPlayer.TryPlay(fingerprint, normVol);
+			if (_musicFolderPlayer.IsActive) {
+				// Replacement is playing: skip MidiOpenInternal entirely so the native MT-32
+				// driver never starts and cannot produce its initialisation notes.
+				Mt32Logger.Debug("[MIDI:F000:0103] Replacement active for '{Name}' ({Fingerprint}), suppressing MidiOpenInternal.", songName, fingerprint);
+				return FarRet();
+			}
+		}
 		return MidiOpenInternal_F000_0250_F0250(0);
 	}
 
@@ -419,6 +490,14 @@ public partial class Overrides {
 	public Action MidiReset_F000_0106_F0106(int gotoAddress) {
 		Cryogenic.CryogenicMcpTools.RecordMt32Call("F000:0106");
 		Mt32Logger.Debug("[MIDI:F000:0106] Reset entry called (Alias={Alias})", MusicDriverResetStopAlias);
+		if (_musicFolderPlayer is not null && _musicFolderPlayer.IsActive) {
+			// A replacement track is already playing. The game issues Reset before every Open
+			// as part of its song-start sequence. Calling MidiResetInternal here would send a
+			// MT-32 SysEx reset to the MIDI port, producing an audible click. Suppress it;
+			// TryPlay in MidiOpen handles the actual track transition.
+			Mt32Logger.Debug("[MIDI:F000:0106] Replacement active, suppressing MidiResetInternal to avoid MT-32 SysEx click.");
+			return FarRet();
+		}
 		return MidiResetInternal_F000_01E1_F01E1(0);
 	}
 
@@ -504,6 +583,9 @@ public partial class Overrides {
 	/// </remarks>
 	public Action MidiTick_F000_010F_F010F(int gotoAddress) {
 		Cryogenic.CryogenicMcpTools.RecordMt32Call("F000:010F");
+		if (_musicFolderPlayer is not null && _musicFolderPlayer.IsActive) {
+			return FarRet();
+		}
 		return MidiTickInternal_F000_030F_F030F(0);
 	}
 
@@ -518,6 +600,13 @@ public partial class Overrides {
 	public Action MidiSetVolume_F000_0112_F0112(int gotoAddress) {
 		Cryogenic.CryogenicMcpTools.RecordMt32Call("F000:0112");
 		Mt32Logger.Debug("[MIDI:F000:0112] Set volume entry (Alias={Alias})", MusicDriverSetMasterVolumeAlias);
+		if (_musicFolderPlayer is not null && _musicFolderPlayer.IsActive) {
+			byte al = (byte)(AX & 0xFF);
+			_musicFolderPlayer.Volume = Math.Clamp(al / 127.0f, 0.0f, 1.0f);
+			// Skip MidiSetVolumeInternal: the native driver was never opened for this song,
+			// so operating on its uninitialised state is unsafe and unnecessary.
+			return FarRet();
+		}
 		return MidiSetVolumeInternal_F000_022B_F022B(0);
 	}
 
