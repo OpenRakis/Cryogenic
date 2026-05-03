@@ -50,8 +50,18 @@ if ! $mt32_ok; then
   exit 1
 fi
 
+MUSIC_FOLDER_ARG=()
+USER_ARGS=()
+for arg in "$@"; do
+  if [ "$arg" = "--OverrideMusic" ]; then
+    MUSIC_FOLDER_ARG=(--MusicFolder "$SCRIPT_DIR/assets_override/music")
+  else
+    USER_ARGS+=("$arg")
+  fi
+ done
+
 DEFAULT_ARGS=( -e "$DUNE_EXE_PATH" -a "MID330 SBP2227" -m "$MT32_DIR" -p 4096 --UseCodeOverride true --OplMode Opl3Gold )
 
-echo "Running Cryogenic with arguments: ${DEFAULT_ARGS[*]} $*"
+echo "Running Cryogenic with arguments: ${DEFAULT_ARGS[*]} ${MUSIC_FOLDER_ARG[*]} ${USER_ARGS[*]}"
 
-dotnet run --project src/Cryogenic -- "${DEFAULT_ARGS[@]}" "$@"
+dotnet run --project src/Cryogenic -- "${DEFAULT_ARGS[@]}" "${MUSIC_FOLDER_ARG[@]}" "${USER_ARGS[@]}"
