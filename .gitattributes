@@ -53,3 +53,6 @@
 #*.props     merge=binary
 #*.filters   merge=binary
 #*.vcxitems  merge=binary
+
+# Store repository doc assets in Git LFS.
+doc/**       filter=lfs diff=lfs merge=lfs -text
