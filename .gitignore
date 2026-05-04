@@ -369,3 +369,8 @@ MigrationBackup/
 
 #GDB
 .gdb_history
+
+# game assets
+dune/
+mt32rom/
+assets_override/
