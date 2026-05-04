@@ -159,17 +159,6 @@ src/Cryogenic/
 1. [.NET 10 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/10.0)
 2. `DNCDPRG.EXE` and `DUNE.DAT` from Dune CD version 3.7 (copyrighted; obtain separately)
 
-The required game files are included in this repository under `doc/DUNECDVF/CD/DuneVF/`:
-
-```
-doc/DUNECDVF/CD/DuneVF/
-├── DNCDPRG.EXE   ← required executable (version 3.7, SHA256 above)
-├── DUNE.DAT      ← required game data archive
-└── ...
-```
-
-Both files are stored in Git LFS. After cloning, run `git lfs pull` to download them if they are not already present.
-
 Verify the executable checksum:
 
 ```bash
@@ -194,14 +183,7 @@ dotnet build
 
 ### Run (no audio)
 
-The game files (`DNCDPRG.EXE` and `DUNE.DAT`) must be in the same directory. If you are using the files from this repository, they are already co-located under `doc/DUNECDVF/CD/DuneVF/`:
-
-```bash
-cd Cryogenic/src
-dotnet run --Exe ../doc/DUNECDVF/CD/DuneVF/DNCDPRG.EXE --UseCodeOverride true -p 4096
-```
-
-Or with an arbitrary path (both files must be in the same directory):
+Place `DUNE.DAT` and `DNCDPRG.EXE` in the same directory, then:
 
 ```bash
 cd Cryogenic/src
@@ -217,7 +199,7 @@ OPL3 music and Sound Blaster PCM:
 ```bash
 cd Cryogenic/src/Cryogenic
 dotnet publish
-bin/Release/net10.0/publish/Cryogenic --Exe ../doc/DUNECDVF/CD/DuneVF/DNCDPRG.EXE --Cycles 8000 --UseCodeOverride true -p 4096 -a "ADP330 SBP2227"
+bin/Release/net10.0/publish/Cryogenic --Exe /path/to/DNCDPRG.EXE --Cycles 8000 --UseCodeOverride true -p 4096 -a "ADP330 SBP2227"
 ```
 
 ---
