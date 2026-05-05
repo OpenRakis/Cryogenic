@@ -1,5 +1,7 @@
 ﻿namespace Cryogenic.Overrides;
 
+using Cryogenic.Services;
+
 using Globals;
 
 using Mt32DriverDebug;
@@ -65,6 +67,13 @@ public partial class Overrides : CSharpOverrideHelper {
 	private Mt32DriverWindowService mt32DriverWindowService;
 
 	/// <summary>
+	/// Replacement audio player for the MT-32 music stream.
+	/// <c>null</c> when the feature is disabled (no <c>--MusicFolder</c> arg, missing folder,
+	/// or <c>EnableMt32CSharpFunctionReplacement</c> is <c>false</c>).
+	/// </summary>
+	private MusicFolderPlayer? _musicFolderPlayer;
+
+	/// <summary>
 	/// Initializes the override system and registers all function replacements and hooks.
 	/// </summary>
 	/// <param name="functionInformations">Dictionary to populate with function override mappings.</param>
@@ -88,8 +97,11 @@ public partial class Overrides : CSharpOverrideHelper {
 		globalsOnDs = new ExtraGlobalsOnDs(machine.Memory, machine.CpuState.SegmentRegisters);
 		globalsOnCsSegment0X2538 = new ExtraGlobalsOnCsSegment0x2538(machine.Memory, cs2);
 
+		// Must run before DefineOverrides so DefineMT32DriverCodeOverrides sees the correct flag.
+		DetectMt32DriverEnabled();
 		DefineOverrides();
 		DefineStaticDefinitionsFunctions();
+		InitializeMusicFolderPlayer();
 
 		// Show the music driver debug window via Spice86's AdditionalWindow API.
 		// Active regardless of whether C# driver overrides are enabled.

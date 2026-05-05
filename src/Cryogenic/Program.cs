@@ -9,6 +9,17 @@ using Spice86.Core.CLI;
 List<string> newArgs = args.ToList();
 //newArgs.AddRange("-m /mnt/c/mt32-rom-data -d true -e /mnt/c/Jeux/ABWFR/DUNE_CD/C/DNCDPRG.EXE -a \"MID330 SBP2227\" --UseCodeOverride true".Split(" "));
 
+// Extract --MusicFolder from our own args before handing the list to Spice86,
+// which would reject an unknown flag. The value is exposed via Program.MusicFolderPath.
+for (int i = 0; i < newArgs.Count - 1; i++) {
+	if (string.Equals(newArgs[i], "--MusicFolder", StringComparison.OrdinalIgnoreCase)) {
+		Program.MusicFolderPath = newArgs[i + 1];
+		newArgs.RemoveAt(i + 1);
+		newArgs.RemoveAt(i);
+		break;
+	}
+}
+
 string logsDirectory = Path.Combine(AppContext.BaseDirectory, "logs");
 Directory.CreateDirectory(logsDirectory);
 string logPath = Path.Combine(logsDirectory, "cryogenic-node-.log");
@@ -54,4 +65,10 @@ try {
 /// argument configuration and program launch.
 /// </remarks>
 public partial class Program {
+	/// <summary>
+	/// Path to the local music replacement folder, parsed from <c>--MusicFolder</c> on the
+	/// Cryogenic command line before Spice86 sees the argument list.
+	/// Empty string when the flag was not supplied.
+	/// </summary>
+	public static string MusicFolderPath { get; internal set; } = string.Empty;
 }

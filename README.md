@@ -26,6 +26,7 @@ C# re-implementation of Cryo's Dune (CD Version, 1992) running on [Spice86](http
 - [Code Structure](#code-structure)
 - [Prerequisites](#prerequisites)
 - [Build and Run](#build-and-run)
+- [MT-32 Music Folder Replacement](#mt-32-music-folder-replacement)
 - [Screenshots](#screenshots)
 - [Contributing](#contributing)
 - [Resources](#resources)
@@ -158,6 +159,11 @@ src/Cryogenic/
 
 1. [.NET 10 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/10.0)
 2. `DNCDPRG.EXE` and `DUNE.DAT` from Dune CD version 3.7 (copyrighted; obtain separately)
+3. **Ubuntu/Debian only (for MT-32 music replacement):** the `libvlc-dev` package provides the native VLC library used by LibVLCSharp:
+
+   ```bash
+   sudo apt install libvlc-dev
+   ```
 
 Verify the executable checksum:
 
@@ -201,6 +207,34 @@ cd Cryogenic/src/Cryogenic
 dotnet publish
 bin/Release/net10.0/publish/Cryogenic --Exe /path/to/DNCDPRG.EXE --Cycles 8000 --UseCodeOverride true -p 4096 -a "ADP330 SBP2227"
 ```
+
+---
+
+## MT-32 Music Folder Replacement
+
+When running with the MT-32 driver (`-a "MID330 SBP2227"`), you can supply a folder of audio files that replace the game's native MIDI music. Pass the folder path via `--MusicFolder`:
+
+```bash
+dotnet run --Exe /path/to/DNCDPRG.EXE --UseCodeOverride true -p 4096 \
+  -a "MID330 SBP2227" --MusicFolder /path/to/music
+```
+
+Replacement files should be named to match the `name` value in the bundled `fingerprints.json` (filename without extension, case-insensitive). For example, a `name` of `Morning` will match `Morning.mp3`. Supported formats: MP3, OGG, WAV, FLAC, AAC.
+
+The project includes a bundled `fingerprints.json` resource that maps each song's 2-byte signature (4 hex characters) to a human-readable `name`.
+
+```json
+{
+  "e03d": {
+    "fingerprint": "e03d",
+    "name": "Intro"
+  }
+}
+```
+
+If no replacement file exists for a given song the native MT-32 driver handles that song instead.
+
+> **Ubuntu/Debian:** `libvlc-dev` must be installed (see [Prerequisites](#prerequisites)).
 
 ---
 
