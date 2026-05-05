@@ -148,6 +148,9 @@ public partial class Overrides : CSharpOverrideHelper {
 		// DNADP (AdLib Pro) driver observation hooks on the live segment (0x5BAE).
 		// Phase 1: observation-only (call counters, OPL traces, scheduler state).
 		DefineAdpDriverCodeOverrides();
+		// DNADG (AdLib Gold / OPL3) scaffold registration.
+		// Disabled by default until runtime ABI/side-effects are validated from live MCP evidence.
+		DefineAdgDriverCodeOverrides();
 		// Dump memory at the proper time. Too soon and drivers wont be loaded, too late and init code will be erased
 		DefineMemoryDumpsMapping();
 
