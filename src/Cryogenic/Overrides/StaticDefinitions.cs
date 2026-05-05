@@ -23,24 +23,7 @@ public partial class Overrides {
 #pragma warning disable MA0051
 	public void DefineStaticDefinitionsFunctions() {
 		DefineFunction(cs1, 0x3A, "exit");
-		DefineFunction(cs1, 0xB0, "initialize_2_ida");
-		DefineFunction(cs1, 0xD1, "intialize_resources_ida");
-		DefineFunction(cs1, 0x0169, "map2_resource_func_ida");
-		DefineFunction(cs1, 0x21C, "play_intro2_ida");
-		DefineFunction(cs1, 0x0309, "play_CREDITS_HNM_ida");
-		DefineFunction(cs1, 0x0580, "play_intro_ida");
-		DefineFunction(cs1, 0x61C, "load_VIRGIN_HNM_ida");
-		DefineFunction(cs1, 0x0625, "play_VIRGIN_HNM_ida");
-		DefineFunction(cs1, 0x64D, "load_CRYO_HNM_ida");
-		DefineFunction(cs1, 0x0658, "load_CRYO2_HNM_ida");
-		DefineFunction(cs1, 0x0661, "play_CRYO_OR_CRYO2_HNM_ida");
-		DefineFunction(cs1, 0x0678, "load_PRESENT_HNM_ida");
-		DefineFunction(cs1, 0x0684, "play_PRESENT_HNM_ida");
-		DefineFunction(cs1, 0x69E, "load_INTRO_HNM_ida");
 		DefineFunction(cs1, 0xF131, "setErrorMessageToNotEnoughMemory");
-		DefineFunction(cs1, 0x6AA, "play_hnm_86_frames_ida");
-		DefineFunction(cs1, 0x6BD, "play_hnm_skippable_ida");
-		DefineFunction(cs1, 0x9EF, "play_CREDITS_HNM_ida");
 		DefineFunction(cs1, 0x2D74, "open_SAL_resource_ida");
 		DefineFunction(cs1, 0x3B59, "draw_SAL_ida");
 		DefineFunction(cs1, 0x3BE9, "SAL_polygon_ida");
