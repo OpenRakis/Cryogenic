@@ -42,9 +42,10 @@ public sealed class LstSymbolTableFactoryTests {
 		ILstSymbolTable table = factory.Build();
 
 		// Act
-		LstSymbol? sym = table.FindByAddress("seg000", 0x0000);
+		bool found = table.TryFindByAddress("seg000", 0x0000, out LstSymbol? sym);
 
 		// Assert
+		found.Should().BeTrue();
 		sym.Should().NotBeNull();
 		sym!.Name.Should().Be("start");
 		sym.IsAutoLabel.Should().BeFalse();

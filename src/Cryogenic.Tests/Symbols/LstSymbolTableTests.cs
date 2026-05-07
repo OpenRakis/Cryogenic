@@ -24,61 +24,65 @@ public sealed class LstSymbolTableTests {
 
 	/// <summary>Returns the symbol defined at the given address.</summary>
 	[Fact]
-	public void FindByAddress_ExistingNamedSymbol_ReturnsCorrectSymbol() {
+	public void TryFindByAddress_ExistingNamedSymbol_ReturnsTrueAndCorrectSymbol() {
 		// Arrange
 		ILstSymbolTable table = BuildTable(SampleSymbols());
 
 		// Act
-		LstSymbol? result = table.FindByAddress("seg000", 0x003A);
+		bool found = table.TryFindByAddress("seg000", 0x003A, out LstSymbol? result);
 
 		// Assert
+		found.Should().BeTrue();
 		result.Should().NotBeNull();
 		result!.Name.Should().Be("exit_with_error");
 	}
 
 	/// <summary>Returns an auto-label at the given address.</summary>
 	[Fact]
-	public void FindByAddress_ExistingAutoLabel_ReturnsSymbol() {
+	public void TryFindByAddress_ExistingAutoLabel_ReturnsSymbol() {
 		// Arrange
 		ILstSymbolTable table = BuildTable(SampleSymbols());
 
 		// Act
-		LstSymbol? result = table.FindByAddress("seg000", 0x0056);
+		bool found = table.TryFindByAddress("seg000", 0x0056, out LstSymbol? result);
 
 		// Assert
+		found.Should().BeTrue();
 		result.Should().NotBeNull();
 		result!.IsAutoLabel.Should().BeTrue();
 	}
 
-	/// <summary>Returns null when no symbol is defined at the address.</summary>
+	/// <summary>Returns false when no symbol is defined at the address.</summary>
 	[Fact]
-	public void FindByAddress_NoSymbolAtAddress_ReturnsNull() {
+	public void TryFindByAddress_NoSymbolAtAddress_ReturnsFalse() {
 		// Arrange
 		ILstSymbolTable table = BuildTable(SampleSymbols());
 
 		// Act
-		LstSymbol? result = table.FindByAddress("seg000", 0x1234);
+		bool found = table.TryFindByAddress("seg000", 0x1234, out LstSymbol? result);
 
 		// Assert
+		found.Should().BeFalse();
 		result.Should().BeNull();
 	}
 
-	/// <summary>Returns null when the segment name does not exist in the table.</summary>
+	/// <summary>Returns false when the segment name does not exist in the table.</summary>
 	[Fact]
-	public void FindByAddress_UnknownSegment_ReturnsNull() {
+	public void TryFindByAddress_UnknownSegment_ReturnsFalse() {
 		// Arrange
 		ILstSymbolTable table = BuildTable(SampleSymbols());
 
 		// Act
-		LstSymbol? result = table.FindByAddress("seg999", 0x0000);
+		bool found = table.TryFindByAddress("seg999", 0x0000, out LstSymbol? result);
 
 		// Assert
+		found.Should().BeFalse();
 		result.Should().BeNull();
 	}
 
 	/// <summary>When two symbols share the same address, the last one in the list wins.</summary>
 	[Fact]
-	public void FindByAddress_DuplicateAddress_ReturnsLastDefined() {
+	public void TryFindByAddress_DuplicateAddress_ReturnsLastDefined() {
 		// Arrange
 		IReadOnlyList<LstSymbol> symbols = [
 			new LstSymbol { Segment = "seg000", Offset = 0x00D1, Name = "initialize_resources", IsAutoLabel = false },
@@ -87,9 +91,10 @@ public sealed class LstSymbolTableTests {
 		ILstSymbolTable table = BuildTable(symbols);
 
 		// Act
-		LstSymbol? result = table.FindByAddress("seg000", 0x00D1);
+		bool found = table.TryFindByAddress("seg000", 0x00D1, out LstSymbol? result);
 
 		// Assert
+		found.Should().BeTrue();
 		result.Should().NotBeNull();
 		result!.Name.Should().Be("initialize_resources_alias");
 	}
@@ -204,7 +209,7 @@ public sealed class LstSymbolTableTests {
 
 	/// <summary>Parser output fed directly into the table produces correct lookup behaviour.</summary>
 	[Fact]
-	public void RoundTrip_ParserOutputIntoTable_FindByAddressWorks() {
+	public void RoundTrip_ParserOutputIntoTable_TryFindByAddressWorks() {
 		// Arrange
 		ILstSymbolParser parser = new LstSymbolParser();
 		string[] lines = [
@@ -216,9 +221,10 @@ public sealed class LstSymbolTableTests {
 		ILstSymbolTable table = BuildTable(symbols);
 
 		// Act
-		LstSymbol? sym = table.FindByAddress("seg000", 0x021C);
+		bool found = table.TryFindByAddress("seg000", 0x021C, out LstSymbol? sym);
 
 		// Assert
+		found.Should().BeTrue();
 		sym.Should().NotBeNull();
 		sym!.Name.Should().Be("play_intro2");
 	}

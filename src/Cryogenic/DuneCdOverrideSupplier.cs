@@ -2,6 +2,8 @@
 
 using Serilog;
 
+using Cryogenic.Symbols;
+
 using Spice86.Core.CLI;
 using Spice86.Core.Emulator.Function;
 using Spice86.Core.Emulator.Mcp;
@@ -84,11 +86,17 @@ public class DuneCdOverrideSupplier : IOverrideSupplier, IMcpToolSupplier {
 
 	/// <summary>
 	/// Provides service instances available for MCP tool method injection.
-	/// No service instances are currently required for Cryogenic tools.
+	/// Supplies a singleton <see cref="ILstSymbolTable"/> built from the embedded DNCDPRG.lst
+	/// resource so <see cref="CryogenicSymbolMcpTools"/> can resolve it via constructor injection.
 	/// </summary>
 	/// <returns>Service instances for MCP tool execution.</returns>
 	public IEnumerable<object> GetMcpServices() {
-		Logger.Debug("Supplying MCP services collection (empty).");
-		return Array.Empty<object>();
+		ILstSymbolParser parser = new LstSymbolParser();
+		LstSymbolTableFactory factory = new(parser);
+		ILstSymbolTable symbolTable = factory.Build();
+		Logger.Information(
+			"Supplying ILstSymbolTable as MCP service. TotalSymbols={Total}",
+			symbolTable.GetAll(includeAutoLabels: true).Count);
+		return new object[] { symbolTable };
 	}
 }

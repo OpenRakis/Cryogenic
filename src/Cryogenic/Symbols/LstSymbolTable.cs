@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
 /// <summary>
@@ -35,9 +36,8 @@ public sealed class LstSymbolTable : ILstSymbolTable {
 	}
 
 	/// <inheritdoc />
-	public LstSymbol? FindByAddress(string segment, ushort offset) {
-		_byAddress.TryGetValue((segment, offset), out LstSymbol? result);
-		return result;
+	public bool TryFindByAddress(string segment, ushort offset, [MaybeNullWhen(false)] out LstSymbol symbol) {
+		return _byAddress.TryGetValue((segment, offset), out symbol);
 	}
 
 	/// <inheritdoc />
