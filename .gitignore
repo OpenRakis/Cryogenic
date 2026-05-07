@@ -371,6 +371,12 @@ MigrationBackup/
 .gdb_history
 
 # game assets
-dune/
-mt32rom/
-assets_override/
+dune/*
+!dune/.gitkeep
+mt32rom/*
+!mt32rom/.gitkeep
+assets_override/**
+!assets_override/.gitkeep
+!assets_override/music/
+!assets_override/music/.gitkeep
+!assets_override/music/fingerprints.json

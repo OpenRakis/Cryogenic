@@ -5,6 +5,23 @@ cd /d "%~dp0"
 
 set "DUNE_DIR=.\dune"
 set "MT32_DIR=.\mt32rom"
+set "USER_ARGS="
+set "MUSIC_FOLDER_COMMAND="
+set "MUSIC_FOLDER_PATH=%~dp0assets_override\music"
+:parse_args
+if "%~1"=="" goto parse_args_done
+if /I "%~1"=="--MusicFolder" (
+    set "MUSIC_FOLDER_COMMAND=--OverrideMusic \"%MUSIC_FOLDER_PATH%\""
+) else (
+    if defined USER_ARGS (
+        set "USER_ARGS=!USER_ARGS! %~1"
+    ) else (
+        set "USER_ARGS=%~1"
+    )
+)
+shift
+goto parse_args
+:parse_args_done
 
 where dotnet >nul 2>&1
 if errorlevel 1 (
@@ -44,9 +61,9 @@ echo Extract MT-32_v1.07_legacy_ROM_files.zip into %MT32_DIR% and retry.
 exit /b 1
 :mt32_ok
 
-echo Running Cryogenic with arguments: -e "%DUNE_EXE_PATH%" -a "MID330 SBP2227" -m "%MT32_DIR%" -p 4096 --UseCodeOverride true --OplMode Opl3Gold %*
+echo Running Cryogenic with arguments: -e "%DUNE_EXE_PATH%" -a "MID330 SBP2227" -m "%MT32_DIR%" -p 4096 --UseCodeOverride true --OplMode Opl3Gold %MUSIC_FOLDER_COMMAND% %USER_ARGS%
 
-dotnet run --project src\Cryogenic -- -e "%DUNE_EXE_PATH%" -a "MID330 SBP2227" -m "%MT32_DIR%" -p 4096 --UseCodeOverride true --OplMode Opl3Gold %*
+dotnet run --project src\Cryogenic -- -e "%DUNE_EXE_PATH%" -a "MID330 SBP2227" -m "%MT32_DIR%" -p 4096 --UseCodeOverride true --OplMode Opl3Gold %MUSIC_FOLDER_COMMAND% %USER_ARGS%
 exit /b %errorlevel%
 
 :: Subroutine: locate_asset <label> <dir> <pattern> <output-var>
