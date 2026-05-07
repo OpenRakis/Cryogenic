@@ -47,7 +47,7 @@ public sealed class LstSymbolTableFactoryTests {
 		// Assert
 		found.Should().BeTrue();
 		sym.Should().NotBeNull();
-		sym!.Name.Should().Be("start");
+		sym.Name.Should().Be("start");
 		sym.IsAutoLabel.Should().BeFalse();
 	}
 

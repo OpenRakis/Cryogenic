@@ -34,7 +34,7 @@ public sealed class LstSymbolTableTests {
 		// Assert
 		found.Should().BeTrue();
 		result.Should().NotBeNull();
-		result!.Name.Should().Be("exit_with_error");
+		result.Name.Should().Be("exit_with_error");
 	}
 
 	/// <summary>Returns an auto-label at the given address.</summary>
@@ -49,7 +49,7 @@ public sealed class LstSymbolTableTests {
 		// Assert
 		found.Should().BeTrue();
 		result.Should().NotBeNull();
-		result!.IsAutoLabel.Should().BeTrue();
+		result.IsAutoLabel.Should().BeTrue();
 	}
 
 	/// <summary>Returns false when no symbol is defined at the address.</summary>
@@ -96,7 +96,7 @@ public sealed class LstSymbolTableTests {
 		// Assert
 		found.Should().BeTrue();
 		result.Should().NotBeNull();
-		result!.Name.Should().Be("initialize_resources_alias");
+		result.Name.Should().Be("initialize_resources_alias");
 	}
 
 	/// <summary>Returns symbols whose names contain the substring (case-insensitive).</summary>
@@ -226,6 +226,6 @@ public sealed class LstSymbolTableTests {
 		// Assert
 		found.Should().BeTrue();
 		sym.Should().NotBeNull();
-		sym!.Name.Should().Be("play_intro2");
+		sym.Name.Should().Be("play_intro2");
 	}
 }
