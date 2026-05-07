@@ -132,20 +132,12 @@ public sealed class CryogenicSymbolMcpTools {
 	public SymbolLookupResponse CryogenicSymbolLookup(string segment, int offset) {
 		Logger.Information("MCP tool invoked: cryogenic_symbol_lookup Segment={Segment}, Offset=0x{OffsetHex:X4}", segment, offset);
 		ushort offsetValue = (ushort)offset;
-		string offsetHex = $"{offsetValue:X4}";
-		if (!_symbolTable.TryFindByAddress(segment, offsetValue, out LstSymbol? sym)) {
-			return new SymbolLookupResponse {
-				Found = false,
-				Segment = segment,
-				OffsetHex = offsetHex,
-				Symbol = EmptySymbolEntry()
-			};
-		}
+		LstSymbolLookup lookup = _symbolTable.FindByAddress(segment, offsetValue);
 		return new SymbolLookupResponse {
-			Found = true,
+			Found = lookup.Found,
 			Segment = segment,
-			OffsetHex = offsetHex,
-			Symbol = ToSymbolEntry(sym)
+			OffsetHex = $"{offsetValue:X4}",
+			Symbol = lookup.Found ? ToSymbolEntry(lookup.Symbol) : EmptySymbolEntry()
 		};
 	}
 

@@ -1,7 +1,6 @@
 ﻿namespace Cryogenic.Symbols;
 
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 
 /// <summary>
 /// Provides address-based and name-based lookup over the DNCDPRG.lst symbol table.
@@ -12,19 +11,18 @@ using System.Diagnostics.CodeAnalysis;
 /// </remarks>
 public interface ILstSymbolTable {
 	/// <summary>
-	/// Attempts to find a symbol at the given segment and offset.
+	/// Looks up the symbol defined at the given segment and offset.
 	/// </summary>
 	/// <param name="segment">
 	/// Segment name as it appears in the listing (for example, "seg000").
 	/// </param>
 	/// <param name="offset">Offset within the segment.</param>
-	/// <param name="symbol">
-	/// When this method returns <c>true</c>, contains the symbol defined at that address;
-	/// when it returns <c>false</c>, the value is undefined and must not be read.
-	/// When multiple labels share the same address, the last-defined one is returned.
-	/// </param>
-	/// <returns><c>true</c> when a symbol is recorded at that address; otherwise <c>false</c>.</returns>
-	bool TryFindByAddress(string segment, ushort offset, [MaybeNullWhen(false)] out LstSymbol symbol);
+	/// <returns>
+	/// A <see cref="LstSymbolLookup"/> whose <see cref="LstSymbolLookup.Found"/> flag indicates
+	/// whether a symbol exists at that address. When two symbols share the same address, the
+	/// last-defined one is returned.
+	/// </returns>
+	LstSymbolLookup FindByAddress(string segment, ushort offset);
 
 	/// <summary>
 	/// Returns all symbols whose name contains <paramref name="nameSubstring"/>
