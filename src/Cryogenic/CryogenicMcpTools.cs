@@ -49,10 +49,6 @@ public static class CryogenicMcpTools {
 	private static int Mt32PendingDataCount;
 	private static bool Mt32InSysEx;
 
-	// ═══════════════════════════════════════════════════════════════════
-	// DNCDPRG.lst symbol table (lazy-initialized from embedded resource)
-	// ═══════════════════════════════════════════════════════════════════
-
 	private static ILstSymbolTable? _symbolTable;
 	private static readonly Lock SymbolTableLock = new();
 
@@ -1272,10 +1268,6 @@ public static class CryogenicMcpTools {
 			};
 		}
 	}
-
-	// ═══════════════════════════════════════════════════════════════════
-	// DNCDPRG.lst symbol-table MCP tools
-	// ═══════════════════════════════════════════════════════════════════
 
 	/// <summary>
 	/// Looks up the symbol name defined at a specific segment and offset in the DNCDPRG.lst listing.
