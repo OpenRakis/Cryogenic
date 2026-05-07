@@ -63,4 +63,8 @@
 		<Using Include="Spice86.Core.Emulator.VM" />
 		<Using Include="Spice86.Shared.Utils" />
 	</ItemGroup>
+
+	<ItemGroup>
+		<EmbeddedResource Include="..\..\doc\DNCDPRG.lst" LogicalName="Cryogenic.DNCDPRG.lst" />
+	</ItemGroup>
 </Project>

@@ -4,6 +4,8 @@ using ModelContextProtocol.Server;
 
 using Serilog;
 
+using Symbols;
+
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -46,6 +48,104 @@ public static class CryogenicMcpTools {
 	private static int Mt32PendingExpectedDataCount;
 	private static int Mt32PendingDataCount;
 	private static bool Mt32InSysEx;
+
+	// ═══════════════════════════════════════════════════════════════════
+	// DNCDPRG.lst symbol table (lazy-initialized from embedded resource)
+	// ═══════════════════════════════════════════════════════════════════
+
+	private static ILstSymbolTable? _symbolTable;
+	private static readonly Lock SymbolTableLock = new();
+
+	private static ILstSymbolTable SymbolTable {
+		get {
+			if (_symbolTable is not null) {
+				return _symbolTable;
+			}
+
+			lock (SymbolTableLock) {
+				if (_symbolTable is not null) {
+					return _symbolTable;
+				}
+
+				ILstSymbolParser parser = new LstSymbolParser();
+				LstSymbolTableFactory factory = new(parser);
+				_symbolTable = factory.Build();
+				Logger.Information("DNCDPRG.lst symbol table loaded. TotalSymbols={Total}",
+					_symbolTable.GetAll(includeAutoLabels: true).Count);
+				return _symbolTable;
+			}
+		}
+	}
+
+	/// <summary>
+	/// Represents one symbol from the DNCDPRG.lst disassembly listing.
+	/// </summary>
+	public sealed class SymbolEntry {
+		/// <summary>Gets the segment name as it appears in the listing (for example, "seg000").</summary>
+		public required string Segment { get; init; }
+
+		/// <summary>Gets the offset within the segment as a zero-padded hex string (for example, "00B0").</summary>
+		public required string OffsetHex { get; init; }
+
+		/// <summary>Gets the raw numeric offset value.</summary>
+		public required int Offset { get; init; }
+
+		/// <summary>Gets the symbol name.</summary>
+		public required string Name { get; init; }
+
+		/// <summary>
+		/// Gets whether this is an auto-generated IDA label (name starts with "loc_" or "sub_").
+		/// </summary>
+		public required bool IsAutoLabel { get; init; }
+	}
+
+	/// <summary>
+	/// Response payload for the symbol-lookup-by-address tool.
+	/// </summary>
+	public sealed class SymbolLookupResponse {
+		/// <summary>Gets whether a symbol was found at the requested address.</summary>
+		public required bool Found { get; init; }
+
+		/// <summary>Gets the segment queried.</summary>
+		public required string Segment { get; init; }
+
+		/// <summary>Gets the offset queried as a hex string.</summary>
+		public required string OffsetHex { get; init; }
+
+		/// <summary>Gets the matched symbol, or <c>null</c> when <see cref="Found"/> is <c>false</c>.</summary>
+		public required SymbolEntry? Symbol { get; init; }
+	}
+
+	/// <summary>
+	/// Response payload for the symbol-search tool.
+	/// </summary>
+	public sealed class SymbolSearchResponse {
+		/// <summary>Gets the substring that was searched.</summary>
+		public required string Query { get; init; }
+
+		/// <summary>Gets whether auto-labels were included in the search.</summary>
+		public required bool IncludedAutoLabels { get; init; }
+
+		/// <summary>Gets the total number of matches returned.</summary>
+		public required int MatchCount { get; init; }
+
+		/// <summary>Gets the list of matching symbols.</summary>
+		public required IReadOnlyList<SymbolEntry> Matches { get; init; }
+	}
+
+	/// <summary>
+	/// Response payload for the symbol-list tool.
+	/// </summary>
+	public sealed class SymbolListResponse {
+		/// <summary>Gets whether auto-labels were included.</summary>
+		public required bool IncludedAutoLabels { get; init; }
+
+		/// <summary>Gets the total number of symbols returned.</summary>
+		public required int Count { get; init; }
+
+		/// <summary>Gets the complete symbol list.</summary>
+		public required IReadOnlyList<SymbolEntry> Symbols { get; init; }
+	}
 
 	/// <summary>
 	/// Represents one captured MIDI event from live MT-32 UART output.
@@ -1172,4 +1272,83 @@ public static class CryogenicMcpTools {
 			};
 		}
 	}
+
+	// ═══════════════════════════════════════════════════════════════════
+	// DNCDPRG.lst symbol-table MCP tools
+	// ═══════════════════════════════════════════════════════════════════
+
+	/// <summary>
+	/// Looks up the symbol name defined at a specific segment and offset in the DNCDPRG.lst listing.
+	/// </summary>
+	/// <param name="segment">
+	/// Segment name as it appears in the listing (for example, "seg000").
+	/// </param>
+	/// <param name="offset">
+	/// Numeric offset within the segment (decimal or the integer representation of the hex offset).
+	/// </param>
+	/// <returns>A <see cref="SymbolLookupResponse"/> indicating whether a symbol was found.</returns>
+	[McpServerTool(Name = "cryogenic_symbol_lookup", UseStructuredContent = true)]
+	[Description("Look up the DNCDPRG.lst symbol defined at a given segment and offset. Parameters: segment (string, e.g. \"seg000\"), offset (int, decimal value of the hex offset, e.g. 0x00B0 = 176). Returns found flag, address, and symbol details.")]
+	public static SymbolLookupResponse CryogenicSymbolLookup(string segment, int offset) {
+		Logger.Information("MCP tool invoked: cryogenic_symbol_lookup Segment={Segment}, Offset=0x{OffsetHex:X4}", segment, offset);
+		ushort offsetValue = (ushort)offset;
+		LstSymbol? sym = SymbolTable.FindByAddress(segment, offsetValue);
+		return new SymbolLookupResponse {
+			Found = sym is not null,
+			Segment = segment,
+			OffsetHex = $"{offsetValue:X4}",
+			Symbol = sym is null ? null : ToSymbolEntry(sym)
+		};
+	}
+
+	/// <summary>
+	/// Searches the DNCDPRG.lst symbol table for symbols whose names contain a given substring.
+	/// </summary>
+	/// <param name="nameSubstring">
+	/// Case-insensitive substring to match against symbol names. Pass an empty string to list all.
+	/// </param>
+	/// <param name="includeAutoLabels">
+	/// When <c>true</c>, includes IDA-generated labels (loc_, sub_). Defaults to <c>false</c>.
+	/// </param>
+	/// <returns>A <see cref="SymbolSearchResponse"/> containing all matches.</returns>
+	[McpServerTool(Name = "cryogenic_symbol_search", UseStructuredContent = true)]
+	[Description("Search the DNCDPRG.lst symbol table by name substring. Parameters: nameSubstring (string, case-insensitive, empty = all), includeAutoLabels (bool, default false). Returns list of matching symbols with segment, offset, and name.")]
+	public static SymbolSearchResponse CryogenicSymbolSearch(string nameSubstring, bool includeAutoLabels) {
+		Logger.Information("MCP tool invoked: cryogenic_symbol_search Query={Query}, IncludeAutoLabels={IncludeAutoLabels}", nameSubstring, includeAutoLabels);
+		IReadOnlyList<LstSymbol> matches = SymbolTable.FindByName(nameSubstring, includeAutoLabels);
+		return new SymbolSearchResponse {
+			Query = nameSubstring,
+			IncludedAutoLabels = includeAutoLabels,
+			MatchCount = matches.Count,
+			Matches = matches.Select(ToSymbolEntry).ToList()
+		};
+	}
+
+	/// <summary>
+	/// Returns all named symbols from the DNCDPRG.lst symbol table, optionally including auto-labels.
+	/// </summary>
+	/// <param name="includeAutoLabels">
+	/// When <c>true</c>, includes IDA-generated labels (loc_, sub_). Defaults to <c>false</c>.
+	/// </param>
+	/// <returns>A <see cref="SymbolListResponse"/> containing all symbols in listing order.</returns>
+	[McpServerTool(Name = "cryogenic_symbols_list", UseStructuredContent = true)]
+	[Description("List all symbols from the embedded DNCDPRG.lst disassembly. Parameters: includeAutoLabels (bool, default false — omit loc_/sub_ labels). Returns the full symbol set with segment, hex offset, and name.")]
+	public static SymbolListResponse CryogenicSymbolsList(bool includeAutoLabels) {
+		Logger.Information("MCP tool invoked: cryogenic_symbols_list IncludeAutoLabels={IncludeAutoLabels}", includeAutoLabels);
+		IReadOnlyList<LstSymbol> all = SymbolTable.GetAll(includeAutoLabels);
+		return new SymbolListResponse {
+			IncludedAutoLabels = includeAutoLabels,
+			Count = all.Count,
+			Symbols = all.Select(ToSymbolEntry).ToList()
+		};
+	}
+
+	private static SymbolEntry ToSymbolEntry(LstSymbol sym) =>
+		new() {
+			Segment = sym.Segment,
+			OffsetHex = $"{sym.Offset:X4}",
+			Offset = sym.Offset,
+			Name = sym.Name,
+			IsAutoLabel = sym.IsAutoLabel
+		};
 }
