@@ -53,13 +53,11 @@ public sealed class LstSymbolTableFactory {
 	}
 
 	private static IEnumerable<string> ReadLines(StreamReader reader) {
-		List<string> lines = new();
 		while (!reader.EndOfStream) {
 			string? line = reader.ReadLine();
 			if (line is not null) {
-				lines.Add(line);
+				yield return line;
 			}
 		}
-		return lines;
 	}
 }

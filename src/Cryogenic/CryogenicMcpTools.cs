@@ -4,7 +4,7 @@ using ModelContextProtocol.Server;
 
 using Serilog;
 
-using Symbols;
+using Cryogenic.Symbols;
 
 using System;
 using System.Collections.Generic;
