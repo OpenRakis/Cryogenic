@@ -705,7 +705,7 @@ public sealed partial class DuneAdgPlayerEngine {
 			if (Lo8(cx) != 0) {
 				byte scale4 = directVelocity;
 				byte shaping4 = Lo8(cx);
-				if (unchecked((sbyte)scale4) < 0) {
+				if ((shaping4 & 0x80) != 0) {
 					shaping4 = (byte)(0 - shaping4);
 					scale4 = inverseVelocity;
 				}
@@ -722,7 +722,7 @@ public sealed partial class DuneAdgPlayerEngine {
 			if (Hi8(cx) != 0) {
 				byte scale4 = directVelocity;
 				byte shaping4 = Hi8(cx);
-				if (unchecked((sbyte)scale4) < 0) {
+				if ((shaping4 & 0x80) != 0) {
 					shaping4 = (byte)(0 - shaping4);
 					scale4 = inverseVelocity;
 				}
@@ -819,7 +819,7 @@ public sealed partial class DuneAdgPlayerEngine {
 			if (Lo8(cx) != 0) {
 				byte scale4 = inverseVelocity;
 				byte shaping4 = Lo8(cx);
-				if (unchecked((sbyte)scale4) < 0) {
+				if ((shaping4 & 0x80) != 0) {
 					shaping4 = (byte)(0 - shaping4);
 					scale4 = directVelocity;
 				}
@@ -838,7 +838,7 @@ public sealed partial class DuneAdgPlayerEngine {
 			if (Hi8(cx) != 0) {
 				byte scale4 = inverseVelocity;
 				byte shaping4 = Hi8(cx);
-				if (unchecked((sbyte)scale4) < 0) {
+				if ((shaping4 & 0x80) != 0) {
 					shaping4 = (byte)(0 - shaping4);
 					scale4 = directVelocity;
 				}
