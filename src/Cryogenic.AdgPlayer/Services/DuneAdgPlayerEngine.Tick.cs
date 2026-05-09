@@ -479,6 +479,23 @@ public sealed partial class DuneAdgPlayerEngine {
 	}
 
 	/// <summary>
+	/// Writes the resolved route pair into the per-channel routing tables and updates the fade scratch registers.
+	/// Mirrors the RoutingWriteBack block in AdgConfigureInstrumentRouting_090D.
+	/// </summary>
+	private void CommitRouting(int ch, ushort routePair, ushort stateMask, ushort bp, ushort cx) {
+		_channelStateScratch[ch] = stateMask;
+		_fadeScratch = bp;
+		_fadeScratch2 = cx;
+
+		_channelRoutingTable[ch] = Hi8(routePair);
+		_channelPrimaryRoute[ch] = Lo8(routePair);
+
+		ushort shadow = (ushort)(routePair + 0x0303);
+		_channelRouteShadow[ch] = Hi8(shadow);
+		_channelSecondaryRoute[ch] = Lo8(shadow);
+	}
+
+	/// <summary>
 	/// Configure routing for the current instrument patch.
 	/// Mirrors the tested branches of AdgConfigureInstrumentRouting_090D.
 	/// Unobserved resolver branches are left as guarded fallbacks.
@@ -497,9 +514,43 @@ public sealed partial class DuneAdgPlayerEngine {
 
 		byte patchType = SongByte16(patchOffset);
 		if (patchType == 0x04) {
-			Logger.Warning("ADG routing: patch-type4 fallback ch={Channel} mask=0x{Mask:X4} bp=0x{Bp:X4} cx=0x{Cx:X4}", ch, scratchMask, bp, cx);
-			_fadeScratch = bp;
-			_fadeScratch2 = cx;
+			// Patch-type 4 instruments use paired 4-operator OPL3 channels.
+			// Mirrors AdgConfigureInstrumentRouting_090D patch-type-4 branch (lines 1346-1391 in AdgDriverCode.cs).
+			// Try primary-chip 4-op pairs (BX=0x0009/0x0012/0x0024) first, then secondary-chip.
+			bool found = false;
+
+			// Primary chip 4-op pairs
+			ushort[] masks4op = [0x0009, 0x0012, 0x0024];
+			ushort[] pairs4opPrimary = [0x0000, 0x0101, 0x0202];
+			for (int i = 0; i < masks4op.Length && !found; i++) {
+				if ((bp & masks4op[i]) != 0) {
+					ushort p4RoutePair = pairs4opPrimary[i];
+					ushort p4StateMask = masks4op[i];
+					bp = (ushort)(bp | p4StateMask);
+					CommitRouting(ch, p4RoutePair, p4StateMask, bp, cx);
+					Logger.Debug("ADG routing: patch-type4 primary-chip slot {Slot} ch={Channel} route=0x{Route:X4} mask=0x{StateMask:X4}", i, ch, p4RoutePair, p4StateMask);
+					found = true;
+				}
+			}
+
+			// Secondary chip 4-op pairs (BX gets bit 15 set for stateMask)
+			ushort[] pairs4opSecondary = [0x8080, 0x8181, 0x8282];
+			for (int i = 0; i < masks4op.Length && !found; i++) {
+				if ((cx & masks4op[i]) != 0) {
+					ushort p4RoutePair = pairs4opSecondary[i];
+					ushort p4StateMask = Make16(Lo8(masks4op[i]), (byte)(Hi8(masks4op[i]) | 0x80));
+					cx = (ushort)(cx | masks4op[i]);
+					CommitRouting(ch, p4RoutePair, p4StateMask, bp, cx);
+					Logger.Debug("ADG routing: patch-type4 secondary-chip slot {Slot} ch={Channel} route=0x{Route:X4} mask=0x{StateMask:X4}", i, ch, p4RoutePair, p4StateMask);
+					found = true;
+				}
+			}
+
+			if (!found) {
+				Logger.Warning("ADG routing: patch-type4 no free 4-op slot ch={Channel} bp=0x{Bp:X4} cx=0x{Cx:X4}", ch, bp, cx);
+				_fadeScratch = bp;
+				_fadeScratch2 = cx;
+			}
 			return;
 		}
 
@@ -536,16 +587,7 @@ public sealed partial class DuneAdgPlayerEngine {
 			return;
 		}
 
-		_channelStateScratch[ch] = stateMask;
-		_fadeScratch = bp;
-		_fadeScratch2 = cx;
-
-		_channelRoutingTable[ch] = Hi8(routePair);
-		_channelPrimaryRoute[ch] = Lo8(routePair);
-
-		routePair = (ushort)(routePair + 0x0303);
-		_channelRouteShadow[ch] = Hi8(routePair);
-		_channelSecondaryRoute[ch] = Lo8(routePair);
+		CommitRouting(ch, routePair, stateMask, bp, cx);
 	}
 
 	/// <summary>
@@ -590,6 +632,19 @@ public sealed partial class DuneAdgPlayerEngine {
 
 		byte patchType = SongByte16(patchOffset);
 		_channelPatchType[ch] = patchType;
+
+		// Patch-type 4 instruments use a second operator pair with separate shaping tables.
+		// Mirrors AdgProgramChange_0831 patch-type-4 block (offset +0x28 past normal patch data).
+		if (patchType == 0x04) {
+			ax = Make16(SongByte16((ushort)(patchOffset + 0x32)), SongByte16((ushort)(patchOffset + 0x3F)));
+			ushort bx4 = Make16(SongByte16((ushort)(patchOffset + 0x2A)), SongByte16((ushort)(patchOffset + 0x37)));
+			bx4 = (ushort)(bx4 & 0x0303);
+			bx4 = RotateRight16(bx4, 2);
+			ax = (ushort)(ax | bx4);
+			_channelPatch4EnvShaping[ch] = ax;
+			_channelPatch4TlShaping[ch] = SongWord16((ushort)(patchOffset + 0x46));
+			_channelPatch4VolModShaping[ch] = SongWord16((ushort)(patchOffset + 0x4E));
+		}
 
 		WriteInstrumentPatch(patchOffset, ch);
 		ChannelEventDispatched?.Invoke(ch, "PgmChg", $"inst={instrument:X2}", _totalTickCount);
@@ -640,6 +695,49 @@ public sealed partial class DuneAdgPlayerEngine {
 		}
 
 		_channelCurrentOperatorLevel[ch] = operatorLevel;
+
+		// Patch-type 4: apply velocity volume modulation to the second operator pair.
+		// Mirrors AdgVolumeModulation_0B2E patch-type-4 block (lines 1748-1791 in AdgDriverCode.cs).
+		if (_channelPatchType[ch] == 0x04) {
+			ushort bx = _channelPatch4CurrentOperatorLevel[ch];
+			ushort cx = _channelPatch4VolModShaping[ch];
+
+			if (Lo8(cx) != 0) {
+				byte scale4 = directVelocity;
+				byte shaping4 = Lo8(cx);
+				if (unchecked((sbyte)scale4) < 0) {
+					shaping4 = (byte)(0 - shaping4);
+					scale4 = inverseVelocity;
+				}
+				shaping4 = (byte)(0 - (byte)(shaping4 - 4));
+				scale4 = (byte)(scale4 >> shaping4);
+				byte value4 = (byte)(Lo8(bx) & 0x3F);
+				value4 = value4 >= scale4 ? (byte)(value4 - scale4) : (byte)0;
+				value4 = (byte)((Lo8(bx) & 0xC0) | value4);
+				bx = Make16(value4, Hi8(bx));
+				byte route4 = (byte)(_channelPrimaryRoute[ch] + 0x08);
+				WriteRelativeGoldRegister(0x40, value4, unchecked((sbyte)route4));
+			}
+
+			if (Hi8(cx) != 0) {
+				byte scale4 = directVelocity;
+				byte shaping4 = Hi8(cx);
+				if (unchecked((sbyte)scale4) < 0) {
+					shaping4 = (byte)(0 - shaping4);
+					scale4 = inverseVelocity;
+				}
+				byte shift4 = (byte)(4 - shaping4);
+				scale4 = (byte)(scale4 >> shift4);
+				byte value4 = (byte)(Hi8(bx) & 0x3F);
+				value4 = value4 >= scale4 ? (byte)(value4 - scale4) : (byte)0;
+				value4 = (byte)((Hi8(bx) & 0xC0) | value4);
+				bx = Make16(Lo8(bx), value4);
+				byte route4 = (byte)(_channelSecondaryRoute[ch] + 0x08);
+				WriteRelativeGoldRegister(0x40, value4, unchecked((sbyte)route4));
+			}
+
+			_channelPatch4CurrentOperatorLevel[ch] = bx;
+		}
 
 		ushort connectionModulation = _channelConnModulation[ch];
 		if (Lo8(connectionModulation) == 0) {
@@ -711,6 +809,53 @@ public sealed partial class DuneAdgPlayerEngine {
 		}
 
 		_channelCurrentOperatorLevel[ch] = operatorLevel;
+
+		// Patch-type 4: apply velocity envelope shaping to the second operator pair.
+		// Mirrors AdgEnvelopeSetup_0C47 patch-type-4 block (lines 1635-1682 in AdgDriverCode.cs).
+		if (_channelPatchType[ch] == 0x04) {
+			ushort bx = _channelPatch4CurrentOperatorLevel[ch];
+			ushort cx = _channelPatch4TlShaping[ch];
+
+			if (Lo8(cx) != 0) {
+				byte scale4 = inverseVelocity;
+				byte shaping4 = Lo8(cx);
+				if (unchecked((sbyte)scale4) < 0) {
+					shaping4 = (byte)(0 - shaping4);
+					scale4 = directVelocity;
+				}
+				shaping4 = (byte)(0 - (byte)(shaping4 - 4));
+				scale4 = (byte)(scale4 >> shaping4);
+				byte value4 = (byte)((Lo8(bx) & 0x3F) + scale4);
+				if (value4 > 0x3F) {
+					value4 = 0x3F;
+				}
+				value4 = (byte)((Lo8(bx) & 0xC0) | value4);
+				bx = Make16(value4, Hi8(bx));
+				byte route4 = (byte)(_channelPrimaryRoute[ch] + 0x08);
+				WriteRelativeGoldRegister(0x40, value4, unchecked((sbyte)route4));
+			}
+
+			if (Hi8(cx) != 0) {
+				byte scale4 = inverseVelocity;
+				byte shaping4 = Hi8(cx);
+				if (unchecked((sbyte)scale4) < 0) {
+					shaping4 = (byte)(0 - shaping4);
+					scale4 = directVelocity;
+				}
+				byte shift4 = (byte)(4 - shaping4);
+				scale4 = (byte)(scale4 >> shift4);
+				byte value4 = (byte)((Hi8(bx) & 0x3F) + scale4);
+				if (value4 > 0x3F) {
+					value4 = 0x3F;
+				}
+				value4 = (byte)((Hi8(bx) & 0xC0) | value4);
+				bx = Make16(Lo8(bx), value4);
+				byte route4 = (byte)(_channelSecondaryRoute[ch] + 0x08);
+				WriteRelativeGoldRegister(0x40, value4, unchecked((sbyte)route4));
+			}
+
+			_channelPatch4CurrentOperatorLevel[ch] = bx;
+		}
 
 		ushort connectionShape = _channelConnShaping[ch];
 		if (Lo8(connectionShape) == 0) {
