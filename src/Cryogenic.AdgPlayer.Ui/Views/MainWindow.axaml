@@ -1,6 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:Cryogenic.AdgPlayer.Ui.ViewModels"
+        xmlns:ctrl="using:Cryogenic.AdgPlayer.Ui.Controls"
         x:Class="Cryogenic.AdgPlayer.Ui.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Title="{Binding Title}"
@@ -68,6 +69,32 @@
                         <TextBlock Grid.Row="1" Grid.Column="3" Text="{Binding Transport.FadePattern}" Foreground="#C9D1D9" />
                     </Grid>
                 </StackPanel>
+            </Border>
+            <Border DockPanel.Dock="Top"
+                    Background="#161B22"
+                    BorderBrush="#30363D"
+                    BorderThickness="1"
+                    Padding="8"
+                    Margin="0,0,0,12"
+                    Height="140">
+                <Grid ColumnDefinitions="*,*">
+                    <DockPanel Grid.Column="0" Margin="0,0,4,0">
+                        <TextBlock DockPanel.Dock="Top"
+                                   Text="Waveform (L / R)"
+                                   Foreground="#C9D1D9"
+                                   FontWeight="Bold"
+                                   Margin="0,0,0,4" />
+                        <ctrl:WaveformControl Name="Waveform" Buffer="{Binding Waveform.Buffer}" />
+                    </DockPanel>
+                    <DockPanel Grid.Column="1" Margin="4,0,0,0">
+                        <TextBlock DockPanel.Dock="Top"
+                                   Text="Spectrum (FFT)"
+                                   Foreground="#C9D1D9"
+                                   FontWeight="Bold"
+                                   Margin="0,0,0,4" />
+                        <ctrl:SpectrumControl Name="Spectrum" Buffer="{Binding Spectrum.Buffer}" />
+                    </DockPanel>
+                </Grid>
             </Border>
             <TextBlock Name="PlaceholderText"
                        Text="Cryogenic ADG Player UI scaffold"

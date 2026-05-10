@@ -112,5 +112,6 @@ public sealed class AdgDriverState {
 		MasterVolume.SetMaster(0);
 		FadePatternState.Reset();
 		Dynamics.Reset();
+		TickDivider.Reset();
 	}
 }

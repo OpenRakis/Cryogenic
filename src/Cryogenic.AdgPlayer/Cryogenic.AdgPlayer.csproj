@@ -12,4 +12,10 @@
 		<PackageReference Include="Serilog" Version="4.3.1" />
 		<PackageReference Include="Spice86.Core" Version="12.0.0" />
 	</ItemGroup>
+
+	<ItemGroup>
+		<InternalsVisibleTo Include="Cryogenic.AdgPlayer.Tests" />
+		<InternalsVisibleTo Include="Cryogenic.AdgPlayer.Ui" />
+		<InternalsVisibleTo Include="Cryogenic.AdgPlayer.Ui.Tests" />
+	</ItemGroup>
 </Project>

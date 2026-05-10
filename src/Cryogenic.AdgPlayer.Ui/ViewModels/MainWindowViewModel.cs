@@ -47,6 +47,12 @@ public sealed class MainWindowViewModel : ViewModelBase {
 	/// <summary>View model for the OPL register-write capture panel.</summary>
 	public AdgOplCaptureViewModel OplCapture { get; }
 
+	/// <summary>View model exposing the stereo waveform peak buffer.</summary>
+	public AdgWaveformViewModel Waveform { get; }
+
+	/// <summary>View model exposing the FFT spectrum buffer.</summary>
+	public AdgSpectrumViewModel Spectrum { get; }
+
 	/// <summary>Default constructor wires an empty in-memory catalog and a fresh driver state.</summary>
 	public MainWindowViewModel() : this(new EmptyCatalog(), new AdgDriverState(), ObservableSerilogSink.Instance, static action => action()) {
 	}
@@ -64,6 +70,8 @@ public sealed class MainWindowViewModel : ViewModelBase {
 		LogPanel = new AdgLogPanelViewModel(logSink, dispatch);
 		OplBus = new OplCaptureBus(new RecordingOplBus());
 		OplCapture = new AdgOplCaptureViewModel(OplBus, dispatch);
+		Waveform = new AdgWaveformViewModel();
+		Spectrum = new AdgSpectrumViewModel();
 	}
 
 	private sealed class EmptyCatalog : IAdgSongCatalog {

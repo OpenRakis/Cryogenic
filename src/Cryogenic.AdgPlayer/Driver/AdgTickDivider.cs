@@ -32,6 +32,17 @@ public sealed class AdgTickDivider {
 	}
 
 	/// <summary>
+	/// Resets the divider to its default state (<see cref="Period"/> = 1,
+	/// <see cref="Counter"/> = 1). Called from <c>AdgDriverState.Reset()</c>
+	/// alongside every other component to provide whole-driver reset
+	/// semantics matching <c>AdgEndOfTrack_0AF5</c>.
+	/// </summary>
+	public void Reset() {
+		_period = 1;
+		_counter = 1;
+	}
+
+	/// <summary>
 	/// Decrements the counter and returns <c>true</c> when the counter
 	/// has elapsed (reached zero), reloading it to <see cref="Period"/>.
 	/// </summary>
