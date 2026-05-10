@@ -69,17 +69,26 @@ public sealed class AdgPlaybackHost : IDisposable {
 
 	/// <summary>
 	/// Stops the timer and disposes the underlying timer instance.
-	/// Idempotent; safe to call when the host is not running.
+	/// Idempotent; safe to call when the host is not running. Blocks
+	/// until any in-flight tick callback has completed so callers can
+	/// safely tear down dependent state immediately after returning.
 	/// </summary>
 	public void Stop() {
+		Timer? timer;
 		lock (_stateLock) {
 			if (!IsRunning) {
 				return;
 			}
-			Timer? timer = _timer;
+			timer = _timer;
 			_timer = null;
 			IsRunning = false;
-			timer?.Dispose();
+		}
+		if (timer is null) {
+			return;
+		}
+		using ManualResetEvent drained = new(false);
+		if (timer.Dispose(drained)) {
+			drained.WaitOne();
 		}
 	}
 

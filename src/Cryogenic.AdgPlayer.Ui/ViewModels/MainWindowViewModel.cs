@@ -71,7 +71,7 @@ public sealed class MainWindowViewModel : ViewModelBase {
 		Transport = new AdgTransportViewModel(driverState);
 		ChannelGrid = new AdgChannelGridViewModel(driverState);
 		LogPanel = new AdgLogPanelViewModel(logSink, dispatch);
-		OplBus = new OplCaptureBus(new RecordingOplBus());
+		OplBus = new OplCaptureBus(new NullOplBus());
 		OplCapture = new AdgOplCaptureViewModel(OplBus, dispatch);
 		Waveform = new AdgWaveformViewModel();
 		Spectrum = new AdgSpectrumViewModel();
