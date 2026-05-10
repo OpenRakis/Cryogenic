@@ -53,9 +53,11 @@
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <Button Name="PlayButton"
                                 Content="Play"
+                                Command="{Binding Session.PlayCommand}"
                                 IsEnabled="{Binding Transport.HasSongLoaded}" />
                         <Button Name="StopButton"
                                 Content="Stop"
+                                Command="{Binding Session.StopCommand}"
                                 IsEnabled="{Binding Transport.IsPlaying}" />
                     </StackPanel>
                     <Grid ColumnDefinitions="Auto,Auto,Auto,Auto" RowDefinitions="Auto,Auto" Margin="0,8,0,0">

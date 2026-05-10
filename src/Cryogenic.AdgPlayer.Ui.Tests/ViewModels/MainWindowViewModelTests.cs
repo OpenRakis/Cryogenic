@@ -1,6 +1,13 @@
 ﻿namespace Cryogenic.AdgPlayer.Ui.Tests.ViewModels;
 
+using Cryogenic.AdgPlayer.Driver;
+using Cryogenic.AdgPlayer.Song;
+using Cryogenic.AdgPlayer.Ui.Logging;
+using Cryogenic.AdgPlayer.Ui.Tests.Support;
 using Cryogenic.AdgPlayer.Ui.ViewModels;
+
+using System;
+using System.IO;
 
 using Xunit;
 
@@ -44,5 +51,33 @@ public sealed class MainWindowViewModelTests {
 		// Assert
 		Assert.Equal("Updated", viewModel.Title);
 		Assert.Equal(nameof(MainWindowViewModel.Title), changed);
+	}
+
+	/// <summary>Selecting a browser item triggers <see cref="AdgPlayerSessionViewModel.LoadCommand"/>.</summary>
+	[Fact]
+	public void BrowserSelection_TriggersSessionLoad() {
+		// Arrange — write a tiny ADG-shaped fixture and register it in the stub catalog.
+		string path = Path.Combine(Path.GetTempPath(), $"adg_main_{Guid.NewGuid():N}.bin");
+		byte[] bytes = new byte[0x100];
+		bytes[0] = 0x00;
+		bytes[1] = 0x01;
+		int dataBase = AdgSongHeader.DataBase;
+		bytes[dataBase + 0] = 0x10; // channel 0 offset = 0x0010 (relative)
+		File.WriteAllBytes(path, bytes);
+		StubAdgSongCatalog catalog = new();
+		catalog.Add(new AdgBrowserItem(path, Path.GetFileName(path), bytes.Length));
+		MainWindowViewModel viewModel = new(catalog, new AdgDriverState(), ObservableSerilogSink.Instance, static action => action());
+		viewModel.Browser.Refresh();
+
+		try {
+			// Act
+			viewModel.Browser.SelectedIndex = 0;
+
+			// Assert
+			Assert.True(viewModel.Session.Engine.HasSongLoaded);
+		} finally {
+			viewModel.Session.Dispose();
+			File.Delete(path);
+		}
 	}
 }

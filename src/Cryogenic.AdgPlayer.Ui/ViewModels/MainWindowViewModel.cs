@@ -75,7 +75,22 @@ public sealed class MainWindowViewModel : ViewModelBase {
 		OplCapture = new AdgOplCaptureViewModel(OplBus, dispatch);
 		Waveform = new AdgWaveformViewModel();
 		Spectrum = new AdgSpectrumViewModel();
-		Session = new AdgPlayerSessionViewModel(OplBus);
+		Session = new AdgPlayerSessionViewModel(OplBus, dispatch);
+		Browser.PropertyChanged += OnBrowserPropertyChanged;
+	}
+
+	private void OnBrowserPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e) {
+		// Browser.SelectedIndex changes drive Session.LoadCommand.
+		if (e.PropertyName != nameof(AdgBrowserViewModel.SelectedIndex)) {
+			return;
+		}
+		if (!Browser.HasSelection) {
+			return;
+		}
+		AdgBrowserItem item = Browser.GetSelectedItem();
+		if (Session.LoadCommand.CanExecute(item.Path)) {
+			Session.LoadCommand.Execute(item.Path);
+		}
 	}
 
 	private sealed class EmptyCatalog : IAdgSongCatalog {

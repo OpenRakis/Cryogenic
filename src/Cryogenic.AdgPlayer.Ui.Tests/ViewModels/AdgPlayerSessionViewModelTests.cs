@@ -1,4 +1,4 @@
-namespace Cryogenic.AdgPlayer.Ui.Tests.ViewModels;
+﻿namespace Cryogenic.AdgPlayer.Ui.Tests.ViewModels;
 
 using System;
 using System.IO;
@@ -121,6 +121,30 @@ public sealed class AdgPlayerSessionViewModelTests {
 			// Assert
 			Assert.False(session.Engine.IsPlaying);
 			Assert.False(session.Host.IsRunning);
+		} finally {
+			File.Delete(path);
+		}
+	}
+
+	/// <summary>Host-tick callback is routed through the supplied dispatcher.</summary>
+	[Fact]
+	public void HostTick_RoutesThroughDispatcher() {
+		// Arrange — capture the dispatcher invocations.
+		int dispatchCount = 0;
+		Action<Action> dispatch = action => { dispatchCount++; action(); };
+		using AdgPlayerSessionViewModel session = new(new RecordingOplBus(), dispatch);
+		string path = Path.Combine(Path.GetTempPath(), $"adg_session_{Guid.NewGuid():N}.bin");
+		File.WriteAllBytes(path, BuildSong(new ushort[] { 0x10, 0, 0, 0, 0, 0, 0, 0, 0 }));
+
+		try {
+			session.LoadCommand.Execute(path);
+			session.PlayCommand.Execute(null);
+
+			// Act
+			session.Host.Tick();
+
+			// Assert
+			Assert.Equal(1, dispatchCount);
 		} finally {
 			File.Delete(path);
 		}

@@ -21,6 +21,7 @@ public sealed class AdgPlayerSessionViewModel : ViewModelBase, IDisposable {
 	private readonly DuneAdgPlayerEngine _engine = new();
 	private readonly AdgPlaybackHost _host;
 	private readonly IOplBus _bus;
+	private readonly Action<Action> _dispatch;
 
 	/// <summary>The engine wired into this session.</summary>
 	public DuneAdgPlayerEngine Engine => _engine;
@@ -37,10 +38,21 @@ public sealed class AdgPlayerSessionViewModel : ViewModelBase, IDisposable {
 	/// <summary>Stops playback (host + engine).</summary>
 	public IRelayCommand StopCommand { get; }
 
-	/// <summary>Builds the session around the supplied OPL bus (UI capture bus in production).</summary>
-	public AdgPlayerSessionViewModel(IOplBus bus) {
+	/// <summary>Builds the session with a synchronous (test) dispatcher.</summary>
+	public AdgPlayerSessionViewModel(IOplBus bus) : this(bus, static action => action()) {
+	}
+
+	/// <summary>
+	/// Builds the session around the supplied OPL bus and a UI-thread
+	/// dispatcher used to marshal host-tick callbacks. The dispatcher
+	/// must invoke the supplied <see cref="Action"/> on the same thread
+	/// that owns the bound view-model state (UI thread in production).
+	/// </summary>
+	public AdgPlayerSessionViewModel(IOplBus bus, Action<Action> dispatch) {
 		ArgumentNullException.ThrowIfNull(bus);
+		ArgumentNullException.ThrowIfNull(dispatch);
 		_bus = bus;
+		_dispatch = dispatch;
 		_engine.SetOplBus(_bus);
 		_host = new AdgPlaybackHost(_bus, OnHostTick);
 		LoadCommand = new RelayCommand<string>(OnLoad, CanLoad);
@@ -49,15 +61,19 @@ public sealed class AdgPlayerSessionViewModel : ViewModelBase, IDisposable {
 	}
 
 	private void OnHostTick(IOplBus bus) {
-		// The engine drives its own bus internally; the host parameter
-		// is reused for symmetry with the IOplBus contract.
-		if (_engine.HasSongLoaded && _engine.IsPlaying) {
+		// Marshal the engine tick to the dispatcher thread so the UI
+		// observes consistent state on every PropertyChanged tick. The
+		// bus parameter is reused for symmetry with the IOplBus contract.
+		_dispatch(() => {
+			if (!_engine.HasSongLoaded || !_engine.IsPlaying) {
+				return;
+			}
 			bool stillRunning = _engine.Tick();
 			if (!stillRunning) {
 				_host.Stop();
 				NotifyCommandsChanged();
 			}
-		}
+		});
 	}
 
 	private bool CanLoad(string? path) {
