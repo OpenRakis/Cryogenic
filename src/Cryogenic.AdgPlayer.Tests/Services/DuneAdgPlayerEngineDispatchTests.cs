@@ -102,6 +102,27 @@ public sealed class DuneAdgPlayerEngineDispatchTests {
     }
 
     /// <summary>
+    /// EndOfTrack writes the 0xFFFF done-sentinel to the channel's
+    /// wait counter (mirrors <c>AdgWordSet(DI, ushort.MaxValue)</c>
+    /// at dnadg:0AF5).
+    /// </summary>
+    [Fact]
+    public void Dispatch_EndOfTrack_SetsDoneSentinelOnWaitCounter() {
+        // Arrange
+        byte[] bytes = BuildSong(new ushort[] { 0x10, 0, 0, 0, 0, 0, 0, 0, 0 });
+        bytes[0x12] = 0x70;
+        bytes[0x13] = 0x00;
+        DuneAdgPlayerEngine engine = LoadEngine(bytes);
+        engine.State.WaitCounters.Set(0, 0);
+
+        // Act
+        engine.DispatchEvents(0);
+
+        // Assert
+        Assert.Equal(0xFFFF, engine.State.WaitCounters.Get(0));
+    }
+
+    /// <summary>
     /// Slot 3 also routes to ReadWaitValue (per AdgEventOpcodeRouter).
     /// </summary>
     [Fact]

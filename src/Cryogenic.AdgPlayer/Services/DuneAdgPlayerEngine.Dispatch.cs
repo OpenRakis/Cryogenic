@@ -115,8 +115,29 @@ public sealed partial class DuneAdgPlayerEngine {
 		_state.EventPointers.Set(channelIndex, (ushort)cursor);
 	}
 
+	/// <summary>
+	/// Faithful state-mutation port of <c>AdgEndOfTrack_0AF5</c>
+	/// from <c>AdgDriverCode.cs</c> (line 1961). The handler:
+	/// 1) writes <c>0xFFFF</c> into the channel's wait counter
+	///    (DI+0): the per-channel done sentinel that prevents
+	///    further dispatch;
+	/// 2) zeroes the channel event pointer so the Tick scan skips
+	///    this channel;
+	/// 3) invokes <see cref="AdgScratchMaskClearer.Clear"/> with the
+	///    terminator byte (the original loads the byte after the
+	///    end-of-track word; in our model the channel is finished so
+	///    we pass <see cref="AdgScratchMaskClearer.TerminatorByte"/>
+	///    explicitly).
+	/// The master-track reload + loop-point logic (channel-0 path
+	/// in the original) is deferred to cycle B4.6b.
+	/// </summary>
 	private void HandleEndOfTrack(int channelIndex) {
+		_state.WaitCounters.Set(channelIndex, 0xFFFF);
 		_state.EventPointers.Set(channelIndex, 0);
+		AdgScratchMaskClearer.Clear(_state.ChannelStateScratch,
+			_state.FadeScratchState, channelIndex,
+			_state.WaitCounters.Get(channelIndex),
+			AdgScratchMaskClearer.TerminatorByte);
 	}
 
 	/// <summary>
