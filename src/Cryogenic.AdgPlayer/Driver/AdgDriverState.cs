@@ -67,6 +67,12 @@ public sealed class AdgDriverState {
 	/// <summary>Tick divider counter (0x0127).</summary>
 	public AdgTickDivider TickDivider { get; }
 
+	/// <summary>Per-channel state-scratch words (DI+0x021C).</summary>
+	public AdgChannelStateScratch ChannelStateScratch { get; }
+
+	/// <summary>Global fade-scratch ushort pair (0x013E / 0x0140).</summary>
+	public AdgFadeScratchState FadeScratchState { get; }
+
 	/// <summary>Constructs every component in its zero state.</summary>
 	public AdgDriverState() {
 		WaitCounters = new AdgChannelWaitCounters();
@@ -87,6 +93,8 @@ public sealed class AdgDriverState {
 		FadePatternState = new AdgFadePatternState();
 		Dynamics = new AdgDynamics();
 		TickDivider = new AdgTickDivider();
+		ChannelStateScratch = new AdgChannelStateScratch();
+		FadeScratchState = new AdgFadeScratchState();
 	}
 
 	/// <summary>
@@ -113,5 +121,7 @@ public sealed class AdgDriverState {
 		FadePatternState.Reset();
 		Dynamics.Reset();
 		TickDivider.Reset();
+		ChannelStateScratch.Reset();
+		FadeScratchState.Reset();
 	}
 }
