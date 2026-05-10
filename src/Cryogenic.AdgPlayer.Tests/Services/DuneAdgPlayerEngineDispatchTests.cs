@@ -122,30 +122,74 @@ public sealed class DuneAdgPlayerEngineDispatchTests {
     }
 
     /// <summary>
-    /// Unhandled musical opcode (ProgramChange slot 4, not yet ported)
-    /// raises the structured event AND zeroes the channel pointer
-    /// to prevent runaway dispatch.
+    /// ProgramChange (slot 4) consumes the wait value and writes the
+    /// new instrument index into the channel's instrument slot
+    /// (DI+0x6C).
     /// </summary>
     [Fact]
-    public void Dispatch_UnhandledOpcode_RaisesEventAndZeroesPointer() {
-        // Arrange — slot 4 = ProgramChange (not yet ported); event word at absolute 0x12.
-        //   Low byte 0x40 → bits 4..6 = 0b100 = slot 4.
+    public void Dispatch_ProgramChange_StoresInstrumentAndAdvances() {
+        // Arrange — slot 4 ProgramChange, instrument index 0x12, wait=0x05.
+        //   Layout: [0x12]=0x40 [0x13]=0x12 [0x14]=0x05.
         byte[] bytes = BuildSong(new ushort[] { 0x10, 0, 0, 0, 0, 0, 0, 0, 0 });
         bytes[0x12] = 0x40;
-        bytes[0x13] = 0xCD;
+        bytes[0x13] = 0x12;
+        bytes[0x14] = 0x05;
         DuneAdgPlayerEngine engine = LoadEngine(bytes);
         engine.State.WaitCounters.Set(0, 0);
-        AdgUnhandledOpcodeArgs? captured = null;
-        engine.UnhandledOpcodeEncountered += args => captured = args;
 
         // Act
         engine.DispatchEvents(0);
 
         // Assert
-        Assert.NotNull(captured);
-        Assert.Equal(0, captured!.Value.ChannelIndex);
-        Assert.Equal(AdgEventOpcode.ProgramChange, captured.Value.Opcode);
-        Assert.Equal(0, engine.State.EventPointers.Get(0));
+        Assert.Equal(0x12, engine.State.InstrumentSlots.Get(0));
+        Assert.Equal(5, engine.State.WaitCounters.Get(0));
+        Assert.Equal(0x15, engine.State.EventPointers.Get(0));
+    }
+
+    /// <summary>
+    /// VolumeModulation (slot 5) consumes the wait value but
+    /// otherwise leaves driver state unchanged in this cycle (deep
+    /// OPL register-emit chain deferred to B4.4b).
+    /// </summary>
+    [Fact]
+    public void Dispatch_VolumeModulation_ConsumesWaitAndAdvances() {
+        // Arrange — slot 5 VolumeModulation, wait=0x04.
+        byte[] bytes = BuildSong(new ushort[] { 0x10, 0, 0, 0, 0, 0, 0, 0, 0 });
+        bytes[0x12] = 0x50;
+        bytes[0x13] = 0x33;
+        bytes[0x14] = 0x04;
+        DuneAdgPlayerEngine engine = LoadEngine(bytes);
+        engine.State.WaitCounters.Set(0, 0);
+
+        // Act
+        engine.DispatchEvents(0);
+
+        // Assert
+        Assert.Equal(4, engine.State.WaitCounters.Get(0));
+        Assert.Equal(0x15, engine.State.EventPointers.Get(0));
+    }
+
+    /// <summary>
+    /// PitchBend (slot 6) consumes the wait value but otherwise
+    /// leaves driver state unchanged in this cycle (deep OPL
+    /// register-emit chain deferred to B4.5b).
+    /// </summary>
+    [Fact]
+    public void Dispatch_PitchBend_ConsumesWaitAndAdvances() {
+        // Arrange — slot 6 PitchBend, wait=0x06.
+        byte[] bytes = BuildSong(new ushort[] { 0x10, 0, 0, 0, 0, 0, 0, 0, 0 });
+        bytes[0x12] = 0x60;
+        bytes[0x13] = 0x42;
+        bytes[0x14] = 0x06;
+        DuneAdgPlayerEngine engine = LoadEngine(bytes);
+        engine.State.WaitCounters.Set(0, 0);
+
+        // Act
+        engine.DispatchEvents(0);
+
+        // Assert
+        Assert.Equal(6, engine.State.WaitCounters.Get(0));
+        Assert.Equal(0x15, engine.State.EventPointers.Get(0));
     }
 
     /// <summary>

@@ -12,25 +12,20 @@ using System;
 /// inner body of <c>AdgSchedulerTick_0756</c>'s while-loop.
 /// </summary>
 /// <remarks>
-/// Currently implemented opcodes:
-/// <see cref="AdgEventOpcode.ReadWaitValue"/> (slots 2 and 3) and
-/// <see cref="AdgEventOpcode.EndOfTrack"/> (slot 7). The remaining
-/// musical opcodes (NoteOff, NoteOn, ProgramChange, VolumeModulation,
-/// PitchBend) are gated on subsequent TDD cycles and currently raise
-/// <see cref="UnhandledOpcodeEncountered"/> with a structured payload
-/// instead of crashing — callers can catch this in tests, and
-/// production code stops the affected channel by zeroing its pointer
-/// to prevent runaway dispatch.
+/// All eight opcode slots are now routed:
+/// <see cref="AdgEventOpcode.NoteOff"/> (slot 0),
+/// <see cref="AdgEventOpcode.NoteOn"/> (slot 1, state-only — full
+/// OPL emit chain deferred to B4.2b),
+/// <see cref="AdgEventOpcode.ReadWaitValue"/> (slots 2 and 3),
+/// <see cref="AdgEventOpcode.ProgramChange"/> (slot 4, instrument-slot
+/// + wait — patch-load deferred to B4.3b),
+/// <see cref="AdgEventOpcode.VolumeModulation"/> (slot 5, wait-only
+/// — OPL emit chain deferred to B4.4b),
+/// <see cref="AdgEventOpcode.PitchBend"/> (slot 6, wait-only — OPL
+/// emit chain deferred to B4.5b),
+/// <see cref="AdgEventOpcode.EndOfTrack"/> (slot 7).
 /// </remarks>
 public sealed partial class DuneAdgPlayerEngine {
-
-	/// <summary>
-	/// Raised when the dispatcher encounters an opcode whose handler is
-	/// not yet implemented. The affected channel's event pointer is
-	/// zeroed after the event fires (the channel goes silent for the
-	/// remainder of playback).
-	/// </summary>
-	public event Action<AdgUnhandledOpcodeArgs>? UnhandledOpcodeEncountered;
 
 	/// <summary>
 	/// Reads and dispatches events for <paramref name="channelIndex"/>
@@ -81,10 +76,13 @@ public sealed partial class DuneAdgPlayerEngine {
 				HandleNoteOn(channelIndex, eventWord, stream);
 				return;
 			case AdgEventOpcode.ProgramChange:
+				HandleProgramChange(channelIndex, eventWord, stream);
+				return;
 			case AdgEventOpcode.VolumeModulation:
+				HandleVolumeModulation(channelIndex, stream);
+				return;
 			case AdgEventOpcode.PitchBend:
-				RaiseUnhandledOpcode(channelIndex, opcode, eventWord);
-				_state.EventPointers.Set(channelIndex, 0);
+				HandlePitchBend(channelIndex, stream);
 				return;
 			default:
 				throw new InvalidOperationException(
@@ -221,15 +219,44 @@ public sealed partial class DuneAdgPlayerEngine {
 		// Step 7 — full OPL note-on emit deferred to B4.2b.
 	}
 
-	private void RaiseUnhandledOpcode(int channelIndex, AdgEventOpcode opcode, ushort eventWord) {
-		UnhandledOpcodeEncountered?.Invoke(new AdgUnhandledOpcodeArgs(channelIndex, opcode, eventWord));
+	/// <summary>
+	/// Faithful state-mutation port of <c>AdgProgramChange_0831</c>
+	/// from <c>AdgDriverCode.cs</c> (line 1542). Currently performs
+	/// the two top-of-handler steps:
+	/// 1) consume the variable-length wait value;
+	/// 2) write the new instrument byte (Hi8 of the event word) into
+	///    the per-channel instrument slot (DI+0x6C).
+	/// The deep instrument-patch load + OPL register emission
+	/// (<c>AdgConfigureInstrumentRouting_090D</c>,
+	/// <c>AdgWriteInstrumentPatch_0F95</c>) is gated for cycle B4.3b.
+	/// </summary>
+	private void HandleProgramChange(int channelIndex, ushort eventWord, AdgInMemoryEventStream stream) {
+		HandleReadWaitValue(channelIndex, stream);
+		byte instrumentIndex = (byte)(eventWord >> 8);
+		_state.InstrumentSlots.Set(channelIndex, instrumentIndex);
+	}
+
+	/// <summary>
+	/// Faithful wait-only port of <c>AdgVolumeModulation_0B2E</c>
+	/// from <c>AdgDriverCode.cs</c> (line 1708). The handler's body
+	/// is a deep OPL register-emit chain that depends on the
+	/// per-channel volume-modulation shape word and the routed
+	/// operator level register; that chain is gated for cycle B4.4b.
+	/// In this cycle the dispatcher consumes the wait value so the
+	/// channel does not stall.
+	/// </summary>
+	private void HandleVolumeModulation(int channelIndex, AdgInMemoryEventStream stream) {
+		HandleReadWaitValue(channelIndex, stream);
+	}
+
+	/// <summary>
+	/// Faithful wait-only port of <c>AdgPitchBend_0D86</c> from
+	/// <c>AdgDriverCode.cs</c> (line 1925). The pitch-bend body
+	/// (<c>AdgPitchBendBody_0D8B</c>) is a deep OPL register-emit
+	/// chain gated for cycle B4.5b. In this cycle the dispatcher
+	/// consumes the wait value.
+	/// </summary>
+	private void HandlePitchBend(int channelIndex, AdgInMemoryEventStream stream) {
+		HandleReadWaitValue(channelIndex, stream);
 	}
 }
-
-/// <summary>
-/// Payload supplied to <see cref="DuneAdgPlayerEngine.UnhandledOpcodeEncountered"/>.
-/// </summary>
-/// <param name="ChannelIndex">Channel whose stream produced the event.</param>
-/// <param name="Opcode">Routed opcode (the handler is not yet implemented).</param>
-/// <param name="EventWord">Raw 16-bit event word read from the stream.</param>
-public readonly record struct AdgUnhandledOpcodeArgs(int ChannelIndex, AdgEventOpcode Opcode, ushort EventWord);
