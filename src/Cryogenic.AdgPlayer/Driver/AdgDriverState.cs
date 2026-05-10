@@ -79,6 +79,9 @@ public sealed class AdgDriverState {
 	/// <summary>Loop-point rep-movs snapshot mirror (channel base + 0x03B6).</summary>
 	public AdgLoopSnapshotStore LoopSnapshotStore { get; }
 
+	/// <summary>Per-channel pitch-accumulator step byte (DI+0xD9).</summary>
+	public AdgChannelPitchAccumulatorSteps PitchAccumulatorSteps { get; }
+
 	/// <summary>Constructs every component in its zero state.</summary>
 	public AdgDriverState() {
 		WaitCounters = new AdgChannelWaitCounters();
@@ -103,6 +106,7 @@ public sealed class AdgDriverState {
 		FadeScratchState = new AdgFadeScratchState();
 		FrequencyWordCache = new AdgFrequencyWordCache();
 		LoopSnapshotStore = new AdgLoopSnapshotStore();
+		PitchAccumulatorSteps = new AdgChannelPitchAccumulatorSteps();
 	}
 
 	/// <summary>
@@ -133,5 +137,6 @@ public sealed class AdgDriverState {
 		FadeScratchState.Reset();
 		FrequencyWordCache.Reset();
 		LoopSnapshotStore.Reset();
+		PitchAccumulatorSteps.Reset();
 	}
 }

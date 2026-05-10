@@ -81,6 +81,18 @@ public sealed partial class DuneAdgPlayerEngine {
 			}
 			if (_state.WaitCounters.Get(i) == 0) {
 				DispatchEvents(i);
+			} else {
+				// Mirrors dnadg:07AD: when the channel is still
+				// waiting after the decrement, the scheduler
+				// advances the per-channel pitch accumulator and
+				// (if armed) emits a vibrato register write.
+				AdgPitchModulationAdvancer.Advance(
+					i,
+					_state.PitchBendCounters,
+					_state.EventPointers,
+					_state.PitchAccumulators,
+					_state.PitchAccumulatorSteps,
+					_pitchBendBody);
 			}
 		}
 

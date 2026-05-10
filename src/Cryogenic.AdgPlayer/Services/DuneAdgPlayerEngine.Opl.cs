@@ -14,6 +14,7 @@ using System;
 public sealed partial class DuneAdgPlayerEngine {
 	private IOplBus _oplBus = new RecordingOplBus();
 	private AdgChannelRoutingTable? _routingTable;
+	private IAdgPitchBendBody _pitchBendBody = NullAdgPitchBendBody.Instance;
 
 	/// <summary>
 	/// Currently bound OPL bus. Defaults to a fresh
@@ -31,6 +32,14 @@ public sealed partial class DuneAdgPlayerEngine {
 	/// </summary>
 	public AdgChannelRoutingTable? RoutingTable => _routingTable;
 
+	/// <summary>
+	/// Currently bound pitch-bend body. Defaults to
+	/// <see cref="NullAdgPitchBendBody.Instance"/> so vibrato dispatch
+	/// is observable via the framing without requiring the deep
+	/// emit chain (deferred to cycle B4.5b).
+	/// </summary>
+	public IAdgPitchBendBody PitchBendBody => _pitchBendBody;
+
 	/// <summary>Replaces the bound bus. Throws on null.</summary>
 	public void SetOplBus(IOplBus bus) {
 		ArgumentNullException.ThrowIfNull(bus);
@@ -45,6 +54,15 @@ public sealed partial class DuneAdgPlayerEngine {
 	public void SetRoutingTable(AdgChannelRoutingTable routingTable) {
 		ArgumentNullException.ThrowIfNull(routingTable);
 		_routingTable = routingTable;
+	}
+
+	/// <summary>
+	/// Replaces the bound pitch-bend body implementation. Throws on
+	/// null.
+	/// </summary>
+	public void SetPitchBendBody(IAdgPitchBendBody pitchBendBody) {
+		ArgumentNullException.ThrowIfNull(pitchBendBody);
+		_pitchBendBody = pitchBendBody;
 	}
 
 	/// <summary>
