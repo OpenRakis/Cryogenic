@@ -82,7 +82,7 @@ public sealed partial class DuneAdgPlayerEngine {
 				HandleVolumeModulation(channelIndex, stream);
 				return;
 			case AdgEventOpcode.PitchBend:
-				HandlePitchBend(channelIndex, stream);
+				HandlePitchBend(channelIndex, eventWord, stream);
 				return;
 			default:
 				throw new InvalidOperationException(
@@ -284,13 +284,20 @@ public sealed partial class DuneAdgPlayerEngine {
 	}
 
 	/// <summary>
-	/// Faithful wait-only port of <c>AdgPitchBend_0D86</c> from
-	/// <c>AdgDriverCode.cs</c> (line 1925). The pitch-bend body
-	/// (<c>AdgPitchBendBody_0D8B</c>) is a deep OPL register-emit
-	/// chain gated for cycle B4.5b. In this cycle the dispatcher
-	/// consumes the wait value.
+	/// Faithful port of <c>AdgPitchBend_0D86</c> from
+	/// <c>AdgDriverCode.cs</c> (line 1925): consume the wait value,
+	/// then forward to the configured <see cref="IAdgPitchBendBody"/>
+	/// with <c>bendWord = (Hi8 &lt;&lt; 8) | Hi8</c> (matching
+	/// <c>AX = Make16(Hi8(eventWord), Hi8(eventWord))</c> at
+	/// dnadg:0D86). The default body
+	/// (<see cref="NullAdgPitchBendBody"/>) is a no-op until the
+	/// production <see cref="DefaultAdgPitchBendBody"/> is bound
+	/// via <c>SetPitchBendBody(...)</c>.
 	/// </summary>
-	private void HandlePitchBend(int channelIndex, AdgInMemoryEventStream stream) {
+	private void HandlePitchBend(int channelIndex, ushort eventWord, AdgInMemoryEventStream stream) {
 		HandleReadWaitValue(channelIndex, stream);
+		byte bendValue = (byte)(eventWord >> 8);
+		ushort bendWord = (ushort)((bendValue << 8) | bendValue);
+		_pitchBendBody.Emit(channelIndex, bendWord);
 	}
 }

@@ -584,4 +584,38 @@ public sealed class DuneAdgPlayerEngineDispatchTests {
 		//   path can write, and that's gated on previous note != 0).
 		Assert.Empty(bus.Writes);
 	}
+
+	private sealed class RecordingPitchBendBody : IAdgPitchBendBody {
+		public System.Collections.Generic.List<(int Channel, ushort Bend)> Calls { get; } = new();
+		public void Emit(int channelIndex, ushort bendWord) {
+			Calls.Add((channelIndex, bendWord));
+		}
+	}
+
+	/// <summary>
+	/// PitchBend dispatch consumes the wait value and forwards
+	/// the duplicated Hi8 byte (mirroring oracle dnadg:0D86's
+	/// <c>AX = Make16(Hi8(eventWord), Hi8(eventWord))</c>) to the
+	/// configured <see cref="IAdgPitchBendBody"/>.
+	/// </summary>
+	[Fact]
+	public void Dispatch_PitchBend_ForwardsDuplicatedByteToBody() {
+		// Arrange — slot 6 PitchBend, bend byte 0x55, wait byte 0x01.
+		byte[] bytes = BuildSong(new ushort[] { 0x10, 0, 0, 0, 0, 0, 0, 0, 0 });
+		bytes[0x12] = 0x60;
+		bytes[0x13] = 0x55;
+		bytes[0x14] = 0x01;
+		DuneAdgPlayerEngine engine = LoadEngine(bytes);
+		engine.State.WaitCounters.Set(0, 0);
+		RecordingPitchBendBody body = new();
+		engine.SetPitchBendBody(body);
+
+		// Act
+		engine.DispatchEvents(0);
+
+		// Assert — body invoked once with channel 0 and bendWord 0x5555.
+		Assert.Single(body.Calls);
+		Assert.Equal(0, body.Calls[0].Channel);
+		Assert.Equal<ushort>(0x5555, body.Calls[0].Bend);
+	}
 }
