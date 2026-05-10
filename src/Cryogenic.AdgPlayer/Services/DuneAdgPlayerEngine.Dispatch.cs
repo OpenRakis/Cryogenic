@@ -79,7 +79,7 @@ public sealed partial class DuneAdgPlayerEngine {
 				HandleProgramChange(channelIndex, eventWord, stream);
 				return;
 			case AdgEventOpcode.VolumeModulation:
-				HandleVolumeModulation(channelIndex, stream);
+				HandleVolumeModulation(channelIndex, eventWord, stream);
 				return;
 			case AdgEventOpcode.PitchBend:
 				HandlePitchBend(channelIndex, eventWord, stream);
@@ -271,16 +271,51 @@ public sealed partial class DuneAdgPlayerEngine {
 	}
 
 	/// <summary>
-	/// Faithful wait-only port of <c>AdgVolumeModulation_0B2E</c>
-	/// from <c>AdgDriverCode.cs</c> (line 1708). The handler's body
-	/// is a deep OPL register-emit chain that depends on the
-	/// per-channel volume-modulation shape word and the routed
-	/// operator level register; that chain is gated for cycle B4.4b.
-	/// In this cycle the dispatcher consumes the wait value so the
-	/// channel does not stall.
+	/// Faithful port of <c>AdgVolumeModulation_0B2E</c> from
+	/// <c>AdgDriverCode.cs</c> (line 1708) covering the
+	/// non-4op primary+secondary operator-level emit chain. The
+	/// 4-op extension and the FeedbackConnection
+	/// (<c>AdgChannelConnectionModulationOffset</c>) tail are
+	/// deferred to a later cycle.
+	///
+	/// Sequence:
+	/// 1. consume the variable-length wait value;
+	/// 2. compute primary operator new level via
+	///    <see cref="AdgVolumeModulationComputer.ComputePrimary"/>;
+	///    on shape != 0 emit to KSL/TL register through the routing
+	///    table's primary route and update Lo8 of the cached
+	///    operator-level word;
+	/// 3. same for the secondary operator (Hi8).
+	/// Emit is gated on the routing table being bound — without it
+	/// only the cached state is updated.
 	/// </summary>
-	private void HandleVolumeModulation(int channelIndex, AdgInMemoryEventStream stream) {
+	private void HandleVolumeModulation(int channelIndex, ushort eventWord, AdgInMemoryEventStream stream) {
 		HandleReadWaitValue(channelIndex, stream);
+		byte directVelocity = (byte)(eventWord >> 8);
+		byte inverseVelocity = (byte)(0x80 - directVelocity);
+		ushort currentLevel = _state.CurrentOperatorLevels.Get(channelIndex);
+		ushort volumeShape = _state.VolumeModulationSlots.Get(channelIndex);
+
+		AdgVolumeModulationComputer.OperatorResult primary =
+			AdgVolumeModulationComputer.ComputePrimary(
+				currentLevel, volumeShape, directVelocity, inverseVelocity);
+		AdgVolumeModulationComputer.OperatorResult secondary =
+			AdgVolumeModulationComputer.ComputeSecondary(
+				currentLevel, volumeShape, directVelocity, inverseVelocity);
+
+		ushort newLevel = (ushort)((secondary.NewLevel << 8) | primary.NewLevel);
+		_state.CurrentOperatorLevels.Set(channelIndex, newLevel);
+
+		if (_routingTable is null) {
+			return;
+		}
+		AdgChannelRoutingEntry entry = _routingTable.GetEntry(channelIndex);
+		if (primary.Active) {
+			AdgOperatorLevelEmitter.Emit(_oplBus, entry.PrimaryRoute, primary.NewLevel);
+		}
+		if (secondary.Active) {
+			AdgOperatorLevelEmitter.Emit(_oplBus, entry.SecondaryRoute, secondary.NewLevel);
+		}
 	}
 
 	/// <summary>

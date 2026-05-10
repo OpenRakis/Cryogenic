@@ -85,6 +85,9 @@ public sealed class AdgDriverState {
 	/// <summary>Per-channel pitch-bend counter reload byte (DI+0xB5).</summary>
 	public AdgChannelPitchBendCounterReloads PitchBendCounterReloads { get; }
 
+	/// <summary>Per-channel current-operator-level word (DI+0xF0).</summary>
+	public AdgChannelCurrentOperatorLevels CurrentOperatorLevels { get; }
+
 	/// <summary>Constructs every component in its zero state.</summary>
 	public AdgDriverState() {
 		WaitCounters = new AdgChannelWaitCounters();
@@ -111,6 +114,7 @@ public sealed class AdgDriverState {
 		LoopSnapshotStore = new AdgLoopSnapshotStore();
 		PitchAccumulatorSteps = new AdgChannelPitchAccumulatorSteps();
 		PitchBendCounterReloads = new AdgChannelPitchBendCounterReloads();
+		CurrentOperatorLevels = new AdgChannelCurrentOperatorLevels();
 	}
 
 	/// <summary>
@@ -143,5 +147,6 @@ public sealed class AdgDriverState {
 		LoopSnapshotStore.Reset();
 		PitchAccumulatorSteps.Reset();
 		PitchBendCounterReloads.Reset();
+		CurrentOperatorLevels.Reset();
 	}
 }

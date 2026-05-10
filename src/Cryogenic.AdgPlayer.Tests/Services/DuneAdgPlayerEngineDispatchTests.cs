@@ -618,4 +618,65 @@ public sealed class DuneAdgPlayerEngineDispatchTests {
 		Assert.Equal(0, body.Calls[0].Channel);
 		Assert.Equal<ushort>(0x5555, body.Calls[0].Bend);
 	}
+
+	/// <summary>
+	/// VolumeModulation dispatch consumes the wait value, computes
+	/// per-operator new levels, updates the cached operator-level
+	/// word, and (when the routing table is bound) emits the routed
+	/// KSL/TL register pair via
+	/// <see cref="AdgOperatorLevelEmitter"/>.
+	/// </summary>
+	[Fact]
+	public void Dispatch_VolumeModulation_EmitsBothOperatorLevels() {
+		// Arrange — slot 5 VolumeModulation, velocity 0x40, wait 0x01.
+		byte[] bytes = BuildSong(new ushort[] { 0x10, 0, 0, 0, 0, 0, 0, 0, 0 });
+		bytes[0x12] = 0x50;
+		bytes[0x13] = 0x40;
+		bytes[0x14] = 0x01;
+		DuneAdgPlayerEngine engine = LoadEngine(bytes);
+		engine.State.WaitCounters.Set(0, 0);
+		engine.State.VolumeModulationSlots.Set(0, 0x0404);   // shape: both ops active.
+		engine.State.CurrentOperatorLevels.Set(0, 0x3F3F);   // both ops full TL.
+		byte[] zero = new byte[AdgChannelRoutingTable.ChannelCount];
+		engine.SetRoutingTable(new AdgChannelRoutingTable(zero, zero, zero));
+		Cryogenic.AdgPlayer.Opl.RecordingOplBus bus = new();
+		engine.SetOplBus(bus);
+
+		// Act
+		engine.DispatchEvents(0);
+
+		// Assert — KSL/TL register (0x40) emitted twice (primary + secondary).
+		Assert.Equal(2, bus.Writes.Count);
+		Assert.All(bus.Writes, w => Assert.Equal(0x40, w.Register));
+		// Both operators received the same scaled level (0x3F - 0x40 → clamp 0).
+		Assert.All(bus.Writes, w => Assert.Equal(0x00, w.Value));
+		// Cached level updated.
+		Assert.Equal<ushort>(0x0000, engine.State.CurrentOperatorLevels.Get(0));
+	}
+
+	/// <summary>
+	/// VolumeModulation with no routing table bound performs only
+	/// the cached state update — no OPL emit.
+	/// </summary>
+	[Fact]
+	public void Dispatch_VolumeModulation_NoRouting_StateOnly() {
+		// Arrange
+		byte[] bytes = BuildSong(new ushort[] { 0x10, 0, 0, 0, 0, 0, 0, 0, 0 });
+		bytes[0x12] = 0x50;
+		bytes[0x13] = 0x40;
+		bytes[0x14] = 0x01;
+		DuneAdgPlayerEngine engine = LoadEngine(bytes);
+		engine.State.WaitCounters.Set(0, 0);
+		engine.State.VolumeModulationSlots.Set(0, 0x0404);
+		engine.State.CurrentOperatorLevels.Set(0, 0x3F3F);
+		Cryogenic.AdgPlayer.Opl.RecordingOplBus bus = new();
+		engine.SetOplBus(bus);
+
+		// Act
+		engine.DispatchEvents(0);
+
+		// Assert
+		Assert.Empty(bus.Writes);
+		Assert.Equal<ushort>(0x0000, engine.State.CurrentOperatorLevels.Get(0));
+	}
 }
