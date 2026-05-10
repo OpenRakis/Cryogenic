@@ -1,0 +1,7 @@
+{
+  "OutputDir": "dump\\live\\adg388-handoff\\adg-driver-active-20260510-115211",
+  "Notes": "UseCodeOverride=false ADG388 SBP2227 Opl3Gold; signature found at 0x5BBE:0x0000 → driver segment 0x5BAE",
+  "Stamp": "20260510-115211",
+  "AdgSegment": "0x5BAE",
+  "McpUrl": "http://127.0.0.1:8083/mcp"
+}

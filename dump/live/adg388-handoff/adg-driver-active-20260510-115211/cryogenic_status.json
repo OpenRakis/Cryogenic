@@ -1,0 +1,8 @@
+{
+  "toolAssembly": "Cryogenic",
+  "driver1Segment": "0xD000",
+  "driver2Segment": "0xE000",
+  "driver3Segment": "0xF000",
+  "interruptHandlerSegment": "0x0800",
+  "actualMidiSegment": "0x5CD0"
+}
