@@ -6,7 +6,7 @@ needing a local Spice86 + DOSBOX rig.
 
 ## Launch context
 
-- Branch: `reverse/adlib_gold_driver` (PR https://github.com/OpenRakis/Cryogenic/pull/76)
+- Branch: `reverse/adlib_gold_driver` (PR <https://github.com/OpenRakis/Cryogenic/pull/76>)
 - Emulator: Spice86 via `Cryogenic.csproj`
 - Args: `--UseCodeOverride false -a "ADG388 SBP2227" --OplMode Opl3Gold -p 4096 --Cycles 100000 -e DNCDPRG.EXE`
   - **`SBP2227` PCM suffix is mandatory** — without it the music driver chain isn't fully wired and `cryogenic_status` reports `actualMidiSegment=0x0000`.
@@ -67,6 +67,7 @@ engine.SetPortamentoFractionsTable(new AdgPortamentoFractionsTable(bytes));
 
 The bytes for both tables live inside
 `dnadg_fractions_<seg>_01C7_0040.bin`:
+
 - `[0x00..0x0C]` (13 bytes) → PitchBend fractions (driver offset 0x01C7)
 - `[0x0D..0x16]` (10 bytes) → Portamento fractions (driver offset 0x01D4)
 
