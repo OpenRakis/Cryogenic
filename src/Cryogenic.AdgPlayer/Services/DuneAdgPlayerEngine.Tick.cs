@@ -77,6 +77,13 @@ public sealed partial class DuneAdgPlayerEngine {
 				break;
 			}
 		}
+
+		// Mirrors AdgSchedulerTick_0756 dnadg:079D-07A8: subdivision——;
+		// when it rolls to zero, reload to 0x60 and advance the measure word.
+		// This keeps Measure/Subdivision in sync with playback regardless of
+		// channel activity, exactly as the original ISR does.
+		_state.MeasureClock.AdvanceSubdivision();
+
 		if (!anyActive) {
 			IsPlaying = false;
 		}

@@ -41,14 +41,32 @@ and `DuneAdpPlayerEngine.{Tick,Opl}.cs`.
 - Frequency table = same 12-entry table as Adp (verified against AdgDriverCode disasm).
 - Tests: each helper emits the exact byte sequence observed in `AdgDriverCode.cs` for that operation, against `RecordingOplBus`.
 
-**B3. Tick scheduler (`DuneAdgPlayerEngine.Tick.cs`)**
-- Mirror `AdgSchedulerTick_0756`: tempo accumulate, measure clock advance, per-channel wait decrement, dispatch.
-- 8-handler switch (NoteOff, NoteOn, Wait1, Wait2, ProgramChange, VolumeModulation, PitchBend, EndOfTrack) — same shape as Adp; implementations use `AdgChannel*` components and the new Opl helpers.
-- Tests: feed each handler a hand-built event stream and assert resulting OPL writes + channel state.
+**B3. Tick scheduler (`DuneAdgPlayerEngine.Tick.cs`) — DONE.**
+- Per-channel wait decrement scaffold + auto-dispatch when wait == 0.
+- Subdivision/measure clock advance at end of tick (mirrors dnadg:079D-07A8); clock seeded by `Load` to measure=1, subdivision=0x60 (mirrors `AdgResetSchedulerState_06B9` at dnadg:0573).
+- `IsPlaying` flips to false when every channel pointer reaches 0 (end-of-song).
 
-**B4. End-of-song & loop**
-- `AdgCheckLoopPoint_07DA` mirror: when measure == LoopMeasure, restore snapshot pointers; when all channel pointers == 0, raise `EndOfSong` event and clear `IsPlaying`.
-- Tests: synthesized 2-channel song with explicit EndOfTrack words; verify EndOfSong fires, IsPlaying false; verify loop snapshot restoration on a song with LoopMeasure.
+**B4. Event dispatch — IN PROGRESS (per-handler TDD).**
+
+Authoritative oracle: `src/Cryogenic/Overrides/AdgDriverCode.cs` (faithful, runtime-verified port of DNADG; no self-modifying code in the on-disk driver image, so static reading of the override is sufficient — no MCP capture required).
+
+**B4.0 Dispatcher framework — DONE** (commit `460f83e`):
+- `DispatchEvents(int channelIndex)` reads event words while wait==0 + pointer != 0; routes via `AdgEventOpcodeClassifier` + `AdgEventOpcodeRouter`.
+- `ReadWaitValue` (slots 2/3): 7-bit accumulator decode, sets wait counter, advances pointer.
+- `EndOfTrack` (slot 7): zeroes channel pointer (minimal variant; full body still pending — see B4.6).
+- `UnhandledOpcodeEncountered` event: structured payload `(ChannelIndex, Opcode, EventWord)`. Affected channel is silenced (pointer zeroed) until the handler is implemented.
+
+**Per-handler TDD cycles (each = one commit, faithful 1:1 port from `AdgDriverCode.cs`):**
+- **B4.1 NoteOff** (port `AdgNoteOff_0AB6`): consume velocity byte, ReadWaitValue, transposed-note compare, key-off via `AdgChannelNoteOffEmitter`. Depends on: `AdgClearScratchMask_0ACD` (new state slots: `AdgChannelStateScratch`, `AdgFadeScratch1/2`).
+- **B4.2 NoteOn** (port `AdgNoteOn_0A82`): velocity, `AdgEnvelopeSetup_0C47`, transpose, pitch-bend counter seed, key-on via `AdgChannelNoteOnEmitter`. Depends on: envelope setup helper (~80 lines).
+- **B4.3 ProgramChange** (port `AdgProgramChange_0831`): instrument index store, patch lookup at `EventBase + index*0x28`, full patch program via `AdgInstrumentEmitter` (already implemented), surround mask via `AdgSurroundMaskUpdater`.
+- **B4.4 VolumeModulation** (port `AdgVolumeModulation_0B2E`): velocity-scaled operator TL writes via `AdgVolumeScaler` and `AdgChannelVolumeModulationSlots`.
+- **B4.5 PitchBend** (port `AdgPitchBend_0D86` + `AdgPitchBendBody_0D8B`): ~120-line pitch-accumulator routine using `AdgPitchBendEventDecoder` (decoder already in place) + portamento fractions.
+- **B4.6 EndOfTrack full body** (port `AdgEndOfTrack_0AF5`): wait=0xFFFF, pointer rewind by 2, `AdgClearScratchMask_0ACD`, tick-flag decrement, global silence broadcast on last-channel-ended (already have `SilenceAll`), `AdgResetSchedulerState_06B9` re-init, `AdgCheckLoopPoint_07DA`.
+- **B4.7 LoopCheck** (port `AdgCheckLoopPoint_07DA`): snapshot save at LoopStartMeasure==Measure&&Subdivision==0x60; restore at LoopEndMeasure==Measure with `_repeatCounter` decrement.
+- **B4.8 PitchModulation** (port `AdgAdvancePitchModulation_07AD`): vibrato during wait (called when wait != 0); minor.
+
+Tests: each handler increment ships with at least one AAA test that hand-builds the relevant event word(s) and asserts state mutation + OPL bytes against `RecordingOplBus`. Real-song integration test (load `DNADG.UNHSQ`-decoded asset) added at end of B4 to validate the chain.
 
 ## Phase C — UI integration (real Play/Stop button, no audio yet)
 

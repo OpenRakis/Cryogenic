@@ -53,6 +53,11 @@ public sealed partial class DuneAdgPlayerEngine {
 			_state.WaitCounters.Set(i, absolute == 0 ? (ushort)0 : (ushort)1);
 		}
 
+		// Mirrors AdgResetSchedulerState_06B9 (dnadg:0573 / dnadg:067A): seed
+		// measure=1 and subdivision=0x60 so the per-tick subdivision decrement
+		// rolls over correctly into measure increments.
+		_state.MeasureClock.Initialize();
+
 		_songImage = image;
 		_songHeader = header;
 		_channelPointers = pointers;
