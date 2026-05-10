@@ -1,6 +1,7 @@
 ﻿namespace Cryogenic.AdgPlayer.Services;
 
 using Cryogenic.AdgPlayer.Driver;
+using Cryogenic.AdgPlayer.Song;
 
 using System;
 
@@ -54,6 +55,19 @@ public sealed partial class DuneAdgPlayerEngine {
 			throw new InvalidOperationException("No song loaded.");
 		}
 		_tickCount++;
+
+		// Mirrors dnadg:077E — AdgCheckLoopPoint_07DA runs at the very
+		// top of the scheduler tick, before the per-channel wait
+		// decrement loop. It either snapshots channel state at the
+		// loop-start measure or rewinds to it at the loop-end measure.
+		if (_songHeader is AdgSongHeader header) {
+			AdgLoopPointChecker.Check(
+				header,
+				_state.LoopState,
+				_state.LoopSnapshotStore,
+				_state.WaitCounters,
+				_state.EventPointers);
+		}
 
 		int channelsToScan = AdgDriverState.ChannelCount;
 		for (int i = 0; i < channelsToScan; i++) {

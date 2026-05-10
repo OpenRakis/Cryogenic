@@ -76,6 +76,9 @@ public sealed class AdgDriverState {
 	/// <summary>Per-channel cached A0/B0 frequency word (DI+0x1B0).</summary>
 	public AdgFrequencyWordCache FrequencyWordCache { get; }
 
+	/// <summary>Loop-point rep-movs snapshot mirror (channel base + 0x03B6).</summary>
+	public AdgLoopSnapshotStore LoopSnapshotStore { get; }
+
 	/// <summary>Constructs every component in its zero state.</summary>
 	public AdgDriverState() {
 		WaitCounters = new AdgChannelWaitCounters();
@@ -99,6 +102,7 @@ public sealed class AdgDriverState {
 		ChannelStateScratch = new AdgChannelStateScratch();
 		FadeScratchState = new AdgFadeScratchState();
 		FrequencyWordCache = new AdgFrequencyWordCache();
+		LoopSnapshotStore = new AdgLoopSnapshotStore();
 	}
 
 	/// <summary>
@@ -128,5 +132,6 @@ public sealed class AdgDriverState {
 		ChannelStateScratch.Reset();
 		FadeScratchState.Reset();
 		FrequencyWordCache.Reset();
+		LoopSnapshotStore.Reset();
 	}
 }
