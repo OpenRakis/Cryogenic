@@ -78,6 +78,8 @@ public sealed partial class DuneAdgPlayerEngine {
 				HandleNoteOff(channelIndex, eventWord, stream);
 				return;
 			case AdgEventOpcode.NoteOn:
+				HandleNoteOn(channelIndex, eventWord, stream);
+				return;
 			case AdgEventOpcode.ProgramChange:
 			case AdgEventOpcode.VolumeModulation:
 			case AdgEventOpcode.PitchBend:
@@ -167,6 +169,56 @@ public sealed partial class DuneAdgPlayerEngine {
 			AdgChannelNoteOffEmitter.Emit(_oplBus, _state.FrequencyWordCache,
 				_routingTable, channelIndex);
 		}
+	}
+
+	/// <summary>
+	/// Faithful state-mutation port of <c>AdgNoteOn_0A82</c> from
+	/// <c>AdgDriverCode.cs</c> (line 1931). Sequence:
+	/// 1) read velocity byte (one past the event word) and advance
+	///    the cursor;
+	/// 2) consume the variable-length wait value;
+	/// 3) (deep helper <c>AdgEnvelopeSetup_0C47</c> deferred — only
+	///    emits OPL register writes; tracked for B4.2b);
+	/// 4) if the channel already holds a note, emit a key-off via
+	///    <see cref="AdgChannelNoteOffEmitter"/> when routing is
+	///    bound (otherwise state-only);
+	/// 5) compute the transposed note, store it as the new current
+	///    note (DI+0x6D);
+	/// 6) recenter the channel pitch accumulator at 0x40
+	///    (DI+0xD8);
+	/// 7) (final OPL note-on via <c>AdgNoteOn_10A9</c> deferred to
+	///    B4.2b — needs the full envelope/frequency lookup chain).
+	/// </summary>
+	private void HandleNoteOn(int channelIndex, ushort eventWord, AdgInMemoryEventStream stream) {
+		ushort pointer = _state.EventPointers.Get(channelIndex);
+		// Step 1 — skip the velocity byte (only consumed by the
+		// envelope-setup helper, deferred to B4.2b).
+		if (!stream.InRange(pointer)) {
+			_state.EventPointers.Set(channelIndex, 0);
+			return;
+		}
+		_state.EventPointers.Set(channelIndex, (ushort)(pointer + 1));
+
+		// Step 2 — variable-length wait value.
+		HandleReadWaitValue(channelIndex, stream);
+
+		// Step 4 — if the channel already holds a note, key-off the
+		// previous note (gated on routing-table presence so state-only
+		// callers don't need to wire OPL).
+		if (_state.CurrentNotes.Get(channelIndex) != 0 && _routingTable is not null) {
+			AdgChannelNoteOffEmitter.Emit(_oplBus, _state.FrequencyWordCache,
+				_routingTable, channelIndex);
+		}
+
+		// Step 5 — store the transposed current note.
+		byte rawNote = (byte)(eventWord >> 8);
+		byte transposedNote = _state.PitchTransposeSlots.ApplyTo(channelIndex, rawNote);
+		_state.CurrentNotes.Set(channelIndex, transposedNote);
+
+		// Step 6 — recenter the pitch accumulator.
+		_state.PitchAccumulators.Center(channelIndex);
+
+		// Step 7 — full OPL note-on emit deferred to B4.2b.
 	}
 
 	private void RaiseUnhandledOpcode(int channelIndex, AdgEventOpcode opcode, ushort eventWord) {

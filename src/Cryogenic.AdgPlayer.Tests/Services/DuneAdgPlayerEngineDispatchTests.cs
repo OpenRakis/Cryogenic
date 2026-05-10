@@ -122,16 +122,16 @@ public sealed class DuneAdgPlayerEngineDispatchTests {
     }
 
     /// <summary>
-    /// Unhandled musical opcode (NoteOn slot 1, not yet ported)
+    /// Unhandled musical opcode (ProgramChange slot 4, not yet ported)
     /// raises the structured event AND zeroes the channel pointer
     /// to prevent runaway dispatch.
     /// </summary>
     [Fact]
     public void Dispatch_UnhandledOpcode_RaisesEventAndZeroesPointer() {
-        // Arrange — slot 1 = NoteOn (not yet ported); event word at absolute 0x12.
-        //   Low byte 0x10 → bits 4..6 = 0b001 = slot 1.
+        // Arrange — slot 4 = ProgramChange (not yet ported); event word at absolute 0x12.
+        //   Low byte 0x40 → bits 4..6 = 0b100 = slot 4.
         byte[] bytes = BuildSong(new ushort[] { 0x10, 0, 0, 0, 0, 0, 0, 0, 0 });
-        bytes[0x12] = 0x10;
+        bytes[0x12] = 0x40;
         bytes[0x13] = 0xCD;
         DuneAdgPlayerEngine engine = LoadEngine(bytes);
         engine.State.WaitCounters.Set(0, 0);
@@ -144,7 +144,7 @@ public sealed class DuneAdgPlayerEngineDispatchTests {
         // Assert
         Assert.NotNull(captured);
         Assert.Equal(0, captured!.Value.ChannelIndex);
-        Assert.Equal(AdgEventOpcode.NoteOn, captured.Value.Opcode);
+        Assert.Equal(AdgEventOpcode.ProgramChange, captured.Value.Opcode);
         Assert.Equal(0, engine.State.EventPointers.Get(0));
     }
 
@@ -318,5 +318,111 @@ public sealed class DuneAdgPlayerEngineDispatchTests {
         Assert.False(t4);
         Assert.Equal(0, engine.State.EventPointers.Get(0));
         Assert.False(engine.IsPlaying);
+    }
+
+    /// <summary>
+    /// NoteOn (slot 1) stores the transposed note in the channel's
+    /// current-note slot, recenters the pitch accumulator, and
+    /// advances the cursor past velocity + wait value.
+    /// </summary>
+    [Fact]
+    public void Dispatch_NoteOn_StoresCurrentNoteAndCentersPitch() {
+        // Arrange — slot 1 NoteOn, note=0x40, velocity=0x55, wait=0x02.
+        byte[] bytes = BuildSong(new ushort[] { 0x10, 0, 0, 0, 0, 0, 0, 0, 0 });
+        bytes[0x12] = 0x10;
+        bytes[0x13] = 0x40;
+        bytes[0x14] = 0x55;
+        bytes[0x15] = 0x02;
+        DuneAdgPlayerEngine engine = LoadEngine(bytes);
+        engine.State.WaitCounters.Set(0, 0);
+        engine.State.PitchAccumulators.Set(0, 0x00);
+
+        // Act
+        engine.DispatchEvents(0);
+
+        // Assert
+        Assert.Equal(0x40, engine.State.CurrentNotes.Get(0));
+        Assert.Equal(AdgChannelPitchAccumulators.CenterValue, engine.State.PitchAccumulators.Get(0));
+        Assert.Equal(2, engine.State.WaitCounters.Get(0));
+        Assert.Equal(0x16, engine.State.EventPointers.Get(0));
+    }
+
+    /// <summary>
+    /// NoteOn applies the per-channel pitch transpose to the raw
+    /// note before storing it (mirrors <c>add AL,[DI+0x91]</c>
+    /// at dnadg:0A99).
+    /// </summary>
+    [Fact]
+    public void Dispatch_NoteOn_AppliesPitchTranspose() {
+        // Arrange — raw note 0x40, transpose -1 → effective 0x3F.
+        byte[] bytes = BuildSong(new ushort[] { 0x10, 0, 0, 0, 0, 0, 0, 0, 0 });
+        bytes[0x12] = 0x10;
+        bytes[0x13] = 0x40;
+        bytes[0x14] = 0x00;
+        bytes[0x15] = 0x01;
+        DuneAdgPlayerEngine engine = LoadEngine(bytes);
+        engine.State.WaitCounters.Set(0, 0);
+        engine.State.PitchTransposeSlots.Set(0, 0xFF);
+
+        // Act
+        engine.DispatchEvents(0);
+
+        // Assert
+        Assert.Equal(0x3F, engine.State.CurrentNotes.Get(0));
+    }
+
+    /// <summary>
+    /// NoteOn fired while the channel still holds a previous note
+    /// emits a key-off for the previous note before storing the new
+    /// one — but only when a routing table is bound.
+    /// </summary>
+    [Fact]
+    public void Dispatch_NoteOn_PreviousNoteHeld_EmitsKeyOffWhenRouted() {
+        // Arrange — channel already holds note 0x42; new NoteOn for 0x40.
+        byte[] bytes = BuildSong(new ushort[] { 0x10, 0, 0, 0, 0, 0, 0, 0, 0 });
+        bytes[0x12] = 0x10;
+        bytes[0x13] = 0x40;
+        bytes[0x14] = 0x00;
+        bytes[0x15] = 0x01;
+        DuneAdgPlayerEngine engine = LoadEngine(bytes);
+        engine.State.WaitCounters.Set(0, 0);
+        engine.State.CurrentNotes.Set(0, 0x42);
+        engine.State.FrequencyWordCache.Set(0, 0x1234);
+        byte[] zeroes = new byte[AdgChannelRoutingTable.ChannelCount];
+        engine.SetRoutingTable(new AdgChannelRoutingTable(zeroes, zeroes, zeroes));
+        Cryogenic.AdgPlayer.Opl.RecordingOplBus bus = new();
+        engine.SetOplBus(bus);
+
+        // Act
+        engine.DispatchEvents(0);
+
+        // Assert — previous note key-off emitted, new note stored.
+        Assert.NotEmpty(bus.Writes);
+        Assert.Equal(0x40, engine.State.CurrentNotes.Get(0));
+    }
+
+    /// <summary>
+    /// NoteOn with no previous note held and no routing table is
+    /// purely state-mutating — no OPL writes at all.
+    /// </summary>
+    [Fact]
+    public void Dispatch_NoteOn_FreshChannel_NoRouting_StateOnly() {
+        // Arrange — channel currently silent (currentNote = 0).
+        byte[] bytes = BuildSong(new ushort[] { 0x10, 0, 0, 0, 0, 0, 0, 0, 0 });
+        bytes[0x12] = 0x10;
+        bytes[0x13] = 0x44;
+        bytes[0x14] = 0x70;
+        bytes[0x15] = 0x01;
+        DuneAdgPlayerEngine engine = LoadEngine(bytes);
+        engine.State.WaitCounters.Set(0, 0);
+        Cryogenic.AdgPlayer.Opl.RecordingOplBus bus = new();
+        engine.SetOplBus(bus);
+
+        // Act
+        engine.DispatchEvents(0);
+
+        // Assert
+        Assert.Equal(0x44, engine.State.CurrentNotes.Get(0));
+        Assert.Empty(bus.Writes);
     }
 }
