@@ -1,9 +1,11 @@
-namespace Cryogenic.AdgPlayer.Tests.Services;
+﻿namespace Cryogenic.AdgPlayer.Tests.Services;
 
-using System;
 using Cryogenic.AdgPlayer.Driver;
 using Cryogenic.AdgPlayer.Services;
 using Cryogenic.AdgPlayer.Song;
+
+using System;
+
 using Xunit;
 
 /// <summary>Tests for <see cref="DuneAdgPlayerEngine"/> Load partial.</summary>
@@ -132,10 +134,10 @@ public sealed class DuneAdgPlayerEngineLoadTests {
 		payload[1] = 0x01; // eventBase high → 0x0100 (beyond image, instrumentCount=0)
 		payload[AdgSongHeader.DataBase + 0] = 0x10; // ch0 offset lo
 		payload[AdgSongHeader.DataBase + 1] = 0x00; // ch0 offset hi → 0x0010
-		// All other channels stay zero. Tempo at +0x30 stays zero.
-		// Build literal HSQ wrapping `payload` (53 literal bytes).
-		// 53 literals need 53 '1' bits = 4 bit-words (15 bits each = 60 bits ≥ 53).
-		// Simpler: emit one bit-word covering 15 ones, repeat.
+													// All other channels stay zero. Tempo at +0x30 stays zero.
+													// Build literal HSQ wrapping `payload` (53 literal bytes).
+													// 53 literals need 53 '1' bits = 4 bit-words (15 bits each = 60 bits ≥ 53).
+													// Simpler: emit one bit-word covering 15 ones, repeat.
 		System.Collections.Generic.List<byte> stream = [];
 		// header: size = 0x35
 		byte size_lo = 0x35;

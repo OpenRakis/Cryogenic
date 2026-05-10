@@ -1,6 +1,7 @@
-namespace Cryogenic.AdgPlayer.Tests.Song;
+﻿namespace Cryogenic.AdgPlayer.Tests.Song;
 
 using Cryogenic.AdgPlayer.Song;
+
 using Xunit;
 
 /// <summary>Tests for <see cref="AdgSongHeaderParser"/> and <see cref="AdgSongHeader"/>.</summary>

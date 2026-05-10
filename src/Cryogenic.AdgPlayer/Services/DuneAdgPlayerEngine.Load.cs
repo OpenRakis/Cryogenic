@@ -1,8 +1,9 @@
-namespace Cryogenic.AdgPlayer.Services;
+﻿namespace Cryogenic.AdgPlayer.Services;
 
-using System;
 using Cryogenic.AdgPlayer.Driver;
 using Cryogenic.AdgPlayer.Song;
+
+using System;
 
 /// <summary>
 /// Engine load path: turns a raw / HSQ byte buffer into a parsed
@@ -55,6 +56,7 @@ public sealed partial class DuneAdgPlayerEngine {
 		_songImage = image;
 		_songHeader = header;
 		_channelPointers = pointers;
+		_tickCount = 0;
 		HasSongLoaded = true;
 		IsPlaying = false;
 	}
@@ -67,6 +69,7 @@ public sealed partial class DuneAdgPlayerEngine {
 		_songImage = null;
 		_songHeader = null;
 		_channelPointers = null;
+		_tickCount = 0;
 		HasSongLoaded = false;
 		IsPlaying = false;
 	}

@@ -53,6 +53,9 @@ public sealed class MainWindowViewModel : ViewModelBase {
 	/// <summary>View model exposing the FFT spectrum buffer.</summary>
 	public AdgSpectrumViewModel Spectrum { get; }
 
+	/// <summary>Player session: engine + playback host + Play/Stop/Load commands.</summary>
+	public AdgPlayerSessionViewModel Session { get; }
+
 	/// <summary>Default constructor wires an empty in-memory catalog and a fresh driver state.</summary>
 	public MainWindowViewModel() : this(new EmptyCatalog(), new AdgDriverState(), ObservableSerilogSink.Instance, static action => action()) {
 	}
@@ -72,6 +75,7 @@ public sealed class MainWindowViewModel : ViewModelBase {
 		OplCapture = new AdgOplCaptureViewModel(OplBus, dispatch);
 		Waveform = new AdgWaveformViewModel();
 		Spectrum = new AdgSpectrumViewModel();
+		Session = new AdgPlayerSessionViewModel(OplBus);
 	}
 
 	private sealed class EmptyCatalog : IAdgSongCatalog {

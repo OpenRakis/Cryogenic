@@ -1,4 +1,4 @@
-namespace Cryogenic.AdgPlayer.Song;
+﻿namespace Cryogenic.AdgPlayer.Song;
 
 using System;
 
