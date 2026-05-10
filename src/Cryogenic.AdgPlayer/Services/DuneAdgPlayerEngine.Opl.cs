@@ -1,5 +1,6 @@
 ﻿namespace Cryogenic.AdgPlayer.Services;
 
+using Cryogenic.AdgPlayer.Driver;
 using Cryogenic.AdgPlayer.Opl;
 
 using System;
@@ -12,6 +13,7 @@ using System;
 /// </summary>
 public sealed partial class DuneAdgPlayerEngine {
 	private IOplBus _oplBus = new RecordingOplBus();
+	private AdgChannelRoutingTable? _routingTable;
 
 	/// <summary>
 	/// Currently bound OPL bus. Defaults to a fresh
@@ -21,10 +23,28 @@ public sealed partial class DuneAdgPlayerEngine {
 	/// </summary>
 	public IOplBus OplBus => _oplBus;
 
+	/// <summary>
+	/// Currently bound channel routing table extracted from the
+	/// loaded DNADG driver image. Null until <see cref="SetRoutingTable"/>
+	/// is called; in that case OPL emit handlers (NoteOff/NoteOn)
+	/// only mutate driver state and skip register writes.
+	/// </summary>
+	public AdgChannelRoutingTable? RoutingTable => _routingTable;
+
 	/// <summary>Replaces the bound bus. Throws on null.</summary>
 	public void SetOplBus(IOplBus bus) {
 		ArgumentNullException.ThrowIfNull(bus);
 		_oplBus = bus;
+	}
+
+	/// <summary>
+	/// Binds the per-channel routing table extracted from the DNADG
+	/// driver image. Required for OPL register emit during NoteOff
+	/// and NoteOn dispatch.
+	/// </summary>
+	public void SetRoutingTable(AdgChannelRoutingTable routingTable) {
+		ArgumentNullException.ThrowIfNull(routingTable);
+		_routingTable = routingTable;
 	}
 
 	/// <summary>

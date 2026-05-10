@@ -75,6 +75,8 @@ public sealed partial class DuneAdgPlayerEngine {
 				HandleEndOfTrack(channelIndex);
 				return;
 			case AdgEventOpcode.NoteOff:
+				HandleNoteOff(channelIndex, eventWord, stream);
+				return;
 			case AdgEventOpcode.NoteOn:
 			case AdgEventOpcode.ProgramChange:
 			case AdgEventOpcode.VolumeModulation:
@@ -115,6 +117,56 @@ public sealed partial class DuneAdgPlayerEngine {
 
 	private void HandleEndOfTrack(int channelIndex) {
 		_state.EventPointers.Set(channelIndex, 0);
+	}
+
+	/// <summary>
+	/// Faithful port of <c>AdgNoteOff_0AB6</c> from
+	/// <c>AdgDriverCode.cs</c> (line 1948). Sequence:
+	/// 1) skip the velocity byte that follows the event word;
+	/// 2) consume the variable-length wait value
+	///    (<c>AdgReadWaitValue_0E7E</c>);
+	/// 3) compute the transposed note via the per-channel pitch
+	///    transpose slot (DI+0x91);
+	/// 4) bail out unless the channel's current note (DI+0x6D)
+	///    matches the released note;
+	/// 5) clear the current-note slot;
+	/// 6) invoke <see cref="AdgScratchMaskClearer.Clear"/> using the
+	///    next-event byte at the cursor as the gating byte;
+	/// 7) emit an OPL key-off via
+	///    <see cref="AdgChannelNoteOffEmitter"/> when a routing table
+	///    is bound (otherwise state-only).
+	/// </summary>
+	private void HandleNoteOff(int channelIndex, ushort eventWord, AdgInMemoryEventStream stream) {
+		ushort pointer = _state.EventPointers.Get(channelIndex);
+		// Skip the velocity byte that immediately follows the event word.
+		if (!stream.InRange(pointer)) {
+			_state.EventPointers.Set(channelIndex, 0);
+			return;
+		}
+		_state.EventPointers.Set(channelIndex, (ushort)(pointer + 1));
+
+		// Variable-length wait value.
+		HandleReadWaitValue(channelIndex, stream);
+
+		byte rawNote = (byte)(eventWord >> 8);
+		byte transposedNote = _state.PitchTransposeSlots.ApplyTo(channelIndex, rawNote);
+		if (_state.CurrentNotes.Get(channelIndex) != transposedNote) {
+			return;
+		}
+		_state.CurrentNotes.Clear(channelIndex);
+
+		ushort cursor = _state.EventPointers.Get(channelIndex);
+		byte nextEventByte = stream.InRange(cursor)
+			? stream.ReadByte(cursor)
+			: AdgScratchMaskClearer.TerminatorByte;
+		AdgScratchMaskClearer.Clear(_state.ChannelStateScratch,
+			_state.FadeScratchState, channelIndex,
+			_state.WaitCounters.Get(channelIndex), nextEventByte);
+
+		if (_routingTable is not null) {
+			AdgChannelNoteOffEmitter.Emit(_oplBus, _state.FrequencyWordCache,
+				_routingTable, channelIndex);
+		}
 	}
 
 	private void RaiseUnhandledOpcode(int channelIndex, AdgEventOpcode opcode, ushort eventWord) {

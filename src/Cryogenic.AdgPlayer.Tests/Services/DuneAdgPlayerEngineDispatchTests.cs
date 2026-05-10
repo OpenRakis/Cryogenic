@@ -122,15 +122,16 @@ public sealed class DuneAdgPlayerEngineDispatchTests {
     }
 
     /// <summary>
-    /// Unhandled musical opcode (NoteOff in this case) raises the
-    /// structured event AND zeroes the channel pointer to prevent
-    /// runaway dispatch.
+    /// Unhandled musical opcode (NoteOn slot 1, not yet ported)
+    /// raises the structured event AND zeroes the channel pointer
+    /// to prevent runaway dispatch.
     /// </summary>
     [Fact]
     public void Dispatch_UnhandledOpcode_RaisesEventAndZeroesPointer() {
-        // Arrange — slot 0 = NoteOff (not yet ported); event word at absolute 0x12.
+        // Arrange — slot 1 = NoteOn (not yet ported); event word at absolute 0x12.
+        //   Low byte 0x10 → bits 4..6 = 0b001 = slot 1.
         byte[] bytes = BuildSong(new ushort[] { 0x10, 0, 0, 0, 0, 0, 0, 0, 0 });
-        bytes[0x12] = 0xAB; // event word lo (only bits 4..6 select slot)
+        bytes[0x12] = 0x10;
         bytes[0x13] = 0xCD;
         DuneAdgPlayerEngine engine = LoadEngine(bytes);
         engine.State.WaitCounters.Set(0, 0);
@@ -143,8 +144,128 @@ public sealed class DuneAdgPlayerEngineDispatchTests {
         // Assert
         Assert.NotNull(captured);
         Assert.Equal(0, captured!.Value.ChannelIndex);
-        Assert.Equal(AdgEventOpcode.NoteOff, captured.Value.Opcode);
+        Assert.Equal(AdgEventOpcode.NoteOn, captured.Value.Opcode);
         Assert.Equal(0, engine.State.EventPointers.Get(0));
+    }
+
+    /// <summary>
+    /// NoteOff with matching current note clears the channel's
+    /// current-note slot and advances the cursor past the velocity
+    /// byte and the wait value.
+    /// </summary>
+    [Fact]
+    public void Dispatch_NoteOff_MatchingNote_ClearsCurrentNoteAndAdvances() {
+        // Arrange — slot 0 = NoteOff. Event word = (note=0x40 << 8) | 0x00.
+        //   Channel 0 relative 0x10 → absolute 0x12.
+        //   Layout: [0x12]=0x00 [0x13]=0x40 (event word, note 0x40),
+        //   [0x14]=0x55 (velocity, skipped),
+        //   [0x15]=0x03 (wait value, single-byte),
+        //   [0x16]=0xFF (next-event byte for ScratchMaskClearer gate).
+        byte[] bytes = BuildSong(new ushort[] { 0x10, 0, 0, 0, 0, 0, 0, 0, 0 });
+        bytes[0x12] = 0x00;
+        bytes[0x13] = 0x40;
+        bytes[0x14] = 0x55;
+        bytes[0x15] = 0x03;
+        bytes[0x16] = 0xFF;
+        DuneAdgPlayerEngine engine = LoadEngine(bytes);
+        engine.State.WaitCounters.Set(0, 0);
+        // Channel 0 currently holds note 0x40 (transpose=0).
+        engine.State.CurrentNotes.Set(0, 0x40);
+
+        // Act
+        engine.DispatchEvents(0);
+
+        // Assert
+        Assert.Equal(0, engine.State.CurrentNotes.Get(0));
+        Assert.Equal(3, engine.State.WaitCounters.Get(0));
+        Assert.Equal(0x16, engine.State.EventPointers.Get(0));
+    }
+
+    /// <summary>
+    /// NoteOff for a different note than the channel currently holds
+    /// is ignored: current-note remains, but velocity + wait are
+    /// still consumed.
+    /// </summary>
+    [Fact]
+    public void Dispatch_NoteOff_NonMatchingNote_LeavesCurrentNote() {
+        // Arrange — channel currently holds 0x42, NoteOff fires for 0x40.
+        byte[] bytes = BuildSong(new ushort[] { 0x10, 0, 0, 0, 0, 0, 0, 0, 0 });
+        bytes[0x12] = 0x00;
+        bytes[0x13] = 0x40;
+        bytes[0x14] = 0x55;
+        bytes[0x15] = 0x07;
+        DuneAdgPlayerEngine engine = LoadEngine(bytes);
+        engine.State.WaitCounters.Set(0, 0);
+        engine.State.CurrentNotes.Set(0, 0x42);
+
+        // Act
+        engine.DispatchEvents(0);
+
+        // Assert — current note unchanged, but cursor advanced past wait.
+        Assert.Equal(0x42, engine.State.CurrentNotes.Get(0));
+        Assert.Equal(7, engine.State.WaitCounters.Get(0));
+        Assert.Equal(0x16, engine.State.EventPointers.Get(0));
+    }
+
+    /// <summary>
+    /// NoteOff applies the per-channel pitch transpose before
+    /// matching against the channel's current note (mirrors the
+    /// <c>add AL,[DI+0x91]</c> at dnadg:0ABE).
+    /// </summary>
+    [Fact]
+    public void Dispatch_NoteOff_RespectsPitchTranspose() {
+        // Arrange — raw note 0x40, transpose +2 → effective note 0x42.
+        byte[] bytes = BuildSong(new ushort[] { 0x10, 0, 0, 0, 0, 0, 0, 0, 0 });
+        bytes[0x12] = 0x00;
+        bytes[0x13] = 0x40;
+        bytes[0x14] = 0x00;
+        bytes[0x15] = 0x01;
+        DuneAdgPlayerEngine engine = LoadEngine(bytes);
+        engine.State.WaitCounters.Set(0, 0);
+        engine.State.PitchTransposeSlots.Set(0, 0x02);
+        engine.State.CurrentNotes.Set(0, 0x42);
+
+        // Act
+        engine.DispatchEvents(0);
+
+        // Assert
+        Assert.Equal(0, engine.State.CurrentNotes.Get(0));
+    }
+
+    /// <summary>
+    /// When a routing table is bound, NoteOff also emits an OPL3
+    /// key-off via <see cref="AdgChannelNoteOffEmitter"/>: the cached
+    /// frequency word (key-on bit cleared) is rewritten to the
+    /// channel's A0/B0 pair.
+    /// </summary>
+    [Fact]
+    public void Dispatch_NoteOff_WithRoutingTable_EmitsKeyOffToOpl() {
+        // Arrange — channel 0 routed to physical 0x00 (A0=0xA0, B0=0xB0)
+        //   via channel-route byte 0x00 (high nibble selects bank, low
+        //   nibble selects A0/B0 register pair).
+        byte[] bytes = BuildSong(new ushort[] { 0x10, 0, 0, 0, 0, 0, 0, 0, 0 });
+        bytes[0x12] = 0x00;
+        bytes[0x13] = 0x40;
+        bytes[0x14] = 0x00;
+        bytes[0x15] = 0x01;
+        DuneAdgPlayerEngine engine = LoadEngine(bytes);
+        engine.State.WaitCounters.Set(0, 0);
+        engine.State.CurrentNotes.Set(0, 0x40);
+        // Cache a frequency word so the emitter has something to write.
+        engine.State.FrequencyWordCache.Set(0, 0x1234);
+        // Build a minimal routing table (channel 0 routed to slot 0).
+        byte[] channelRoutes = new byte[AdgChannelRoutingTable.ChannelCount];
+        byte[] primaryRoutes = new byte[AdgChannelRoutingTable.ChannelCount];
+        byte[] secondaryRoutes = new byte[AdgChannelRoutingTable.ChannelCount];
+        engine.SetRoutingTable(new AdgChannelRoutingTable(channelRoutes, primaryRoutes, secondaryRoutes));
+        Cryogenic.AdgPlayer.Opl.RecordingOplBus bus = new();
+        engine.SetOplBus(bus);
+
+        // Act
+        engine.DispatchEvents(0);
+
+        // Assert — at least one A0/B0 pair was written for channel 0.
+        Assert.NotEmpty(bus.Writes);
     }
 
     /// <summary>

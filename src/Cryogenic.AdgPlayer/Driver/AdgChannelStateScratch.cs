@@ -1,4 +1,4 @@
-namespace Cryogenic.AdgPlayer.Driver;
+﻿namespace Cryogenic.AdgPlayer.Driver;
 
 /// <summary>
 /// 18-slot ushort table holding the per-channel "state scratch"
@@ -7,32 +7,32 @@ namespace Cryogenic.AdgPlayer.Driver;
 /// which bits get cleared in <see cref="AdgFadeScratchState"/>.
 /// </summary>
 public sealed class AdgChannelStateScratch {
-	/// <summary>Number of channel slots in the scratch table.</summary>
-	public const int ChannelCount = 18;
+    /// <summary>Number of channel slots in the scratch table.</summary>
+    public const int ChannelCount = 18;
 
-	private readonly ushort[] _scratch = new ushort[ChannelCount];
+    private readonly ushort[] _scratch = new ushort[ChannelCount];
 
-	/// <summary>Reads the state-scratch word for <paramref name="channelIndex"/>.</summary>
-	public ushort Get(int channelIndex) {
-		Validate(channelIndex);
-		return _scratch[channelIndex];
-	}
+    /// <summary>Reads the state-scratch word for <paramref name="channelIndex"/>.</summary>
+    public ushort Get(int channelIndex) {
+        Validate(channelIndex);
+        return _scratch[channelIndex];
+    }
 
-	/// <summary>Writes the state-scratch word for <paramref name="channelIndex"/>.</summary>
-	public void Set(int channelIndex, ushort value) {
-		Validate(channelIndex);
-		_scratch[channelIndex] = value;
-	}
+    /// <summary>Writes the state-scratch word for <paramref name="channelIndex"/>.</summary>
+    public void Set(int channelIndex, ushort value) {
+        Validate(channelIndex);
+        _scratch[channelIndex] = value;
+    }
 
-	/// <summary>Resets every slot to zero.</summary>
-	public void Reset() {
-		Array.Clear(_scratch);
-	}
+    /// <summary>Resets every slot to zero.</summary>
+    public void Reset() {
+        Array.Clear(_scratch);
+    }
 
-	private static void Validate(int channelIndex) {
-		if (channelIndex < 0 || channelIndex >= ChannelCount) {
-			throw new ArgumentOutOfRangeException(nameof(channelIndex),
-				channelIndex, "Channel index must be within [0,18).");
-		}
-	}
+    private static void Validate(int channelIndex) {
+        if (channelIndex < 0 || channelIndex >= ChannelCount) {
+            throw new ArgumentOutOfRangeException(nameof(channelIndex),
+                channelIndex, "Channel index must be within [0,18).");
+        }
+    }
 }

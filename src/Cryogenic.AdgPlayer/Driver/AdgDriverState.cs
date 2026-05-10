@@ -73,6 +73,9 @@ public sealed class AdgDriverState {
 	/// <summary>Global fade-scratch ushort pair (0x013E / 0x0140).</summary>
 	public AdgFadeScratchState FadeScratchState { get; }
 
+	/// <summary>Per-channel cached A0/B0 frequency word (DI+0x1B0).</summary>
+	public AdgFrequencyWordCache FrequencyWordCache { get; }
+
 	/// <summary>Constructs every component in its zero state.</summary>
 	public AdgDriverState() {
 		WaitCounters = new AdgChannelWaitCounters();
@@ -95,6 +98,7 @@ public sealed class AdgDriverState {
 		TickDivider = new AdgTickDivider();
 		ChannelStateScratch = new AdgChannelStateScratch();
 		FadeScratchState = new AdgFadeScratchState();
+		FrequencyWordCache = new AdgFrequencyWordCache();
 	}
 
 	/// <summary>
@@ -123,5 +127,6 @@ public sealed class AdgDriverState {
 		TickDivider.Reset();
 		ChannelStateScratch.Reset();
 		FadeScratchState.Reset();
+		FrequencyWordCache.Reset();
 	}
 }
