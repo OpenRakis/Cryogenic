@@ -1,4 +1,4 @@
-namespace Cryogenic.AdgPlayer.Driver;
+﻿namespace Cryogenic.AdgPlayer.Driver;
 
 /// <summary>
 /// 18-slot byte table holding the per-channel pitch-accumulator
@@ -15,32 +15,32 @@ namespace Cryogenic.AdgPlayer.Driver;
 /// owns the AL byte.
 /// </summary>
 public sealed class AdgChannelPitchAccumulatorSteps {
-	/// <summary>Number of channel slots in the table.</summary>
-	public const int ChannelCount = 18;
+    /// <summary>Number of channel slots in the table.</summary>
+    public const int ChannelCount = 18;
 
-	private readonly byte[] _slots = new byte[ChannelCount];
+    private readonly byte[] _slots = new byte[ChannelCount];
 
-	/// <summary>Reads the step byte for <paramref name="channelIndex"/>.</summary>
-	public byte Get(int channelIndex) {
-		Validate(channelIndex);
-		return _slots[channelIndex];
-	}
+    /// <summary>Reads the step byte for <paramref name="channelIndex"/>.</summary>
+    public byte Get(int channelIndex) {
+        Validate(channelIndex);
+        return _slots[channelIndex];
+    }
 
-	/// <summary>Writes the step byte for <paramref name="channelIndex"/>.</summary>
-	public void Set(int channelIndex, byte value) {
-		Validate(channelIndex);
-		_slots[channelIndex] = value;
-	}
+    /// <summary>Writes the step byte for <paramref name="channelIndex"/>.</summary>
+    public void Set(int channelIndex, byte value) {
+        Validate(channelIndex);
+        _slots[channelIndex] = value;
+    }
 
-	/// <summary>Resets every channel slot to zero.</summary>
-	public void Reset() {
-		Array.Clear(_slots);
-	}
+    /// <summary>Resets every channel slot to zero.</summary>
+    public void Reset() {
+        Array.Clear(_slots);
+    }
 
-	private static void Validate(int channelIndex) {
-		if (channelIndex < 0 || channelIndex >= ChannelCount) {
-			throw new ArgumentOutOfRangeException(nameof(channelIndex),
-				channelIndex, "Channel index must be within [0,18).");
-		}
-	}
+    private static void Validate(int channelIndex) {
+        if (channelIndex < 0 || channelIndex >= ChannelCount) {
+            throw new ArgumentOutOfRangeException(nameof(channelIndex),
+                channelIndex, "Channel index must be within [0,18).");
+        }
+    }
 }

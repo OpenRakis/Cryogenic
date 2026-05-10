@@ -1,4 +1,4 @@
-namespace Cryogenic.AdgPlayer.Driver;
+﻿namespace Cryogenic.AdgPlayer.Driver;
 
 /// <summary>
 /// Pure port of <c>AdgAdvancePitchModulation_07AD</c>
@@ -23,43 +23,43 @@ namespace Cryogenic.AdgPlayer.Driver;
 /// </code>
 /// </remarks>
 public static class AdgPitchModulationAdvancer {
-	/// <summary>
-	/// Advances the per-channel pitch accumulator and dispatches to
-	/// <paramref name="pitchBendBody"/>. Returns <c>true</c> when
-	/// the body was invoked (channel was eligible); <c>false</c>
-	/// when one of the early-return guards fired (counter==0 or
-	/// event pointer==0).
-	/// </summary>
-	public static bool Advance(
-		int channelIndex,
-		AdgChannelPitchBendCounters pitchBendCounters,
-		AdgChannelEventPointers eventPointers,
-		AdgChannelPitchAccumulators pitchAccumulators,
-		AdgChannelPitchAccumulatorSteps pitchAccumulatorSteps,
-		IAdgPitchBendBody pitchBendBody) {
-		ArgumentNullException.ThrowIfNull(pitchBendCounters);
-		ArgumentNullException.ThrowIfNull(eventPointers);
-		ArgumentNullException.ThrowIfNull(pitchAccumulators);
-		ArgumentNullException.ThrowIfNull(pitchAccumulatorSteps);
-		ArgumentNullException.ThrowIfNull(pitchBendBody);
+    /// <summary>
+    /// Advances the per-channel pitch accumulator and dispatches to
+    /// <paramref name="pitchBendBody"/>. Returns <c>true</c> when
+    /// the body was invoked (channel was eligible); <c>false</c>
+    /// when one of the early-return guards fired (counter==0 or
+    /// event pointer==0).
+    /// </summary>
+    public static bool Advance(
+        int channelIndex,
+        AdgChannelPitchBendCounters pitchBendCounters,
+        AdgChannelEventPointers eventPointers,
+        AdgChannelPitchAccumulators pitchAccumulators,
+        AdgChannelPitchAccumulatorSteps pitchAccumulatorSteps,
+        IAdgPitchBendBody pitchBendBody) {
+        ArgumentNullException.ThrowIfNull(pitchBendCounters);
+        ArgumentNullException.ThrowIfNull(eventPointers);
+        ArgumentNullException.ThrowIfNull(pitchAccumulators);
+        ArgumentNullException.ThrowIfNull(pitchAccumulatorSteps);
+        ArgumentNullException.ThrowIfNull(pitchBendBody);
 
-		byte counter = pitchBendCounters.Get(channelIndex);
-		if (counter == 0) {
-			return false;
-		}
-		if (eventPointers.Get(channelIndex) == 0) {
-			return false;
-		}
+        byte counter = pitchBendCounters.Get(channelIndex);
+        if (counter == 0) {
+            return false;
+        }
+        if (eventPointers.Get(channelIndex) == 0) {
+            return false;
+        }
 
-		pitchBendCounters.Set(channelIndex, (byte)(counter - 1));
+        pitchBendCounters.Set(channelIndex, (byte)(counter - 1));
 
-		byte value = pitchAccumulators.Get(channelIndex);
-		byte step = pitchAccumulatorSteps.Get(channelIndex);
-		byte newValue = (byte)(value + step);
-		pitchAccumulators.Set(channelIndex, newValue);
+        byte value = pitchAccumulators.Get(channelIndex);
+        byte step = pitchAccumulatorSteps.Get(channelIndex);
+        byte newValue = (byte)(value + step);
+        pitchAccumulators.Set(channelIndex, newValue);
 
-		ushort bendWord = (ushort)(newValue | (step << 8));
-		pitchBendBody.Emit(channelIndex, bendWord);
-		return true;
-	}
+        ushort bendWord = (ushort)(newValue | (step << 8));
+        pitchBendBody.Emit(channelIndex, bendWord);
+        return true;
+    }
 }
