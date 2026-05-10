@@ -38,6 +38,12 @@ public sealed class AdgPlayerSessionViewModel : ViewModelBase, IDisposable {
 	/// <summary>Stops playback (host + engine).</summary>
 	public IRelayCommand StopCommand { get; }
 
+	/// <summary>Raised after the engine and host have started.</summary>
+	public event Action? PlaybackStarted;
+
+	/// <summary>Raised after the engine and host have stopped (manual or end-of-song).</summary>
+	public event Action? PlaybackStopped;
+
 	/// <summary>Builds the session with a synchronous (test) dispatcher.</summary>
 	public AdgPlayerSessionViewModel(IOplBus bus) : this(bus, static action => action()) {
 	}
@@ -72,6 +78,7 @@ public sealed class AdgPlayerSessionViewModel : ViewModelBase, IDisposable {
 			if (!stillRunning) {
 				_host.Stop();
 				NotifyCommandsChanged();
+				PlaybackStopped?.Invoke();
 			}
 		});
 	}
@@ -103,6 +110,7 @@ public sealed class AdgPlayerSessionViewModel : ViewModelBase, IDisposable {
 		_engine.Play();
 		_host.Start();
 		NotifyCommandsChanged();
+		PlaybackStarted?.Invoke();
 	}
 
 	private bool CanStop() {
@@ -115,6 +123,7 @@ public sealed class AdgPlayerSessionViewModel : ViewModelBase, IDisposable {
 		}
 		_engine.StopPlayback();
 		NotifyCommandsChanged();
+		PlaybackStopped?.Invoke();
 	}
 
 	private void NotifyCommandsChanged() {

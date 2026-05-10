@@ -5,6 +5,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
 
+using Cryogenic.AdgPlayer.Audio;
 using Cryogenic.AdgPlayer.Driver;
 using Cryogenic.AdgPlayer.Ui.Logging;
 using Cryogenic.AdgPlayer.Ui.Services;
@@ -35,9 +36,11 @@ public sealed class App : Application {
 			IAdgSongCatalog catalog = ResolveCatalog();
 			AdgDriverState driverState = new();
 			Action<Action> dispatch = action => Dispatcher.UIThread.Post(action);
-			MainWindowViewModel viewModel = new MainWindowViewModel(catalog, driverState, ObservableSerilogSink.Instance, dispatch);
+			AdgOplSynthesizer synthesizer = new();
+			MainWindowViewModel viewModel = new MainWindowViewModel(catalog, driverState, ObservableSerilogSink.Instance, dispatch, synthesizer, synthesizer);
 			mainWindow.DataContext = viewModel;
 			desktop.MainWindow = mainWindow;
+			desktop.Exit += (_, _) => viewModel.Dispose();
 		}
 
 		base.OnFrameworkInitializationCompleted();

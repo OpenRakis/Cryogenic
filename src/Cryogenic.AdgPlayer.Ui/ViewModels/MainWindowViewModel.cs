@@ -1,5 +1,6 @@
 ﻿namespace Cryogenic.AdgPlayer.Ui.ViewModels;
 
+using Cryogenic.AdgPlayer.Audio;
 using Cryogenic.AdgPlayer.Driver;
 using Cryogenic.AdgPlayer.Opl;
 using Cryogenic.AdgPlayer.Ui.Logging;
@@ -14,11 +15,12 @@ using System.Collections.Generic;
 /// window-level title and the panel-level view models composed
 /// inside the window (DUNE.DAT browser and transport panel).
 /// </summary>
-public sealed class MainWindowViewModel : ViewModelBase {
+public sealed class MainWindowViewModel : ViewModelBase, IDisposable {
 	/// <summary>Default constant displayed in the title bar.</summary>
 	public const string DefaultTitleConst = "Cryogenic ADG Player — AdLib Gold OPL3";
 
 	private string _title = DefaultTitleConst;
+	private readonly AdgOplSynthesizer? _synthesizer;
 
 	/// <summary>Title displayed in the window's title bar.</summary>
 	public string Title {
@@ -57,26 +59,45 @@ public sealed class MainWindowViewModel : ViewModelBase {
 	public AdgPlayerSessionViewModel Session { get; }
 
 	/// <summary>Default constructor wires an empty in-memory catalog and a fresh driver state.</summary>
-	public MainWindowViewModel() : this(new EmptyCatalog(), new AdgDriverState(), ObservableSerilogSink.Instance, static action => action()) {
+	public MainWindowViewModel() : this(new EmptyCatalog(), new AdgDriverState(), ObservableSerilogSink.Instance, static action => action(), new NullOplBus(), null) {
 	}
 
-	/// <summary>Constructs the view model with explicit dependencies.</summary>
-	public MainWindowViewModel(IAdgSongCatalog catalog, AdgDriverState driverState, ObservableSerilogSink logSink, Action<Action> dispatch) {
+	/// <summary>Constructs the view model with explicit dependencies and the in-memory <see cref="NullOplBus"/> sink (no audio output).</summary>
+	public MainWindowViewModel(IAdgSongCatalog catalog, AdgDriverState driverState, ObservableSerilogSink logSink, Action<Action> dispatch)
+		: this(catalog, driverState, logSink, dispatch, new NullOplBus(), null) {
+	}
+
+	/// <summary>Constructs the view model with explicit dependencies and an explicit OPL bus (used by production to inject <see cref="AdgOplSynthesizer"/>).</summary>
+	public MainWindowViewModel(IAdgSongCatalog catalog, AdgDriverState driverState, ObservableSerilogSink logSink, Action<Action> dispatch, IOplBus innerBus, AdgOplSynthesizer? synthesizer) {
 		ArgumentNullException.ThrowIfNull(catalog);
 		ArgumentNullException.ThrowIfNull(driverState);
 		ArgumentNullException.ThrowIfNull(logSink);
 		ArgumentNullException.ThrowIfNull(dispatch);
+		ArgumentNullException.ThrowIfNull(innerBus);
 		DriverState = driverState;
 		Browser = new AdgBrowserViewModel(catalog);
 		Transport = new AdgTransportViewModel(driverState);
 		ChannelGrid = new AdgChannelGridViewModel(driverState);
 		LogPanel = new AdgLogPanelViewModel(logSink, dispatch);
-		OplBus = new OplCaptureBus(new NullOplBus());
+		OplBus = new OplCaptureBus(innerBus);
 		OplCapture = new AdgOplCaptureViewModel(OplBus, dispatch);
 		Waveform = new AdgWaveformViewModel();
 		Spectrum = new AdgSpectrumViewModel();
 		Session = new AdgPlayerSessionViewModel(OplBus, dispatch);
+		_synthesizer = synthesizer;
+		if (_synthesizer is not null) {
+			Session.PlaybackStarted += OnPlaybackStarted;
+			Session.PlaybackStopped += OnPlaybackStopped;
+		}
 		Browser.PropertyChanged += OnBrowserPropertyChanged;
+	}
+
+	private void OnPlaybackStarted() {
+		_synthesizer?.Start();
+	}
+
+	private void OnPlaybackStopped() {
+		_synthesizer?.Stop();
 	}
 
 	private void OnBrowserPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e) {
@@ -97,5 +118,11 @@ public sealed class MainWindowViewModel : ViewModelBase {
 		public IReadOnlyList<AdgBrowserItem> Enumerate() {
 			return Array.Empty<AdgBrowserItem>();
 		}
+	}
+
+	/// <summary>Disposes the optional synthesizer and the player session.</summary>
+	public void Dispose() {
+		Session.Dispose();
+		_synthesizer?.Dispose();
 	}
 }
