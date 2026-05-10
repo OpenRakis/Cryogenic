@@ -67,23 +67,39 @@ and `DuneAdpPlayerEngine.{Tick,Opl}.cs`.
 - For now (no audio): a placeholder `OplToSampleStub` produces a 1-frame square wave per write so the visualizers show *something* during dev. Mark as `[Obsolete]`-style internal until C-D real audio.
 - Better: defer this until Phase D and instead leave the visualizers idle until the synth feeds them.
 
-## Phase D — Real audio (OPL3 emulation + sink)
+## Phase D — Real audio (OPL3 emulation + sink) — IMPLEMENTED via Spice86 stack
 
-**D1. OPL3 emulator selection**
-- Pick one: (a) port nuked-opl3 from C, (b) integrate via P/Invoke, (c) use Spice86's existing OPL3 implementation if shippable as a library.
-- Decision: *use Spice86's `Spice86.Core.Emulator.Devices.Sound.Ymf262Emu`* if exposed publicly; else port nuked-opl3 (smallest pure-C, ~1k lines).
-- New: `Cryogenic.AdgPlayer.Ui/Audio/Opl3Synth.cs`: wraps emulator, `Render(float[] interleaved, int frames)`, `WriteRegister(chip, reg, value)`.
-- Tests: golden register sequences (note on at A4) produce non-silent buffer; offline render of 100 ms matches expected RMS bracket.
+**Decision (locked in):** AdLib Gold music is rendered through the **OPL3 FM core**.
+We do **not** ship a separate AdLib-Gold-specific synth. The dual-bank OPL3 surface
+(`chip 0` = primary 9 ch, `chip 1` = secondary 9 ch) is a strict superset of the
+AdLib Gold OPL3 use case in DNADG.
 
-**D2. Audio backend**
-- Avalonia 11 has no built-in audio. Pick: NAudio (Win-only) or OpenAL.NET (cross-platform).
-- New: `Cryogenic.AdgPlayer.Ui/Audio/AudioOutputDevice.cs`: 44.1 kHz stereo float, ring buffer fed by render thread.
-- Tests: write 1 second of silence, no underrun; write known sine, peek output buffer.
+**Stack (committed in `7105149`):**
+- OPL3 emulation: `NukedOPL3Sharp.Opl3Chip` (NuGet, transitive via `Spice86.Core`).
+- Audio pipeline: `Spice86.Core.Emulator.Devices.Sound.SoftwareMixer` + `Spice86.Audio`
+  (cross-platform output, resampling 49716 → device rate, master + per-channel gain,
+  filter chain).
+- Glue: `src/Cryogenic.AdgPlayer/Audio/AdgOplSynthesizer.cs` — implements `IOplBus`.
+  Production wires it as the inner sink of `OplCaptureBus`; tests still use `NullOplBus`.
 
-**D3. Render pipeline**
-- Replace `OplCaptureBus`'s downstream `RecordingOplBus` with `Opl3Synth` once a song plays.
-- A render thread pulls samples from `Opl3Synth.Render(...)` at audio rate, pushes to `AudioOutputDevice`, AND fan-outs to `Waveform`/`Spectrum` view-models on the UI thread.
-- Tests: integration — load synthesized 2-channel song image, run host for 200 ticks, assert audio buffer non-silent, waveform `HasSignal == true`.
+**D1. OPL3 synth — DONE.**
+- `AdgOplSynthesizer : IOplBus, IDisposable`
+- `WriteRegister(int chip, byte register, byte value)` → `_chip.WriteRegisterBuffered((ushort)((chip << 8) | register), value)`
+- `Start()` / `Stop()` toggle the mixer channel; `Dispose()` is idempotent
+- `OnBeforeRender` hook fires per render batch (audio-clock locking entry point)
+- Native rate: `NativeOplSampleRateConst = 49716`
+- 8 unit tests (AAA): ctor, dual-bank dispatch, invalid-chip throw, start/stop, volume clamp, dispose idempotency, hook settable
+
+**D2. Audio output device — DONE (delegated).**
+- `Spice86.Audio` provides the cross-platform output device; `SoftwareMixer` owns the ring buffer.
+- No Avalonia-side audio code is needed.
+
+**D3. Render pipeline — DONE.**
+- `MainWindowViewModel` 5-arg ctor injects an `IOplBus` + optional `AdgOplSynthesizer`.
+- `App.axaml.cs` builds `new AdgOplSynthesizer()` once, passes it as both the inner bus and the synth handle, disposes on app exit.
+- `AdgPlayerSessionViewModel` raises `PlaybackStarted` / `PlaybackStopped`; main VM hooks them to `synth.Start()` / `synth.Stop()`.
+- Test ctors keep `NullOplBus` so unit tests stay headless (no audio device).
+- Waveform/Spectrum fan-out: pending (will tap `OnBeforeRender` → push float buffer to view-models).
 
 ## Phase E — Hardening
 
@@ -120,12 +136,14 @@ and `DuneAdpPlayerEngine.{Tick,Opl}.cs`.
 6. After E: 60-second playback → < 1 ms jitter (measured via `host.TickIntervalMilliseconds` deltas), no buffer underruns, memory steady.
 
 **Decisions**
-- **No DUNE.DAT, no DNCDPRG.EXE** in this env. We rely on `doc/DUNECDVF/C/DUNECD/DUNE.DAT_/*.UNHSQ` which is committed.
-- **No .Result / no .Wait()** in audio pipeline (async-discipline rule). Render loop on a dedicated thread, not async.
+- **Game assets ARE in the repo**: `doc/DUNECDVF/C/DUNE.DAT`, `doc/DUNECDVF/C/DNCDPRG.EXE`, and decompressed `doc/DUNECDVF/C/DUNECD/DUNE.DAT_/DNADG.UNHSQ`. Live MCP runtime evidence is therefore obtainable for B4.
+- **Audio stack: Spice86.** OPL3/AdLib Gold music goes through `NukedOPL3Sharp.Opl3Chip` + `Spice86.Audio` + `SoftwareMixer`. No custom audio device, no NAudio, no OpenAL.
+- **AdLib Gold = OPL3 FM.** Dual-bank OPL3 covers AdLib Gold music output for DNADG; no separate Gold-only synth path.
+- **No .Result / no .Wait()** in audio pipeline (async-discipline rule). Render thread is owned by `SoftwareMixer`.
 - **Reuse over reimplement**: HSQ decoder, frequency table, dispatch shape come from existing Adp/Mt32 engines.
-- **Deferred**: real audio (Phase D) is *behind* a working tick-only pipeline (Phase C). The user can see the player "do something" after Phase C without waiting for the synth.
 
 **Further Considerations**
-1. Phase D OPL3 emulator choice — three options; recommend (a) check Spice86.Core for an exposed OPL3 type first (cheapest); (b) port nuked-opl3 (cleanest fallback); (c) avoid C P/Invoke (deployment headache).
+1. ~~Phase D OPL3 emulator choice~~ — **resolved**: Spice86 stack (NukedOPL3Sharp + Spice86.Audio).
 2. `IAdgSongLoader` shape — just a `(string path) → byte[]` wrapper, or a richer one that already returns `AdgSongImage`? Recommend the latter so the VM doesn't see raw bytes.
 3. Whether to keep `AdpPlayer` and `AdgPlayer` engines as siblings or extract a shared `DuneTrackerEngineBase`. Recommend siblings until both engines are fully working — premature abstraction risk.
+4. **B4 evidence capture**: with `DNCDPRG.EXE` available, drive Spice86 MCP through `adg-opl3-runtime-reverse` agent on a known song, capture per-tick OPL register sequence, port event opcodes from `DuneAdpPlayerEngine.Tick.cs` adapted to dual-bank OPL3.
