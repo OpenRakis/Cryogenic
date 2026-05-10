@@ -39,12 +39,15 @@ public sealed partial class DuneAdgPlayerEngine {
 	}
 
 	/// <summary>
-	/// Advances the engine by one scheduler tick. Decrements each
-	/// channel's wait counter (saturating at zero) and increments
-	/// <see cref="TickCount"/>. Returns <c>true</c> when at least
-	/// one channel is still active (non-zero pointer); <c>false</c>
-	/// when every channel has reached its end-of-stream sentinel
-	/// (signalling end-of-song).
+	/// Advances the engine by one scheduler tick. For each channel:
+	/// decrements its wait counter (saturating at zero), then — when
+	/// the counter has reached zero and the pointer is still active —
+	/// dispatches events from the stream until either a new wait is
+	/// set or the channel reaches end-of-stream.
+	/// Returns <c>true</c> when at least one channel is still active
+	/// after the tick (non-zero pointer); <c>false</c> when every
+	/// channel has reached its end-of-stream sentinel (signalling
+	/// end-of-song).
 	/// </summary>
 	public bool Tick() {
 		if (!HasSongLoaded) {
@@ -52,20 +55,28 @@ public sealed partial class DuneAdgPlayerEngine {
 		}
 		_tickCount++;
 
-		bool anyActive = false;
-		int channelsToScan = Math.Min(AdgSongHeader_ChannelCount, AdgDriverState.ChannelCount);
+		int channelsToScan = AdgDriverState.ChannelCount;
 		for (int i = 0; i < channelsToScan; i++) {
 			ushort pointer = _state.EventPointers.Get(i);
 			if (pointer == 0) {
 				continue;
 			}
-			anyActive = true;
 			ushort wait = _state.WaitCounters.Get(i);
 			if (wait > 0) {
 				_state.WaitCounters.Set(i, (ushort)(wait - 1));
 			}
+			if (_state.WaitCounters.Get(i) == 0) {
+				DispatchEvents(i);
+			}
 		}
 
+		bool anyActive = false;
+		for (int i = 0; i < channelsToScan; i++) {
+			if (_state.EventPointers.Get(i) != 0) {
+				anyActive = true;
+				break;
+			}
+		}
 		if (!anyActive) {
 			IsPlaying = false;
 		}

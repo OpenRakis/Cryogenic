@@ -2,9 +2,11 @@
 
 using System;
 using System.IO;
+
 using Cryogenic.AdgPlayer.Opl;
 using Cryogenic.AdgPlayer.Song;
 using Cryogenic.AdgPlayer.Ui.ViewModels;
+
 using Xunit;
 
 /// <summary>Tests for <see cref="AdgPlayerSessionViewModel"/>.</summary>

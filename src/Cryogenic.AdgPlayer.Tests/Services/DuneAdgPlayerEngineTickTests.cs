@@ -105,9 +105,16 @@ public sealed class DuneAdgPlayerEngineTickTests {
 	/// <summary>Tick returns true while any channel is active.</summary>
 	[Fact]
 	public void Tick_ReturnsTrue_WhenAnyChannelActive() {
-		// Arrange
+		// Arrange — channel 0 relative offset 0x10 → absolute pointer
+		// 0x12 (DataBase = 2). Stream: ReadWaitValue (0x0020) + 5.
+		// After the first tick, the dispatcher seeds wait=5 and the
+		// channel stays active.
+		byte[] bytes = BuildSong(new ushort[] { 0x10, 0, 0, 0, 0, 0, 0, 0, 0 });
+		bytes[0x12] = 0x20;
+		bytes[0x13] = 0x00;
+		bytes[0x14] = 0x05;
 		DuneAdgPlayerEngine engine = new();
-		engine.Load(BuildSong(new ushort[] { 0x10, 0, 0, 0, 0, 0, 0, 0, 0 }));
+		engine.Load(bytes);
 
 		// Act
 		bool result = engine.Tick();

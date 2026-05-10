@@ -1,4 +1,4 @@
-namespace Cryogenic.AdgPlayer.Tests.Audio;
+﻿namespace Cryogenic.AdgPlayer.Tests.Audio;
 
 using Cryogenic.AdgPlayer.Audio;
 using Cryogenic.AdgPlayer.Opl;

@@ -1,4 +1,4 @@
-namespace Cryogenic.AdgPlayer.Opl;
+﻿namespace Cryogenic.AdgPlayer.Opl;
 
 /// <summary>
 /// <see cref="IOplBus"/> sink that discards every register write.

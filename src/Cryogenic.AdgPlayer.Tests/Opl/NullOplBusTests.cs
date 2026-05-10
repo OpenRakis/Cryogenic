@@ -1,4 +1,4 @@
-namespace Cryogenic.AdgPlayer.Tests.Opl;
+﻿namespace Cryogenic.AdgPlayer.Tests.Opl;
 
 using Cryogenic.AdgPlayer.Opl;
 
