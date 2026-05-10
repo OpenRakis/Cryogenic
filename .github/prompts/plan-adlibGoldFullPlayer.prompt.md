@@ -53,18 +53,46 @@ Authoritative oracle: `src/Cryogenic/Overrides/AdgDriverCode.cs` (faithful, runt
 **B4.0 Dispatcher framework — DONE** (commit `460f83e`):
 - `DispatchEvents(int channelIndex)` reads event words while wait==0 + pointer != 0; routes via `AdgEventOpcodeClassifier` + `AdgEventOpcodeRouter`.
 - `ReadWaitValue` (slots 2/3): 7-bit accumulator decode, sets wait counter, advances pointer.
-- `EndOfTrack` (slot 7): zeroes channel pointer (minimal variant; full body still pending — see B4.6).
-- `UnhandledOpcodeEncountered` event: structured payload `(ChannelIndex, Opcode, EventWord)`. Affected channel is silenced (pointer zeroed) until the handler is implemented.
+- Initial `EndOfTrack` (slot 7): zeroes channel pointer (later expanded — see B4.6a).
 
-**Per-handler TDD cycles (each = one commit, faithful 1:1 port from `AdgDriverCode.cs`):**
-- **B4.1 NoteOff** (port `AdgNoteOff_0AB6`): consume velocity byte, ReadWaitValue, transposed-note compare, key-off via `AdgChannelNoteOffEmitter`. Depends on: `AdgClearScratchMask_0ACD` (new state slots: `AdgChannelStateScratch`, `AdgFadeScratch1/2`).
-- **B4.2 NoteOn** (port `AdgNoteOn_0A82`): velocity, `AdgEnvelopeSetup_0C47`, transpose, pitch-bend counter seed, key-on via `AdgChannelNoteOnEmitter`. Depends on: envelope setup helper (~80 lines).
-- **B4.3 ProgramChange** (port `AdgProgramChange_0831`): instrument index store, patch lookup at `EventBase + index*0x28`, full patch program via `AdgInstrumentEmitter` (already implemented), surround mask via `AdgSurroundMaskUpdater`.
-- **B4.4 VolumeModulation** (port `AdgVolumeModulation_0B2E`): velocity-scaled operator TL writes via `AdgVolumeScaler` and `AdgChannelVolumeModulationSlots`.
-- **B4.5 PitchBend** (port `AdgPitchBend_0D86` + `AdgPitchBendBody_0D8B`): ~120-line pitch-accumulator routine using `AdgPitchBendEventDecoder` (decoder already in place) + portamento fractions.
-- **B4.6 EndOfTrack full body** (port `AdgEndOfTrack_0AF5`): wait=0xFFFF, pointer rewind by 2, `AdgClearScratchMask_0ACD`, tick-flag decrement, global silence broadcast on last-channel-ended (already have `SilenceAll`), `AdgResetSchedulerState_06B9` re-init, `AdgCheckLoopPoint_07DA`.
-- **B4.7 LoopCheck** (port `AdgCheckLoopPoint_07DA`): snapshot save at LoopStartMeasure==Measure&&Subdivision==0x60; restore at LoopEndMeasure==Measure with `_repeatCounter` decrement.
-- **B4.8 PitchModulation** (port `AdgAdvancePitchModulation_07AD`): vibrato during wait (called when wait != 0); minor.
+**B4.x measure clock — DONE** (commit `4b2017a`):
+- `Tick()` calls `MeasureClock.AdvanceSubdivision()` mirroring dnadg:079D-07A8.
+
+**B4.1a `AdgClearScratchMask_0ACD` pure component — DONE** (commit `b590e7f`):
+- `AdgChannelStateScratch` (18-slot ushort table at DI+0x021C).
+- `AdgFadeScratchState` (Primary/Secondary cells at 0x013E/0x0140).
+- `AdgScratchMaskClearer` static helper, byte-for-byte mirror of dnadg:0ACD.
+- All wired into `AdgDriverState`. 6 AAA tests.
+
+**B4.1 NoteOff — DONE** (commit `a104e79`):
+- Faithful port of `AdgNoteOff_0AB6` (line 1948): skip velocity, ReadWaitValue, transposed-note compare against current-note slot, clear current-note on match, ScratchMaskClearer with next-event byte.
+- New `_routingTable` field + `SetRoutingTable` engine API; OPL key-off emit via `AdgChannelNoteOffEmitter` gated on routing-table presence.
+- `AdgFrequencyWordCache` added to `AdgDriverState`. 4 NoteOff dispatch tests.
+
+**B4.2a NoteOn (state-mutation only) — DONE** (commit `4fa21d4`):
+- Faithful port of `AdgNoteOn_0A82` state mutations: skip velocity, ReadWaitValue, key-off previous note (routing-gated), store transposed current-note, recenter pitch accumulator.
+- Deferred to **B4.2b**: `AdgEnvelopeSetup_0C47` + `AdgNoteOn_10A9` (full OPL emit chain). 4 NoteOn dispatch tests.
+
+**B4.3 / B4.4 / B4.5 ProgramChange / VolumeModulation / PitchBend (state+wait) — DONE** (commit `4813268`):
+- ProgramChange: ReadWaitValue + write instrument byte to instrument slot. Deferred to **B4.3b**: `AdgConfigureInstrumentRouting_090D` + `AdgWriteInstrumentPatch_0F95` (deep patch load + OPL emit).
+- VolumeModulation: ReadWaitValue only. Deferred to **B4.4b**: full OPL register-emit chain.
+- PitchBend: ReadWaitValue only. Deferred to **B4.5b**: `AdgPitchBendBody_0D8B` (~120 lines).
+- All 8 dispatcher slots are now routed end-to-end; the `UnhandledOpcodeEncountered` event was removed (no opcode falls through). 3 dispatch tests.
+
+**B4.6a EndOfTrack faithful state mutations — DONE** (commit `765a1bf`):
+- Wait counter set to `0xFFFF` (done sentinel); event pointer zeroed; `AdgScratchMaskClearer.Clear` invoked with terminator byte.
+- Deferred to **B4.6b**: master-track tick-flag decrement, global silence broadcast on last-channel-ended, `AdgResetSchedulerState_06B9` re-init, `AdgCheckLoopPoint_07DA`.
+
+**B4 dispatcher state-machine: COMPLETE.** All 8 opcode slots advance their cursor and mutate the right per-channel slots faithfully per the oracle. Real audio output requires the deferred `.b` cycles (deep OPL emit chains).
+
+**Pending TDD cycles (deep OPL emit chains; each = one commit):**
+- **B4.2b** `AdgEnvelopeSetup_0C47` + `AdgNoteOn_10A9` (NoteOn final emit).
+- **B4.3b** `AdgConfigureInstrumentRouting_090D` + `AdgWriteInstrumentPatch_0F95` (ProgramChange patch load).
+- **B4.4b** `AdgVolumeModulation_0B2E` body (velocity-scaled operator TL writes).
+- **B4.5b** `AdgPitchBendBody_0D8B` (~120-line pitch-accumulator routine).
+- **B4.6b** EndOfTrack master-track loop logic (`AdgCheckLoopPoint_07DA` etc.).
+- **B4.7 LoopCheck** standalone (port `AdgCheckLoopPoint_07DA`): snapshot save at LoopStartMeasure==Measure && Subdivision==0x60; restore at LoopEndMeasure==Measure with `_repeatCounter` decrement.
+- **B4.8 PitchModulation** (port `AdgAdvancePitchModulation_07AD`): vibrato during wait.
 
 Tests: each handler increment ships with at least one AAA test that hand-builds the relevant event word(s) and asserts state mutation + OPL bytes against `RecordingOplBus`. Real-song integration test (load `DNADG.UNHSQ`-decoded asset) added at end of B4 to validate the chain.
 
