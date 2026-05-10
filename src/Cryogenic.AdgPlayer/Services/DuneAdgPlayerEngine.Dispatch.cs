@@ -234,10 +234,23 @@ public sealed partial class DuneAdgPlayerEngine {
 		byte transposedNote = _state.PitchTransposeSlots.ApplyTo(channelIndex, rawNote);
 		_state.CurrentNotes.Set(channelIndex, transposedNote);
 
-		// Step 6 — recenter the pitch accumulator.
+		// Step 6 — reload the per-channel pitch-bend counter from
+		// its companion reload byte (DI+0xB4 ← DI+0xB5).
+		_state.PitchBendCounters.Set(channelIndex,
+			_state.PitchBendCounterReloads.Get(channelIndex));
+
+		// Step 7 — recenter the pitch accumulator.
 		_state.PitchAccumulators.Center(channelIndex);
 
-		// Step 7 — full OPL note-on emit deferred to B4.2b.
+		// Step 8 — full OPL note-on emit (mirrors AdgNoteOn_10A9 at
+		// dnadg:10A9). Gated on routing-table + frequency-lookup
+		// presence; envelope setup (AdgEnvelopeSetup_0C47) remains
+		// deferred to a later cycle.
+		if (_routingTable is not null && _frequencyLookupTable is not null) {
+			ushort rawPitch = (ushort)(transposedNote - 0x48);
+			AdgChannelNoteOnEmitter.Emit(_oplBus, _state.FrequencyWordCache,
+				_routingTable, _frequencyLookupTable, channelIndex, rawPitch);
+		}
 	}
 
 	/// <summary>

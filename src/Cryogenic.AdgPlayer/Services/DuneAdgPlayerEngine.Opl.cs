@@ -15,6 +15,7 @@ public sealed partial class DuneAdgPlayerEngine {
 	private IOplBus _oplBus = new RecordingOplBus();
 	private AdgChannelRoutingTable? _routingTable;
 	private IAdgPitchBendBody _pitchBendBody = NullAdgPitchBendBody.Instance;
+	private AdgFrequencyLookupTable? _frequencyLookupTable;
 
 	/// <summary>
 	/// Currently bound OPL bus. Defaults to a fresh
@@ -40,6 +41,14 @@ public sealed partial class DuneAdgPlayerEngine {
 	/// </summary>
 	public IAdgPitchBendBody PitchBendBody => _pitchBendBody;
 
+	/// <summary>
+	/// Currently bound 12-entry semitone frequency lookup table.
+	/// Required for OPL note-on emit (<see cref="AdgChannelNoteOnEmitter"/>).
+	/// Null until <see cref="SetFrequencyLookupTable"/> is called;
+	/// in that case NoteOn dispatch performs only state mutations.
+	/// </summary>
+	public AdgFrequencyLookupTable? FrequencyLookupTable => _frequencyLookupTable;
+
 	/// <summary>Replaces the bound bus. Throws on null.</summary>
 	public void SetOplBus(IOplBus bus) {
 		ArgumentNullException.ThrowIfNull(bus);
@@ -63,6 +72,16 @@ public sealed partial class DuneAdgPlayerEngine {
 	public void SetPitchBendBody(IAdgPitchBendBody pitchBendBody) {
 		ArgumentNullException.ThrowIfNull(pitchBendBody);
 		_pitchBendBody = pitchBendBody;
+	}
+
+	/// <summary>
+	/// Binds the 12-entry semitone frequency lookup table required
+	/// by NoteOn emit. The supplied table is copied internally
+	/// (see <see cref="AdgFrequencyLookupTable"/> ctor).
+	/// </summary>
+	public void SetFrequencyLookupTable(AdgFrequencyLookupTable frequencyLookupTable) {
+		ArgumentNullException.ThrowIfNull(frequencyLookupTable);
+		_frequencyLookupTable = frequencyLookupTable;
 	}
 
 	/// <summary>

@@ -490,4 +490,98 @@ public sealed class DuneAdgPlayerEngineDispatchTests {
 		Assert.Equal(0x44, engine.State.CurrentNotes.Get(0));
 		Assert.Empty(bus.Writes);
 	}
+
+	/// <summary>
+	/// NoteOn reloads the live pitch-bend counter from its
+	/// per-channel reload byte (mirrors
+	/// <c>mov AL,[DI+pitchBendCounter+1]; mov [DI+pitchBendCounter],AL</c>
+	/// at dnadg:0AA0).
+	/// </summary>
+	[Fact]
+	public void Dispatch_NoteOn_ReloadsPitchBendCounter() {
+		// Arrange — reload byte preset to 0x07 on channel 0; live
+		//   counter starts at 0 and must be reloaded post-NoteOn.
+		byte[] bytes = BuildSong(new ushort[] { 0x10, 0, 0, 0, 0, 0, 0, 0, 0 });
+		bytes[0x12] = 0x10;
+		bytes[0x13] = 0x40;
+		bytes[0x14] = 0x00;
+		bytes[0x15] = 0x01;
+		DuneAdgPlayerEngine engine = LoadEngine(bytes);
+		engine.State.WaitCounters.Set(0, 0);
+		engine.State.PitchBendCounters.Set(0, 0x00);
+		engine.State.PitchBendCounterReloads.Set(0, 0x07);
+
+		// Act
+		engine.DispatchEvents(0);
+
+		// Assert
+		Assert.Equal(0x07, engine.State.PitchBendCounters.Get(0));
+	}
+
+	/// <summary>
+	/// When both a routing table and a frequency-lookup table are
+	/// bound, NoteOn dispatch performs the full OPL3 note-on emit:
+	/// the routed A0/B0 pair (with key-on bit 0x20 set) is written
+	/// to the bus and the frequency-word cache is updated. Mirrors
+	/// <c>AdgNoteOn_10A9</c> at dnadg:10A9.
+	/// </summary>
+	[Fact]
+	public void Dispatch_NoteOn_WithLookupAndRouting_EmitsOplKeyOn() {
+		// Arrange — fresh channel (no previous note), channel 0 routed
+		//   to physical 0x00 (A0=0xA0, B0=0xB0). Use a 12-entry lookup
+		//   table whose values are easy to identify in writes.
+		byte[] bytes = BuildSong(new ushort[] { 0x10, 0, 0, 0, 0, 0, 0, 0, 0 });
+		bytes[0x12] = 0x10;
+		bytes[0x13] = 0x48;   // raw note 0x48 → semitone index 0
+		bytes[0x14] = 0x60;
+		bytes[0x15] = 0x01;
+		DuneAdgPlayerEngine engine = LoadEngine(bytes);
+		engine.State.WaitCounters.Set(0, 0);
+		byte[] zeroes = new byte[AdgChannelRoutingTable.ChannelCount];
+		engine.SetRoutingTable(new AdgChannelRoutingTable(zeroes, zeroes, zeroes));
+		ushort[] lookup = new ushort[12] {
+			0x0157, 0x016C, 0x0181, 0x0198, 0x01B1, 0x01CB,
+			0x01E6, 0x0203, 0x0222, 0x0243, 0x0266, 0x028A
+		};
+		engine.SetFrequencyLookupTable(new AdgFrequencyLookupTable(lookup));
+		Cryogenic.AdgPlayer.Opl.RecordingOplBus bus = new();
+		engine.SetOplBus(bus);
+
+		// Act
+		engine.DispatchEvents(0);
+
+		// Assert — note stored, cache populated, A0/B0 pair emitted.
+		Assert.Equal(0x48, engine.State.CurrentNotes.Get(0));
+		Assert.NotEqual<ushort>(0, engine.State.FrequencyWordCache.Get(0));
+		Assert.Contains(bus.Writes, w => w.Register == 0xA0);
+		Assert.Contains(bus.Writes, w => w.Register == 0xB0);
+	}
+
+	/// <summary>
+	/// NoteOn with a routing table bound but no frequency-lookup
+	/// table bound performs no OPL key-on emit (state-only path).
+	/// Defensive guard: emit chain requires both tables.
+	/// </summary>
+	[Fact]
+	public void Dispatch_NoteOn_RoutingOnly_NoLookup_NoKeyOnEmitted() {
+		// Arrange
+		byte[] bytes = BuildSong(new ushort[] { 0x10, 0, 0, 0, 0, 0, 0, 0, 0 });
+		bytes[0x12] = 0x10;
+		bytes[0x13] = 0x48;
+		bytes[0x14] = 0x00;
+		bytes[0x15] = 0x01;
+		DuneAdgPlayerEngine engine = LoadEngine(bytes);
+		engine.State.WaitCounters.Set(0, 0);
+		byte[] zeroes = new byte[AdgChannelRoutingTable.ChannelCount];
+		engine.SetRoutingTable(new AdgChannelRoutingTable(zeroes, zeroes, zeroes));
+		Cryogenic.AdgPlayer.Opl.RecordingOplBus bus = new();
+		engine.SetOplBus(bus);
+
+		// Act
+		engine.DispatchEvents(0);
+
+		// Assert — no A0/B0 writes (only the key-off short re-emit
+		//   path can write, and that's gated on previous note != 0).
+		Assert.Empty(bus.Writes);
+	}
 }

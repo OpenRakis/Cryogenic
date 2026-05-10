@@ -82,6 +82,9 @@ public sealed class AdgDriverState {
 	/// <summary>Per-channel pitch-accumulator step byte (DI+0xD9).</summary>
 	public AdgChannelPitchAccumulatorSteps PitchAccumulatorSteps { get; }
 
+	/// <summary>Per-channel pitch-bend counter reload byte (DI+0xB5).</summary>
+	public AdgChannelPitchBendCounterReloads PitchBendCounterReloads { get; }
+
 	/// <summary>Constructs every component in its zero state.</summary>
 	public AdgDriverState() {
 		WaitCounters = new AdgChannelWaitCounters();
@@ -107,6 +110,7 @@ public sealed class AdgDriverState {
 		FrequencyWordCache = new AdgFrequencyWordCache();
 		LoopSnapshotStore = new AdgLoopSnapshotStore();
 		PitchAccumulatorSteps = new AdgChannelPitchAccumulatorSteps();
+		PitchBendCounterReloads = new AdgChannelPitchBendCounterReloads();
 	}
 
 	/// <summary>
@@ -138,5 +142,6 @@ public sealed class AdgDriverState {
 		FrequencyWordCache.Reset();
 		LoopSnapshotStore.Reset();
 		PitchAccumulatorSteps.Reset();
+		PitchBendCounterReloads.Reset();
 	}
 }
