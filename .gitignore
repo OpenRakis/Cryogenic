@@ -380,3 +380,4 @@ assets_override/**
 !assets_override/music/
 !assets_override/music/.gitkeep
 !assets_override/music/fingerprints.json
+/Spice86.Audio

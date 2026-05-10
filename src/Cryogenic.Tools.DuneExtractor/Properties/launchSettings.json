@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "DuneExtractor": {
+      "commandName": "Project",
+      "commandLineArgs": "DUNE.DAT"
+    }
+  }
+}

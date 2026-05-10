@@ -174,6 +174,13 @@ Call `Define{SubsystemName}CodeOverrides()` from `DefineOverrides()` in Override
 - `DefineMemoryDumpsMapping()` and `MemoryDataExporter` are the project pattern for targeted snapshots. Follow that pattern when you need fresh evidence from a difficult code path.
 - Coordinate any change to dump-generation assumptions with the relevant files under `dump/`, especially `CodeGeneratorConfig.json`, so generated data and manual overrides do not drift apart.
 
+## Game Asset Tools (in-solution)
+- **Never re-implement HSQ decompression or DUNE.DAT extraction in C#.** Two CLI tools live in the solution and are the source of truth:
+  - `src/Cryogenic.Tools.UnHsq/` — decompresses `.HSQ` files to `.UNHSQ`. Source ported from `OpenRakis/tools/cd/UnHsq/`.
+  - `src/Cryogenic.Tools.DuneExtractor/` — extracts every entry of a Cryo `.DAT` archive into a `<NAME>.DAT_/` folder. Source ported from `OpenRakis/tools/cd/DuneExtractor/`.
+- Bundled decompressed artifacts live under `doc/DUNECDVF/C/DUNECD/DUNE.DAT_/` (e.g. `DNADG.UNHSQ`, `ARRAKIS_AGD.HSQ`, `MORNING.HSQ`). Reuse these instead of decompressing at runtime.
+- If new assets are needed, run the tools manually and commit the `.UNHSQ` / extracted folder; do not embed decompressors into player engines.
+
 ## Driver And Override Pitfalls
 - `DriverLoadToolbox` remaps VGA, PCM, and MIDI drivers to stable segments. Keep `RemapDrivers` and `ResetAllocator` paired at `CS1:E57B` and `CS1:E593` whenever you touch driver loading.
 - Let `DriverLoadToolbox.ReadDriverFunctionTable` define exported driver functions before adding manual overrides inside remapped driver segments, or you risk duplicate registrations.

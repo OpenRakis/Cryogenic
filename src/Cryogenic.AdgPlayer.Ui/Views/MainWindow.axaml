@@ -1,0 +1,175 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Cryogenic.AdgPlayer.Ui.ViewModels"
+        x:Class="Cryogenic.AdgPlayer.Ui.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Title="{Binding Title}"
+        Width="1280"
+        Height="900"
+        MinWidth="900"
+        MinHeight="600"
+        Background="#0D1117"
+        WindowStartupLocation="CenterScreen">
+    <Grid Name="RootGrid" ColumnDefinitions="320,*">
+        <Border Grid.Column="0"
+                Background="#161B22"
+                BorderBrush="#30363D"
+                BorderThickness="0,0,1,0"
+                Padding="8">
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Top"
+                           Text="DUNE.DAT browser"
+                           Foreground="#C9D1D9"
+                           FontWeight="Bold"
+                           Margin="0,0,0,8" />
+                <ListBox Name="BrowserList"
+                         ItemsSource="{Binding Browser.Items}"
+                         SelectedIndex="{Binding Browser.SelectedIndex}"
+                         Background="Transparent"
+                         Foreground="#C9D1D9">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:AdgBrowserItem">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock Text="{Binding FileName}" />
+                                <TextBlock Text="{Binding SizeBytes}" Foreground="#7D8590" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </DockPanel>
+        </Border>
+        <DockPanel Grid.Column="1" Margin="16">
+            <Border DockPanel.Dock="Top"
+                    Background="#161B22"
+                    BorderBrush="#30363D"
+                    BorderThickness="1"
+                    Padding="12"
+                    Margin="0,0,0,12">
+                <StackPanel Orientation="Vertical" Spacing="8">
+                    <TextBlock Text="Transport"
+                               Foreground="#C9D1D9"
+                               FontWeight="Bold" />
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Name="PlayButton"
+                                Content="Play"
+                                IsEnabled="{Binding Transport.HasSongLoaded}" />
+                        <Button Name="StopButton"
+                                Content="Stop"
+                                IsEnabled="{Binding Transport.IsPlaying}" />
+                    </StackPanel>
+                    <Grid ColumnDefinitions="Auto,Auto,Auto,Auto" RowDefinitions="Auto,Auto" Margin="0,8,0,0">
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Master" Foreground="#7D8590" Margin="0,0,8,0" />
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding Transport.MasterVolume}" Foreground="#C9D1D9" Margin="0,0,16,0" />
+                        <TextBlock Grid.Row="0" Grid.Column="2" Text="Current" Foreground="#7D8590" Margin="0,0,8,0" />
+                        <TextBlock Grid.Row="0" Grid.Column="3" Text="{Binding Transport.CurrentVolume}" Foreground="#C9D1D9" />
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Dynamics" Foreground="#7D8590" Margin="0,0,8,0" />
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Transport.Dynamics}" Foreground="#C9D1D9" Margin="0,0,16,0" />
+                        <TextBlock Grid.Row="1" Grid.Column="2" Text="Fade" Foreground="#7D8590" Margin="0,0,8,0" />
+                        <TextBlock Grid.Row="1" Grid.Column="3" Text="{Binding Transport.FadePattern}" Foreground="#C9D1D9" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+            <TextBlock Name="PlaceholderText"
+                       Text="Cryogenic ADG Player UI scaffold"
+                       Foreground="#7D8590"
+                       HorizontalAlignment="Right"
+                       VerticalAlignment="Bottom"
+                       FontSize="11"
+                       DockPanel.Dock="Bottom" />
+            <Border DockPanel.Dock="Bottom"
+                    Background="#161B22"
+                    BorderBrush="#30363D"
+                    BorderThickness="1"
+                    Padding="8"
+                    Margin="0,12,0,0"
+                    Height="180">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top"
+                               Text="Log"
+                               Foreground="#C9D1D9"
+                               FontWeight="Bold"
+                               Margin="0,0,0,8" />
+                    <ListBox ItemsSource="{Binding LogPanel.Logs}"
+                             Background="Transparent"
+                             Foreground="#C9D1D9"
+                             FontFamily="Cascadia Code,Consolas,monospace"
+                             FontSize="11">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate x:DataType="vm:LogDisplayItem">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock Text="{Binding Timestamp}" Foreground="#7D8590" />
+                                    <TextBlock Text="{Binding Message}" Foreground="#C9D1D9" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </DockPanel>
+            </Border>
+            <Grid ColumnDefinitions="*,300">
+                <Border Grid.Column="0"
+                        Background="#161B22"
+                        BorderBrush="#30363D"
+                        BorderThickness="1"
+                        Padding="8"
+                        Margin="0,0,8,0">
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Top"
+                                   Text="18 logical channels"
+                                   Foreground="#C9D1D9"
+                                   FontWeight="Bold"
+                                   Margin="0,0,0,8" />
+                        <ScrollViewer>
+                            <ItemsControl ItemsSource="{Binding ChannelGrid.Rows}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:AdgChannelRowViewModel">
+                                        <Grid ColumnDefinitions="40,Auto,80,Auto,80,Auto,80,Auto,80,Auto,Auto" Margin="0,2">
+                                            <TextBlock Grid.Column="0" Text="{Binding Index}" Foreground="#7D8590" />
+                                            <TextBlock Grid.Column="1" Text="N:" Foreground="#7D8590" Margin="8,0,4,0" />
+                                            <TextBlock Grid.Column="2" Text="{Binding CurrentNote}" Foreground="#C9D1D9" />
+                                            <TextBlock Grid.Column="3" Text="I:" Foreground="#7D8590" Margin="8,0,4,0" />
+                                            <TextBlock Grid.Column="4" Text="{Binding Instrument}" Foreground="#C9D1D9" />
+                                            <TextBlock Grid.Column="5" Text="PB:" Foreground="#7D8590" Margin="8,0,4,0" />
+                                            <TextBlock Grid.Column="6" Text="{Binding PitchBendCounter}" Foreground="#C9D1D9" />
+                                            <TextBlock Grid.Column="7" Text="PA:" Foreground="#7D8590" Margin="8,0,4,0" />
+                                            <TextBlock Grid.Column="8" Text="{Binding PitchAccumulator}" Foreground="#C9D1D9" />
+                                            <TextBlock Grid.Column="9" Text="{Binding IsFourOperator}" Foreground="#7D8590" Margin="16,0,0,0" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </DockPanel>
+                </Border>
+                <Border Grid.Column="1"
+                        Background="#161B22"
+                        BorderBrush="#30363D"
+                        BorderThickness="1"
+                        Padding="8">
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Top"
+                                   Text="OPL register writes"
+                                   Foreground="#C9D1D9"
+                                   FontWeight="Bold"
+                                   Margin="0,0,0,8" />
+                        <ListBox ItemsSource="{Binding OplCapture.Writes}"
+                                 Background="Transparent"
+                                 Foreground="#C9D1D9"
+                                 FontFamily="Cascadia Code,Consolas,monospace"
+                                 FontSize="11">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate x:DataType="vm:AdgOplWriteItem">
+                                    <Grid ColumnDefinitions="60,40,80,Auto" Margin="0,1">
+                                        <TextBlock Grid.Column="0" Text="{Binding Sequence}" Foreground="#7D8590" />
+                                        <TextBlock Grid.Column="1" Text="{Binding Chip}" Foreground="#7D8590" />
+                                        <TextBlock Grid.Column="2" Text="{Binding Register}" Foreground="#C9D1D9" />
+                                        <TextBlock Grid.Column="3" Text="{Binding Value}" Foreground="#C9D1D9" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </DockPanel>
+                </Border>
+            </Grid>
+        </DockPanel>
+    </Grid>
+</Window>
