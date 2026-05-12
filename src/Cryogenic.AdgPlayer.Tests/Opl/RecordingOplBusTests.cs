@@ -82,4 +82,54 @@ public sealed class RecordingOplBusTests {
 		// Assert
 		Assert.Single(((RecordingOplBus)bus).Writes);
 	}
+
+	[Fact]
+	public void DefaultCtor_IsUnbounded() {
+		// Arrange
+		RecordingOplBus bus = new();
+
+		// Assert
+		Assert.Equal(0, bus.Capacity);
+		Assert.Equal(0, bus.DroppedCount);
+	}
+
+	[Fact]
+	public void BoundedCtor_EvictsOldestEntryWhenFull() {
+		// Arrange — capacity 2 so the third write evicts the first.
+		RecordingOplBus bus = new(capacity: 2);
+
+		// Act
+		bus.WriteRegister(0, 0xA0, 0x10);
+		bus.WriteRegister(0, 0xA0, 0x20);
+		bus.WriteRegister(0, 0xA0, 0x30);
+
+		// Assert
+		Assert.Equal(2, bus.Writes.Count);
+		Assert.Equal((byte)0x20, bus.Writes[0].Value);
+		Assert.Equal((byte)0x30, bus.Writes[1].Value);
+		Assert.Equal(1, bus.DroppedCount);
+	}
+
+	[Fact]
+	public void BoundedCtor_NegativeCapacityThrows() {
+		// Act + Assert
+		Assert.Throws<ArgumentOutOfRangeException>(
+			() => new RecordingOplBus(capacity: -1));
+	}
+
+	[Fact]
+	public void Reset_ResetsDroppedCounter() {
+		// Arrange
+		RecordingOplBus bus = new(capacity: 1);
+		bus.WriteRegister(0, 0xA0, 0x10);
+		bus.WriteRegister(0, 0xA0, 0x20);
+		Assert.Equal(1, bus.DroppedCount);
+
+		// Act
+		bus.Reset();
+
+		// Assert
+		Assert.Empty(bus.Writes);
+		Assert.Equal(0, bus.DroppedCount);
+	}
 }

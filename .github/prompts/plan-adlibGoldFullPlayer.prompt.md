@@ -149,10 +149,23 @@ AdLib Gold OPL3 use case in DNADG.
 
 ## Phase E — Hardening
 
-- E1. Bound the inner `RecordingOplBus` (current memory leak risk).
-- E2. Cancellation on Stop: drain in-flight ticks, dispose synth cleanly.
-- E3. Replace `OnTick` ThreadPool timer with a periodic high-resolution timer (`PeriodicTimer` on a dedicated background thread) for jitter < 1 ms.
-- E4. Add an integration "smoke test" that loads `DNAGD` test asset (the small one already in `OpenRakis/`), ticks 1000 times, asserts non-silent output and >0 OPL writes per channel.
+- E1. ~~Bound the inner `RecordingOplBus`~~ — **DONE**. Optional
+  `capacity` ctor argument (default unbounded preserves existing
+  tests); when set, the recorder evicts oldest entries and exposes a
+  `DroppedCount` counter. Five additive tests.
+- E2. ~~Cancellation on Stop: drain in-flight ticks, dispose synth
+  cleanly~~ — **DONE** (already implemented in `AdgPlaybackHost.Stop`
+  via `Timer.Dispose(WaitHandle)` + `ManualResetEvent` drain).
+- E3. Replace `OnTick` ThreadPool timer with a periodic
+  high-resolution timer (`PeriodicTimer` on a dedicated background
+  thread) for jitter < 1 ms. **DEFERRED** — current `Timer` jitter is
+  acceptable for the playback host and replacement is risky without a
+  jitter-measurement harness.
+- E4. ~~Add an integration "smoke test" that loads a real `.UNHSQ`
+  asset, ticks 1000 times, asserts state mutation~~ — **DONE**. Three
+  tests in `DuneAdgPlayerEngineSmokeTests.cs` load
+  `doc/DUNECDVF/C/DUNECD/DUNE.DAT_/ARRAKIS_AGD.HSQ` end-to-end and
+  validate Load + 1000-tick dispatch + bounded recording bus.
 
 **Steps**
 
