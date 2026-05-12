@@ -86,6 +86,15 @@ Authoritative oracle: `src/Cryogenic/Overrides/AdgDriverCode.cs` (faithful, runt
 **B4 dispatcher state-machine: COMPLETE.** All 8 opcode slots advance their cursor and mutate the right per-channel slots faithfully per the oracle. Real audio output requires the deferred `.b` cycles (deep OPL emit chains).
 
 **Pending TDD cycles (deep OPL emit chains; each = one commit):**
+
+> **Resumption plan (tomorrow):** the prior cloud-agent handoff is
+> **abandoned** and must not be used. All remaining `.b` cycles will be
+> driven from **live Spice86 MCP CFG-CPU execution samples** captured
+> while ADG388 is actually playing (`mcp_cfg_cpu_graph.json` +
+> targeted breakpoint/step traces over the routines below). Static
+> override reads stay as a secondary cross-check; runtime CFG is the
+> oracle.
+
 - **B4.2b** `AdgEnvelopeSetup_0C47` + `AdgNoteOn_10A9` (NoteOn final emit).
 - **B4.3b** `AdgConfigureInstrumentRouting_090D` + `AdgWriteInstrumentPatch_0F95` (ProgramChange patch load).
 - **B4.4b** `AdgVolumeModulation_0B2E` body (velocity-scaled operator TL writes).
