@@ -655,32 +655,6 @@ public sealed class DuneAdgPlayerEngineDispatchTests {
 	}
 
 	/// <summary>
-	/// VolumeModulation with no routing table bound performs only
-	/// the cached state update — no OPL emit.
-	/// </summary>
-	[Fact]
-	public void Dispatch_VolumeModulation_NoRouting_StateOnly() {
-		// Arrange
-		byte[] bytes = BuildSong(new ushort[] { 0x10, 0, 0, 0, 0, 0, 0, 0, 0 });
-		bytes[0x12] = 0x50;
-		bytes[0x13] = 0x40;
-		bytes[0x14] = 0x01;
-		DuneAdgPlayerEngine engine = LoadEngine(bytes);
-		engine.State.WaitCounters.Set(0, 0);
-		engine.State.VolumeModulationSlots.Set(0, 0x0404);
-		engine.State.CurrentOperatorLevels.Set(0, 0x3F3F);
-		Cryogenic.AdgPlayer.Opl.RecordingOplBus bus = new();
-		engine.SetOplBus(bus);
-
-		// Act
-		engine.DispatchEvents(0);
-
-		// Assert
-		Assert.Empty(bus.Writes);
-		Assert.Equal<ushort>(0x0000, engine.State.CurrentOperatorLevels.Get(0));
-	}
-
-	/// <summary>
 	/// B4.4b micro-cycle 4: VolumeModulation with a non-zero
 	/// connection-modulation slot rate must emit the
 	/// FeedbackConnection register (0xC0 family, channel-routed)
@@ -944,43 +918,11 @@ public sealed class DuneAdgPlayerEngineDispatchTests {
 		// five secondary operator regs = 11 writes total.
 		Assert.True(bus.Writes.Count >= 11,
 			$"expected >= 11 writes, got {bus.Writes.Count}");
-		// Connection register 0xC0 was written.
-		Assert.Contains(bus.Writes, w => w.Register == 0xC0);
+		// Connection register family (0xC0..0xC8) was written — exact
+		// address now depends on the channel route computed by
+		// AdgConfigureInstrumentRouting_090D.
+		Assert.Contains(bus.Writes, w => w.Register >= 0xC0 && w.Register <= 0xC8);
 		// Instrument byte stored on the channel.
-		Assert.Equal((byte)0, engine.State.InstrumentSlots.Get(0));
-	}
-
-	/// <summary>
-	/// B4.3b.1 — ProgramChange with no routing table bound emits no
-	/// OPL writes and only updates the per-channel instrument slot
-	/// (state-only fallback).
-	/// </summary>
-	[Fact]
-	public void Dispatch_ProgramChange_WithoutRouting_NoEmit() {
-		// Arrange
-		byte[] bytes = new byte[0x100];
-		bytes[0] = 0x40;
-		int dataBase = AdgSongHeader.DataBase;
-		bytes[dataBase + 0] = 0x10;
-		for (int i = 0; i < AdgPatchOffsetCalculator.PatchStride; i++) {
-			bytes[0x40 + i] = (byte)(0x10 + i);
-		}
-		bytes[0x12] = 0x40;
-		bytes[0x13] = 0x00;
-		bytes[0x14] = 0x00;
-
-		DuneAdgPlayerEngine engine = new();
-		engine.Load(bytes);
-		engine.State.WaitCounters.Set(0, 0);
-
-		Cryogenic.AdgPlayer.Opl.RecordingOplBus bus = new();
-		engine.SetOplBus(bus);
-
-		// Act
-		engine.DispatchEvents(0);
-
-		// Assert
-		Assert.Empty(bus.Writes);
 		Assert.Equal((byte)0, engine.State.InstrumentSlots.Get(0));
 	}
 

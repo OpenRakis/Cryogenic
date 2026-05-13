@@ -393,6 +393,18 @@ public sealed partial class DuneAdgPlayerEngine {
 		if (_routingTable is null) {
 			return;
 		}
+
+		// Faithful port of AdgConfigureInstrumentRouting_090D: dynamic
+		// operator-slot allocator the original driver runs once per
+		// ProgramChange. Mutates the routing table at channelIndex
+		// plus the global fade scratch and per-channel state scratch.
+		AdgInstrumentRoutingConfigurator.Configure(
+			channelIndex,
+			decoded.PatchType,
+			_state.FadeScratchState,
+			_state.ChannelStateScratch,
+			_routingTable);
+
 		AdgChannelRoutingEntry entry = _routingTable.GetEntry(channelIndex);
 		AdgInstrumentPatchEmitter.Emit(_oplBus, _state.SurroundMaskState, basicPatch,
 			entry.ChannelRoute, entry.PrimaryRoute, entry.SecondaryRoute);

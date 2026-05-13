@@ -64,6 +64,14 @@ public sealed partial class DuneAdgPlayerEngine {
 		// default until the live-evidence-driven seed is wired.
 		_state.TickEnabledCounter.Set(AdgTickEnabledCounter.DefaultSeed);
 
+		// The DNADG driver allocates operator slots dynamically per
+		// ProgramChange via AdgConfigureInstrumentRouting_090D. We
+		// always own a writable, zero-initialized routing table so
+		// the configurator can populate it on demand. A caller may
+		// override this with SetRoutingTable() before Load() if it
+		// needs to seed pre-known routes (e.g. golden-master tests).
+		_routingTable ??= new AdgChannelRoutingTable();
+
 		_songImage = image;
 		_songHeader = header;
 		_channelPointers = pointers;

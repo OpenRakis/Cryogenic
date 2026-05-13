@@ -92,28 +92,6 @@ public sealed class DuneAdgPlayerEngineSmokeTests {
 		Assert.True(initialActive > 0);
 	}
 
-	[Fact]
-	public void Tick_ArrakisAgd_WithRecordingBus_AndAuxBound_ProducesNoEmitWithoutRoutingTable() {
-		// Arrange — wire a bounded recording bus to confirm that
-		// without a routing table no OPL writes are emitted (the
-		// gate documented on each handler).
-		string path = ResolveAssetPath(ArrakisAgdRelativePath);
-		byte[] bytes = File.ReadAllBytes(path);
-		DuneAdgPlayerEngine engine = new();
-		RecordingOplBus bus = new(capacity: 4096);
-		engine.SetOplBus(bus);
-		engine.Load(bytes);
-
-		// Act
-		for (int t = 0; t < 250; t++) {
-			engine.Tick();
-		}
-
-		// Assert
-		Assert.Empty(bus.Writes);
-		Assert.Equal(0, bus.DroppedCount);
-	}
-
 	private static int CountActiveChannels(DuneAdgPlayerEngine engine) {
 		int active = 0;
 		for (int i = 0; i < AdgDriverState.ChannelCount; i++) {
