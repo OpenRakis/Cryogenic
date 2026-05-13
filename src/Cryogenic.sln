@@ -39,6 +39,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cryogenic.AdgPlayer.Ui", "C
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cryogenic.AdgPlayer.Ui.Tests", "Cryogenic.AdgPlayer.Ui.Tests\Cryogenic.AdgPlayer.Ui.Tests.csproj", "{35B18A5B-8498-4502-A91A-2A912D83174A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cryogenic.AdgPlayer.Mcp", "Cryogenic.AdgPlayer.Mcp\Cryogenic.AdgPlayer.Mcp.csproj", "{D95319A4-97A7-40B6-8E79-30976E7820DA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -157,6 +159,18 @@ Global
 		{35B18A5B-8498-4502-A91A-2A912D83174A}.Release|x64.Build.0 = Release|Any CPU
 		{35B18A5B-8498-4502-A91A-2A912D83174A}.Release|x86.ActiveCfg = Release|Any CPU
 		{35B18A5B-8498-4502-A91A-2A912D83174A}.Release|x86.Build.0 = Release|Any CPU
+		{D95319A4-97A7-40B6-8E79-30976E7820DA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D95319A4-97A7-40B6-8E79-30976E7820DA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D95319A4-97A7-40B6-8E79-30976E7820DA}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{D95319A4-97A7-40B6-8E79-30976E7820DA}.Debug|x64.Build.0 = Debug|Any CPU
+		{D95319A4-97A7-40B6-8E79-30976E7820DA}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{D95319A4-97A7-40B6-8E79-30976E7820DA}.Debug|x86.Build.0 = Debug|Any CPU
+		{D95319A4-97A7-40B6-8E79-30976E7820DA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D95319A4-97A7-40B6-8E79-30976E7820DA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D95319A4-97A7-40B6-8E79-30976E7820DA}.Release|x64.ActiveCfg = Release|Any CPU
+		{D95319A4-97A7-40B6-8E79-30976E7820DA}.Release|x64.Build.0 = Release|Any CPU
+		{D95319A4-97A7-40B6-8E79-30976E7820DA}.Release|x86.ActiveCfg = Release|Any CPU
+		{D95319A4-97A7-40B6-8E79-30976E7820DA}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
