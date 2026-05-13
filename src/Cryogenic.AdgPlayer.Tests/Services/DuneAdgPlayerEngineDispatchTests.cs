@@ -720,6 +720,46 @@ public sealed class DuneAdgPlayerEngineDispatchTests {
 	}
 
 	/// <summary>
+	/// B4.4b micro-cycle 5: when the channel's patch type is 4
+	/// (four-operator patch), VolumeModulation must also emit
+	/// scaled operator levels for the second operator pair on the
+	/// route+0x08 OPL slots. Oracle: <c>AdgVolumeModulation_0B2E</c>
+	/// 4-op branch (lines 1748–1791 of <c>AdgDriverCode.cs</c>).
+	/// Inputs: velocity 0x40, Patch4VolumeModulationSlots = 0x0404
+	/// (both ops active), Patch4CurrentOperatorLevels = 0x3F3F →
+	/// scaled value 0x3F - 0x40 clamps to 0 for both operators.
+	/// </summary>
+	[Fact]
+	public void Dispatch_VolumeModulation_4OpPatch_EmitsPatch4OperatorLevels() {
+		// Arrange — slot 5 VolumeModulation, velocity 0x40, wait 0x01.
+		byte[] bytes = BuildSong(new ushort[] { 0x10, 0, 0, 0, 0, 0, 0, 0, 0 });
+		bytes[0x12] = 0x50;
+		bytes[0x13] = 0x40;
+		bytes[0x14] = 0x01;
+		DuneAdgPlayerEngine engine = LoadEngine(bytes);
+		engine.State.WaitCounters.Set(0, 0);
+		engine.State.VolumeModulationSlots.Set(0, 0x0000);   // no 2-op TL emit
+		engine.State.CurrentOperatorLevels.Set(0, 0x0000);
+		engine.State.PatchTypeSlots.Set(0, 4);
+		engine.State.Patch4VolumeModulationSlots.Set(0, 0x0404);   // both Patch4 ops active
+		engine.State.Patch4CurrentOperatorLevels.Set(0, 0x3F3F);
+		byte[] zero = new byte[AdgChannelRoutingTable.ChannelCount];
+		engine.SetRoutingTable(new AdgChannelRoutingTable(zero, zero, zero));
+		Cryogenic.AdgPlayer.Opl.RecordingOplBus bus = new();
+		engine.SetOplBus(bus);
+
+		// Act
+		engine.DispatchEvents(0);
+
+		// Assert — two OPL writes on register 0x48 (KSL/TL base 0x40 + route 0x08).
+		Assert.Equal(2, bus.Writes.Count);
+		Assert.All(bus.Writes, w => Assert.Equal(0x48, w.Register));
+		Assert.All(bus.Writes, w => Assert.Equal(0x00, w.Value));
+		// Cached Patch4 level updated.
+		Assert.Equal<ushort>(0x0000, engine.State.Patch4CurrentOperatorLevels.Get(0));
+	}
+
+	/// <summary>
 	/// B4.6b — master-track EndOfTrack (channel 0) with a one-shot
 	/// tick-enabled seed bulk-marks every channel's wait counter as
 	/// done (<c>0xFFFF</c>), mirroring the <c>rep stos</c> loop at

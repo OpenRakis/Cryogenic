@@ -115,6 +115,9 @@ public sealed class AdgDriverState {
 	/// <summary>Per-channel Patch4 volume-modulation word (DI+0x2AC).</summary>
 	public AdgChannelPatch4VolumeModulationSlots Patch4VolumeModulationSlots { get; }
 
+	/// <summary>Per-channel Patch4 current-operator-level word (DI+0x288).</summary>
+	public AdgChannelPatch4CurrentOperatorLevels Patch4CurrentOperatorLevels { get; }
+
 	/// <summary>Constructs every component in its zero state.</summary>
 	public AdgDriverState() {
 		WaitCounters = new AdgChannelWaitCounters();
@@ -151,6 +154,7 @@ public sealed class AdgDriverState {
 		Patch4TlShapingSlots = new AdgChannelPatch4TlShapingSlots();
 		Patch4EnvShapingSlots = new AdgChannelPatch4EnvShapingSlots();
 		Patch4VolumeModulationSlots = new AdgChannelPatch4VolumeModulationSlots();
+		Patch4CurrentOperatorLevels = new AdgChannelPatch4CurrentOperatorLevels();
 	}
 
 	/// <summary>
@@ -193,5 +197,6 @@ public sealed class AdgDriverState {
 		Patch4TlShapingSlots.Reset();
 		Patch4EnvShapingSlots.Reset();
 		Patch4VolumeModulationSlots.Reset();
+		Patch4CurrentOperatorLevels.Reset();
 	}
 }

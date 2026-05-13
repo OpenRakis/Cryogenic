@@ -445,6 +445,37 @@ public sealed partial class DuneAdgPlayerEngine {
 			AdgOperatorLevelEmitter.Emit(_oplBus, entry.SecondaryRoute, secondary.NewLevel);
 		}
 
+		// 4-op Patch4 branch (oracle dnadg:0B2E lines 1748–1791):
+		// when the channel's patch type is 4 the same primary +
+		// secondary scaling pass is repeated against the Patch4
+		// state slots and emitted on the routes offset by +0x08.
+		// NOTE: the oracle Patch4 branch tests <c>(sbyte)scale &lt; 0</c>
+		// (velocity sign bit) instead of <c>shaping &amp; 0x80</c>.
+		// Reusing AdgVolumeModulationComputer here is faithful for
+		// shapings with the high bit clear (the common case) — the
+		// rare inverse-velocity divergence will be driven by a
+		// dedicated Patch4 computer when a failing test reaches it.
+		if (_state.PatchTypeSlots.Get(channelIndex) == 4) {
+			ushort patch4Level = _state.Patch4CurrentOperatorLevels.Get(channelIndex);
+			ushort patch4Shape = _state.Patch4VolumeModulationSlots.Get(channelIndex);
+			AdgVolumeModulationComputer.OperatorResult p4Primary =
+				AdgVolumeModulationComputer.ComputePrimary(
+					patch4Level, patch4Shape, directVelocity, inverseVelocity);
+			AdgVolumeModulationComputer.OperatorResult p4Secondary =
+				AdgVolumeModulationComputer.ComputeSecondary(
+					patch4Level, patch4Shape, directVelocity, inverseVelocity);
+			ushort newPatch4 = (ushort)((p4Secondary.NewLevel << 8) | p4Primary.NewLevel);
+			_state.Patch4CurrentOperatorLevels.Set(channelIndex, newPatch4);
+			if (p4Primary.Active) {
+				AdgOperatorLevelEmitter.Emit(_oplBus,
+					(byte)(entry.PrimaryRoute + 0x08), p4Primary.NewLevel);
+			}
+			if (p4Secondary.Active) {
+				AdgOperatorLevelEmitter.Emit(_oplBus,
+					(byte)(entry.SecondaryRoute + 0x08), p4Secondary.NewLevel);
+			}
+		}
+
 		// Connection-modulation tail (oracle dnadg:0B2E lines 1793+):
 		// low byte = rate, high byte = current connection register
 		// value. When rate is non-zero, recompute the connection
