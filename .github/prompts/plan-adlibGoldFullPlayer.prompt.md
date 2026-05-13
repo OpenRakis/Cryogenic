@@ -81,7 +81,19 @@ Authoritative oracle: `src/Cryogenic/Overrides/AdgDriverCode.cs` (faithful, runt
 
 **B4.6a EndOfTrack faithful state mutations — DONE** (commit `765a1bf`):
 - Wait counter set to `0xFFFF` (done sentinel); event pointer zeroed; `AdgScratchMaskClearer.Clear` invoked with terminator byte.
-- Deferred to **B4.6b**: master-track tick-flag decrement, global silence broadcast on last-channel-ended, `AdgResetSchedulerState_06B9` re-init, `AdgCheckLoopPoint_07DA`.
+- ~~Deferred to **B4.6b**~~: master-track tick-flag decrement, global silence broadcast on last-channel-ended, `AdgResetSchedulerState_06B9` re-init, `AdgCheckLoopPoint_07DA`.
+
+**B4.6b EndOfTrack master-track loop path — DONE** (commit `c93498a`):
+- New `AdgTickEnabledCounter` state cell (byte at 0x01DF) seeded by `Load` to `DefaultSeed = 1`.
+- Channel 0 takes the master-track path: decrement counter; on zero, bulk-mark every channel wait counter `0xFFFF`; on underflow, restore via `+1`; otherwise re-seed scheduler state (`MeasureClock.Initialize`), run `AdgLoopPointChecker.Check`, and apply the tail decrement (`0xFFFF → 0xFFFE`) on channel 0.
+- Channel != 0 keeps the slave-track path (`AdgScratchMaskClearer.Clear`).
+- 5 new tests cover tick-zero bulk reset, tick-positive loop path, underflow restore, slave-track counter integrity, and `Load` seed.
+
+**B4.3b.1 ProgramChange patch emit via pre-bound routing — DONE** (this commit):
+- `HandleProgramChange` now slices the 40-byte instrument record at `EventBase + instrumentIndex * 0x28` from the loaded song image and emits the full instrument program via `AdgInstrumentPatchEmitter.Emit` when both an `IOplBus` and an `AdgChannelRoutingTable` are bound.
+- Surround-mask state cell added to `AdgDriverState` and threaded through the emitter.
+- 3 new tests: routing+patch emits the 11-write instrument program (incl. 0xC0 connection register), no routing → state-only, out-of-range patch index → defensive skip with no 0xC0 write.
+- ~~Still deferred~~ to **B4.3b.2**: port `AdgConfigureInstrumentRouting_090D` (the 70-line dynamic operator-slot allocator at dnadg:090D) to actively rewrite the routing entries per ProgramChange; today's wiring assumes a pre-bound routing table.
 
 **B4 dispatcher state-machine: COMPLETE.** All 8 opcode slots advance their cursor and mutate the right per-channel slots faithfully per the oracle. Real audio output requires the deferred `.b` cycles (deep OPL emit chains).
 
@@ -96,10 +108,10 @@ Authoritative oracle: `src/Cryogenic/Overrides/AdgDriverCode.cs` (faithful, runt
 > oracle.
 
 - **B4.2b** `AdgEnvelopeSetup_0C47` + `AdgNoteOn_10A9` (NoteOn final emit).
-- **B4.3b** `AdgConfigureInstrumentRouting_090D` + `AdgWriteInstrumentPatch_0F95` (ProgramChange patch load).
+- **B4.3b.2** `AdgConfigureInstrumentRouting_090D` (~70 lines, dynamic operator-slot allocator). B4.3b.1 (patch emit via pre-bound routing) is done.
 - **B4.4b** `AdgVolumeModulation_0B2E` body (velocity-scaled operator TL writes).
 - **B4.5b** `AdgPitchBendBody_0D8B` (~120-line pitch-accumulator routine).
-- **B4.6b** EndOfTrack master-track loop logic (`AdgCheckLoopPoint_07DA` etc.).
+- ~~**B4.6b** EndOfTrack master-track loop logic~~ — **DONE** (commit `c93498a`).
 - **B4.7 LoopCheck** standalone (port `AdgCheckLoopPoint_07DA`): snapshot save at LoopStartMeasure==Measure && Subdivision==0x60; restore at LoopEndMeasure==Measure with `_repeatCounter` decrement.
 - **B4.8 PitchModulation** (port `AdgAdvancePitchModulation_07AD`): vibrato during wait.
 

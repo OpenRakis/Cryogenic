@@ -818,4 +818,127 @@ public sealed class DuneAdgPlayerEngineDispatchTests {
 		Assert.Equal(AdgTickEnabledCounter.DefaultSeed,
 			engine.State.TickEnabledCounter.Value);
 	}
+
+	/// <summary>
+	/// B4.3b.1 — ProgramChange with both an OPL routing table and an
+	/// instrument patch bank present in the song image now emits the
+	/// 11 instrument-patch register writes via
+	/// <see cref="AdgInstrumentPatchEmitter"/>. Mirrors the
+	/// <c>AdgWriteInstrumentPatch_0F95</c> tail of
+	/// <c>AdgProgramChange_0831</c>.
+	/// </summary>
+	[Fact]
+	public void Dispatch_ProgramChange_WithRoutingAndPatch_EmitsInstrumentRegisters() {
+		// Arrange — song with the instrument bank starting at 0x40
+		// (header word at file[0..1] = 0x40). Patch index 0 is
+		// therefore at absolute offset 0x40; we fill it with a known
+		// 40-byte pattern.
+		byte[] bytes = new byte[0x100];
+		bytes[0] = 0x40; // EventBase low
+		bytes[1] = 0x00; // EventBase high
+		int dataBase = AdgSongHeader.DataBase;
+		bytes[dataBase + 0] = 0x10; // channel 0 relative offset
+		// Fill the instrument record at 0x40..0x67 with a deterministic pattern.
+		for (int i = 0; i < AdgPatchOffsetCalculator.PatchStride; i++) {
+			bytes[0x40 + i] = (byte)(0x10 + i);
+		}
+		// Event word at absolute 0x12 (channel 0 pointer 0x10 + DataBase 2):
+		//   slot 4 ProgramChange, instrument index 0, wait=0.
+		bytes[0x12] = 0x40;
+		bytes[0x13] = 0x00;
+		bytes[0x14] = 0x00;
+
+		DuneAdgPlayerEngine engine = new();
+		engine.Load(bytes);
+		engine.State.WaitCounters.Set(0, 0);
+
+		byte[] zeroes = new byte[AdgChannelRoutingTable.ChannelCount];
+		engine.SetRoutingTable(new AdgChannelRoutingTable(zeroes, zeroes, zeroes));
+		Cryogenic.AdgPlayer.Opl.RecordingOplBus bus = new();
+		engine.SetOplBus(bus);
+
+		// Act
+		engine.DispatchEvents(0);
+
+		// Assert — instrument register writes happened. The connection
+		// register (0xC0 family) plus five primary operator regs plus
+		// five secondary operator regs = 11 writes total.
+		Assert.True(bus.Writes.Count >= 11,
+			$"expected >= 11 writes, got {bus.Writes.Count}");
+		// Connection register 0xC0 was written.
+		Assert.Contains(bus.Writes, w => w.Register == 0xC0);
+		// Instrument byte stored on the channel.
+		Assert.Equal((byte)0, engine.State.InstrumentSlots.Get(0));
+	}
+
+	/// <summary>
+	/// B4.3b.1 — ProgramChange with no routing table bound emits no
+	/// OPL writes and only updates the per-channel instrument slot
+	/// (state-only fallback).
+	/// </summary>
+	[Fact]
+	public void Dispatch_ProgramChange_WithoutRouting_NoEmit() {
+		// Arrange
+		byte[] bytes = new byte[0x100];
+		bytes[0] = 0x40;
+		int dataBase = AdgSongHeader.DataBase;
+		bytes[dataBase + 0] = 0x10;
+		for (int i = 0; i < AdgPatchOffsetCalculator.PatchStride; i++) {
+			bytes[0x40 + i] = (byte)(0x10 + i);
+		}
+		bytes[0x12] = 0x40;
+		bytes[0x13] = 0x00;
+		bytes[0x14] = 0x00;
+
+		DuneAdgPlayerEngine engine = new();
+		engine.Load(bytes);
+		engine.State.WaitCounters.Set(0, 0);
+
+		Cryogenic.AdgPlayer.Opl.RecordingOplBus bus = new();
+		engine.SetOplBus(bus);
+
+		// Act
+		engine.DispatchEvents(0);
+
+		// Assert
+		Assert.Empty(bus.Writes);
+		Assert.Equal((byte)0, engine.State.InstrumentSlots.Get(0));
+	}
+
+	/// <summary>
+	/// B4.3b.1 — when the computed patch offset overruns the song
+	/// image (e.g. an instrument index that points past EOF), the
+	/// handler defensively skips the patch emit and leaves the
+	/// instrument-connection register (0xC0) unwritten. Other
+	/// downstream NoteOff cascades are not asserted here — the only
+	/// invariant is that no instrument program was emitted.
+	/// </summary>
+	[Fact]
+	public void Dispatch_ProgramChange_PatchOffsetOutOfRange_NoEmit() {
+		// Arrange — bank base 0x40 + index 0xF0 * 0x28 = far past EOF.
+		byte[] bytes = new byte[0x100];
+		bytes[0] = 0x40;
+		int dataBase = AdgSongHeader.DataBase;
+		bytes[dataBase + 0] = 0x10;
+		bytes[0x12] = 0x40;
+		bytes[0x13] = 0xF0; // instrument index
+		bytes[0x14] = 0x70; // wait = 0x70 (large) so downstream dispatch stops
+
+		DuneAdgPlayerEngine engine = new();
+		engine.Load(bytes);
+		engine.State.WaitCounters.Set(0, 0);
+		byte[] zeroes = new byte[AdgChannelRoutingTable.ChannelCount];
+		engine.SetRoutingTable(new AdgChannelRoutingTable(zeroes, zeroes, zeroes));
+		Cryogenic.AdgPlayer.Opl.RecordingOplBus bus = new();
+		engine.SetOplBus(bus);
+
+		// Act
+		engine.DispatchEvents(0);
+
+		// Assert — defensive skip on the patch emit: no 0xC0 family
+		// connection-register write happened. Instrument byte still
+		// recorded.
+		Assert.DoesNotContain(bus.Writes, w => w.Register == 0xC0);
+		Assert.Equal((byte)0xF0, engine.State.InstrumentSlots.Get(0));
+	}
 }

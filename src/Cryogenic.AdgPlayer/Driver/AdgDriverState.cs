@@ -91,6 +91,9 @@ public sealed class AdgDriverState {
 	/// <summary>Master-track event counter (0x01DF, <c>AdgTickEnabledOffset</c>).</summary>
 	public AdgTickEnabledCounter TickEnabledCounter { get; }
 
+	/// <summary>Global surround-mask byte (<c>AdgSurroundMaskOffset</c>).</summary>
+	public AdgSurroundMaskState SurroundMaskState { get; }
+
 	/// <summary>Constructs every component in its zero state.</summary>
 	public AdgDriverState() {
 		WaitCounters = new AdgChannelWaitCounters();
@@ -119,6 +122,7 @@ public sealed class AdgDriverState {
 		PitchBendCounterReloads = new AdgChannelPitchBendCounterReloads();
 		CurrentOperatorLevels = new AdgChannelCurrentOperatorLevels();
 		TickEnabledCounter = new AdgTickEnabledCounter();
+		SurroundMaskState = new AdgSurroundMaskState();
 	}
 
 	/// <summary>
@@ -153,5 +157,6 @@ public sealed class AdgDriverState {
 		PitchBendCounterReloads.Reset();
 		CurrentOperatorLevels.Reset();
 		TickEnabledCounter.Reset();
+		SurroundMaskState.Reset();
 	}
 }

@@ -314,20 +314,53 @@ public sealed partial class DuneAdgPlayerEngine {
 	}
 
 	/// <summary>
-	/// Faithful state-mutation port of <c>AdgProgramChange_0831</c>
-	/// from <c>AdgDriverCode.cs</c> (line 1542). Currently performs
-	/// the two top-of-handler steps:
-	/// 1) consume the variable-length wait value;
-	/// 2) write the new instrument byte (Hi8 of the event word) into
-	///    the per-channel instrument slot (DI+0x6C).
-	/// The deep instrument-patch load + OPL register emission
-	/// (<c>AdgConfigureInstrumentRouting_090D</c>,
-	/// <c>AdgWriteInstrumentPatch_0F95</c>) is gated for cycle B4.3b.
+	/// Faithful state-mutation + patch-emit port of
+	/// <c>AdgProgramChange_0831</c> from <c>AdgDriverCode.cs</c>
+	/// (line 1542). Sequence:
+	/// <list type="number">
+	///   <item>consume the variable-length wait value
+	///         (<c>AdgReadWaitValue_0E7E</c>);</item>
+	///   <item>write the new instrument byte (Hi8 of the event
+	///         word) into the per-channel instrument slot
+	///         (DI+0x6C);</item>
+	///   <item>(B4.3b.1) when the song image, header, OPL bus, and a
+	///         routing table are all bound, slice the 40-byte
+	///         instrument patch record at
+	///         <c>EventBase + instrumentIndex * 0x28</c> and emit it
+	///         via <see cref="AdgInstrumentPatchEmitter.Emit"/>
+	///         (mirrors the <c>AdgWriteInstrumentPatch_0F95</c> tail
+	///         of the oracle). Routes come from the pre-bound
+	///         <see cref="AdgChannelRoutingTable"/>.</item>
+	/// </list>
+	/// The dynamic operator-slot allocator
+	/// (<c>AdgConfigureInstrumentRouting_090D</c>) and the per-channel
+	/// shaping / modulation / 4-op state-slot population remain
+	/// deferred to a follow-up cycle. The minimum needed for correct
+	/// timbre on songs that pre-allocate routing entries (the common
+	/// case for two-operator instruments) is delivered here.
 	/// </summary>
 	private void HandleProgramChange(int channelIndex, ushort eventWord, AdgInMemoryEventStream stream) {
 		HandleReadWaitValue(channelIndex, stream);
 		byte instrumentIndex = (byte)(eventWord >> 8);
 		_state.InstrumentSlots.Set(channelIndex, instrumentIndex);
+
+		if (_songImage is null || _songHeader is null || _routingTable is null) {
+			return;
+		}
+
+		ushort patchOffset = AdgPatchOffsetCalculator.OffsetFor(
+			_songHeader.EventBase, instrumentIndex);
+		int end = patchOffset + AdgPatchOffsetCalculator.PatchStride;
+		if (patchOffset >= _songImage.Length || end > _songImage.Length) {
+			return;
+		}
+
+		byte[] patch = new byte[AdgPatchOffsetCalculator.PatchStride];
+		_songImage.Bytes.Slice(patchOffset, patch.Length).CopyTo(patch);
+
+		AdgChannelRoutingEntry entry = _routingTable.GetEntry(channelIndex);
+		AdgInstrumentPatchEmitter.Emit(_oplBus, _state.SurroundMaskState, patch,
+			entry.ChannelRoute, entry.PrimaryRoute, entry.SecondaryRoute);
 	}
 
 	/// <summary>
