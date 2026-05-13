@@ -34,7 +34,16 @@ public sealed class AdgOplSynthesizer : IOplBus, IDisposable {
 	private readonly NullPauseHandler _pauseHandler;
 	private short[] _tempBuffer = new short[4096];
 	private float[] _floatBuffer = new float[4096];
+	private float[] _normalizedBuffer = new float[4096];
 	private bool _disposed;
+
+	/// <summary>
+	/// Fires after each mixer batch with the normalized stereo float
+	/// buffer (samples in [-1, +1], interleaved L/R) and the total
+	/// sample count (frames × 2). UI visualizers (waveform / spectrum)
+	/// subscribe here to render the live audio stream.
+	/// </summary>
+	public event Action<float[], int>? AudioSamplesRendered;
 
 	/// <summary>Native OPL render rate exposed for diagnostics.</summary>
 	public int NativeSampleRate => NativeOplSampleRateConst;
@@ -110,12 +119,16 @@ public sealed class AdgOplSynthesizer : IOplBus, IDisposable {
 		if (_tempBuffer.Length < sampleCount) {
 			_tempBuffer = new short[sampleCount];
 			_floatBuffer = new float[sampleCount];
+			_normalizedBuffer = new float[sampleCount];
 		}
 		_chip.GenerateStream(_tempBuffer.AsSpan(0, sampleCount));
 		for (int i = 0; i < sampleCount; i++) {
-			_floatBuffer[i] = _tempBuffer[i];
+			short sample = _tempBuffer[i];
+			_floatBuffer[i] = sample;
+			_normalizedBuffer[i] = sample / 32768f;
 		}
 		_channel.AddSamplesFloat(framesNeeded, _floatBuffer.AsSpan(0, sampleCount));
+		AudioSamplesRendered?.Invoke(_normalizedBuffer, sampleCount);
 	}
 
 	/// <summary>

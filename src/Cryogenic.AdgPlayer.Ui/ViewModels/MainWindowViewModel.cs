@@ -21,6 +21,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable {
 
 	private string _title = DefaultTitleConst;
 	private readonly AdgOplSynthesizer? _synthesizer;
+	private readonly Action<Action> _dispatch;
 
 	/// <summary>Title displayed in the window's title bar.</summary>
 	public string Title {
@@ -85,9 +86,11 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable {
 		Spectrum = new AdgSpectrumViewModel();
 		Session = new AdgPlayerSessionViewModel(OplBus, dispatch);
 		_synthesizer = synthesizer;
+		_dispatch = dispatch;
 		if (_synthesizer is not null) {
 			Session.PlaybackStarted += OnPlaybackStarted;
 			Session.PlaybackStopped += OnPlaybackStopped;
+			_synthesizer.AudioSamplesRendered += OnAudioSamplesRendered;
 		}
 		Browser.PropertyChanged += OnBrowserPropertyChanged;
 	}
@@ -98,6 +101,18 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable {
 
 	private void OnPlaybackStopped() {
 		_synthesizer?.Stop();
+	}
+
+	private void OnAudioSamplesRendered(float[] interleaved, int sampleCount) {
+		// The mixer thread invokes this callback. Snapshot the buffer
+		// before marshalling because the synth reuses the array on the
+		// next render pass.
+		float[] snapshot = new float[sampleCount];
+		Array.Copy(interleaved, snapshot, sampleCount);
+		_dispatch(() => {
+			Waveform.PushSamples(snapshot, sampleCount);
+			Spectrum.PushAndRecompute(snapshot, sampleCount);
+		});
 	}
 
 	private void OnBrowserPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e) {
@@ -122,6 +137,9 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable {
 
 	/// <summary>Disposes the optional synthesizer and the player session.</summary>
 	public void Dispose() {
+		if (_synthesizer is not null) {
+			_synthesizer.AudioSamplesRendered -= OnAudioSamplesRendered;
+		}
 		Session.Dispose();
 		_synthesizer?.Dispose();
 	}
