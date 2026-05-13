@@ -89,11 +89,17 @@ Authoritative oracle: `src/Cryogenic/Overrides/AdgDriverCode.cs` (faithful, runt
 - Channel != 0 keeps the slave-track path (`AdgScratchMaskClearer.Clear`).
 - 5 new tests cover tick-zero bulk reset, tick-positive loop path, underflow restore, slave-track counter integrity, and `Load` seed.
 
-**B4.3b.1 ProgramChange patch emit via pre-bound routing — DONE** (this commit):
+**B4.3b.1 ProgramChange patch emit via pre-bound routing — DONE** (commit `cdf5376`):
 - `HandleProgramChange` now slices the 40-byte instrument record at `EventBase + instrumentIndex * 0x28` from the loaded song image and emits the full instrument program via `AdgInstrumentPatchEmitter.Emit` when both an `IOplBus` and an `AdgChannelRoutingTable` are bound.
 - Surround-mask state cell added to `AdgDriverState` and threaded through the emitter.
 - 3 new tests: routing+patch emits the 11-write instrument program (incl. 0xC0 connection register), no routing → state-only, out-of-range patch index → defensive skip with no 0xC0 write.
-- ~~Still deferred~~ to **B4.3b.2**: port `AdgConfigureInstrumentRouting_090D` (the 70-line dynamic operator-slot allocator at dnadg:090D) to actively rewrite the routing entries per ProgramChange; today's wiring assumes a pre-bound routing table.
+
+**B4.3b state-slot population — DONE** (this commit):
+- Pure decoder `AdgInstrumentPatchStateDecoder` ports the bit-twiddling block of `AdgProgramChange_0831` (oracle lines 1551–1586): TL/Env/Connection shaping word composition, connection modulation hi-byte placement, pitch seed split, and Patch4 tail extraction.
+- 7 new per-channel state slot classes: `AdgChannelTlShapingSlots`, `AdgChannelEnvShapingSlots`, `AdgChannelConnectionShapingSlots`, `AdgChannelConnectionModulationSlots`, `AdgChannelPatch4TlShapingSlots`, `AdgChannelPatch4EnvShapingSlots`, `AdgChannelPatch4VolumeModulationSlots` — all wired into `AdgDriverState` constructor + `Reset`.
+- `HandleProgramChange` now populates all shaping slots (PitchMode, PitchTranspose, EnvShaping, TlShaping, VolumeModulation, ConnectionShaping, ConnectionModulation, PitchAccumulatorStep, PitchBendCounter, PatchType, and Patch4 variants when applicable) — state mutations are independent of routing-table presence, matching the oracle.
+- 11 new tests: 8 decoder unit tests (2-op decode, bit-twiddle correctness for env/connection shaping, modulation hi-byte placement, pitch seed split, 4-op tail decode, defensive throws) + 3 dispatch integration tests (shaping slots populated, Patch4 slots populated on 4-op, Patch4 slots untouched on 2-op).
+- ~~Still deferred~~ to **B4.3b.2**: port `AdgConfigureInstrumentRouting_090D` (the dynamic operator-slot allocator at dnadg:090D) to actively rewrite the routing entries per ProgramChange; today's wiring still assumes a pre-bound routing table.
 
 **B4 dispatcher state-machine: COMPLETE.** All 8 opcode slots advance their cursor and mutate the right per-channel slots faithfully per the oracle. Real audio output requires the deferred `.b` cycles (deep OPL emit chains).
 

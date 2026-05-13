@@ -94,6 +94,27 @@ public sealed class AdgDriverState {
 	/// <summary>Global surround-mask byte (<c>AdgSurroundMaskOffset</c>).</summary>
 	public AdgSurroundMaskState SurroundMaskState { get; }
 
+	/// <summary>Per-channel TL-shaping word (DI+0xFC).</summary>
+	public AdgChannelTlShapingSlots TlShapingSlots { get; }
+
+	/// <summary>Per-channel envelope-shaping word (DI+0x120).</summary>
+	public AdgChannelEnvShapingSlots EnvShapingSlots { get; }
+
+	/// <summary>Per-channel connection-shaping word (DI+0x168).</summary>
+	public AdgChannelConnectionShapingSlots ConnectionShapingSlots { get; }
+
+	/// <summary>Per-channel connection-modulation pair (DI+0x1B0).</summary>
+	public AdgChannelConnectionModulationSlots ConnectionModulationSlots { get; }
+
+	/// <summary>Per-channel Patch4 TL-shaping word (DI+0x240).</summary>
+	public AdgChannelPatch4TlShapingSlots Patch4TlShapingSlots { get; }
+
+	/// <summary>Per-channel Patch4 envelope-shaping word (DI+0x264).</summary>
+	public AdgChannelPatch4EnvShapingSlots Patch4EnvShapingSlots { get; }
+
+	/// <summary>Per-channel Patch4 volume-modulation word (DI+0x2AC).</summary>
+	public AdgChannelPatch4VolumeModulationSlots Patch4VolumeModulationSlots { get; }
+
 	/// <summary>Constructs every component in its zero state.</summary>
 	public AdgDriverState() {
 		WaitCounters = new AdgChannelWaitCounters();
@@ -123,6 +144,13 @@ public sealed class AdgDriverState {
 		CurrentOperatorLevels = new AdgChannelCurrentOperatorLevels();
 		TickEnabledCounter = new AdgTickEnabledCounter();
 		SurroundMaskState = new AdgSurroundMaskState();
+		TlShapingSlots = new AdgChannelTlShapingSlots();
+		EnvShapingSlots = new AdgChannelEnvShapingSlots();
+		ConnectionShapingSlots = new AdgChannelConnectionShapingSlots();
+		ConnectionModulationSlots = new AdgChannelConnectionModulationSlots();
+		Patch4TlShapingSlots = new AdgChannelPatch4TlShapingSlots();
+		Patch4EnvShapingSlots = new AdgChannelPatch4EnvShapingSlots();
+		Patch4VolumeModulationSlots = new AdgChannelPatch4VolumeModulationSlots();
 	}
 
 	/// <summary>
@@ -158,5 +186,12 @@ public sealed class AdgDriverState {
 		CurrentOperatorLevels.Reset();
 		TickEnabledCounter.Reset();
 		SurroundMaskState.Reset();
+		TlShapingSlots.Reset();
+		EnvShapingSlots.Reset();
+		ConnectionShapingSlots.Reset();
+		ConnectionModulationSlots.Reset();
+		Patch4TlShapingSlots.Reset();
+		Patch4EnvShapingSlots.Reset();
+		Patch4VolumeModulationSlots.Reset();
 	}
 }

@@ -344,22 +344,57 @@ public sealed partial class DuneAdgPlayerEngine {
 		byte instrumentIndex = (byte)(eventWord >> 8);
 		_state.InstrumentSlots.Set(channelIndex, instrumentIndex);
 
-		if (_songImage is null || _songHeader is null || _routingTable is null) {
+		if (_songImage is null || _songHeader is null) {
 			return;
 		}
 
 		ushort patchOffset = AdgPatchOffsetCalculator.OffsetFor(
 			_songHeader.EventBase, instrumentIndex);
-		int end = patchOffset + AdgPatchOffsetCalculator.PatchStride;
-		if (patchOffset >= _songImage.Length || end > _songImage.Length) {
+		int basicEnd = patchOffset + AdgPatchOffsetCalculator.PatchStride;
+		if (patchOffset >= _songImage.Length || basicEnd > _songImage.Length) {
 			return;
 		}
 
-		byte[] patch = new byte[AdgPatchOffsetCalculator.PatchStride];
-		_songImage.Bytes.Slice(patchOffset, patch.Length).CopyTo(patch);
+		byte[] basicPatch = new byte[AdgPatchOffsetCalculator.PatchStride];
+		_songImage.Bytes.Slice(patchOffset, basicPatch.Length).CopyTo(basicPatch);
 
+		// If the patch is 4-op we need the extended 0x50-byte view
+		// for state decoding (offsets 0x2A..0x4E). Fall back to
+		// 2-op decoding when the image is too short for the tail.
+		byte[] decodePatch = basicPatch;
+		int extendedEnd = patchOffset + AdgInstrumentPatchStateDecoder.Patch4Length;
+		if (basicPatch[0] == 0x04 && extendedEnd <= _songImage.Length) {
+			decodePatch = new byte[AdgInstrumentPatchStateDecoder.Patch4Length];
+			_songImage.Bytes.Slice(patchOffset, decodePatch.Length).CopyTo(decodePatch);
+		}
+
+		// State mutations (mirrors lines 1551..1586 of the oracle).
+		AdgInstrumentPatchStateDecoder.DecodedState decoded =
+			AdgInstrumentPatchStateDecoder.Decode(decodePatch);
+		_state.PitchModeSlots.Set(channelIndex, decoded.PitchMode);
+		_state.PitchTransposeSlots.Set(channelIndex, decoded.PitchTranspose);
+		_state.EnvShapingSlots.Set(channelIndex, decoded.EnvShaping);
+		_state.TlShapingSlots.Set(channelIndex, decoded.TlShaping);
+		_state.VolumeModulationSlots.Set(channelIndex, decoded.VolumeModulation);
+		_state.ConnectionShapingSlots.Set(channelIndex, decoded.ConnectionShaping);
+		_state.ConnectionModulationSlots.Set(channelIndex, decoded.ConnectionModulation);
+		_state.PitchAccumulatorSteps.Set(channelIndex,
+			decoded.PitchAccumulatorHigh);
+		_state.PitchBendCounters.Set(channelIndex, decoded.PitchBendCounter);
+		_state.PatchTypeSlots.Set(channelIndex, decoded.PatchType);
+		if (decoded.IsPatch4) {
+			_state.Patch4EnvShapingSlots.Set(channelIndex, decoded.Patch4EnvShaping);
+			_state.Patch4TlShapingSlots.Set(channelIndex, decoded.Patch4TlShaping);
+			_state.Patch4VolumeModulationSlots.Set(channelIndex,
+				decoded.Patch4VolumeModulation);
+		}
+
+		// Emit gated on routing being bound.
+		if (_routingTable is null) {
+			return;
+		}
 		AdgChannelRoutingEntry entry = _routingTable.GetEntry(channelIndex);
-		AdgInstrumentPatchEmitter.Emit(_oplBus, _state.SurroundMaskState, patch,
+		AdgInstrumentPatchEmitter.Emit(_oplBus, _state.SurroundMaskState, basicPatch,
 			entry.ChannelRoute, entry.PrimaryRoute, entry.SecondaryRoute);
 	}
 

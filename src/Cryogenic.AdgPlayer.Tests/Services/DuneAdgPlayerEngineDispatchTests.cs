@@ -941,4 +941,127 @@ public sealed class DuneAdgPlayerEngineDispatchTests {
 		Assert.DoesNotContain(bus.Writes, w => w.Register == 0xC0);
 		Assert.Equal((byte)0xF0, engine.State.InstrumentSlots.Get(0));
 	}
+
+	/// <summary>
+	/// B4.3b state-slot population — when ProgramChange resolves a
+	/// valid patch from the loaded song image, the per-channel
+	/// shaping / modulation / pitch slots are populated from the
+	/// 40-byte patch record. Exercised without a routing table to
+	/// confirm state writes happen independently of the OPL emit
+	/// path. Mirrors lines 1551..1586 of <c>AdgProgramChange_0831</c>.
+	/// </summary>
+	[Fact]
+	public void Dispatch_ProgramChange_PopulatesShapingSlots_FromPatch() {
+		// Arrange — bank base 0x40 + index 0 = patch at 0x40..0x67.
+		byte[] bytes = new byte[0x100];
+		bytes[0] = 0x40;
+		int dataBase = AdgSongHeader.DataBase;
+		bytes[dataBase + 0] = 0x10;
+		bytes[0x12] = 0x40;
+		bytes[0x13] = 0x00; // instrument index
+		bytes[0x14] = 0x70; // wait
+
+		// Fill the patch record with deterministic values matching
+		// the decoder unit tests.
+		bytes[0x40 + 0x00] = 0x02; // PatchType = 2-op
+		bytes[0x40 + 0x1E] = 0x11; // TlShaping lo
+		bytes[0x40 + 0x1F] = 0x22; // TlShaping hi
+		bytes[0x40 + 0x21] = 0x55; // PitchMode
+		bytes[0x40 + 0x22] = 0xAA; // PitchTranspose
+		bytes[0x40 + 0x23] = 0x12; // PitchBend counter
+		bytes[0x40 + 0x24] = 0x34; // Pitch accumulator high
+		bytes[0x40 + 0x26] = 0x33; // VolumeModulation lo
+		bytes[0x40 + 0x27] = 0x44; // VolumeModulation hi
+		bytes[0x40 + 0x1B] = 0x9C; // ConnectionModulation hi
+
+		DuneAdgPlayerEngine engine = new();
+		engine.Load(bytes);
+		engine.State.WaitCounters.Set(0, 0);
+
+		// Act
+		engine.DispatchEvents(0);
+
+		// Assert
+		AdgDriverState state = engine.State;
+		Assert.Equal((byte)0x02, state.PatchTypeSlots.Get(0));
+		Assert.Equal((byte)0x55, state.PitchModeSlots.Get(0));
+		Assert.Equal((byte)0xAA, state.PitchTransposeSlots.Get(0));
+		Assert.Equal((ushort)0x2211, state.TlShapingSlots.Get(0));
+		Assert.Equal((ushort)0x4433, state.VolumeModulationSlots.Get(0));
+		Assert.Equal((ushort)0x9C00, state.ConnectionModulationSlots.Get(0));
+		Assert.Equal((byte)0x12, state.PitchBendCounters.Get(0));
+		Assert.Equal((byte)0x34, state.PitchAccumulatorSteps.Get(0));
+	}
+
+	/// <summary>
+	/// B4.3b state-slot population — when ProgramChange resolves a
+	/// 4-op patch, the Patch4 shaping / modulation slots are also
+	/// populated from the extended 0x50-byte record.
+	/// </summary>
+	[Fact]
+	public void Dispatch_ProgramChange_4OpPatch_PopulatesPatch4Slots() {
+		// Arrange — bank base 0x80 (so the 0x50-byte 4-op record
+		// 0x80..0xCF fits comfortably).
+		byte[] bytes = new byte[0x200];
+		bytes[0] = 0x80;
+		bytes[1] = 0x00;
+		int dataBase = AdgSongHeader.DataBase;
+		bytes[dataBase + 0] = 0x10;
+		bytes[0x12] = 0x40;
+		bytes[0x13] = 0x00; // instrument index
+		bytes[0x14] = 0x70;
+
+		bytes[0x80 + 0x00] = 0x04; // 4-op marker
+		bytes[0x80 + 0x46] = 0xAB; // Patch4 TlShaping lo
+		bytes[0x80 + 0x47] = 0xCD; // Patch4 TlShaping hi
+		bytes[0x80 + 0x4E] = 0x11; // Patch4 VolumeModulation lo
+		bytes[0x80 + 0x4F] = 0x22; // Patch4 VolumeModulation hi
+		bytes[0x80 + 0x32] = 0x80;
+		bytes[0x80 + 0x3F] = 0x40;
+
+		DuneAdgPlayerEngine engine = new();
+		engine.Load(bytes);
+		engine.State.WaitCounters.Set(0, 0);
+
+		// Act
+		engine.DispatchEvents(0);
+
+		// Assert
+		AdgDriverState state = engine.State;
+		Assert.Equal((byte)0x04, state.PatchTypeSlots.Get(0));
+		Assert.Equal((ushort)0xCDAB, state.Patch4TlShapingSlots.Get(0));
+		Assert.Equal((ushort)0x2211, state.Patch4VolumeModulationSlots.Get(0));
+		Assert.Equal((ushort)0x8040, state.Patch4EnvShapingSlots.Get(0));
+	}
+
+	/// <summary>
+	/// B4.3b state-slot population — a 2-op patch must leave the
+	/// Patch4 slots zero (only the 4-op marker triggers the tail).
+	/// </summary>
+	[Fact]
+	public void Dispatch_ProgramChange_2OpPatch_LeavesPatch4SlotsZero() {
+		// Arrange
+		byte[] bytes = new byte[0x100];
+		bytes[0] = 0x40;
+		int dataBase = AdgSongHeader.DataBase;
+		bytes[dataBase + 0] = 0x10;
+		bytes[0x12] = 0x40;
+		bytes[0x13] = 0x00;
+		bytes[0x14] = 0x70;
+		bytes[0x40 + 0x00] = 0x02; // not 4-op
+
+		DuneAdgPlayerEngine engine = new();
+		engine.Load(bytes);
+		engine.State.WaitCounters.Set(0, 0);
+		// Pre-seed the Patch4 slots so we can detect any write.
+		engine.State.Patch4TlShapingSlots.Set(0, 0xDEAD);
+		engine.State.Patch4EnvShapingSlots.Set(0, 0xBEEF);
+
+		// Act
+		engine.DispatchEvents(0);
+
+		// Assert — Patch4 slots untouched.
+		Assert.Equal((ushort)0xDEAD, engine.State.Patch4TlShapingSlots.Get(0));
+		Assert.Equal((ushort)0xBEEF, engine.State.Patch4EnvShapingSlots.Get(0));
+	}
 }
