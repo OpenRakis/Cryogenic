@@ -226,27 +226,43 @@ public sealed class AdgMcpTools {
 
         long targetFrames = (long)(seconds * session.NativeSampleRate);
         long startFrames = session.TotalAudioFrames;
+        long cursor = startFrames;
+        long framesWritten = 0L;
         long deadline = Environment.TickCount64 + (long)(seconds * 4000d) + 5000L;
-        while (session.TotalAudioFrames - startFrames < targetFrames) {
-            session.Tick(64);
-            System.Threading.Thread.Sleep(20);
-            if (Environment.TickCount64 > deadline) {
-                break;
+        using (FileStream fs = new(resolved, FileMode.Create, FileAccess.Write))
+        using (BinaryWriter bw = new(fs)) {
+            WriteWavHeader(bw, sampleRate: session.NativeSampleRate, dataByteCount: (int)(targetFrames * 4));
+            while (framesWritten < targetFrames) {
+                lock (session.Gate) {
+                    session.Tick(64);
+                }
+                System.Threading.Thread.Sleep(20);
+                float[] chunk = session.DrainAudio(cursor, out cursor);
+                long room = (targetFrames - framesWritten) * 2;
+                int take = (int)Math.Min(chunk.Length, room);
+                for (int i = 0; i < take; i++) {
+                    float clamped = Math.Clamp(chunk[i], -1f, 1f);
+                    short pcm = (short)Math.Round(clamped * 32767f);
+                    bw.Write(pcm);
+                }
+                framesWritten += take / 2;
+                if (Environment.TickCount64 > deadline) {
+                    break;
+                }
             }
+            long actualDataBytes = framesWritten * 4;
+            fs.Seek(4, SeekOrigin.Begin);
+            bw.Write((int)(36 + actualDataBytes));
+            fs.Seek(40, SeekOrigin.Begin);
+            bw.Write((int)actualDataBytes);
         }
-
-        int framesCaptured = (int)Math.Min(targetFrames, session.TotalAudioFrames - startFrames);
-        float[] samples = session.GetRecentAudio(framesCaptured);
-        WriteWavPcm16(resolved, samples, session.NativeSampleRate);
         return JsonSerializer.Serialize(new {
             path = resolved,
             sampleRate = session.NativeSampleRate,
             channels = 2,
             framesRequested = targetFrames,
-            framesWritten = samples.Length / 2,
-            byteCount = new FileInfo(resolved).Length,
-        }, JsonOpts);
-    }
+            framesWritten,
+        }
 
     private static string ResolveOutputWavPath(string outputPath, AdgMcpSession session) {
         if (!string.IsNullOrWhiteSpace(outputPath)) {
@@ -266,8 +282,17 @@ public sealed class AdgMcpTools {
         using FileStream fs = new(path, FileMode.Create, FileAccess.Write);
         using BinaryWriter bw = new(fs);
         int byteCount = samples.Length * 2;
+        WriteWavHeader(bw, sampleRate, byteCount);
+        for (int i = 0; i < samples.Length; i++) {
+            float clamped = Math.Clamp(samples[i], -1f, 1f);
+            short pcm = (short)Math.Round(clamped * 32767f);
+            bw.Write(pcm);
+        }
+    }
+
+    private static void WriteWavHeader(BinaryWriter bw, int sampleRate, int dataByteCount) {
         bw.Write(System.Text.Encoding.ASCII.GetBytes("RIFF"));
-        bw.Write(36 + byteCount);
+        bw.Write(36 + dataByteCount);
         bw.Write(System.Text.Encoding.ASCII.GetBytes("WAVE"));
         bw.Write(System.Text.Encoding.ASCII.GetBytes("fmt "));
         bw.Write(16);
@@ -278,19 +303,10 @@ public sealed class AdgMcpTools {
         bw.Write((short)4);
         bw.Write((short)16);
         bw.Write(System.Text.Encoding.ASCII.GetBytes("data"));
-        bw.Write(byteCount);
-        for (int i = 0; i < samples.Length; i++) {
-            float clamped = Math.Clamp(samples[i], -1f, 1f);
-            short pcm = (short)Math.Round(clamped * 32767f);
-            bw.Write(pcm);
-        }
+        bw.Write(dataByteCount);
+        return path;
     }
-
-    private static string ResolvePath(string path) {
-        if (Path.IsPathRooted(path) && File.Exists(path)) {
-            return path;
-        }
-        string? root = TryFindWorkspaceRoot();
+    string? root = TryFindWorkspaceRoot();
         if (root is not null) {
             string candidate = Path.GetFullPath(Path.Combine(root, path));
             if (File.Exists(candidate)) {
@@ -301,22 +317,22 @@ public sealed class AdgMcpTools {
     }
 
     private static string? TryFindWorkspaceRoot() {
-        DirectoryInfo? dir = new(AppContext.BaseDirectory);
-        while (dir is not null) {
-            if (File.Exists(Path.Combine(dir.FullName, "src", "Cryogenic.sln"))) {
-                return dir.FullName;
-            }
-            dir = dir.Parent;
+    DirectoryInfo? dir = new(AppContext.BaseDirectory);
+    while (dir is not null) {
+        if (File.Exists(Path.Combine(dir.FullName, "src", "Cryogenic.sln"))) {
+            return dir.FullName;
         }
+        dir = dir.Parent;
+    }
+    return null;
+}
+
+private static string? TryFindDatFolder() {
+    string? root = TryFindWorkspaceRoot();
+    if (root is null) {
         return null;
     }
-
-    private static string? TryFindDatFolder() {
-        string? root = TryFindWorkspaceRoot();
-        if (root is null) {
-            return null;
-        }
-        string candidate = Path.Combine(root, "doc", "DUNECDVF", "C", "DUNECD", "DUNE.DAT_");
-        return Directory.Exists(candidate) ? candidate : null;
-    }
+    string candidate = Path.Combine(root, "doc", "DUNECDVF", "C", "DUNECD", "DUNE.DAT_");
+    return Directory.Exists(candidate) ? candidate : null;
+}
 }

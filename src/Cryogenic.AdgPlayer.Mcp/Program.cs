@@ -1,4 +1,4 @@
-namespace Cryogenic.AdgPlayer.Mcp;
+﻿namespace Cryogenic.AdgPlayer.Mcp;
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -11,21 +11,21 @@ using Microsoft.Extensions.Logging;
 /// + synthesizer + recorders.
 /// </summary>
 public static class Program {
-	/// <summary>Builds and runs the MCP host.</summary>
-	public static async Task Main(string[] args) {
-		HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
+    /// <summary>Builds and runs the MCP host.</summary>
+    public static async Task Main(string[] args) {
+        HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
 
-		builder.Logging.AddConsole(options => {
-			options.LogToStandardErrorThreshold = LogLevel.Trace;
-		});
+        builder.Logging.AddConsole(options => {
+            options.LogToStandardErrorThreshold = LogLevel.Trace;
+        });
 
-		builder.Services.AddSingleton<AdgMcpSession>();
+        builder.Services.AddSingleton<AdgMcpSession>();
 
-		builder.Services
-			.AddMcpServer()
-			.WithStdioServerTransport()
-			.WithTools<AdgMcpTools>();
+        builder.Services
+            .AddMcpServer()
+            .WithStdioServerTransport()
+            .WithTools<AdgMcpTools>();
 
-		await builder.Build().RunAsync();
-	}
+        await builder.Build().RunAsync();
+    }
 }

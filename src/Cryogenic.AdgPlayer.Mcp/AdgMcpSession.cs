@@ -138,17 +138,23 @@ public sealed class AdgMcpSession : IDisposable {
         return _recorder.GetSince(sinceIndex);
     }
 
-    /// <inheritdoc />
-    public void Dispose() {
-        if (_disposed) {
+    /// <summary>
+    /// Drains all newly-rendered frames since the supplied cursor;
+    /// returns them and updates <paramref name="newCursor"/>. Used
+    /// by long-form capture tools (e.g. WAV dump) that produce more
+    /// data than fits in the ring.
+    /// </summary>
+    public float[] DrainAudio(long sinceFrame, out long newCursor) {
+        return _audioRing.DrainSince(sinceFrame, out newCursor);
+    }
             return;
         }
-        _disposed = true;
+_disposed = true;
         _synth.AudioSamplesRendered -= OnAudioSamplesRendered;
         _synth.Dispose();
     }
 
     private void OnAudioSamplesRendered(float[] buffer, int sampleCount) {
-        _audioRing.Append(buffer, sampleCount);
-    }
+    _audioRing.Append(buffer, sampleCount);
+}
 }
