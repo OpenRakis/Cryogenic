@@ -20,118 +20,135 @@ using System.Collections.Generic;
 /// the recorded OPL register stream.
 /// </summary>
 public sealed class AdgMcpSession : IDisposable {
-	private readonly DuneAdgPlayerEngine _engine = new();
-	private readonly AdgOplSynthesizer _synth = new();
-	private readonly OplWriteRecorder _recorder;
-	private readonly FanOutOplBus _bus;
-	private readonly AdgChannelRoutingTable _routingTable;
-	private readonly AdgFrequencyLookupTable _frequencyLookup;
-	private readonly AudioSampleRingBuffer _audioRing = new(capacityFrames: 49716);
-	private string? _loadedSongPath;
-	private bool _disposed;
+    private readonly DuneAdgPlayerEngine _engine = new();
+    private readonly AdgOplSynthesizer _synth = new();
+    private readonly OplWriteRecorder _recorder;
+    private readonly FanOutOplBus _bus;
+    private readonly AdgChannelRoutingTable _routingTable;
+    private readonly AdgFrequencyLookupTable _frequencyLookup;
+    private readonly AudioSampleRingBuffer _audioRing = new(capacityFrames: 49716);
+    private readonly object _gate = new();
+    private string? _loadedSongPath;
+    private bool _disposed;
 
-	/// <summary>Builds the session and binds the engine to the fan-out bus.</summary>
-	public AdgMcpSession() {
-		_recorder = new OplWriteRecorder(capacity: 65536);
-		_bus = new FanOutOplBus(new IOplBus[] { _synth, _recorder });
-		_engine.SetOplBus(_bus);
+    /// <summary>
+    /// Per-session mutex. MCP servers may dispatch tool calls on
+    /// parallel threads; tools serialize through this gate so a
+    /// <c>play</c> request can never beat a still-running
+    /// <c>load_song</c> to the engine.
+    /// </summary>
+    public object Gate => _gate;
 
-		_routingTable = new AdgChannelRoutingTable();
-		_frequencyLookup = AdgFrequencyLookupTable.CreateDefault();
-		AdgPitchBendFractionsTable bendFractions = AdgPitchBendFractionsTable.CreateDefault();
-		AdgPortamentoFractionsTable portamentoFractions = AdgPortamentoFractionsTable.CreateDefault();
-		_engine.SetRoutingTable(_routingTable);
-		_engine.SetFrequencyLookupTable(_frequencyLookup);
-		_engine.SetPitchBendBody(new DefaultAdgPitchBendBody(
-			_bus,
-			_engine.State.FrequencyWordCache,
-			_routingTable,
-			_frequencyLookup,
-			bendFractions,
-			portamentoFractions,
-			_engine.State.CurrentNotes,
-			_engine.State.PitchModeSlots));
+    /// <summary>Builds the session and binds the engine to the fan-out bus.</summary>
+    public AdgMcpSession() {
+        _recorder = new OplWriteRecorder(capacity: 65536);
+        _bus = new FanOutOplBus(new IOplBus[] { _synth, _recorder });
+        _engine.SetOplBus(_bus);
 
-		_synth.AudioSamplesRendered += OnAudioSamplesRendered;
-		_synth.Start();
-	}
+        _routingTable = new AdgChannelRoutingTable();
+        _frequencyLookup = AdgFrequencyLookupTable.CreateDefault();
+        AdgPitchBendFractionsTable bendFractions = AdgPitchBendFractionsTable.CreateDefault();
+        AdgPortamentoFractionsTable portamentoFractions = AdgPortamentoFractionsTable.CreateDefault();
+        _engine.SetRoutingTable(_routingTable);
+        _engine.SetFrequencyLookupTable(_frequencyLookup);
+        _engine.SetPitchBendBody(new DefaultAdgPitchBendBody(
+            _bus,
+            _engine.State.FrequencyWordCache,
+            _routingTable,
+            _frequencyLookup,
+            bendFractions,
+            portamentoFractions,
+            _engine.State.CurrentNotes,
+            _engine.State.PitchModeSlots));
 
-	/// <summary>The wrapped engine. Exposed for read-only inspection by tools.</summary>
-	public DuneAdgPlayerEngine Engine => _engine;
+        _synth.AudioSamplesRendered += OnAudioSamplesRendered;
+        _synth.Start();
+    }
 
-	/// <summary>The wrapped OPL3 synthesizer (full SoftwareMixer pipeline).</summary>
-	public AdgOplSynthesizer Synth => _synth;
+    /// <summary>The wrapped engine. Exposed for read-only inspection by tools.</summary>
+    public DuneAdgPlayerEngine Engine => _engine;
 
-	/// <summary>Loaded song path (null when no song is loaded).</summary>
-	public string? LoadedSongPath => _loadedSongPath;
+    /// <summary>The wrapped OPL3 synthesizer (full SoftwareMixer pipeline).</summary>
+    public AdgOplSynthesizer Synth => _synth;
 
-	/// <summary>Native OPL3 sample rate (49716 Hz, stereo interleaved).</summary>
-	public int NativeSampleRate => _synth.NativeSampleRate;
+    /// <summary>Loaded song path (null when no song is loaded).</summary>
+    public string? LoadedSongPath => _loadedSongPath;
 
-	/// <summary>Total OPL writes recorded since session start.</summary>
-	public int TotalOplWrites => _recorder.TotalCount;
+    /// <summary>Native OPL3 sample rate (49716 Hz, stereo interleaved).</summary>
+    public int NativeSampleRate => _synth.NativeSampleRate;
 
-	/// <summary>Total stereo audio frames produced by the mixer since session start.</summary>
-	public long TotalAudioFrames => _audioRing.TotalFrames;
+    /// <summary>Total OPL writes recorded since session start.</summary>
+    public int TotalOplWrites => _recorder.TotalCount;
 
-	/// <summary>Loads <paramref name="bytes"/> into the engine.</summary>
-	public void Load(string path, byte[] bytes) {
-		_engine.Load(bytes);
-		_loadedSongPath = path;
-	}
+    /// <summary>Total stereo audio frames produced by the mixer since session start.</summary>
+    public long TotalAudioFrames => _audioRing.TotalFrames;
 
-	/// <summary>Starts playback.</summary>
-	public void Play() {
-		_engine.Play();
-	}
+    /// <summary>Loads <paramref name="bytes"/> into the engine.</summary>
+    public void Load(string path, byte[] bytes) {
+        lock (_gate) {
+            _engine.Load(bytes);
+            _loadedSongPath = path;
+        }
+    }
 
-	/// <summary>Stops playback.</summary>
-	public void Stop() {
-		_engine.StopPlayback();
-	}
+    /// <summary>Starts playback.</summary>
+    public void Play() {
+        lock (_gate) {
+            _engine.Play();
+        }
+    }
 
-	/// <summary>Advances the engine up to <paramref name="tickCount"/> ticks; returns actual ticks executed.</summary>
-	public int Tick(int tickCount) {
-		if (tickCount < 0) {
-			throw new ArgumentOutOfRangeException(nameof(tickCount));
-		}
-		int executed = 0;
-		for (int i = 0; i < tickCount; i++) {
-			if (!_engine.Tick()) {
-				break;
-			}
-			executed++;
-		}
-		return executed;
-	}
+    /// <summary>Stops playback.</summary>
+    public void Stop() {
+        lock (_gate) {
+            _engine.StopPlayback();
+        }
+    }
 
-	/// <summary>
-	/// Returns the most recent <paramref name="frameCount"/> stereo
-	/// frames captured by the mixer (interleaved L/R floats in
-	/// [-1, +1]). When fewer frames are available the result is the
-	/// actual captured length; consult <see cref="TotalAudioFrames"/>
-	/// to track production over time.
-	/// </summary>
-	public float[] GetRecentAudio(int frameCount) {
-		return _audioRing.GetRecent(frameCount);
-	}
+    /// <summary>Advances the engine up to <paramref name="tickCount"/> ticks; returns actual ticks executed.</summary>
+    public int Tick(int tickCount) {
+        if (tickCount < 0) {
+            throw new ArgumentOutOfRangeException(nameof(tickCount));
+        }
+        lock (_gate) {
+            int executed = 0;
+            for (int i = 0; i < tickCount; i++) {
+                if (!_engine.Tick()) {
+                    break;
+                }
+                executed++;
+            }
+            return executed;
+        }
+    }
 
-	/// <summary>Returns recorded OPL writes since <paramref name="sinceIndex"/>; clamped to recorder capacity.</summary>
-	public IReadOnlyList<OplWriteRecord> GetOplWrites(int sinceIndex) {
-		return _recorder.GetSince(sinceIndex);
-	}
+    /// <summary>
+    /// Returns the most recent <paramref name="frameCount"/> stereo
+    /// frames captured by the mixer (interleaved L/R floats in
+    /// [-1, +1]). When fewer frames are available the result is the
+    /// actual captured length; consult <see cref="TotalAudioFrames"/>
+    /// to track production over time.
+    /// </summary>
+    public float[] GetRecentAudio(int frameCount) {
+        return _audioRing.GetRecent(frameCount);
+    }
 
-	/// <inheritdoc />
-	public void Dispose() {
-		if (_disposed) {
-			return;
-		}
-		_disposed = true;
-		_synth.AudioSamplesRendered -= OnAudioSamplesRendered;
-		_synth.Dispose();
-	}
+    /// <summary>Returns recorded OPL writes since <paramref name="sinceIndex"/>; clamped to recorder capacity.</summary>
+    public IReadOnlyList<OplWriteRecord> GetOplWrites(int sinceIndex) {
+        return _recorder.GetSince(sinceIndex);
+    }
 
-	private void OnAudioSamplesRendered(float[] buffer, int sampleCount) {
-		_audioRing.Append(buffer, sampleCount);
-	}
+    /// <inheritdoc />
+    public void Dispose() {
+        if (_disposed) {
+            return;
+        }
+        _disposed = true;
+        _synth.AudioSamplesRendered -= OnAudioSamplesRendered;
+        _synth.Dispose();
+    }
+
+    private void OnAudioSamplesRendered(float[] buffer, int sampleCount) {
+        _audioRing.Append(buffer, sampleCount);
+    }
 }
