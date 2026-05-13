@@ -262,7 +262,8 @@ public sealed class AdgMcpTools {
             channels = 2,
             framesRequested = targetFrames,
             framesWritten,
-        }
+        }, JsonOpts);
+    }
 
     private static string ResolveOutputWavPath(string outputPath, AdgMcpSession session) {
         if (!string.IsNullOrWhiteSpace(outputPath)) {
@@ -304,9 +305,10 @@ public sealed class AdgMcpTools {
         bw.Write((short)16);
         bw.Write(System.Text.Encoding.ASCII.GetBytes("data"));
         bw.Write(dataByteCount);
-        return path;
     }
-    string? root = TryFindWorkspaceRoot();
+
+    private static string ResolvePath(string path) {
+        string? root = TryFindWorkspaceRoot();
         if (root is not null) {
             string candidate = Path.GetFullPath(Path.Combine(root, path));
             if (File.Exists(candidate)) {

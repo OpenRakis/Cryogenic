@@ -1,16 +1,26 @@
-﻿namespace Cryogenic.AdgPlayer.Ui.Views;
+namespace Cryogenic.AdgPlayer.Ui.Views;
 
 using Avalonia.Controls;
-using Avalonia.Markup.Xaml;
+
+using Cryogenic.AdgPlayer.Ui.ViewModels;
 
 /// <summary>
-/// Code-behind for the ADG player main window. Loads the XAML
-/// resource at construction; exposes no extra surface area beyond
-/// <see cref="Window"/>.
+/// Main window code-behind. Links the waveform control to the view model.
 /// </summary>
 public sealed partial class MainWindow : Window {
-	/// <summary>Initializes the main window and loads its XAML.</summary>
+	/// <summary>
+	/// Initializes the main window and registers the waveform control.
+	/// </summary>
 	public MainWindow() {
-		AvaloniaXamlLoader.Load(this);
+		InitializeComponent();
+	}
+
+	/// <inheritdoc />
+	protected override void OnDataContextChanged(System.EventArgs e) {
+		base.OnDataContextChanged(e);
+		if (DataContext is MainWindowViewModel vm) {
+			vm.RegisterWaveformControl(Waveform);
+			vm.RegisterVolumeFeedbackControl(VolumeFeedback);
+		}
 	}
 }

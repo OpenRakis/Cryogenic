@@ -37,8 +37,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DuneExtractor", "Cryogenic.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cryogenic.AdgPlayer.Ui", "Cryogenic.AdgPlayer.Ui\Cryogenic.AdgPlayer.Ui.csproj", "{0C844DB5-6B33-4288-96BB-EA7E995064DF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cryogenic.AdgPlayer.Ui.Tests", "Cryogenic.AdgPlayer.Ui.Tests\Cryogenic.AdgPlayer.Ui.Tests.csproj", "{35B18A5B-8498-4502-A91A-2A912D83174A}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cryogenic.AdgPlayer.Mcp", "Cryogenic.AdgPlayer.Mcp\Cryogenic.AdgPlayer.Mcp.csproj", "{D95319A4-97A7-40B6-8E79-30976E7820DA}"
 EndProject
 Global
@@ -147,18 +145,6 @@ Global
 		{0C844DB5-6B33-4288-96BB-EA7E995064DF}.Release|x64.Build.0 = Release|Any CPU
 		{0C844DB5-6B33-4288-96BB-EA7E995064DF}.Release|x86.ActiveCfg = Release|Any CPU
 		{0C844DB5-6B33-4288-96BB-EA7E995064DF}.Release|x86.Build.0 = Release|Any CPU
-		{35B18A5B-8498-4502-A91A-2A912D83174A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{35B18A5B-8498-4502-A91A-2A912D83174A}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{35B18A5B-8498-4502-A91A-2A912D83174A}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{35B18A5B-8498-4502-A91A-2A912D83174A}.Debug|x64.Build.0 = Debug|Any CPU
-		{35B18A5B-8498-4502-A91A-2A912D83174A}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{35B18A5B-8498-4502-A91A-2A912D83174A}.Debug|x86.Build.0 = Debug|Any CPU
-		{35B18A5B-8498-4502-A91A-2A912D83174A}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{35B18A5B-8498-4502-A91A-2A912D83174A}.Release|Any CPU.Build.0 = Release|Any CPU
-		{35B18A5B-8498-4502-A91A-2A912D83174A}.Release|x64.ActiveCfg = Release|Any CPU
-		{35B18A5B-8498-4502-A91A-2A912D83174A}.Release|x64.Build.0 = Release|Any CPU
-		{35B18A5B-8498-4502-A91A-2A912D83174A}.Release|x86.ActiveCfg = Release|Any CPU
-		{35B18A5B-8498-4502-A91A-2A912D83174A}.Release|x86.Build.0 = Release|Any CPU
 		{D95319A4-97A7-40B6-8E79-30976E7820DA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{D95319A4-97A7-40B6-8E79-30976E7820DA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D95319A4-97A7-40B6-8E79-30976E7820DA}.Debug|x64.ActiveCfg = Debug|Any CPU

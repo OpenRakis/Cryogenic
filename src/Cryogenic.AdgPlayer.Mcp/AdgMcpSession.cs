@@ -147,14 +147,18 @@ public sealed class AdgMcpSession : IDisposable {
     public float[] DrainAudio(long sinceFrame, out long newCursor) {
         return _audioRing.DrainSince(sinceFrame, out newCursor);
     }
+
+    /// <inheritdoc />
+    public void Dispose() {
+        if (_disposed) {
             return;
         }
-_disposed = true;
+        _disposed = true;
         _synth.AudioSamplesRendered -= OnAudioSamplesRendered;
         _synth.Dispose();
     }
 
     private void OnAudioSamplesRendered(float[] buffer, int sampleCount) {
-    _audioRing.Append(buffer, sampleCount);
-}
+        _audioRing.Append(buffer, sampleCount);
+    }
 }

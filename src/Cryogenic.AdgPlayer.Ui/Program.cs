@@ -1,4 +1,4 @@
-﻿namespace Cryogenic.AdgPlayer.Ui;
+namespace Cryogenic.AdgPlayer.Ui;
 
 using Avalonia;
 
@@ -8,13 +8,7 @@ using Serilog;
 
 using System;
 
-/// <summary>
-/// Process entry point for the Cryogenic ADG player. Configures
-/// Serilog (console + rolling file) and starts the Avalonia
-/// classic-desktop lifetime.
-/// </summary>
 internal static class Program {
-	/// <summary>STA-thread entry point.</summary>
 	[STAThread]
 	public static void Main(string[] args) {
 		Log.Logger = new LoggerConfiguration()
@@ -27,7 +21,7 @@ internal static class Program {
 			.CreateLogger();
 
 		try {
-			Log.Information("Cryogenic ADG Player starting");
+			Log.Information("Cryogenic ADP Player starting");
 			BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
 		} catch (Exception ex) {
 			Log.Fatal(ex, "Unhandled exception");
@@ -36,7 +30,6 @@ internal static class Program {
 		}
 	}
 
-	/// <summary>Builds the Avalonia <see cref="AppBuilder"/> for the app.</summary>
 	public static AppBuilder BuildAvaloniaApp() {
 		return AppBuilder.Configure<App>()
 			.UsePlatformDetect()
