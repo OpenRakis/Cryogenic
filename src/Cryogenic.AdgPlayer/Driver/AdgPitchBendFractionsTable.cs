@@ -40,4 +40,24 @@ public sealed class AdgPitchBendFractionsTable {
 		}
 		return _entries[index];
 	}
+
+	/// <summary>
+	/// Live-captured default fraction sequence taken from the
+	/// runtime-initialised DNADG driver at <c>segment 0x5BAE,
+	/// offset 0x01C7</c> (read_memory via Spice86 MCP).
+	/// </summary>
+	public static readonly byte[] DefaultEntries = new byte[] {
+		0x13, 0x15, 0x15, 0x17, 0x19, 0x1A, 0x1B,
+		0x1D, 0x1F, 0x21, 0x23, 0x24, 0x25,
+	};
+
+	/// <summary>
+	/// Builds a fraction table populated with
+	/// <see cref="DefaultEntries"/>. Equivalent to the values the
+	/// DNADG driver init code would have written into the table at
+	/// runtime.
+	/// </summary>
+	public static AdgPitchBendFractionsTable CreateDefault() {
+		return new AdgPitchBendFractionsTable(DefaultEntries);
+	}
 }

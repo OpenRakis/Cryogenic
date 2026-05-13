@@ -2,6 +2,7 @@
 
 using CommunityToolkit.Mvvm.Input;
 
+using Cryogenic.AdgPlayer.Driver;
 using Cryogenic.AdgPlayer.Opl;
 using Cryogenic.AdgPlayer.Services;
 using Cryogenic.AdgPlayer.Ui.Playback;
@@ -60,6 +61,28 @@ public sealed class AdgPlayerSessionViewModel : ViewModelBase, IDisposable {
 		_bus = bus;
 		_dispatch = dispatch;
 		_engine.SetOplBus(_bus);
+
+		// Wire the production pitch-bend body. The routing table
+		// and frequency lookup are owned here (rather than letting
+		// Load() auto-seed them) so we can pass the same references
+		// to DefaultAdgPitchBendBody, which keeps them aligned with
+		// the engine's runtime state across reloads.
+		AdgChannelRoutingTable routingTable = new();
+		AdgFrequencyLookupTable frequencyLookup = AdgFrequencyLookupTable.CreateDefault();
+		AdgPitchBendFractionsTable bendFractions = AdgPitchBendFractionsTable.CreateDefault();
+		AdgPortamentoFractionsTable portamentoFractions = AdgPortamentoFractionsTable.CreateDefault();
+		_engine.SetRoutingTable(routingTable);
+		_engine.SetFrequencyLookupTable(frequencyLookup);
+		_engine.SetPitchBendBody(new DefaultAdgPitchBendBody(
+			_bus,
+			_engine.State.FrequencyWordCache,
+			routingTable,
+			frequencyLookup,
+			bendFractions,
+			portamentoFractions,
+			_engine.State.CurrentNotes,
+			_engine.State.PitchModeSlots));
+
 		_host = new AdgPlaybackHost(_bus, OnHostTick);
 		LoadCommand = new RelayCommand<string>(OnLoad, CanLoad);
 		PlayCommand = new RelayCommand(OnPlay, CanPlay);

@@ -1,20 +1,20 @@
-B4.2b: port AdgEnvelopeSetup_0C47 + velocity-driven note-on emit
+B4.5b + wiring: bind DefaultAdgPitchBendBody via live-captured tables
 
-- Add AdgEnvelopeSetupEmitter: faithful port of the
-  AdgEnvelopeSetup_0C47 oracle (AdgDriverCode.cs:1592). Applies
-  velocity-scaled TL shaping to primary + secondary operators via
-  AdgEnvelopeTlShapingComputer + AdgOperatorLevelEmitter, extends
-  to the patch-4 operator pair when patchType == 4 (preserving the
-  oracle quirk that branches on (sbyte)scale < 0 rather than the
-  shaping byte sign), and publishes the connection-shape result to
-  OPL 0xC0 via AdgChannelRouter (storing the new connection byte in
-  the high byte of the per-channel ConnectionModulation slot).
-- HandleNoteOn now reads the velocity byte from the event stream
-  (previously skipped) and calls AdgEnvelopeSetupEmitter before
-  AdgChannelNoteOnEmitter, mirroring the oracle ordering
-  (AdgEnvelopeSetup_0C47 then AdgNoteOn_10A9).
-- Add 3 unit tests covering: all-zero shaping skip-emit path,
-  primary+secondary TL writes with KSL preservation, and the
-  connection-shape 0xC0 emit with overflow/pan mask.
+- AdgPitchBendFractionsTable / AdgPortamentoFractionsTable now
+  expose DefaultEntries + CreateDefault() built from live-captured
+  driver bytes at segment 0x5BAE, offsets 0x01C7 and 0x01D4
+  respectively (read_memory via Spice86 MCP). The DNADG driver
+  fills these tables from zero at runtime init; the captured
+  sequences let us skip emulating that init.
+- AdgPlayerSessionViewModel now constructs a routing table,
+  frequency lookup, bend fractions, and portamento fractions in
+  its constructor, binds them to the engine via the existing
+  SetRoutingTable / SetFrequencyLookupTable / SetPitchBendBody
+  hooks, and assembles DefaultAdgPitchBendBody around the same
+  references plus the engine's per-channel state slots.
 
-495 tests pass (was 492, +3).
+Captured bytes (validated against the canonical CFG):
+  pitch-bend  (13B): 13 15 15 17 19 1A 1B 1D 1F 21 23 24 25
+  portamento  (10B): 00 05 0A 0F 14 00 06 0C 12 18
+
+495 + 87 tests pass.

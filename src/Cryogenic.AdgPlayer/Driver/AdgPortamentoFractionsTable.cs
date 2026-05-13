@@ -40,4 +40,24 @@ public sealed class AdgPortamentoFractionsTable {
 		}
 		return _entries[index];
 	}
+
+	/// <summary>
+	/// Live-captured default fraction sequence taken from the
+	/// runtime-initialised DNADG driver at <c>segment 0x5BAE,
+	/// offset 0x01D4</c> (read_memory via Spice86 MCP). Two
+	/// 5-byte sub-tables: low-semitone group (indices 0..4) and
+	/// high-semitone group (indices 5..9).
+	/// </summary>
+	public static readonly byte[] DefaultEntries = new byte[] {
+		0x00, 0x05, 0x0A, 0x0F, 0x14,
+		0x00, 0x06, 0x0C, 0x12, 0x18,
+	};
+
+	/// <summary>
+	/// Builds a portamento fraction table populated with
+	/// <see cref="DefaultEntries"/>.
+	/// </summary>
+	public static AdgPortamentoFractionsTable CreateDefault() {
+		return new AdgPortamentoFractionsTable(DefaultEntries);
+	}
 }
