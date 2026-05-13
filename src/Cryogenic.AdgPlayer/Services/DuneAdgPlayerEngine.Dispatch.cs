@@ -270,12 +270,13 @@ public sealed partial class DuneAdgPlayerEngine {
 	/// </summary>
 	private void HandleNoteOn(int channelIndex, ushort eventWord, AdgInMemoryEventStream stream) {
 		ushort pointer = _state.EventPointers.Get(channelIndex);
-		// Step 1 — skip the velocity byte (only consumed by the
-		// envelope-setup helper, deferred to B4.2b).
+		// Step 1 — read the velocity byte (consumed by
+		// AdgEnvelopeSetup_0C47 below).
 		if (!stream.InRange(pointer)) {
 			_state.EventPointers.Set(channelIndex, 0);
 			return;
 		}
+		byte velocity = stream.ReadByte(pointer);
 		_state.EventPointers.Set(channelIndex, (ushort)(pointer + 1));
 
 		// Step 2 — variable-length wait value.
@@ -302,10 +303,26 @@ public sealed partial class DuneAdgPlayerEngine {
 		// Step 7 — recenter the pitch accumulator.
 		_state.PitchAccumulators.Center(channelIndex);
 
-		// Step 8 — full OPL note-on emit (mirrors AdgNoteOn_10A9 at
+		// Step 8 — envelope setup (AdgEnvelopeSetup_0C47): apply
+		// velocity-scaled TL shaping to the primary/secondary
+		// operators (and patch-4 pair when applicable), then publish
+		// the connection-shape result via OPL 0xC0. Gated on the
+		// routing table being bound.
+		if (_routingTable is not null) {
+			AdgEnvelopeSetupEmitter.Emit(_oplBus, _routingTable,
+				_state.CurrentOperatorLevels,
+				_state.TlShapingSlots,
+				_state.PatchTypeSlots,
+				_state.Patch4CurrentOperatorLevels,
+				_state.Patch4TlShapingSlots,
+				_state.ConnectionShapingSlots,
+				_state.ConnectionModulationSlots,
+				channelIndex, velocity);
+		}
+
+		// Step 9 — full OPL note-on emit (mirrors AdgNoteOn_10A9 at
 		// dnadg:10A9). Gated on routing-table + frequency-lookup
-		// presence; envelope setup (AdgEnvelopeSetup_0C47) remains
-		// deferred to a later cycle.
+		// presence.
 		if (_routingTable is not null && _frequencyLookupTable is not null) {
 			ushort rawPitch = (ushort)(transposedNote - 0x48);
 			AdgChannelNoteOnEmitter.Emit(_oplBus, _state.FrequencyWordCache,

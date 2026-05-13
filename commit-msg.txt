@@ -1,0 +1,20 @@
+B4.2b: port AdgEnvelopeSetup_0C47 + velocity-driven note-on emit
+
+- Add AdgEnvelopeSetupEmitter: faithful port of the
+  AdgEnvelopeSetup_0C47 oracle (AdgDriverCode.cs:1592). Applies
+  velocity-scaled TL shaping to primary + secondary operators via
+  AdgEnvelopeTlShapingComputer + AdgOperatorLevelEmitter, extends
+  to the patch-4 operator pair when patchType == 4 (preserving the
+  oracle quirk that branches on (sbyte)scale < 0 rather than the
+  shaping byte sign), and publishes the connection-shape result to
+  OPL 0xC0 via AdgChannelRouter (storing the new connection byte in
+  the high byte of the per-channel ConnectionModulation slot).
+- HandleNoteOn now reads the velocity byte from the event stream
+  (previously skipped) and calls AdgEnvelopeSetupEmitter before
+  AdgChannelNoteOnEmitter, mirroring the oracle ordering
+  (AdgEnvelopeSetup_0C47 then AdgNoteOn_10A9).
+- Add 3 unit tests covering: all-zero shaping skip-emit path,
+  primary+secondary TL writes with KSL preservation, and the
+  connection-shape 0xC0 emit with overflow/pan mask.
+
+495 tests pass (was 492, +3).
