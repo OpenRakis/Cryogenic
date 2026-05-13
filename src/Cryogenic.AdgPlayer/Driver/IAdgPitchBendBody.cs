@@ -11,18 +11,18 @@
 /// while letting the body be added without churning callers.
 /// </summary>
 public interface IAdgPitchBendBody {
-    /// <summary>
-    /// Emits the OPL register sequence for the supplied bend word.
-    /// </summary>
-    /// <param name="channelIndex">
-    /// 0-based channel index (DX in the oracle, computed as
-    /// <c>(DI - 0x01E2) &gt;&gt; 1</c>).
-    /// </param>
-    /// <param name="bendWord">
-    /// The advanced accumulator word (low byte = updated value,
-    /// high byte = step) passed to <c>AdgPitchBendBody_0D8B</c>.
-    /// </param>
-    void Emit(int channelIndex, ushort bendWord);
+	/// <summary>
+	/// Emits the OPL register sequence for the supplied bend word.
+	/// </summary>
+	/// <param name="channelIndex">
+	/// 0-based channel index (DX in the oracle, computed as
+	/// <c>(DI - 0x01E2) &gt;&gt; 1</c>).
+	/// </param>
+	/// <param name="bendWord">
+	/// The advanced accumulator word (low byte = updated value,
+	/// high byte = step) passed to <c>AdgPitchBendBody_0D8B</c>.
+	/// </param>
+	void Emit(int channelIndex, ushort bendWord);
 }
 
 /// <summary>
@@ -32,12 +32,12 @@ public interface IAdgPitchBendBody {
 /// OPL emission.
 /// </summary>
 public sealed class NullAdgPitchBendBody : IAdgPitchBendBody {
-    /// <summary>Singleton instance.</summary>
-    public static readonly NullAdgPitchBendBody Instance = new();
+	/// <summary>Singleton instance.</summary>
+	public static readonly NullAdgPitchBendBody Instance = new();
 
-    private NullAdgPitchBendBody() { }
+	private NullAdgPitchBendBody() { }
 
-    /// <summary>No-op.</summary>
-    public void Emit(int channelIndex, ushort bendWord) {
-    }
+	/// <summary>No-op.</summary>
+	public void Emit(int channelIndex, ushort bendWord) {
+	}
 }

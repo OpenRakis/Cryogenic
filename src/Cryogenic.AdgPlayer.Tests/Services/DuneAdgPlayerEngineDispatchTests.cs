@@ -838,7 +838,7 @@ public sealed class DuneAdgPlayerEngineDispatchTests {
 		bytes[1] = 0x00; // EventBase high
 		int dataBase = AdgSongHeader.DataBase;
 		bytes[dataBase + 0] = 0x10; // channel 0 relative offset
-		// Fill the instrument record at 0x40..0x67 with a deterministic pattern.
+									// Fill the instrument record at 0x40..0x67 with a deterministic pattern.
 		for (int i = 0; i < AdgPatchOffsetCalculator.PatchStride; i++) {
 			bytes[0x40 + i] = (byte)(0x10 + i);
 		}

@@ -14,73 +14,73 @@
 /// state.
 /// </summary>
 public sealed class AdgLoopSnapshotStore {
-    /// <summary>Total ushort words mirrored by the snapshot (matches <c>AdgLoopSnapshotWordCount = 0x24</c>).</summary>
-    public const int SnapshotWordCount = 36;
+	/// <summary>Total ushort words mirrored by the snapshot (matches <c>AdgLoopSnapshotWordCount = 0x24</c>).</summary>
+	public const int SnapshotWordCount = 36;
 
-    /// <summary>Number of channel slots covered by the snapshot.</summary>
-    public const int ChannelCount = 18;
+	/// <summary>Number of channel slots covered by the snapshot.</summary>
+	public const int ChannelCount = 18;
 
-    private readonly ushort[] _waitCounters = new ushort[ChannelCount];
-    private readonly ushort[] _eventPointers = new ushort[ChannelCount];
-    private bool _hasSnapshot;
+	private readonly ushort[] _waitCounters = new ushort[ChannelCount];
+	private readonly ushort[] _eventPointers = new ushort[ChannelCount];
+	private bool _hasSnapshot;
 
-    /// <summary><c>true</c> after at least one <see cref="Save"/> call.</summary>
-    public bool HasSnapshot => _hasSnapshot;
+	/// <summary><c>true</c> after at least one <see cref="Save"/> call.</summary>
+	public bool HasSnapshot => _hasSnapshot;
 
-    /// <summary>Reads the snapshot wait-counter word for the channel.</summary>
-    public ushort GetWaitCounter(int channelIndex) {
-        Validate(channelIndex);
-        return _waitCounters[channelIndex];
-    }
+	/// <summary>Reads the snapshot wait-counter word for the channel.</summary>
+	public ushort GetWaitCounter(int channelIndex) {
+		Validate(channelIndex);
+		return _waitCounters[channelIndex];
+	}
 
-    /// <summary>Reads the snapshot event-pointer word for the channel.</summary>
-    public ushort GetEventPointer(int channelIndex) {
-        Validate(channelIndex);
-        return _eventPointers[channelIndex];
-    }
+	/// <summary>Reads the snapshot event-pointer word for the channel.</summary>
+	public ushort GetEventPointer(int channelIndex) {
+		Validate(channelIndex);
+		return _eventPointers[channelIndex];
+	}
 
-    /// <summary>
-    /// Captures the live <paramref name="waitCounters"/> /
-    /// <paramref name="eventPointers"/> tables. Mirrors the source
-    /// half of the rep-movs at dnadg:07F6.
-    /// </summary>
-    public void Save(AdgChannelWaitCounters waitCounters, AdgChannelEventPointers eventPointers) {
-        ArgumentNullException.ThrowIfNull(waitCounters);
-        ArgumentNullException.ThrowIfNull(eventPointers);
-        for (int channelIndex = 0; channelIndex < ChannelCount; channelIndex++) {
-            _waitCounters[channelIndex] = waitCounters.Get(channelIndex);
-            _eventPointers[channelIndex] = eventPointers.Get(channelIndex);
-        }
-        _hasSnapshot = true;
-    }
+	/// <summary>
+	/// Captures the live <paramref name="waitCounters"/> /
+	/// <paramref name="eventPointers"/> tables. Mirrors the source
+	/// half of the rep-movs at dnadg:07F6.
+	/// </summary>
+	public void Save(AdgChannelWaitCounters waitCounters, AdgChannelEventPointers eventPointers) {
+		ArgumentNullException.ThrowIfNull(waitCounters);
+		ArgumentNullException.ThrowIfNull(eventPointers);
+		for (int channelIndex = 0; channelIndex < ChannelCount; channelIndex++) {
+			_waitCounters[channelIndex] = waitCounters.Get(channelIndex);
+			_eventPointers[channelIndex] = eventPointers.Get(channelIndex);
+		}
+		_hasSnapshot = true;
+	}
 
-    /// <summary>
-    /// Writes the saved snapshot back into
-    /// <paramref name="waitCounters"/> /
-    /// <paramref name="eventPointers"/>. Mirrors the destination
-    /// half of the rep-movs at dnadg:0815.
-    /// </summary>
-    public void Restore(AdgChannelWaitCounters waitCounters, AdgChannelEventPointers eventPointers) {
-        ArgumentNullException.ThrowIfNull(waitCounters);
-        ArgumentNullException.ThrowIfNull(eventPointers);
-        for (int channelIndex = 0; channelIndex < ChannelCount; channelIndex++) {
-            waitCounters.Set(channelIndex, _waitCounters[channelIndex]);
-            eventPointers.Set(channelIndex, _eventPointers[channelIndex]);
-        }
-    }
+	/// <summary>
+	/// Writes the saved snapshot back into
+	/// <paramref name="waitCounters"/> /
+	/// <paramref name="eventPointers"/>. Mirrors the destination
+	/// half of the rep-movs at dnadg:0815.
+	/// </summary>
+	public void Restore(AdgChannelWaitCounters waitCounters, AdgChannelEventPointers eventPointers) {
+		ArgumentNullException.ThrowIfNull(waitCounters);
+		ArgumentNullException.ThrowIfNull(eventPointers);
+		for (int channelIndex = 0; channelIndex < ChannelCount; channelIndex++) {
+			waitCounters.Set(channelIndex, _waitCounters[channelIndex]);
+			eventPointers.Set(channelIndex, _eventPointers[channelIndex]);
+		}
+	}
 
-    /// <summary>Clears the snapshot and the stored words.</summary>
-    public void Reset() {
-        _hasSnapshot = false;
-        for (int channelIndex = 0; channelIndex < ChannelCount; channelIndex++) {
-            _waitCounters[channelIndex] = 0;
-            _eventPointers[channelIndex] = 0;
-        }
-    }
+	/// <summary>Clears the snapshot and the stored words.</summary>
+	public void Reset() {
+		_hasSnapshot = false;
+		for (int channelIndex = 0; channelIndex < ChannelCount; channelIndex++) {
+			_waitCounters[channelIndex] = 0;
+			_eventPointers[channelIndex] = 0;
+		}
+	}
 
-    private static void Validate(int channelIndex) {
-        if (channelIndex < 0 || channelIndex >= ChannelCount) {
-            throw new ArgumentOutOfRangeException(nameof(channelIndex));
-        }
-    }
+	private static void Validate(int channelIndex) {
+		if (channelIndex < 0 || channelIndex >= ChannelCount) {
+			throw new ArgumentOutOfRangeException(nameof(channelIndex));
+		}
+	}
 }

@@ -16,28 +16,28 @@
 /// table.
 /// </summary>
 public sealed class AdgPitchBendFractionsTable {
-    /// <summary>Number of fraction bytes in the table.</summary>
-    public const int EntryCount = 13;
+	/// <summary>Number of fraction bytes in the table.</summary>
+	public const int EntryCount = 13;
 
-    private readonly byte[] _entries;
+	private readonly byte[] _entries;
 
-    /// <summary>Constructs a fraction table from <paramref name="entries"/>.</summary>
-    public AdgPitchBendFractionsTable(byte[] entries) {
-        ArgumentNullException.ThrowIfNull(entries);
-        if (entries.Length != EntryCount) {
-            throw new ArgumentException(
-                $"Pitch-bend fractions table must contain exactly {EntryCount} bytes.",
-                nameof(entries));
-        }
-        _entries = (byte[])entries.Clone();
-    }
+	/// <summary>Constructs a fraction table from <paramref name="entries"/>.</summary>
+	public AdgPitchBendFractionsTable(byte[] entries) {
+		ArgumentNullException.ThrowIfNull(entries);
+		if (entries.Length != EntryCount) {
+			throw new ArgumentException(
+				$"Pitch-bend fractions table must contain exactly {EntryCount} bytes.",
+				nameof(entries));
+		}
+		_entries = (byte[])entries.Clone();
+	}
 
-    /// <summary>Reads the byte at <paramref name="index"/>.</summary>
-    public byte GetFraction(int index) {
-        if (index < 0 || index >= EntryCount) {
-            throw new ArgumentOutOfRangeException(nameof(index),
-                index, $"Index must be within [0,{EntryCount}).");
-        }
-        return _entries[index];
-    }
+	/// <summary>Reads the byte at <paramref name="index"/>.</summary>
+	public byte GetFraction(int index) {
+		if (index < 0 || index >= EntryCount) {
+			throw new ArgumentOutOfRangeException(nameof(index),
+				index, $"Index must be within [0,{EntryCount}).");
+		}
+		return _entries[index];
+	}
 }
