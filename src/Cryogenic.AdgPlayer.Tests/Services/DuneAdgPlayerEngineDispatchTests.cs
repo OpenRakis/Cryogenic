@@ -679,4 +679,143 @@ public sealed class DuneAdgPlayerEngineDispatchTests {
 		Assert.Empty(bus.Writes);
 		Assert.Equal<ushort>(0x0000, engine.State.CurrentOperatorLevels.Get(0));
 	}
+
+	/// <summary>
+	/// B4.6b — master-track EndOfTrack (channel 0) with a one-shot
+	/// tick-enabled seed bulk-marks every channel's wait counter as
+	/// done (<c>0xFFFF</c>), mirroring the <c>rep stos</c> loop at
+	/// dnadg:0AF5 that wipes the channel table after the final
+	/// master event.
+	/// </summary>
+	[Fact]
+	public void Dispatch_EndOfTrack_Channel0_TickReachesZero_BulkResetsAllWaitCounters() {
+		// Arrange — channel 0 EndOfTrack opcode at absolute 0x12.
+		byte[] bytes = BuildSong(new ushort[] { 0x10, 0, 0, 0, 0, 0, 0, 0, 0 });
+		bytes[0x12] = 0x70;
+		bytes[0x13] = 0x00;
+		DuneAdgPlayerEngine engine = LoadEngine(bytes);
+		// Pre-seed slave channels with arbitrary non-done values so we
+		// can observe the bulk reset writes.
+		for (int i = 1; i < AdgDriverState.ChannelCount; i++) {
+			engine.State.WaitCounters.Set(i, (ushort)(0x1000 + i));
+		}
+		engine.State.WaitCounters.Set(0, 0);
+		// Force the counter to 1 so the post-decrement value is 0
+		// and the bulk-reset branch fires.
+		engine.State.TickEnabledCounter.Set(1);
+
+		// Act
+		engine.DispatchEvents(0);
+
+		// Assert
+		Assert.Equal(0, engine.State.TickEnabledCounter.Value);
+		for (int i = 0; i < AdgDriverState.ChannelCount; i++) {
+			Assert.Equal<ushort>(0xFFFF, engine.State.WaitCounters.Get(i));
+		}
+	}
+
+	/// <summary>
+	/// B4.6b — master-track EndOfTrack with the tick-enabled counter
+	/// pre-seeded above 1 follows the loop path: counter decrements
+	/// (no underflow), scheduler state is re-initialised, channel 0's
+	/// wait counter is left at <c>0xFFFE</c> (0xFFFF then -1 tail),
+	/// and the slave channels' wait counters remain untouched.
+	/// </summary>
+	[Fact]
+	public void Dispatch_EndOfTrack_Channel0_TickStillPositive_RunsLoopPath() {
+		// Arrange
+		byte[] bytes = BuildSong(new ushort[] { 0x10, 0, 0, 0, 0, 0, 0, 0, 0 });
+		bytes[0x12] = 0x70;
+		bytes[0x13] = 0x00;
+		DuneAdgPlayerEngine engine = LoadEngine(bytes);
+		// Pre-seed slave channels.
+		engine.State.WaitCounters.Set(1, 0x1234);
+		engine.State.WaitCounters.Set(0, 0);
+		engine.State.TickEnabledCounter.Set(3);
+
+		// Act
+		engine.DispatchEvents(0);
+
+		// Assert
+		Assert.Equal(2, engine.State.TickEnabledCounter.Value);
+		// Channel 0 wait = 0xFFFF after the common prelude, then -1
+		// (the original AdgWordSet(DI, AdgWord(DI) - 1) tail).
+		Assert.Equal<ushort>(0xFFFE, engine.State.WaitCounters.Get(0));
+		// Slave channels untouched.
+		Assert.Equal<ushort>(0x1234, engine.State.WaitCounters.Get(1));
+		// Scheduler state re-initialised (measure 1 / subdivision 0x60).
+		Assert.Equal<ushort>(1, engine.State.LoopState.Measure);
+		Assert.Equal<ushort>(0x60, engine.State.LoopState.Subdivision);
+	}
+
+	/// <summary>
+	/// B4.6b — master-track EndOfTrack with the tick-enabled counter
+	/// pre-seeded to 0 first underflows to 0xFF, then the
+	/// sign-bit-test path restores it back to 0 via the
+	/// <c>add byte ptr [01DF],1</c> branch at dnadg:0AF5. Because the
+	/// post-decrement value is non-zero, the loop path still runs.
+	/// </summary>
+	[Fact]
+	public void Dispatch_EndOfTrack_Channel0_TickUnderflow_RestoresCounterToZero() {
+		// Arrange
+		byte[] bytes = BuildSong(new ushort[] { 0x10, 0, 0, 0, 0, 0, 0, 0, 0 });
+		bytes[0x12] = 0x70;
+		bytes[0x13] = 0x00;
+		DuneAdgPlayerEngine engine = LoadEngine(bytes);
+		engine.State.WaitCounters.Set(0, 0);
+		engine.State.TickEnabledCounter.Set(0);
+
+		// Act
+		engine.DispatchEvents(0);
+
+		// Assert — counter underflowed to 0xFF then restored to 0.
+		Assert.Equal(0, engine.State.TickEnabledCounter.Value);
+		// Channel 0 still went through the loop tail (wait = 0xFFFE).
+		Assert.Equal<ushort>(0xFFFE, engine.State.WaitCounters.Get(0));
+	}
+
+	/// <summary>
+	/// B4.6b — slave-track EndOfTrack (channel != 0) takes the
+	/// <c>DX != 0</c> branch at dnadg:0AF5: only the per-channel
+	/// state mutations + scratch-mask clear; the master-track
+	/// counter must NOT be decremented.
+	/// </summary>
+	[Fact]
+	public void Dispatch_EndOfTrack_NonZeroChannel_LeavesTickCounterIntact() {
+		// Arrange — channel 1 relative 0x10 → absolute 0x12.
+		byte[] bytes = BuildSong(new ushort[] { 0, 0x10, 0, 0, 0, 0, 0, 0, 0 });
+		bytes[0x12] = 0x70;
+		bytes[0x13] = 0x00;
+		DuneAdgPlayerEngine engine = LoadEngine(bytes);
+		engine.State.WaitCounters.Set(1, 0);
+		// Force a non-default counter value so we can detect any
+		// accidental write.
+		engine.State.TickEnabledCounter.Set(7);
+
+		// Act
+		engine.DispatchEvents(1);
+
+		// Assert
+		Assert.Equal(7, engine.State.TickEnabledCounter.Value);
+		Assert.Equal<ushort>(0xFFFF, engine.State.WaitCounters.Get(1));
+		Assert.Equal<ushort>(0, engine.State.EventPointers.Get(1));
+	}
+
+	/// <summary>
+	/// B4.6b — <c>DuneAdgPlayerEngine.Load</c> seeds the master-track
+	/// tick-enabled counter to <see cref="AdgTickEnabledCounter.DefaultSeed"/>.
+	/// </summary>
+	[Fact]
+	public void Load_SeedsTickEnabledCounterToDefault() {
+		// Arrange
+		byte[] bytes = BuildSong(new ushort[] { 0x10, 0, 0, 0, 0, 0, 0, 0, 0 });
+		DuneAdgPlayerEngine engine = new();
+
+		// Act
+		engine.Load(bytes);
+
+		// Assert
+		Assert.Equal(AdgTickEnabledCounter.DefaultSeed,
+			engine.State.TickEnabledCounter.Value);
+	}
 }

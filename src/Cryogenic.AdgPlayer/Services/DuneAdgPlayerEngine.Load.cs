@@ -58,6 +58,12 @@ public sealed partial class DuneAdgPlayerEngine {
 		// rolls over correctly into measure increments.
 		_state.MeasureClock.Initialize();
 
+		// Mirrors the master-track event counter seed performed by
+		// AdgOpenSong_564B_0626 at dnadg:0626 (mov [01DF],AL). The
+		// original AL is caller-supplied; we use the deterministic
+		// default until the live-evidence-driven seed is wired.
+		_state.TickEnabledCounter.Set(AdgTickEnabledCounter.DefaultSeed);
+
 		_songImage = image;
 		_songHeader = header;
 		_channelPointers = pointers;

@@ -116,28 +116,88 @@ public sealed partial class DuneAdgPlayerEngine {
 	}
 
 	/// <summary>
-	/// Faithful state-mutation port of <c>AdgEndOfTrack_0AF5</c>
-	/// from <c>AdgDriverCode.cs</c> (line 1961). The handler:
-	/// 1) writes <c>0xFFFF</c> into the channel's wait counter
-	///    (DI+0): the per-channel done sentinel that prevents
-	///    further dispatch;
-	/// 2) zeroes the channel event pointer so the Tick scan skips
-	///    this channel;
-	/// 3) invokes <see cref="AdgScratchMaskClearer.Clear"/> with the
-	///    terminator byte (the original loads the byte after the
-	///    end-of-track word; in our model the channel is finished so
-	///    we pass <see cref="AdgScratchMaskClearer.TerminatorByte"/>
-	///    explicitly).
-	/// The master-track reload + loop-point logic (channel-0 path
-	/// in the original) is deferred to cycle B4.6b.
+	/// Faithful port of <c>AdgEndOfTrack_0AF5</c> from
+	/// <c>AdgDriverCode.cs</c> (line 1961). The handler splits into
+	/// two paths after the common state-mutation prelude:
+	/// <para>
+	/// <b>Common prelude</b>: write <c>0xFFFF</c> into the channel's
+	/// wait counter (DI+0) — the per-channel done sentinel — and
+	/// zero the event pointer so the Tick scan skips this channel.
+	/// </para>
+	/// <para>
+	/// <b>Slave-track path</b> (<paramref name="channelIndex"/> != 0,
+	/// matching the original <c>if (DX != 0)</c> branch): invoke
+	/// <see cref="AdgScratchMaskClearer.Clear"/> with the terminator
+	/// byte and return.
+	/// </para>
+	/// <para>
+	/// <b>Master-track path</b> (<paramref name="channelIndex"/> ==
+	/// 0): decrement the master-track event counter
+	/// (<see cref="AdgTickEnabledCounter"/>) and branch:
+	/// </para>
+	/// <list type="bullet">
+	///   <item>If the post-decrement value is zero, mark every
+	///         channel's wait counter as done (<c>0xFFFF</c>) and
+	///         return — the equivalent of the bulk <c>rep stos</c>
+	///         loop plus <c>call AdgReset_564B</c> in the original;
+	///         the OPL chip reset is left to the host since our
+	///         model owns no chip-reset register sequence yet.</item>
+	///   <item>If the post-decrement value is negative
+	///         (sign bit set) the counter underflowed; restore it
+	///         to zero (<see cref="AdgTickEnabledCounter.RestoreAfterUnderflow"/>).</item>
+	///   <item>In every non-zero post-decrement case, re-seed the
+	///         scheduler state (<see cref="AdgMeasureClock.Initialize"/>
+	///         ≡ <c>AdgResetSchedulerState_06B9</c>) and invoke
+	///         <see cref="AdgLoopPointChecker.Check"/> against the
+	///         loaded song header. Finally apply the
+	///         <c>AdgWordSet(DI, AdgWord(DI) - 1)</c> tail-decrement
+	///         on channel 0's wait counter so the immediate next
+	///         dispatch does not re-fire.</item>
+	/// </list>
 	/// </summary>
 	private void HandleEndOfTrack(int channelIndex) {
 		_state.WaitCounters.Set(channelIndex, 0xFFFF);
 		_state.EventPointers.Set(channelIndex, 0);
-		AdgScratchMaskClearer.Clear(_state.ChannelStateScratch,
-			_state.FadeScratchState, channelIndex,
-			_state.WaitCounters.Get(channelIndex),
-			AdgScratchMaskClearer.TerminatorByte);
+
+		if (channelIndex != 0) {
+			// Slave-track path — clear scratch mask and return.
+			AdgScratchMaskClearer.Clear(_state.ChannelStateScratch,
+				_state.FadeScratchState, channelIndex,
+				_state.WaitCounters.Get(channelIndex),
+				AdgScratchMaskClearer.TerminatorByte);
+			return;
+		}
+
+		// Master-track path (channel 0).
+		byte tickFlag = _state.TickEnabledCounter.Decrement();
+		if (tickFlag == 0) {
+			// Bulk-mark all channels done — equivalent of the
+			// rep stos loop at dnadg:0AF5 that fills the 18-channel
+			// wait-counter column with 0xFFFF.
+			for (int i = 0; i < AdgDriverState.ChannelCount; i++) {
+				_state.WaitCounters.Set(i, 0xFFFF);
+			}
+			return;
+		}
+
+		if ((tickFlag & 0x80) != 0) {
+			// Sign-bit set → underflow. The original restores the
+			// counter to zero via add byte ptr [01DF],1.
+			_state.TickEnabledCounter.RestoreAfterUnderflow();
+		}
+
+		_state.MeasureClock.Initialize();
+		if (_songHeader is not null) {
+			AdgLoopPointChecker.Check(_songHeader, _state.LoopState,
+				_state.LoopSnapshotStore, _state.WaitCounters,
+				_state.EventPointers);
+		}
+
+		// Tail decrement on channel 0's wait counter
+		// (AdgWordSet(DI, AdgWord(DI) - 1)). 0xFFFF → 0xFFFE so the
+		// scheduler does not immediately re-dispatch.
+		_state.WaitCounters.Set(0,
+			(ushort)(_state.WaitCounters.Get(0) - 1));
 	}
 
 	/// <summary>

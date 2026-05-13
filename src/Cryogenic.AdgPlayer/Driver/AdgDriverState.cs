@@ -88,6 +88,9 @@ public sealed class AdgDriverState {
 	/// <summary>Per-channel current-operator-level word (DI+0xF0).</summary>
 	public AdgChannelCurrentOperatorLevels CurrentOperatorLevels { get; }
 
+	/// <summary>Master-track event counter (0x01DF, <c>AdgTickEnabledOffset</c>).</summary>
+	public AdgTickEnabledCounter TickEnabledCounter { get; }
+
 	/// <summary>Constructs every component in its zero state.</summary>
 	public AdgDriverState() {
 		WaitCounters = new AdgChannelWaitCounters();
@@ -115,6 +118,7 @@ public sealed class AdgDriverState {
 		PitchAccumulatorSteps = new AdgChannelPitchAccumulatorSteps();
 		PitchBendCounterReloads = new AdgChannelPitchBendCounterReloads();
 		CurrentOperatorLevels = new AdgChannelCurrentOperatorLevels();
+		TickEnabledCounter = new AdgTickEnabledCounter();
 	}
 
 	/// <summary>
@@ -148,5 +152,6 @@ public sealed class AdgDriverState {
 		PitchAccumulatorSteps.Reset();
 		PitchBendCounterReloads.Reset();
 		CurrentOperatorLevels.Reset();
+		TickEnabledCounter.Reset();
 	}
 }
