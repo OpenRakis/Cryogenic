@@ -444,6 +444,26 @@ public sealed partial class DuneAdgPlayerEngine {
 		if (secondary.Active) {
 			AdgOperatorLevelEmitter.Emit(_oplBus, entry.SecondaryRoute, secondary.NewLevel);
 		}
+
+		// Connection-modulation tail (oracle dnadg:0B2E lines 1793+):
+		// low byte = rate, high byte = current connection register
+		// value. When rate is non-zero, recompute the connection
+		// byte and emit FeedbackConnection (0xC0) on the channel
+		// route.
+		ushort connectionSlot = _state.ConnectionModulationSlots.Get(channelIndex);
+		byte connectionRate = (byte)(connectionSlot & 0xFF);
+		byte connectionCurrent = (byte)(connectionSlot >> 8);
+		AdgConnectionModulationComputer.Result connection =
+			AdgConnectionModulationComputer.Compute(
+				connectionRate, connectionCurrent,
+				directVelocity, inverseVelocity);
+		if (connection.Active) {
+			ushort newSlot = (ushort)((connection.NewConnection << 8) | connectionRate);
+			_state.ConnectionModulationSlots.Set(channelIndex, newSlot);
+			AdgRoutedRegister routed = AdgChannelRouter.Route(
+				0xC0, entry.ChannelRoute);
+			_oplBus.WriteRegister(routed.Chip, routed.Register, connection.NewConnection);
+		}
 	}
 
 	/// <summary>

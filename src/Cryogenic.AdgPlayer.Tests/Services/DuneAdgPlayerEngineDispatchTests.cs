@@ -681,6 +681,45 @@ public sealed class DuneAdgPlayerEngineDispatchTests {
 	}
 
 	/// <summary>
+	/// B4.4b micro-cycle 4: VolumeModulation with a non-zero
+	/// connection-modulation slot rate must emit the
+	/// FeedbackConnection register (0xC0 family, channel-routed)
+	/// and write the new connection byte into the high byte of the
+	/// connection-modulation slot. Mirrors the oracle tail at
+	/// <c>AdgVolumeModulation_0B2E</c> (lines 1793 onward in
+	/// <c>src/Cryogenic/Overrides/AdgDriverCode.cs</c>).
+	/// </summary>
+	[Fact]
+	public void Dispatch_VolumeModulation_WithConnectionRate_EmitsFeedbackConnection() {
+		// Arrange — velocity 0x70, op shaping zero, connection
+		// modulation rate=0x04 / current=0x02 → expected new
+		// connection byte = 0x0E (clamp at 0x0F).
+		byte[] bytes = BuildSong(new ushort[] { 0x10, 0, 0, 0, 0, 0, 0, 0, 0 });
+		bytes[0x12] = 0x50;
+		bytes[0x13] = 0x70;
+		bytes[0x14] = 0x01;
+		DuneAdgPlayerEngine engine = LoadEngine(bytes);
+		engine.State.WaitCounters.Set(0, 0);
+		engine.State.VolumeModulationSlots.Set(0, 0x0000);   // no op TL emit
+		engine.State.CurrentOperatorLevels.Set(0, 0x0000);
+		engine.State.ConnectionModulationSlots.Set(0, 0x0204); // rate=4, current=2
+		byte[] zero = new byte[AdgChannelRoutingTable.ChannelCount];
+		engine.SetRoutingTable(new AdgChannelRoutingTable(zero, zero, zero));
+		Cryogenic.AdgPlayer.Opl.RecordingOplBus bus = new();
+		engine.SetOplBus(bus);
+
+		// Act
+		engine.DispatchEvents(0);
+
+		// Assert — one OPL write to register 0xC0 with value 0x0E.
+		Assert.Single(bus.Writes);
+		Assert.Equal(0xC0, bus.Writes[0].Register);
+		Assert.Equal(0x0E, bus.Writes[0].Value);
+		// Slot updated: high byte = new connection, low byte = rate (unchanged).
+		Assert.Equal<ushort>(0x0E04, engine.State.ConnectionModulationSlots.Get(0));
+	}
+
+	/// <summary>
 	/// B4.6b — master-track EndOfTrack (channel 0) with a one-shot
 	/// tick-enabled seed bulk-marks every channel's wait counter as
 	/// done (<c>0xFFFF</c>), mirroring the <c>rep stos</c> loop at
