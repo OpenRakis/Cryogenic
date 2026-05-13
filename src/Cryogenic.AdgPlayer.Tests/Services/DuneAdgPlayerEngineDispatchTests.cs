@@ -467,15 +467,18 @@ public sealed class DuneAdgPlayerEngineDispatchTests {
 	}
 
 	/// <summary>
-	/// NoteOn with no previous note held and no routing table is
-	/// purely state-mutating — no OPL writes at all.
+	/// NoteOn on a fresh channel (no previous note held) with a
+	/// caller-supplied empty routing table and no explicit lookup
+	/// table emits the OPL3 key-on pair via the auto-seeded default
+	/// frequency lookup (DNADG offset 0x0142, captured live). State
+	/// mutation: <c>CurrentNotes[0]</c> set to the transposed note.
 	/// </summary>
 	[Fact]
-	public void Dispatch_NoteOn_FreshChannel_NoRouting_StateOnly() {
+	public void Dispatch_NoteOn_FreshChannel_EmitsOplKeyOn() {
 		// Arrange — channel currently silent (currentNote = 0).
 		byte[] bytes = BuildSong(new ushort[] { 0x10, 0, 0, 0, 0, 0, 0, 0, 0 });
 		bytes[0x12] = 0x10;
-		bytes[0x13] = 0x44;
+		bytes[0x13] = 0x48;
 		bytes[0x14] = 0x70;
 		bytes[0x15] = 0x01;
 		DuneAdgPlayerEngine engine = LoadEngine(bytes);
@@ -486,9 +489,11 @@ public sealed class DuneAdgPlayerEngineDispatchTests {
 		// Act
 		engine.DispatchEvents(0);
 
-		// Assert
-		Assert.Equal(0x44, engine.State.CurrentNotes.Get(0));
-		Assert.Empty(bus.Writes);
+		// Assert — note stored and the A0/B0 register pair emitted
+		// (channel 0 -> physical OPL channel 0).
+		Assert.Equal(0x48, engine.State.CurrentNotes.Get(0));
+		Assert.Contains(bus.Writes, w => w.Register == 0xA0);
+		Assert.Contains(bus.Writes, w => w.Register == 0xB0);
 	}
 
 	/// <summary>
@@ -558,12 +563,13 @@ public sealed class DuneAdgPlayerEngineDispatchTests {
 	}
 
 	/// <summary>
-	/// NoteOn with a routing table bound but no frequency-lookup
-	/// table bound performs no OPL key-on emit (state-only path).
-	/// Defensive guard: emit chain requires both tables.
+	/// NoteOn with a caller-supplied routing table emits the OPL3
+	/// key-on pair using the auto-seeded default frequency lookup
+	/// (Load() seeds <see cref="AdgFrequencyLookupTable.CreateDefault"/>
+	/// when no caller-supplied lookup is bound).
 	/// </summary>
 	[Fact]
-	public void Dispatch_NoteOn_RoutingOnly_NoLookup_NoKeyOnEmitted() {
+	public void Dispatch_NoteOn_RoutingOnly_UsesDefaultLookup_EmitsKeyOn() {
 		// Arrange
 		byte[] bytes = BuildSong(new ushort[] { 0x10, 0, 0, 0, 0, 0, 0, 0, 0 });
 		bytes[0x12] = 0x10;
@@ -580,9 +586,11 @@ public sealed class DuneAdgPlayerEngineDispatchTests {
 		// Act
 		engine.DispatchEvents(0);
 
-		// Assert — no A0/B0 writes (only the key-off short re-emit
-		//   path can write, and that's gated on previous note != 0).
-		Assert.Empty(bus.Writes);
+		// Assert — A0/B0 pair emitted using default fnum table.
+		Assert.NotEmpty(bus.Writes);
+		Assert.Contains(bus.Writes, w => w.Register == 0xA0);
+		Assert.Contains(bus.Writes, w => w.Register == 0xB0);
+		Assert.NotEqual<ushort>(0, engine.State.FrequencyWordCache.Get(0));
 	}
 
 	private sealed class RecordingPitchBendBody : IAdgPitchBendBody {
@@ -651,6 +659,35 @@ public sealed class DuneAdgPlayerEngineDispatchTests {
 		// Both operators received the same scaled level (0x3F - 0x40 → clamp 0).
 		Assert.All(bus.Writes, w => Assert.Equal(0x00, w.Value));
 		// Cached level updated.
+		Assert.Equal<ushort>(0x0000, engine.State.CurrentOperatorLevels.Get(0));
+	}
+
+	/// <summary>
+	/// VolumeModulation now always sees an auto-seeded routing
+	/// table (Load() guarantees one), so a non-zero modulation rate
+	/// produces at least one OPL TL (0x40 family) write. State
+	/// invariant: the cached operator-level word is updated.
+	/// </summary>
+	[Fact]
+	public void Dispatch_VolumeModulation_AutoSeededRouting_EmitsTlWrite() {
+		// Arrange
+		byte[] bytes = BuildSong(new ushort[] { 0x10, 0, 0, 0, 0, 0, 0, 0, 0 });
+		bytes[0x12] = 0x50;
+		bytes[0x13] = 0x40;
+		bytes[0x14] = 0x01;
+		DuneAdgPlayerEngine engine = LoadEngine(bytes);
+		engine.State.WaitCounters.Set(0, 0);
+		engine.State.VolumeModulationSlots.Set(0, 0x0404);
+		engine.State.CurrentOperatorLevels.Set(0, 0x3F3F);
+		Cryogenic.AdgPlayer.Opl.RecordingOplBus bus = new();
+		engine.SetOplBus(bus);
+
+		// Act
+		engine.DispatchEvents(0);
+
+		// Assert
+		Assert.NotEmpty(bus.Writes);
+		Assert.All(bus.Writes, w => Assert.InRange(w.Register, (byte)0x40, (byte)0x55));
 		Assert.Equal<ushort>(0x0000, engine.State.CurrentOperatorLevels.Get(0));
 	}
 
@@ -923,6 +960,45 @@ public sealed class DuneAdgPlayerEngineDispatchTests {
 		// AdgConfigureInstrumentRouting_090D.
 		Assert.Contains(bus.Writes, w => w.Register >= 0xC0 && w.Register <= 0xC8);
 		// Instrument byte stored on the channel.
+		Assert.Equal((byte)0, engine.State.InstrumentSlots.Get(0));
+	}
+
+	/// <summary>
+	/// B4.3b.2 — ProgramChange without a caller-supplied routing
+	/// table now still emits the instrument patch: <c>Load()</c>
+	/// auto-seeds a zero-initialized routing table and
+	/// <c>AdgConfigureInstrumentRouting_090D</c> populates it.
+	/// Verifies the new always-emit contract introduced when the
+	/// dynamic operator-slot allocator was ported.
+	/// </summary>
+	[Fact]
+	public void Dispatch_ProgramChange_AutoSeededRouting_EmitsPatch() {
+		// Arrange
+		byte[] bytes = new byte[0x100];
+		bytes[0] = 0x40;
+		int dataBase = AdgSongHeader.DataBase;
+		bytes[dataBase + 0] = 0x10;
+		for (int i = 0; i < AdgPatchOffsetCalculator.PatchStride; i++) {
+			bytes[0x40 + i] = (byte)(0x10 + i);
+		}
+		bytes[0x12] = 0x40;
+		bytes[0x13] = 0x00;
+		bytes[0x14] = 0x00;
+
+		DuneAdgPlayerEngine engine = new();
+		engine.Load(bytes);
+		engine.State.WaitCounters.Set(0, 0);
+		Cryogenic.AdgPlayer.Opl.RecordingOplBus bus = new();
+		engine.SetOplBus(bus);
+
+		// Act
+		engine.DispatchEvents(0);
+
+		// Assert — full instrument-patch emit (>= 11 register writes)
+		// plus the connection register family.
+		Assert.True(bus.Writes.Count >= 11,
+			$"expected >= 11 writes, got {bus.Writes.Count}");
+		Assert.Contains(bus.Writes, w => w.Register >= 0xC0 && w.Register <= 0xC8);
 		Assert.Equal((byte)0, engine.State.InstrumentSlots.Get(0));
 	}
 

@@ -72,6 +72,12 @@ public sealed partial class DuneAdgPlayerEngine {
 		// needs to seed pre-known routes (e.g. golden-master tests).
 		_routingTable ??= new AdgChannelRoutingTable();
 
+		// The 12-entry semitone fnum table is a fixed constant of the
+		// DNADG driver image (offset 0x0142, captured live). Seed the
+		// engine with the default so NoteOn emit is unblocked when
+		// the caller does not bind a custom table.
+		_frequencyLookupTable ??= AdgFrequencyLookupTable.CreateDefault();
+
 		_songImage = image;
 		_songHeader = header;
 		_channelPointers = pointers;

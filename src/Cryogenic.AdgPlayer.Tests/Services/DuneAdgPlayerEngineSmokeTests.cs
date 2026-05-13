@@ -92,6 +92,32 @@ public sealed class DuneAdgPlayerEngineSmokeTests {
 		Assert.True(initialActive > 0);
 	}
 
+	/// <summary>
+	/// Smoke: bounded recording bus stays within capacity (no drops)
+	/// after 250 ticks of an ARRAKIS_AGD playback. Since Load()
+	/// auto-seeds routing + frequency tables (B4.3b.2), some OPL
+	/// writes do fire — the invariant is that the bounded bus never
+	/// drops entries with a 4096-slot capacity over 250 ticks.
+	/// </summary>
+	[Fact]
+	public void Tick_ArrakisAgd_BoundedRecordingBus_NeverDrops() {
+		// Arrange
+		string path = ResolveAssetPath(ArrakisAgdRelativePath);
+		byte[] bytes = File.ReadAllBytes(path);
+		DuneAdgPlayerEngine engine = new();
+		RecordingOplBus bus = new(capacity: 4096);
+		engine.SetOplBus(bus);
+		engine.Load(bytes);
+
+		// Act
+		for (int t = 0; t < 250; t++) {
+			engine.Tick();
+		}
+
+		// Assert
+		Assert.Equal(0, bus.DroppedCount);
+	}
+
 	private static int CountActiveChannels(DuneAdgPlayerEngine engine) {
 		int active = 0;
 		for (int i = 0; i < AdgDriverState.ChannelCount; i++) {
