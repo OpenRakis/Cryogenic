@@ -95,9 +95,6 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 	[ObservableProperty]
 	private PlaylistItem? _selectedPlaylistItem;
 
-	[ObservableProperty]
-	private LogDisplayItem? _selectedLogItem;
-
 	/// <summary>Channel events shown in the UI.</summary>
 	public ObservableCollection<ChannelEventItem> ChannelEvents { get; } = new();
 
@@ -175,31 +172,6 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 		float gain = Math.Clamp(value, 0, 300) / 100f;
 		_engine.SetOplVolumeGain(gain);
 		UpdateVolumeInfo();
-	}
-
-	/// <summary>Copies the selected log entry to the system clipboard.</summary>
-	[RelayCommand]
-	private async System.Threading.Tasks.Task CopySelectedLogAsync() {
-		if (SelectedLogItem is null) {
-			return;
-		}
-		string text = $"{SelectedLogItem.Timestamp} {SelectedLogItem.Message}";
-		if (_window.Clipboard is not null) {
-			await _window.Clipboard.SetTextAsync(text);
-		}
-	}
-
-	/// <summary>Copies all visible log entries to the system clipboard.</summary>
-	[RelayCommand]
-	private async System.Threading.Tasks.Task CopyAllLogsAsync() {
-		if (Logs.Count == 0 || _window.Clipboard is null) {
-			return;
-		}
-		StringBuilder sb = new();
-		for (int i = 0; i < Logs.Count; i++) {
-			sb.AppendLine($"{Logs[i].Timestamp} {Logs[i].Message}");
-		}
-		await _window.Clipboard.SetTextAsync(sb.ToString());
 	}
 
 	/// <summary>
