@@ -552,7 +552,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 	/// </summary>
 	private void OnAudioSamples(float[] samples, int sampleCount) {
 		_volumeFeedbackControl.PushSamples(samples, sampleCount);
-		Dispatcher.UIThread.Post(() => _volumeFeedbackControl.InvalidateVisual());
+		_waveformControl.PushSamples(samples, sampleCount);
+		Dispatcher.UIThread.Post(() => {
+			_volumeFeedbackControl.InvalidateVisual();
+			_waveformControl.InvalidateVisual();
+		});
 	}
 
 	private void AddLog(string message) {

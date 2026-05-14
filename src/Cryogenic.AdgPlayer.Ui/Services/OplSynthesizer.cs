@@ -31,6 +31,7 @@ public sealed class OplSynthesizer : IDisposable {
 	private readonly SoundChannel _channel;
 	private readonly NullPauseHandler _pauseHandler;
 	private float[] _floatBuffer = new float[4096];
+	private float[] _normalizedBuffer = new float[4096];
 	private bool _disposed;
 
 	/// <summary>
@@ -129,6 +130,7 @@ public sealed class OplSynthesizer : IDisposable {
 		int sampleCount = framesNeeded * 2;
 		if (_floatBuffer.Length < sampleCount) {
 			_floatBuffer = new float[sampleCount];
+			_normalizedBuffer = new float[sampleCount];
 		}
 
 		short[] tempBuffer = System.Buffers.ArrayPool<short>.Shared.Rent(sampleCount);
@@ -136,11 +138,12 @@ public sealed class OplSynthesizer : IDisposable {
 			_chip.GenerateStream(tempBuffer.AsSpan(0, sampleCount));
 
 			for (int i = 0; i < sampleCount; i++) {
-				_floatBuffer[i] = tempBuffer[i] / 32768f;
+				_floatBuffer[i] = tempBuffer[i];
+				_normalizedBuffer[i] = tempBuffer[i] / 32768f;
 			}
 
 			_channel.AddSamplesFloat(framesNeeded, _floatBuffer.AsSpan(0, sampleCount));
-			AudioSamplesRendered?.Invoke(_floatBuffer, sampleCount);
+			AudioSamplesRendered?.Invoke(_normalizedBuffer, sampleCount);
 		} finally {
 			System.Buffers.ArrayPool<short>.Shared.Return(tempBuffer);
 		}
