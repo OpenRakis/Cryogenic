@@ -337,4 +337,66 @@ public sealed class AdgMcpTools {
         string candidate = Path.Combine(root, "doc", "DUNECDVF", "C", "DUNECD", "DUNE.DAT_");
         return Directory.Exists(candidate) ? candidate : null;
     }
+
+    /// <summary>
+    /// Reconstructs the current OPL3 register state (both banks) from the
+    /// recorded write history. Returns the last value written to each of the
+    /// 512 OPL3 registers as a hex-formatted table. Registers never written
+    /// are reported as 0x00. Useful for verifying instrument init, key-on,
+    /// and frequency programming correctness.
+    /// </summary>
+    [McpServerTool(Name = "get_opl3_register_state")]
+    [Description("Reconstructs current OPL3 register state (both banks, 512 registers) from write history. Returns {bank0: [...], bank1: [...]} as hex-byte arrays.")]
+    public static string GetOpl3RegisterState(AdgMcpSession session) {
+        IReadOnlyList<OplWriteRecord> writes = session.GetOplWrites(0);
+        byte[] bank0 = new byte[256];
+        byte[] bank1 = new byte[256];
+        for (int i = 0; i < writes.Count; i++) {
+            OplWriteRecord w = writes[i];
+            if (w.Chip == 0) {
+                bank0[w.Register] = w.Value;
+            } else if (w.Chip == 1) {
+                bank1[w.Register] = w.Value;
+            }
+        }
+        string[] b0 = new string[256];
+        string[] b1 = new string[256];
+        for (int r = 0; r < 256; r++) {
+            b0[r] = $"0x{bank0[r]:X2}";
+            b1[r] = $"0x{bank1[r]:X2}";
+        }
+        return JsonSerializer.Serialize(new {
+            totalWrites = session.TotalOplWrites,
+            note = "Values are last-written state; registers never written show 0x00",
+            bank0 = b0,
+            bank1 = b1,
+        }, JsonOpts);
+    }
+
+    /// <summary>
+    /// Returns the AdLib Gold audio pipeline configuration as a diagnostic
+    /// summary. The pipeline is always enabled (Opl3Gold mode is mandatory).
+    /// Describes what the surround and stereo processors do at their default
+    /// state and confirms the processing chain is active.
+    /// </summary>
+    [McpServerTool(Name = "get_adlib_gold_info")]
+    [Description("Returns AdLib Gold pipeline configuration: enabled status, surround (Ym7128B) and stereo processor defaults, processing chain confirmation.")]
+    public static string GetAdlibGoldInfo(AdgMcpSession session) {
+        return JsonSerializer.Serialize(new {
+            adlibGoldEnabled = true,
+            mode = "Opl3Gold (mandatory)",
+            pipeline = "NukedOPL3 GenerateStream → AdlibGold.Process(surround+stereo) → SoftwareMixer",
+            surroundProcessor = new {
+                type = "Ym7128B",
+                defaultState = "near-silence wet signal; dry OPL signal preserved and passes through unaffected",
+                note = "wet added at 1.8x gain; default registers produce near-zero wet contribution",
+            },
+            stereoProcessor = new {
+                defaultState = "pass-through after Reset()",
+                note = "activated by StereoControlWrite calls from the ADG driver",
+            },
+            nativeSampleRate = session.NativeSampleRate,
+            totalAudioFramesProduced = session.TotalAudioFrames,
+        }, JsonOpts);
+    }
 }

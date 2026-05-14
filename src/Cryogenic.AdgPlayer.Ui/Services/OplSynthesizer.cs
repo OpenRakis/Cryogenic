@@ -1,4 +1,4 @@
-namespace Cryogenic.AdgPlayer.Ui.Services;
+﻿namespace Cryogenic.AdgPlayer.Ui.Services;
 
 using NukedOPL3Sharp;
 
@@ -6,6 +6,7 @@ using Serilog;
 
 using Spice86.Audio.Filters;
 using Spice86.Core.Emulator.Devices.Sound;
+using Spice86.Core.Emulator.Devices.Sound.AdlibGoldOpl;
 using Spice86.Core.Emulator.VM;
 
 using System;
@@ -27,6 +28,7 @@ public sealed class OplSynthesizer : IDisposable {
 	public const int NativeOplSampleRate = 49716;
 
 	private readonly Opl3Chip _chip;
+	private readonly AdlibGold _adlibGold;
 	private readonly SoftwareMixer _mixer;
 	private readonly SoundChannel _channel;
 	private readonly NullPauseHandler _pauseHandler;
@@ -55,6 +57,12 @@ public sealed class OplSynthesizer : IDisposable {
 		_chip = new Opl3Chip();
 		_chip.Reset((uint)NativeOplSampleRate);
 
+		// AdLib Gold surround+stereo post-processor: required for Opl3Gold mode.
+		// Surround (Ym7128B) adds wet signal to dry at 1.8× gain; default state is
+		// near-silence wet — dry OPL signal always passes through unaffected.
+		// StereoProcessor defaults to pass-through after Reset().
+		_adlibGold = new AdlibGold(NativeOplSampleRate);
+
 		_pauseHandler = new NullPauseHandler();
 		_mixer = new SoftwareMixer(AudioEngine.CrossPlatform, _pauseHandler);
 
@@ -67,7 +75,7 @@ public sealed class OplSynthesizer : IDisposable {
 		_channel.UserVolume = new Spice86.Audio.Common.AudioFrame(1.5f, 1.5f);
 		_channel.AppVolume = new Spice86.Audio.Common.AudioFrame(1.0f, 1.0f);
 
-		Logger.Information("OPL synthesizer initialized: {NativeRate} Hz via SoftwareMixer pipeline", NativeOplSampleRate);
+		Logger.Information("OPL synthesizer initialized: mode=Opl3Gold (required), native rate={Rate} Hz, AdLibGold=ENABLED", NativeOplSampleRate);
 	}
 
 	/// <summary>
@@ -132,14 +140,21 @@ public sealed class OplSynthesizer : IDisposable {
 			_normalizedBuffer = new float[sampleCount];
 		}
 
-		_chip.GenerateStream(_tempBuffer.AsSpan(0, sampleCount));
+		Span<short> shortSpan = _tempBuffer.AsSpan(0, sampleCount);
+		Span<float> floatSpan = _floatBuffer.AsSpan(0, sampleCount);
+
+		_chip.GenerateStream(shortSpan);
+
+		// AdLib Gold surround+stereo chain — exact pipeline of Spice86 Opl3Fm.RenderFrame
+		// under --OplMode Opl3Gold. Dry OPL signal is preserved; wet surround is added
+		// at 1.8× before the stereo processor (pass-through at defaults).
+		_adlibGold.Process(shortSpan, framesNeeded, floatSpan);
 
 		for (int i = 0; i < sampleCount; i++) {
-			_floatBuffer[i] = _tempBuffer[i];
-			_normalizedBuffer[i] = _tempBuffer[i] / 32768f;
+			_normalizedBuffer[i] = _floatBuffer[i] / 32768f;
 		}
 
-		_channel.AddSamplesFloat(framesNeeded, _floatBuffer.AsSpan(0, sampleCount));
+		_channel.AddSamplesFloat(framesNeeded, floatSpan);
 		AudioSamplesRendered?.Invoke(_normalizedBuffer, sampleCount);
 	}
 
@@ -148,6 +163,7 @@ public sealed class OplSynthesizer : IDisposable {
 			return;
 		}
 		_disposed = true;
+		_adlibGold.Dispose();
 		_mixer.Dispose();
 		_pauseHandler.Dispose();
 	}
