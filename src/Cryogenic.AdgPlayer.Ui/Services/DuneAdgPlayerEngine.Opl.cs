@@ -7,7 +7,7 @@
 /// </summary>
 public sealed partial class DuneAdgPlayerEngine {
 
-	/// <summary>Frequency word table: computed frequency for each channel (9 entries).</summary>
+	/// <summary>Frequency word table: computed frequency for each logical channel (18 entries).</summary>
 	private readonly ushort[] _adgFrequencyWordTable = new ushort[ChannelCount];
 
 	/// <summary>
@@ -25,7 +25,12 @@ public sealed partial class DuneAdgPlayerEngine {
 	/// Mirrors AdgWriteRelativeGoldRegister in AdgDriverCode.cs (primary chip path only).
 	/// </summary>
 	private void AdgWriteRelativeGoldRegister(byte registerBase, byte registerValue, sbyte route) {
-		OplRegisterWrite((ushort)(registerBase + (byte)route), registerValue);
+		// Strip secondary-chip flag (bit 7): in dual-chip AdLib Gold this would address the secondary
+		// OPL3 via a separate port. The standalone player collapses both banks onto the primary chip;
+		// any logical voice that the driver allocates on the secondary chip writes to the same OPL2
+		// register on the primary chip (last-write-wins on shared physical voices).
+		byte routeBits = (byte)((byte)route & 0x7F);
+		OplRegisterWrite((ushort)(registerBase + routeBits), registerValue);
 	}
 
 	/// <summary>
@@ -33,8 +38,9 @@ public sealed partial class DuneAdgPlayerEngine {
 	/// Mirrors AdgWriteFrequencyWord_10E0 in AdgDriverCode.cs.
 	/// </summary>
 	private void AdgWriteFrequencyWord(ushort channelIndex, ushort frequencyWord) {
-		OplRegisterWrite((ushort)(0xA0 + channelIndex), Lo8(frequencyWord));
-		OplRegisterWrite((ushort)(0xB0 + channelIndex), Hi8(frequencyWord));
+		byte channelRoute = (byte)(_channelRoute[channelIndex] & 0x7F);
+		OplRegisterWrite((ushort)(0xA0 + channelRoute), Lo8(frequencyWord));
+		OplRegisterWrite((ushort)(0xB0 + channelRoute), Hi8(frequencyWord));
 	}
 
 	/// <summary>
@@ -93,8 +99,9 @@ public sealed partial class DuneAdgPlayerEngine {
 	/// dynamic routing table that AdgConfigureInstrumentRouting_090D builds in-game.
 	/// </summary>
 	private void InstrumentWrite(int ch, ushort instOff) {
-		byte modRoute = ModulatorOffsets[ch];
-		byte carRoute = CarrierOffsets[ch];
+		byte modRoute = _channelPrimaryOpRoute[ch];
+		byte carRoute = _channelSecondaryOpRoute[ch];
+		byte channelRoute = (byte)(_channelRoute[ch] & 0x7F);
 
 		// C0: feedback/connection — mirrors AdgWriteInstrumentPatch_0F95 connection path.
 		// Fields: patchOffset+0x0F (lo), patchOffset+0x1A (hi), patchOffset+0x04 (feedback).
@@ -102,7 +109,7 @@ public sealed partial class DuneAdgPlayerEngine {
 		conn = (ushort)(conn >> 1);
 		conn = Make16((byte)~Lo8(conn), SongByte16((ushort)(instOff + 0x04)));
 		conn = (ushort)(conn << 1);
-		OplRegisterWrite((ushort)(0xC0 + ch), (byte)(Hi8(conn) & 0x0F));
+		OplRegisterWrite((ushort)(0xC0 + channelRoute), (byte)(Hi8(conn) & 0x0F));
 
 		// Modulator operator — waveform from patchOffset+0x1C.
 		byte waveformMod = SongByte16((ushort)(instOff + 0x1C));
@@ -119,25 +126,28 @@ public sealed partial class DuneAdgPlayerEngine {
 	/// routeByte is the operator register offset; patchOffset is the base in song data.
 	/// </summary>
 	private void WriteOperatorRegistersAdg(byte routeByte, ushort patchOffset, byte waveform) {
+		// Strip secondary-chip flag; see AdgWriteRelativeGoldRegister.
+		byte route = (byte)(routeByte & 0x7F);
+
 		// E0: waveform select
-		OplRegisterWrite((ushort)(0xE0 + routeByte), (byte)(waveform & 0x07));
+		OplRegisterWrite((ushort)(0xE0 + route), (byte)(waveform & 0x07));
 
 		// 40: TL/KSL — Make16(lo=patchOffset+0x02, hi=(patchOffset+0x0A)<<2) >> 2, take low byte.
 		byte tlValue = (byte)((Make16(SongByte16((ushort)(patchOffset + 0x02)),
 			(byte)(SongByte16((ushort)(patchOffset + 0x0A)) << 2)) >> 2) & 0xFF);
-		OplRegisterWrite((ushort)(0x40 + routeByte), tlValue);
+		OplRegisterWrite((ushort)(0x40 + route), tlValue);
 
 		// 60: Attack/Decay — Make16(lo=(decay<<4), hi=attack) << 4, take high byte.
 		ushort attackDecay = (ushort)(Make16(
 			(byte)(SongByte16((ushort)(patchOffset + 0x08)) << 4),
 			SongByte16((ushort)(patchOffset + 0x05))) << 4);
-		OplRegisterWrite((ushort)(0x60 + routeByte), Hi8(attackDecay));
+		OplRegisterWrite((ushort)(0x60 + route), Hi8(attackDecay));
 
 		// 80: Sustain/Release — same packing with sustain(+0x09)/release(+0x06).
 		ushort sustainRelease = (ushort)(Make16(
 			(byte)(SongByte16((ushort)(patchOffset + 0x09)) << 4),
 			SongByte16((ushort)(patchOffset + 0x06))) << 4);
-		OplRegisterWrite((ushort)(0x80 + routeByte), Hi8(sustainRelease));
+		OplRegisterWrite((ushort)(0x80 + route), Hi8(sustainRelease));
 
 		// 20: AM/VIB/EG/KSR/MULT — four RotateRight16-by-1 accumulations then mask.
 		ushort opFlags = 0;
@@ -147,6 +157,6 @@ public sealed partial class DuneAdgPlayerEngine {
 		opFlags = RotateRight16(Make16(SongByte16((ushort)(patchOffset + 0x09)), Hi8(opFlags)), 1);
 		opFlags = Make16(SongByte16((ushort)(patchOffset + 0x01)), Hi8(opFlags));
 		opFlags = (ushort)(opFlags & 0xF00F);
-		OplRegisterWrite((ushort)(0x20 + routeByte), (byte)(Hi8(opFlags) | Lo8(opFlags)));
+		OplRegisterWrite((ushort)(0x20 + route), (byte)(Hi8(opFlags) | Lo8(opFlags)));
 	}
 }

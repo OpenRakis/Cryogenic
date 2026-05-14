@@ -47,14 +47,30 @@ public sealed partial class DuneAdgPlayerEngine : IDisposable {
 	private byte _masterVolume;
 	private ushort _fadeBitPattern;
 
-	// --- Per-channel state (9 OPL2 channels) ---
-	private const int ChannelCount = 9;
+	// --- Per-channel state (18 logical channels, dynamically routed to 9 OPL2 voices) ---
+	// Mirrors DNADG driver scheduler tick which iterates CX = 0x12 (18) channels.
+	// Routes are computed per ProgramChange via ConfigureInstrumentRouting (ports AdgConfigureInstrumentRouting_090D).
+	// Routes with bit 7 set originally targeted the secondary OPL chip on AdLib Gold; in the
+	// standalone single-chip engine those writes collapse onto the primary chip (bit 7 masked).
+	private const int ChannelCount = 18;
+
+	/// <summary>
+	/// Number of runtime channel source offsets read from the ADG song header.
+	/// Canonical DNADG build/reset scheduler paths consume 18 entries (CX=0x12).
+	/// </summary>
+	private const int SongHeaderChannelCount = 18;
+
 	private readonly ushort[] _channelWait = new ushort[ChannelCount];
 	private readonly ushort[] _channelEventPointer = new ushort[ChannelCount];
 	private readonly ushort[] _channelStartOffset = new ushort[ChannelCount];
 	private readonly byte[] _channelInstrument = new byte[ChannelCount];
-	private readonly byte[] _channelNote = new byte[ChannelCount];
+	private readonly byte[] _channelCurrentNote = new byte[ChannelCount];
+	private readonly byte[] _channelPitchBendCounter = new byte[ChannelCount];
+	private readonly byte[] _channelPitchAccumulatorHi = new byte[ChannelCount];
+	private readonly byte[] _channelPitchTranspose = new byte[ChannelCount];
+	private readonly byte[] _channelPitchMode = new byte[ChannelCount];
 	private readonly ushort[] _channelPitchBendFlag = new ushort[ChannelCount];
+	private readonly byte[] _channelPatchType = new byte[ChannelCount];
 	private readonly byte[] _channelVibratoCount = new byte[ChannelCount];
 	private readonly byte[] _channelVibratoInit = new byte[ChannelCount];
 	private readonly byte[] _channelVibratoPhase = new byte[ChannelCount];
@@ -65,6 +81,26 @@ public sealed partial class DuneAdgPlayerEngine : IDisposable {
 	private readonly ushort[] _channelConnShaping = new ushort[ChannelCount];
 	private readonly ushort[] _channelVolModShaping = new ushort[ChannelCount];
 	private readonly ushort[] _channelConnMod = new ushort[ChannelCount];
+	private readonly ushort[] _channelPatch4TlShaping = new ushort[ChannelCount];
+	private readonly ushort[] _channelPatch4EnvShaping = new ushort[ChannelCount];
+	private readonly ushort[] _channelPatch4CurrentOperatorLevel = new ushort[ChannelCount];
+	private readonly ushort[] _channelPatch4VolumeModulation = new ushort[ChannelCount];
+
+	// --- Dynamic OPL routing (per logical channel) ---
+	// Computed by ConfigureInstrumentRouting on every ProgramChange.
+	// Mirrors driver tables AdgChannelRoutingTableOffset(0x017F), AdgChannelPrimaryOperatorRouteOffset(0x01A3),
+	// AdgChannelSecondaryOperatorRouteOffset(0x01B5), AdgChannelRouteShadowOffset(0x0191),
+	// AdgChannelStateScratchOffset(0x021C). High bit on a route byte = secondary OPL3 chip in the
+	// original driver; collapsed onto the primary chip in this single-chip standalone player.
+	private readonly byte[] _channelRoute = new byte[ChannelCount];
+	private readonly byte[] _channelPrimaryOpRoute = new byte[ChannelCount];
+	private readonly byte[] _channelSecondaryOpRoute = new byte[ChannelCount];
+	private readonly byte[] _channelRouteShadow = new byte[ChannelCount];
+	private readonly ushort[] _channelRouteScratch = new ushort[ChannelCount];
+	// Mirrors AdgFadeScratchOffset(0x013E) / AdgFadeScratch2Offset(0x0140): global BP/CX
+	// allocation bitmasks for primary/secondary OPL2 voice groups.
+	private ushort _fadeScratch;
+	private ushort _fadeScratch2;
 	// --- Loop snapshot ---
 	private readonly ushort[] _snapshotWait = new ushort[ChannelCount];
 	private readonly ushort[] _snapshotPointer = new ushort[ChannelCount];
@@ -192,8 +228,8 @@ public sealed partial class DuneAdgPlayerEngine : IDisposable {
 					Channel = i,
 					Wait = _channelWait[i],
 					Instrument = _channelInstrument[i],
-					Note = _channelNote[i],
-					Transpose = Hi8(_channelPitchBendFlag[i]),
+					Note = _channelCurrentNote[i],
+					Transpose = _channelPitchTranspose[i],
 					Frequency = _adgFrequencyWordTable[i],
 					PitchBendFlag = _channelPitchBendFlag[i],
 					IsActive = _channelEventPointer[i] != 0 && _channelWait[i] != 0xFFFF
@@ -516,7 +552,11 @@ public sealed partial class DuneAdgPlayerEngine : IDisposable {
 			_targetVolume = _masterVolume;
 			_accumulator = 0;
 			_repeatCounter = 0;
-			_tickFlag = 1;
+			// Mirrors driver AdgOpenSong_0626 which writes AL (caller-supplied) into TickEnabled.
+			// Game music starts songs with AL=0 (loop forever); the driver's EndOfTrack underflow
+			// handler `if ((tickFlag & 0x80) != 0) tickFlag++` re-rounds 0xFF back to 0 so playback
+			// loops indefinitely. Starting at 1 would stop after the first end-of-track on channel 0.
+			_tickFlag = 0;
 			_totalTickCount = 0;
 			_totalSamplesRendered = 0;
 
@@ -607,7 +647,8 @@ public sealed partial class DuneAdgPlayerEngine : IDisposable {
 			info.LoopEndMeasure = SongWord(dataBase + 0x2C);
 			info.LoopCount = SongWord(dataBase + 0x2E);
 
-			for (int i = 0; i < ChannelCount; i++) {
+			int channelSlotsToParse = Math.Min(SongHeaderChannelCount, info.ChannelOffsets.Length);
+			for (int i = 0; i < channelSlotsToParse; i++) {
 				ushort relative = SongWord(dataBase + i * 2);
 				info.ChannelOffsets[i] = relative;
 				info.ChannelActive[i] = relative != 0;
@@ -615,7 +656,7 @@ public sealed partial class DuneAdgPlayerEngine : IDisposable {
 		}
 
 		int activeChannels = 0;
-		for (int i = 0; i < ChannelCount; i++) {
+		for (int i = 0; i < info.ChannelActive.Length; i++) {
 			if (info.ChannelActive[i]) {
 				activeChannels++;
 			}
@@ -663,7 +704,8 @@ public sealed partial class DuneAdgPlayerEngine : IDisposable {
 			info.LoopEndMeasure = (ushort)(data[dataBase + 0x2C] | (data[dataBase + 0x2D] << 8));
 			info.LoopCount = (ushort)(data[dataBase + 0x2E] | (data[dataBase + 0x2F] << 8));
 
-			for (int i = 0; i < 9; i++) {
+			int channelSlotsToParse = Math.Min(SongHeaderChannelCount, info.ChannelOffsets.Length);
+			for (int i = 0; i < channelSlotsToParse; i++) {
 				ushort relative = (ushort)(data[dataBase + i * 2] | (data[dataBase + i * 2 + 1] << 8));
 				info.ChannelOffsets[i] = relative;
 				info.ChannelActive[i] = relative != 0;
@@ -671,7 +713,7 @@ public sealed partial class DuneAdgPlayerEngine : IDisposable {
 		}
 
 		int activeChannels = 0;
-		for (int i = 0; i < 9; i++) {
+		for (int i = 0; i < info.ChannelActive.Length; i++) {
 			if (info.ChannelActive[i]) {
 				activeChannels++;
 			}
@@ -701,8 +743,8 @@ public sealed class SongHeaderInfo {
 	public ushort LoopCount { get; set; }
 	public int InstrumentCount { get; set; }
 	public int ActiveChannelCount { get; set; }
-	public ushort[] ChannelOffsets { get; set; } = new ushort[9];
-	public bool[] ChannelActive { get; set; } = new bool[9];
+	public ushort[] ChannelOffsets { get; set; } = new ushort[18];
+	public bool[] ChannelActive { get; set; } = new bool[18];
 }
 
 /// <summary>

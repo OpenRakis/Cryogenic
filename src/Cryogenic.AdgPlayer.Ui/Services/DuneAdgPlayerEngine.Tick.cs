@@ -15,19 +15,45 @@ public sealed partial class DuneAdgPlayerEngine {
 	/// Mirrors AdpBuildChannelTable_0413.
 	/// </summary>
 	private void BuildChannelTable() {
-		for (int i = 0; i < ChannelCount; i++) {
+		// The song file header carries exactly SongHeaderChannelCount channel-start
+		// pointers; the remaining logical channels stay inactive (pointer 0).
+		for (int i = 0; i < SongHeaderChannelCount; i++) {
 			ushort relative = SongWord(_dataBase + i * 2);
 			ushort absolute = relative == 0 ? (ushort)0 : (ushort)(relative + _dataBase);
 			_channelStartOffset[i] = absolute;
 		}
+		for (int i = SongHeaderChannelCount; i < ChannelCount; i++) {
+			_channelStartOffset[i] = 0;
+		}
 
 		for (int i = 0; i < ChannelCount; i++) {
 			_channelInstrument[i] = 0xFF;
-			_channelNote[i] = 0x00;
+			_channelCurrentNote[i] = 0x00;
+			_channelPitchBendCounter[i] = 0;
+			_channelPitchAccumulatorHi[i] = 0;
+			_channelPitchTranspose[i] = 0;
+			_channelPitchMode[i] = 0;
+			_channelPatchType[i] = 0;
 			_channelVibratoCount[i] = 0;
 			_channelVibratoInit[i] = 0;
 			_channelPitchBendFlag[i] = 0;
+			_channelPatch4TlShaping[i] = 0;
+			_channelPatch4EnvShaping[i] = 0;
+			_channelPatch4CurrentOperatorLevel[i] = 0;
+			_channelPatch4VolumeModulation[i] = 0;
+			// Routing scratch must start at 0 so ConfigureInstrumentRouting sees ~0 = 0xFFFF
+			// (no-op mask) on the first ProgramChange. Mirrors AdgBuildChannelTable_068A's
+			// initialization of per-channel state words.
+			_channelRouteScratch[i] = 0;
+			_channelRoute[i] = 0;
+			_channelPrimaryOpRoute[i] = 0;
+			_channelSecondaryOpRoute[i] = 0;
+			_channelRouteShadow[i] = 0;
 		}
+
+		// Reset global voice-allocation bitmasks (BP / CX in the driver).
+		_fadeScratch = 0;
+		_fadeScratch2 = 0;
 
 		_measure = 1;
 		_subdivision = 0x60;
@@ -182,14 +208,15 @@ public sealed partial class DuneAdgPlayerEngine {
 
 		EnvelopeSetup(ch, velocity);
 
-		if (_channelNote[ch] != 0) {
+		if (_channelCurrentNote[ch] != 0) {
 			AdgNoteOff((ushort)ch);
 		}
 
 		byte noteFromEvent = Hi8(eventWord);
-		byte noteTranspose = Hi8(_channelPitchBendFlag[ch]);
-		byte note = (byte)(noteFromEvent + noteTranspose);
-		_channelNote[ch] = note;
+		byte note = (byte)(noteFromEvent + _channelPitchTranspose[ch]);
+		_channelCurrentNote[ch] = note;
+		_channelPitchBendCounter[ch] = (byte)(_channelPitchBendFlag[ch] >> 8);
+		_channelPitchAccumulatorHi[ch] = 0x40;
 		ushort rawPitch = (ushort)(note - 0x48);
 
 		_channelVibratoCount[ch] = _channelVibratoInit[ch];
@@ -200,16 +227,16 @@ public sealed partial class DuneAdgPlayerEngine {
 	}
 
 	/// <summary>
-	/// NoteOff event handler. Skips one byte, reads wait, clears note if matching.
-	/// Mirrors AdpNoteOff_065B.
+	/// NoteOff event handler. Reads wait, clears note if matching.
+	/// Mirrors AdgNoteOff_0AB6.
 	/// </summary>
 	private void NoteOff(int ch, ushort eventWord) {
 		_channelEventPointer[ch]++;
 		ReadWaitValue(ch);
 
-		byte noteFromEvent = (byte)(Hi8(eventWord) + Hi8(_channelPitchBendFlag[ch]));
-		if (_channelNote[ch] == noteFromEvent) {
-			_channelNote[ch] = 0;
+		byte noteFromEvent = (byte)(Hi8(eventWord) + _channelPitchTranspose[ch]);
+		if (_channelCurrentNote[ch] == noteFromEvent) {
+			_channelCurrentNote[ch] = 0;
 			AdgNoteOff((ushort)ch);
 			ChannelEventDispatched?.Invoke(ch, "NoteOff", $"note={noteFromEvent:X2}", _totalTickCount);
 		}
@@ -217,212 +244,298 @@ public sealed partial class DuneAdgPlayerEngine {
 
 	/// <summary>
 	/// ProgramChange event handler. Loads instrument patch and writes to OPL.
-	/// Mirrors AdpProgramChange_05AA.
+	/// Mirrors AdgProgramChange_0831.
 	/// </summary>
 	private void ProgramChange(int ch, ushort eventWord) {
 		ReadWaitValue(ch);
 
 		byte instrument = Hi8(eventWord);
-		if (_channelInstrument[ch] == instrument) {
-			return;
-		}
+		// Note: driver AdgProgramChange_0831 has NO duplicate-instrument early return.
+		// Every ProgramChange must rerun ConfigureInstrumentRouting (which frees the channel's
+		// previous voice allocation and reserves a new one) and rewrite the OPL patch registers.
 		_channelInstrument[ch] = instrument;
 
-		ushort instOff = (ushort)(_eventBase + instrument * 0x28);
+		ushort patchOffset = (ushort)(_eventBase + instrument * 0x28);
+		byte patchType = SongByte16(patchOffset);
 
-		_channelPitchBendFlag[ch] = SongWord16((ushort)(instOff + 0x21));
+		// Dynamic OPL routing: assign this logical channel to a physical OPL2 voice
+		// (or report it as a secondary-chip allocation, which we collapse onto the primary).
+		ConfigureInstrumentRouting(ch, patchType);
 
-		byte ah = SongByte16((ushort)(instOff + 0x17));
-		byte al = SongByte16((ushort)(instOff + 0x0A));
-		byte bh = SongByte16((ushort)(instOff + 0x02));
-		byte bl = SongByte16((ushort)(instOff + 0x0F));
-		ushort bx = (ushort)(Make16(bl, bh) & 0x0303);
-		bx = (ushort)((bx >> 2) | (bx << 14));
-		_channelEnvShaping[ch] = (ushort)(Make16(al, ah) | bx);
+		_channelPatchType[ch] = patchType;
+		if (patchType == 4) {
+			ushort ax = Make16(SongByte16((ushort)(patchOffset + 0x32)), SongByte16((ushort)(patchOffset + 0x3F)));
+			ushort bx = Make16(SongByte16((ushort)(patchOffset + 0x2A)), SongByte16((ushort)(patchOffset + 0x37)));
+			bx = (ushort)(bx & 0x0303);
+			bx = RotateRight16(bx, 2);
+			ax = (ushort)(ax | bx);
+			_channelPatch4EnvShaping[ch] = ax;
+			_channelPatch4TlShaping[ch] = SongWord16((ushort)(patchOffset + 0x46));
+			_channelPatch4VolumeModulation[ch] = SongWord16((ushort)(patchOffset + 0x4E));
+		}
 
-		_channelTlShaping[ch] = SongWord16((ushort)(instOff + 0x1E));
-		_channelVolModShaping[ch] = SongWord16((ushort)(instOff + 0x26));
+		ushort pitchModeWord = SongWord16((ushort)(patchOffset + 0x21));
+		_channelPitchBendFlag[ch] = pitchModeWord;
+		_channelPitchMode[ch] = Lo8(pitchModeWord);  // Extract pitch mode from low byte (patch[+0x21])
+													 // Driver AdgProgramChange_0831 writes the full word at DI+AdgChannelPitchModeOffset (0x0090).
+													 // Byte +0x90 = pitch mode (patch[+0x21]); byte +0x91 = pitch transpose (patch[+0x22]).
+													 // NoteOn reads _channelPitchTranspose to offset the played note; without this init every note
+													 // is transposed by 0 instead of the patch-defined transpose byte.
+		_channelPitchTranspose[ch] = Hi8(pitchModeWord);
 
-		al = SongByte16((ushort)(instOff + 0x0E));
-		al = (byte)~al;
-		al = (byte)((al >> 1) | (al << 7));
-		ah = SongByte16((ushort)(instOff + 0x04));
-		ushort ax = (ushort)(Make16(al, ah) << 1);
-		al = SongByte16((ushort)(instOff + 0x20));
-		ax = Make16(al, Hi8(ax));
-		_channelConnShaping[ch] = ax;
+		ushort ax2 = Make16(SongByte16((ushort)(patchOffset + 0x0A)), SongByte16((ushort)(patchOffset + 0x17)));
+		ushort bx2 = Make16(SongByte16((ushort)(patchOffset + 0x0F)), SongByte16((ushort)(patchOffset + 0x02)));
+		bx2 = (ushort)(bx2 & 0x0303);
+		bx2 = RotateRight16(bx2, 2);
+		ax2 = (ushort)(ax2 | bx2);
+		_channelEnvShaping[ch] = ax2;
+		_channelTlShaping[ch] = SongWord16((ushort)(patchOffset + 0x1E));
+		_channelVolModShaping[ch] = SongWord16((ushort)(patchOffset + 0x26));
 
-		al = SongByte16((ushort)(instOff + 0x1B));
-		_channelConnMod[ch] = Make16(al, Hi8(ax));
+		ushort ax3 = Make16((byte)~SongByte16((ushort)(patchOffset + 0x0E)), SongByte16((ushort)(patchOffset + 0x04)));
+		ax3 = RotateRight16(ax3, 1);
+		ax3 = (ushort)(ax3 << 1);
+		ax3 = Make16(SongByte16((ushort)(patchOffset + 0x20)), Hi8(ax3));
+		_channelConnShaping[ch] = ax3;
 
-		ax = SongWord16((ushort)(instOff + 0x23));
-		_channelVibratoSpeed[ch] = Hi8(ax);
+		ax3 = Make16(SongByte16((ushort)(patchOffset + 0x1B)), Hi8(ax3));
+		_channelConnMod[ch] = ax3;
+
+		ushort vibrato = SongWord16((ushort)(patchOffset + 0x23));
+		_channelVibratoSpeed[ch] = Hi8(vibrato);
 		_channelVibratoCount[ch] = 0;
-		_channelVibratoInit[ch] = Lo8(ax);
+		_channelVibratoInit[ch] = Lo8(vibrato);
 
-		InstrumentWrite(ch, instOff);
-		ChannelEventDispatched?.Invoke(ch, "ProgramChange", $"inst={instrument:X2} off=0x{instOff:X4}", _totalTickCount);
+		InstrumentWrite(ch, patchOffset);
+		ChannelEventDispatched?.Invoke(ch, "ProgramChange", $"inst={instrument:X2} off=0x{patchOffset:X4}", _totalTickCount);
 	}
 
 	/// <summary>
-	/// VolumeModulation event handler. Applies velocity-based modulation
-	/// to operator TL registers and connection.
-	/// Mirrors AdpVolumeModulation_06A8.
+	/// EnvelopeSetup for NoteOn. Adjusts TL and connection registers from velocity.
+	/// Mirrors AdgEnvelopeSetup_0C47.
+	/// </summary>
+	private void EnvelopeSetup(int ch, byte velocity) {
+		byte directVelocity = velocity;
+		byte inverseVelocity = (byte)(0x80 - velocity);
+		ushort operatorLevel = _channelOperatorLevel[ch];
+		ushort tlShaping = _channelTlShaping[ch];
+
+		if (Lo8(tlShaping) != 0) {
+			byte shaping = Lo8(tlShaping);
+			byte scale = inverseVelocity;
+			if ((shaping & 0x80) != 0) {
+				shaping = (byte)(0 - shaping);
+				scale = directVelocity;
+			}
+			shaping = (byte)(0 - (byte)(shaping - 4));
+			scale = (byte)(scale >> shaping);
+			byte value = (byte)((Lo8(operatorLevel) & 0x3F) + scale);
+			if (value > 0x3F) {
+				value = 0x3F;
+			}
+			value = (byte)((Lo8(operatorLevel) & 0xC0) | value);
+			operatorLevel = Make16(value, Hi8(operatorLevel));
+			AdgWriteRelativeGoldRegister(0x40, value, unchecked((sbyte)_channelPrimaryOpRoute[ch]));
+		}
+
+		if (Hi8(tlShaping) != 0) {
+			byte shaping = Hi8(tlShaping);
+			byte scale = inverseVelocity;
+			if ((shaping & 0x80) != 0) {
+				shaping = (byte)(0 - shaping);
+				scale = directVelocity;
+			}
+			byte shift = (byte)(4 - shaping);
+			scale = (byte)(scale >> shift);
+			byte value = (byte)((Hi8(operatorLevel) & 0x3F) + scale);
+			if (value > 0x3F) {
+				value = 0x3F;
+			}
+			value = (byte)((Hi8(operatorLevel) & 0xC0) | value);
+			operatorLevel = Make16(Lo8(operatorLevel), value);
+			AdgWriteRelativeGoldRegister(0x40, value, unchecked((sbyte)_channelSecondaryOpRoute[ch]));
+		}
+
+		_channelOperatorLevel[ch] = operatorLevel;
+		if (_channelPatchType[ch] == 4) {
+			ushort patch4OperatorLevel = _channelPatch4CurrentOperatorLevel[ch];
+			ushort patch4TlShaping = _channelPatch4TlShaping[ch];
+
+			if (Lo8(patch4TlShaping) != 0) {
+				byte scale = inverseVelocity;
+				byte shaping = Lo8(patch4TlShaping);
+				if ((shaping & 0x80) != 0) {
+					shaping = (byte)(0 - shaping);
+					scale = directVelocity;
+				}
+				shaping = (byte)(0 - (byte)(shaping - 4));
+				scale = (byte)(scale >> shaping);
+				byte value = (byte)((Lo8(patch4OperatorLevel) & 0x3F) + scale);
+				if (value > 0x3F) {
+					value = 0x3F;
+				}
+				value = (byte)((Lo8(patch4OperatorLevel) & 0xC0) | value);
+				patch4OperatorLevel = Make16(value, Hi8(patch4OperatorLevel));
+				AdgWriteRelativeGoldRegister(0x40, value, unchecked((sbyte)(_channelPrimaryOpRoute[ch] + 0x08)));
+			}
+
+			if (Hi8(patch4TlShaping) != 0) {
+				byte scale = inverseVelocity;
+				byte shaping = Hi8(patch4TlShaping);
+				if ((shaping & 0x80) != 0) {
+					shaping = (byte)(0 - shaping);
+					scale = directVelocity;
+				}
+				byte shift = (byte)(4 - shaping);
+				scale = (byte)(scale >> shift);
+				byte value = (byte)((Hi8(patch4OperatorLevel) & 0x3F) + scale);
+				if (value > 0x3F) {
+					value = 0x3F;
+				}
+				value = (byte)((Hi8(patch4OperatorLevel) & 0xC0) | value);
+				patch4OperatorLevel = Make16(Lo8(patch4OperatorLevel), value);
+				AdgWriteRelativeGoldRegister(0x40, value, unchecked((sbyte)(_channelSecondaryOpRoute[ch] + 0x08)));
+			}
+
+			_channelPatch4CurrentOperatorLevel[ch] = patch4OperatorLevel;
+		}
+
+		ushort connectionShape = _channelConnShaping[ch];
+		if (Lo8(connectionShape) == 0) {
+			_channelConnMod[ch] = (ushort)((_channelConnMod[ch] & 0x00FF) | (Hi8(connectionShape) << 8));
+			return;
+		}
+
+		byte shapingMode = Lo8(connectionShape);
+		byte scaleConnection = inverseVelocity;
+		if ((shapingMode & 0x80) != 0) {
+			shapingMode = (byte)(0 - shapingMode);
+			scaleConnection = directVelocity;
+		}
+		shapingMode = (byte)(0 - (byte)(shapingMode - 6));
+		scaleConnection = (byte)(scaleConnection >> shapingMode);
+		scaleConnection = (byte)(scaleConnection & 0xFE);
+		scaleConnection = (byte)(scaleConnection + Hi8(connectionShape));
+		if (scaleConnection > 0x0F) {
+			scaleConnection = (byte)((scaleConnection & 0x0F) | 0x0E);
+		}
+		_channelConnMod[ch] = (ushort)((_channelConnMod[ch] & 0x00FF) | (scaleConnection << 8));
+		AdgWriteRelativeGoldRegister(0xC0, scaleConnection, unchecked((sbyte)_channelRoute[ch]));
+	}
+
+	/// <summary>
+	/// VolumeModulation event handler. Applies velocity-based modulation to TL and connection registers.
+	/// Mirrors AdgVolumeModulation_0B2E.
 	/// </summary>
 	private void VolumeModulation(int ch, ushort eventWord) {
 		ReadWaitValue(ch);
 
-		byte velocityRaw = Hi8(eventWord);
-		byte al = (byte)(0x80 - velocityRaw);
-		byte ah = al;
-		al = velocityRaw;
-
-		// Swap: al = inverted velocity (0x80-raw), ah = raw velocity
-		// Actually after the swap: al = raw, ah = inverted. Let me re-check.
-		// Original: al = 0x80; sub al, ah → al = 0x80 - velocity; xchg al, ah → al = velocity, ah = 0x80-velocity
-		byte velocity = velocityRaw;
-		byte invertedVelocity = (byte)(0x80 - velocityRaw);
-
+		byte directVelocity = Hi8(eventWord);
+		byte inverseVelocity = (byte)(0x80 - directVelocity);
 		ushort operatorLevel = _channelOperatorLevel[ch];
-		ushort volModShape = _channelVolModShaping[ch];
+		ushort volumeShape = _channelVolModShaping[ch];
 
-		sbyte modRoute = unchecked((sbyte)ModulatorOffsets[ch]);
-		sbyte carRoute = unchecked((sbyte)CarrierOffsets[ch]);
-		sbyte chanRoute = (sbyte)ch;
+		sbyte modRoute = unchecked((sbyte)_channelPrimaryOpRoute[ch]);
+		sbyte carRoute = unchecked((sbyte)_channelSecondaryOpRoute[ch]);
+		sbyte chanRoute = unchecked((sbyte)_channelRoute[ch]);
 
-		// Modulator TL (low byte of volModShape)
-		if (Lo8(volModShape) != 0) {
-			byte cl = Lo8(volModShape);
-			byte scaleAl = velocity;
-			if ((cl & 0x80) != 0) {
-				cl = (byte)(0 - cl);
-				scaleAl = invertedVelocity;
+		if (Lo8(volumeShape) != 0) {
+			byte shaping = Lo8(volumeShape);
+			byte scale = directVelocity;
+			if ((shaping & 0x80) != 0) {
+				shaping = (byte)(0 - shaping);
+				scale = inverseVelocity;
 			}
-			cl = (byte)(0 - (byte)(cl - 4));
-			scaleAl = (byte)(scaleAl >> cl);
-			byte reg = (byte)(Lo8(operatorLevel) & 0x3F);
-			reg = reg >= scaleAl ? (byte)(reg - scaleAl) : (byte)0;
-			byte flags = (byte)(Lo8(operatorLevel) & 0xC0);
-			AdgWriteRelativeGoldRegister(0x40, (byte)(reg | flags), modRoute);
+			shaping = (byte)(0 - (byte)(shaping - 4));
+			scale = (byte)(scale >> shaping);
+			byte value = (byte)(Lo8(operatorLevel) & 0x3F);
+			value = value >= scale ? (byte)(value - scale) : (byte)0;
+			value = (byte)((Lo8(operatorLevel) & 0xC0) | value);
+			operatorLevel = Make16(value, Hi8(operatorLevel));
+			AdgWriteRelativeGoldRegister(0x40, value, modRoute);
 		}
 
-		// Carrier TL (high byte of volModShape)
-		if (Hi8(volModShape) != 0) {
-			byte chByte = Hi8(volModShape);
-			byte scaleAl = velocity;
-			if ((chByte & 0x80) != 0) {
-				chByte = (byte)(0 - chByte);
-				scaleAl = invertedVelocity;
+		if (Hi8(volumeShape) != 0) {
+			byte shaping = Hi8(volumeShape);
+			byte scale = directVelocity;
+			if ((shaping & 0x80) != 0) {
+				shaping = (byte)(0 - shaping);
+				scale = inverseVelocity;
 			}
-			byte shr = (byte)(4 - chByte);
-			scaleAl = (byte)(scaleAl >> shr);
-			byte reg = (byte)(Hi8(operatorLevel) & 0x3F);
-			reg = reg >= scaleAl ? (byte)(reg - scaleAl) : (byte)0;
-			byte flags = (byte)(Hi8(operatorLevel) & 0xC0);
-			AdgWriteRelativeGoldRegister(0x40, (byte)(reg | flags), carRoute);
+			byte shift = (byte)(4 - shaping);
+			scale = (byte)(scale >> shift);
+			byte value = (byte)(Hi8(operatorLevel) & 0x3F);
+			value = value >= scale ? (byte)(value - scale) : (byte)0;
+			value = (byte)((Hi8(operatorLevel) & 0xC0) | value);
+			operatorLevel = Make16(Lo8(operatorLevel), value);
+			AdgWriteRelativeGoldRegister(0x40, value, carRoute);
 		}
 
-		// Connection modulation
-		ushort connMod = _channelConnMod[ch];
-		if (Lo8(connMod) != 0) {
-			byte cl = Lo8(connMod);
-			byte scaleAl = velocity;
-			if ((cl & 0x80) != 0) {
-				cl = (byte)(0 - cl);
-				scaleAl = invertedVelocity;
-			}
-			cl = (byte)(0 - (byte)(cl - 6));
-			scaleAl = (byte)(scaleAl >> cl);
-			scaleAl = (byte)(scaleAl & 0xFE);
-			scaleAl = (byte)(scaleAl + Hi8(connMod));
-			if (scaleAl > 0x0F) {
-				scaleAl = (byte)((scaleAl & 0x0F) | 0x0E);
-			}
-			AdgWriteRelativeGoldRegister(0xC0, scaleAl, chanRoute);
-		}
-	}
+		_channelOperatorLevel[ch] = operatorLevel;
+		if (_channelPatchType[ch] == 4) {
+			ushort patch4Level = _channelPatch4CurrentOperatorLevel[ch];
+			ushort patch4Shape = _channelPatch4VolumeModulation[ch];
 
-	/// <summary>
-	/// EnvelopeSetup for NoteOn. Adds to base TL instead of subtracting.
-	/// Mirrors AdpEnvelopeSetup_0740.
-	/// </summary>
-	private void EnvelopeSetup(int ch, byte velocity) {
-		byte ah = velocity;
-		byte al = (byte)(0x80 - ah);
-
-		ushort bx = _channelEnvShaping[ch];
-		ushort cx = _channelTlShaping[ch];
-		sbyte modRoute = unchecked((sbyte)ModulatorOffsets[ch]);
-		sbyte carRoute = unchecked((sbyte)CarrierOffsets[ch]);
-		sbyte chanRoute = (sbyte)ch;
-
-		// Modulator TL
-		if (Lo8(cx) != 0) {
-			byte cl = Lo8(cx);
-			byte scaleAl = al;
-			if ((cl & 0x80) != 0) {
-				cl = (byte)(0 - cl);
-				scaleAl = ah;
+			if (Lo8(patch4Shape) != 0) {
+				byte scale = directVelocity;
+				byte shaping = Lo8(patch4Shape);
+				if ((shaping & 0x80) != 0) {
+					shaping = (byte)(0 - shaping);
+					scale = inverseVelocity;
+				}
+				shaping = (byte)(0 - (byte)(shaping - 4));
+				scale = (byte)(scale >> shaping);
+				byte value = (byte)(Lo8(patch4Level) & 0x3F);
+				value = value >= scale ? (byte)(value - scale) : (byte)0;
+				value = (byte)((Lo8(patch4Level) & 0xC0) | value);
+				patch4Level = Make16(value, Hi8(patch4Level));
+				byte route = (byte)(_channelPrimaryOpRoute[ch] + 0x08);
+				AdgWriteRelativeGoldRegister(0x40, value, unchecked((sbyte)route));
 			}
-			cl = (byte)(0 - (byte)(cl - 4));
-			scaleAl = (byte)(scaleAl >> cl);
-			byte reg = (byte)(Lo8(bx) & 0x3F);
-			reg = (byte)(reg + scaleAl);
-			if (reg > 0x3F) {
-				reg = 0x3F;
+
+			if (Hi8(patch4Shape) != 0) {
+				byte scale = directVelocity;
+				byte shaping = Hi8(patch4Shape);
+				if ((shaping & 0x80) != 0) {
+					shaping = (byte)(0 - shaping);
+					scale = inverseVelocity;
+				}
+				byte shift = (byte)(4 - shaping);
+				scale = (byte)(scale >> shift);
+				byte value = (byte)(Hi8(patch4Level) & 0x3F);
+				value = value >= scale ? (byte)(value - scale) : (byte)0;
+				value = (byte)((Hi8(patch4Level) & 0xC0) | value);
+				patch4Level = Make16(Lo8(patch4Level), value);
+				byte route = (byte)(_channelSecondaryOpRoute[ch] + 0x08);
+				AdgWriteRelativeGoldRegister(0x40, value, unchecked((sbyte)route));
 			}
-			bx = (ushort)((bx & 0xFF00) | ((Lo8(bx) & 0xC0) | reg));
-			AdgWriteRelativeGoldRegister(0x40, Lo8(bx), modRoute);
+
+			_channelPatch4CurrentOperatorLevel[ch] = patch4Level;
 		}
 
-		// Carrier TL
-		if (Hi8(cx) != 0) {
-			byte chByte = Hi8(cx);
-			byte scaleAl = al;
-			if ((chByte & 0x80) != 0) {
-				chByte = (byte)(0 - chByte);
-				scaleAl = ah;
+		ushort connectionMod = _channelConnMod[ch];
+		if (Lo8(connectionMod) != 0) {
+			byte shapingMode = Lo8(connectionMod);
+			byte scaleConnection = directVelocity;
+			if ((shapingMode & 0x80) != 0) {
+				shapingMode = (byte)(0 - shapingMode);
+				scaleConnection = inverseVelocity;
 			}
-			byte shr = (byte)(4 - chByte);
-			scaleAl = (byte)(scaleAl >> shr);
-			byte reg = (byte)(Hi8(bx) & 0x3F);
-			reg = (byte)(reg + scaleAl);
-			if (reg > 0x3F) {
-				reg = 0x3F;
+			shapingMode = (byte)(0 - (byte)(shapingMode - 6));
+			scaleConnection = (byte)(scaleConnection >> shapingMode);
+			scaleConnection = (byte)(scaleConnection & 0xFE);
+			scaleConnection = (byte)(scaleConnection + Hi8(connectionMod));
+			if (scaleConnection > 0x0F) {
+				scaleConnection = (byte)((scaleConnection & 0x0F) | 0x0E);
 			}
-			bx = (ushort)((bx & 0x00FF) | (((Hi8(bx) & 0xC0) | reg) << 8));
-			AdgWriteRelativeGoldRegister(0x40, Hi8(bx), carRoute);
+			_channelConnMod[ch] = (ushort)((_channelConnMod[ch] & 0x00FF) | (scaleConnection << 8));
+			AdgWriteRelativeGoldRegister(0xC0, scaleConnection, chanRoute);
 		}
-
-		_channelOperatorLevel[ch] = bx;
-
-		// Connection
-		cx = _channelConnShaping[ch];
-		if (Lo8(cx) == 0) {
-			_channelConnMod[ch] = (ushort)((_channelConnMod[ch] & 0x00FF) | (Hi8(cx) << 8));
-			return;
-		}
-
-		byte cl2 = Lo8(cx);
-		byte scale = al;
-		if ((cl2 & 0x80) != 0) {
-			cl2 = (byte)(0 - cl2);
-			scale = ah;
-		}
-		cl2 = (byte)(0 - (byte)(cl2 - 6));
-		scale = (byte)(scale >> cl2);
-		scale = (byte)(scale & 0xFE);
-		scale = (byte)(scale + Hi8(cx));
-		if (scale > 0x0F) {
-			scale = (byte)((scale & 0x0F) | 0x0E);
-		}
-		_channelConnMod[ch] = (ushort)((_channelConnMod[ch] & 0x00FF) | (scale << 8));
-		AdgWriteRelativeGoldRegister(0xC0, scale, chanRoute);
 	}
 
 	/// <summary>
 	/// PitchBend event handler (from event dispatch).
-	/// Mirrors AdpPitchBend_07EA.
+	/// Mirrors AdgPitchBend_0D86.
 	/// </summary>
 	private void PitchBend(int ch, ushort eventWord) {
 		byte bendValue = Hi8(eventWord);
@@ -434,162 +547,123 @@ public sealed partial class DuneAdgPlayerEngine {
 	}
 
 	/// <summary>
-	/// Pitch bend computation. Handles both portamento and non-portamento modes.
-	/// Mirrors AdpPitchBendBody_07EF.
+	/// Pitch bend computation. Exact ADG driver implementation.
+	/// Handles both portamento and non-portamento modes per patch configuration.
+	/// Mirrors AdgPitchBendBody_0D8B.
 	/// </summary>
 	private void PitchBendBody(int ch, ushort input) {
-		byte cl = _channelNote[ch];
-		byte chByte = 0;
-		if (cl == 0) {
+		byte note = _channelCurrentNote[ch];
+		if (note == 0) {
 			return;
 		}
 
-		byte alInput = Lo8(input);
-		ushort cx = Make16(cl, chByte);
-		ushort ax = Make16(alInput, 0);
-		ushort tempSwap = cx;
-		cx = ax;
-		ax = tempSwap;
+		// Extract pitch bend value (low byte of input)
+		byte pitchBendValue = Lo8(input);
 
-		byte al = (byte)(Lo8(ax) - 0x18);
-		byte ah = 0;
-		byte bh = 0x0C;
-		ushort divAx = Make16(al, ah);
-		byte divQ = (byte)(divAx / bh);
-		byte divR = (byte)(divAx % bh);
-		ax = Make16(divQ, divR);
+		// Calculate octave and semitone from note
+		int noteVal = pitchBendValue - 0x18;
+		int octaveInt = noteVal / 12;
+		int semitoneInt = noteVal % 12;
+		// Normalize negative modulo result
+		if (semitoneInt < 0) {
+			semitoneInt += 12;
+			octaveInt -= 1;
+		}
+		byte octave = (byte)(octaveInt & 0xFF);
+		byte semitone = (byte)(semitoneInt & 0xFF);
 
-		tempSwap = cx;
-		cx = ax;
-		ax = tempSwap;
-		cl = Lo8(cx);
-		chByte = Hi8(cx);
+		bool portamentoMode = Lo8(_channelPitchBendFlag[ch]) != 0;
+		// Use accumulator as pitch bend input for interpolation
+		ushort ax = Make16(pitchBendValue, 0);
 
-		if ((_channelPitchBendFlag[ch] & 0xFF) == 0) {
-			bool carryFromSub40 = ax < 0x0040;
+		if (!portamentoMode) {
+			// Non-portamento mode: use RotateRight16 for interpolation
+			bool negative = ax < 0x0040;
 			ax = (ushort)(ax - 0x0040);
-			if (carryFromSub40) {
+			if (negative) {
 				ax = (ushort)(0 - ax);
 				ax = RotateRight16(ax, 5);
-				al = Lo8(ax);
-				if (chByte >= al) {
-					chByte = (byte)(chByte - al);
+				byte delta = Lo8(ax);
+				if (semitone >= delta) {
+					semitone = (byte)(semitone - delta);
 				} else {
-					chByte = (byte)(chByte + 0x0C - al);
-					cl = (byte)(cl - 1);
-					if ((cl & 0x80) != 0) {
-						cx = 0;
-						cl = 0;
-						chByte = 0;
+					semitone = (byte)(semitone + 12 - delta);
+					octave = (byte)(octave - 1);
+					if ((octave & 0x80) != 0) {
+						octave = 0;
+						semitone = 0;
 					}
 				}
 
-				al = chByte;
-				byte frac = PitchBendFractions[al];
-				ah = Hi8(ax);
-				ushort mul = (ushort)(frac * ah);
-				al = Hi8(mul);
-				byte oldCh = chByte;
-				chByte = al;
-				al = oldCh;
-				ah = 0;
-				ax = FrequencyTable[al];
-				int subRes = Lo8(ax) - chByte;
-				al = (byte)subRes;
-				ah = (byte)(Hi8(ax) - (subRes < 0 ? 1 : 0));
-				ax = Make16(al, ah);
+				byte fraction = PitchBendFractions[semitone];
+				ushort mul = (ushort)(fraction * Hi8(ax));
+				byte adjustment = Hi8(mul);
+				ushort frequency = FrequencyTable[semitone];
+				int result = Lo8(frequency) - adjustment;
+				ax = Make16((byte)result, (byte)(Hi8(frequency) - (result < 0 ? 1 : 0)));
 			} else {
 				ax = (ushort)(ax + 1);
 				ax = RotateRight16(ax, 5);
-				al = Lo8(ax);
-				chByte = (byte)(chByte + al);
-				if (chByte >= 0x0C) {
-					chByte = (byte)(chByte - 0x0C);
-					cl = (byte)(cl + 1);
+				byte delta = Lo8(ax);
+				semitone = (byte)(semitone + delta);
+				if (semitone >= 12) {
+					semitone = (byte)(semitone - 12);
+					octave = (byte)(octave + 1);
 				}
 
-				al = chByte;
-				byte frac = PitchBendFractions[(byte)(al + 1)];
-				ah = Hi8(ax);
-				ushort mul = (ushort)(frac * ah);
-				al = Hi8(mul);
-
-				byte oldCh = chByte;
-				chByte = al;
-				al = oldCh;
-				ah = 0;
-				ax = FrequencyTable[al];
-				int addRes = Lo8(ax) + chByte;
-				al = (byte)addRes;
-				ah = (byte)(Hi8(ax) + (addRes > 0xFF ? 1 : 0));
-				ax = Make16(al, ah);
+				byte fraction = PitchBendFractions[semitone + 1];
+				ushort mul = (ushort)(fraction * Hi8(ax));
+				byte adjustment = Hi8(mul);
+				ushort frequency = FrequencyTable[semitone];
+				int result = Lo8(frequency) + adjustment;
+				ax = Make16((byte)result, (byte)(Hi8(frequency) + (result > 0xFF ? 1 : 0)));
 			}
 		} else {
-			bool carryFromSub40 = ax < 0x0040;
+			// Portamento mode: divide by 5 for delta
+			bool negative = ax < 0x0040;
 			ax = (ushort)(ax - 0x0040);
-			if (carryFromSub40) {
+			if (negative) {
 				ax = (ushort)(0 - ax);
-				bh = 5;
-				ushort divWord = ax;
-				divQ = (byte)(divWord / bh);
-				divR = (byte)(divWord % bh);
-				if (chByte >= divQ) {
-					chByte = (byte)(chByte - divQ);
+				byte delta = (byte)(ax / 5);
+				byte remainderPort = (byte)(ax % 5);
+				if (semitone >= delta) {
+					semitone = (byte)(semitone - delta);
 				} else {
-					chByte = (byte)(chByte + 0x0C - divQ);
-					cl = (byte)(cl - 1);
-					if ((cl & 0x80) != 0) {
-						cx = 0;
-						cl = 0;
-						chByte = 0;
+					semitone = (byte)(semitone + 12 - delta);
+					octave = (byte)(octave - 1);
+					if ((octave & 0x80) != 0) {
+						octave = 0;
+						semitone = 0;
 					}
 				}
 
-				al = divR;
-				int tableBase = chByte >= 6 ? 5 : 0;
-				byte frac = PortamentoFractions[tableBase + al];
-				byte oldCh = chByte;
-				chByte = frac;
-				al = oldCh;
-				ah = 0;
-				ax = FrequencyTable[al];
-				int subRes = Lo8(ax) - chByte;
-				al = (byte)subRes;
-				ah = (byte)(Hi8(ax) - (subRes < 0 ? 1 : 0));
-				ax = Make16(al, ah);
+				ushort tableBase = (ushort)(semitone >= 6 ? 5 : 0);
+				byte adjustment = PortamentoFractions[tableBase + remainderPort];
+				ushort frequency = FrequencyTable[semitone];
+				int result = Lo8(frequency) - adjustment;
+				ax = Make16((byte)result, (byte)(Hi8(frequency) - (result < 0 ? 1 : 0)));
 			} else {
-				bh = 5;
-				ushort divWord = ax;
-				divQ = (byte)(divWord / bh);
-				divR = (byte)(divWord % bh);
-				chByte = (byte)(chByte + divQ);
-				if (chByte >= 0x0C) {
-					chByte = (byte)(chByte - 0x0C);
-					cl = (byte)(cl + 1);
+				byte delta = (byte)(ax / 5);
+				byte remainderPort = (byte)(ax % 5);
+				semitone = (byte)(semitone + delta);
+				if (semitone >= 12) {
+					semitone = (byte)(semitone - 12);
+					octave = (byte)(octave + 1);
 				}
 
-				al = divR;
-				int tableBase = chByte >= 6 ? 5 : 0;
-				byte frac = PortamentoFractions[tableBase + al];
-				byte oldCh = chByte;
-				chByte = frac;
-				al = oldCh;
-				ah = 0;
-				ax = FrequencyTable[al];
-				int addRes = Lo8(ax) + chByte;
-				al = (byte)addRes;
-				ah = (byte)(Hi8(ax) + (addRes > 0xFF ? 1 : 0));
-				ax = Make16(al, ah);
+				ushort tableBase = (ushort)(semitone >= 6 ? 5 : 0);
+				byte adjustment = PortamentoFractions[tableBase + remainderPort];
+				ushort frequency = FrequencyTable[semitone];
+				int result = Lo8(frequency) + adjustment;
+				ax = Make16((byte)result, (byte)(Hi8(frequency) + (result > 0xFF ? 1 : 0)));
 			}
 		}
 
-		cl = (byte)(cl << 1);
-		cl = (byte)(cl << 1);
-		ah = (byte)(Hi8(ax) | cl);
-		ax = Make16(Lo8(ax), ah);
-
+		byte blockBits = (byte)(octave << 2);
+		ax = Make16(Lo8(ax), (byte)(Hi8(ax) | blockBits));
 		_adgFrequencyWordTable[ch] = ax;
-		AdgWriteFrequencyWord((ushort)ch, (ushort)(ax | 0x2000));
+		ax = Make16(Lo8(ax), (byte)(Hi8(ax) | 0x20));
+		AdgWriteFrequencyWord((ushort)ch, ax);
 	}
 
 	/// <summary>
@@ -687,6 +761,209 @@ public sealed partial class DuneAdgPlayerEngine {
 	private void AllNotesOff() {
 		for (int ch = 0; ch < ChannelCount; ch++) {
 			AdgNoteOff((ushort)ch);
+		}
+	}
+
+	/// <summary>
+	/// Dynamic OPL voice routing for a logical channel.
+	/// Faithful port of <c>AdgConfigureInstrumentRouting_090D</c> from <c>AdgDriverCode.cs</c>:
+	/// frees the channel's previous voice slot (via the scratch mask), then allocates a new
+	/// physical OPL2 voice from one of three slot groups in either the primary or secondary
+	/// (bit 7 set) chip allocation pools. The 18-logical-channel scheduler resolves to at most
+	/// 9 physical primary voices plus 9 secondary voices; in the single-chip standalone player
+	/// both pools collapse onto the same OPL2 channel set (see <c>AdgWriteRelativeGoldRegister</c>).
+	/// </summary>
+#pragma warning disable S907
+	private void ConfigureInstrumentRouting(int ch, byte patchType) {
+		ushort bp = _fadeScratch;
+		ushort cx = _fadeScratch2;
+
+		// Release this channel's previously held slot. AX = ~scratch; if high bit set the
+		// previous allocation was primary (free in BP), else it was secondary (free in CX).
+		ushort axMask = (ushort)~_channelRouteScratch[ch];
+		if ((axMask & 0x8000) == 0) {
+			cx = (ushort)(cx & axMask);
+		} else {
+			bp = (ushort)(bp & axMask);
+		}
+
+		ushort ax = 0;
+		ushort bx;
+
+		if (patchType == 4) {
+			// 4-op instruments: try the three primary 4-op slots, then the three secondary ones.
+			bx = 0x0009; ax = 0x0000;
+			if ((bp & bx) != 0) { bp |= bx; goto WriteBack; }
+			bx = 0x0012; ax = 0x0101;
+			if ((bp & bx) != 0) { bp |= bx; goto WriteBack; }
+			bx = 0x0024; ax = 0x0202;
+			if ((bp & bx) != 0) { bp |= bx; goto WriteBack; }
+
+			bx = 0x0009; ax = 0x8080;
+			if ((cx & bx) != 0) {
+				cx |= bx;
+				bx = Make16(Lo8(bx), (byte)(Hi8(bx) | 0x80));
+				goto WriteBack;
+			}
+			bx = 0x0012; ax = 0x8181;
+			if ((cx & bx) != 0) {
+				cx |= bx;
+				bx = Make16(Lo8(bx), (byte)(Hi8(bx) | 0x80));
+				goto WriteBack;
+			}
+			bx = 0x0024; ax = 0x8282;
+			if ((cx & bx) != 0) {
+				cx |= bx;
+				bx = Make16(Lo8(bx), (byte)(Hi8(bx) | 0x80));
+				goto WriteBack;
+			}
+		}
+
+		// 2-op (and 4-op fallback): try upper-bank primary slots (channels 6/7/8) via lookup table,
+		// otherwise pick from lower banks or the secondary chip.
+		bx = (ushort)(~bp & 0x01C0);
+		if (bx != 0) {
+			bx = (ushort)(bx >> 4);
+			(ax, bx) = AdgRoutingLookup(bx);
+			bp = (ushort)(bp | bx);
+		} else {
+			bx = (ushort)~cx;
+			if ((bx & 0x01C0) == 0) {
+				// Both primary and secondary upper banks (ch 6/7/8) full: walk lower banks.
+				byte bh = (byte)(((Lo8(bx) >> 3) ^ Lo8(bx)) & 0x07);
+				if (bh != 0) {
+					bool carryBh = (bh & 0x01) != 0;
+					bh = (byte)(bh >> 1);
+					if (carryBh) { goto ChooseSec0; }
+					carryBh = (bh & 0x01) != 0;
+					if (carryBh) { goto ChooseSec1; }
+					goto ChooseSec2;
+				}
+
+				ax = bp;
+				byte folded = (byte)((Lo8(ax) ^ (Lo8(ax) >> 3)) & 0x07);
+				if (folded != 0) {
+					bx = (ushort)~bp;
+					bool cf = (folded & 0x01) != 0;
+					folded = (byte)(folded >> 1);
+					if (cf) { goto ChoosePri0; }
+					cf = (folded & 0x01) != 0;
+					if (cf) { goto ChoosePri1; }
+					goto ChoosePri2;
+				}
+
+				bx = (ushort)(bx & 0x003F);
+				if (bx == 0) {
+					bx = (ushort)~bp;
+					if ((bx & 0x0024) != 0) { goto ChoosePri2; }
+					if ((bx & 0x0012) != 0) { goto ChoosePri1; }
+					goto ChoosePri0;
+				}
+
+				if ((bx & 0x0024) != 0) { goto ChooseSec2; }
+				if ((bx & 0x0012) != 0) { goto ChooseSec1; }
+				goto ChooseSec0;
+			}
+
+			// Secondary upper bank has a free slot.
+			bx = (ushort)((bx & 0x01C0) >> 4);
+			(ax, bx) = AdgRoutingLookup(bx);
+			ax = (ushort)(ax | 0x8080);
+			cx = (ushort)(cx | bx);
+			bx = Make16(Lo8(bx), (byte)(Hi8(bx) | 0x80));
+		}
+		goto WriteBack;
+
+	ChoosePri0:
+		ax = 0x0000;
+		bx = (ushort)(bx & 0x0001);
+		if (bx != 0) { bp = (ushort)(bp | bx); goto WriteBack; }
+		ax = 0x0308;
+		bx = Make16(0x08, Hi8(bx));
+		bp = (ushort)(bp | bx);
+		goto WriteBack;
+
+	ChoosePri1:
+		ax = 0x0101;
+		bx = (ushort)(bx & 0x0002);
+		if (bx != 0) { bp = (ushort)(bp | bx); goto WriteBack; }
+		ax = 0x0409;
+		bx = Make16(0x10, Hi8(bx));
+		bp = (ushort)(bp | bx);
+		goto WriteBack;
+
+	ChoosePri2:
+		ax = 0x0202;
+		bx = (ushort)(bx & 0x0004);
+		if (bx == 0) {
+			ax = 0x050A;
+			bx = Make16(0x20, Hi8(bx));
+		}
+		bp = (ushort)(bp | bx);
+		goto WriteBack;
+
+	ChooseSec0:
+		ax = 0x8080;
+		bx = (ushort)(bx & 0x0001);
+		if (bx == 0) {
+			ax = 0x8388;
+			bx = Make16(0x08, Hi8(bx));
+		}
+		cx = (ushort)(cx | bx);
+		bx = Make16(Lo8(bx), (byte)(Hi8(bx) | 0x80));
+		goto WriteBack;
+
+	ChooseSec1:
+		ax = 0x8181;
+		bx = (ushort)(bx & 0x0002);
+		if (bx == 0) {
+			ax = 0x8489;
+			bx = Make16(0x10, Hi8(bx));
+		}
+		cx = (ushort)(cx | bx);
+		bx = Make16(Lo8(bx), (byte)(Hi8(bx) | 0x80));
+		goto WriteBack;
+
+	ChooseSec2:
+		ax = 0x8282;
+		bx = (ushort)(bx & 0x0004);
+		if (bx == 0) {
+			ax = 0x858A;
+			bx = Make16(0x20, Hi8(bx));
+		}
+		cx = (ushort)(cx | bx);
+		bx = Make16(Lo8(bx), (byte)(Hi8(bx) | 0x80));
+
+	WriteBack:
+		_channelRouteScratch[ch] = bx;
+		_fadeScratch = bp;
+		_fadeScratch2 = cx;
+		_channelRoute[ch] = Hi8(ax);
+		_channelPrimaryOpRoute[ch] = Lo8(ax);
+		ax = (ushort)(ax + 0x0303);
+		_channelRouteShadow[ch] = Hi8(ax);
+		_channelSecondaryOpRoute[ch] = Lo8(ax);
+	}
+#pragma warning restore S907
+
+	/// <summary>
+	/// Routing lookup table at driver runtime offset 0x08ED (UNHSQ file offset 0x07ED).
+	/// Indexed by <c>((~BP &amp; 0x01C0) &gt;&gt; 4)</c> ∈ {0x04, 0x08, 0x0C, 0x10, 0x14, 0x18, 0x1C}.
+	/// Returns (AX, BX_out) where Hi8(AX) is the channel route, Lo8(AX) is the primary operator
+	/// route, and BX_out is the BP slot-mask bit to set after allocation. Picks the highest
+	/// numbered free OPL2 voice in the upper bank (8 &gt; 7 &gt; 6) when multiple are free.
+	/// Source: DNADG.UNHSQ bytes verified against the runtime driver image.
+	/// </summary>
+	private static (ushort ax, ushort bxOut) AdgRoutingLookup(ushort index) {
+		switch (index) {
+			case 0x04: return (0x0610, 0x0040);  // channel 6 (mod 0x10, car 0x13)
+			case 0x08: return (0x0711, 0x0080);  // channel 7 (mod 0x11, car 0x14)
+			case 0x0C: return (0x0711, 0x0080);  // bits 6+7 free: prefer 7
+			case 0x10: return (0x0812, 0x0100);  // channel 8 (mod 0x12, car 0x15)
+			case 0x14: return (0x0812, 0x0100);  // bits 6+8 free: prefer 8
+			case 0x18: return (0x0812, 0x0100);  // bits 7+8 free: prefer 8
+			case 0x1C: return (0x0812, 0x0100);  // all three free: prefer 8
+			default: return (0x0000, 0x0000);
 		}
 	}
 }

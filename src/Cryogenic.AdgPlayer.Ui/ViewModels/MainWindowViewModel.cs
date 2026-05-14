@@ -14,9 +14,11 @@ using Cryogenic.AdgPlayer.Ui.Views;
 using Serilog;
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Text;
+using System.Threading;
 
 /// <summary>
 /// Main window view model: manages file loading, playback, volume, waveform,
@@ -47,7 +49,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 	private string _status = "Select an ADG/HSQ file to play.";
 
 	[ObservableProperty]
-	private string _driverIdentityText = "Driver identity: DNADG / AdLib Gold (OPL3 dual-bank, Ym7128B surround) | engine=Cryogenic.AdgPlayer.Ui playback core | synth=NukedOPL3 + Spice86 SoftwareMixer.";
+	private string _driverIdentityText = "Driver identity: DNADG / AdLib Gold (scheduler+event path ported; secondary-chip routes currently collapsed to primary) | engine=Cryogenic.AdgPlayer.Ui playback core | synth=NukedOPL3 + Spice86 SoftwareMixer.";
 
 	[ObservableProperty]
 	private string _liveProofText = "Live proof: idle";
@@ -107,6 +109,17 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 	/// <summary>Playlist entries shown in the UI.</summary>
 	public ObservableCollection<PlaylistItem> Playlist { get; } = new();
 
+	// --- Batched queues for high-frequency events (drained on the UI timer to avoid flooding the dispatcher) ---
+	private const int MaxRowsPerCollection = 500;
+	private const int MaxLogRows = 600;
+	private const int MaxDrainPerTick = 64;
+	private const int MaxLogDrainPerTick = 32;
+	private readonly ConcurrentQueue<OplWriteItem> _pendingOplWrites = new();
+	private readonly ConcurrentQueue<ChannelEventItem> _pendingChannelEvents = new();
+	private readonly ConcurrentQueue<string> _pendingLogMessages = new();
+	private int _audioRefreshScheduled;
+	private int _transportUiTickCounter;
+
 	/// <summary>
 	/// Creates the view model, wires the Serilog UI sink.
 	/// </summary>
@@ -121,7 +134,10 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 		_statusTimer = new DispatcherTimer {
 			Interval = TimeSpan.FromMilliseconds(100)
 		};
-		_statusTimer.Tick += (_, _) => RefreshTransportState();
+		_statusTimer.Tick += (_, _) => {
+			DrainPendingEventQueues();
+			RefreshTransportState();
+		};
 		_statusTimer.Start();
 
 		InitializePlaylistFromDefaultDuneDat();
@@ -138,7 +154,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 
 		Logger.Information("ADG UI ready. Branding=ADG/AdLibGold/OPL3Gold proof mode, OPL gain={OplGain:F1}x, tick rate={TickRate:F1} Hz",
 			_engine.OplVolumeGain, _engine.TickRateHz);
-		Logger.Information("ADG core proof markers: DuneAdgPlayerEngine(ChannelCount=9, PIT=0x1745) via OplSynthesizer (NukedOPL3 + Spice86 SoftwareMixer pipeline).");
+		Logger.Information("ADG core proof markers: DuneAdgPlayerEngine(ChannelCount=18 logical, header=9 slots, PIT=0x1745) via OplSynthesizer (NukedOPL3 + Spice86 SoftwareMixer pipeline).");
 		UpdateLiveProofText();
 	}
 
@@ -508,55 +524,99 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 	}
 
 	private void OnSerilogMessage(string message) {
-		Dispatcher.UIThread.Post(() => AddLog(message));
+		_pendingLogMessages.Enqueue(message);
 	}
 
 	/// <summary>
 	/// Called from the engine tick thread when an OPL register is written.
-	/// Posts to the UI thread and keeps the ring buffer at 500 entries.
+	/// Enqueues to a concurrent buffer drained on the UI status timer.
 	/// </summary>
 	private void OnOplWrite(ushort register, byte value, long tick) {
-		Dispatcher.UIThread.Post(() => {
-			OplWrites.Add(new OplWriteItem {
-				Tick = tick,
-				Register = register,
-				Value = value,
-			});
-			while (OplWrites.Count > 500) {
-				OplWrites.RemoveAt(0);
-			}
+		_pendingOplWrites.Enqueue(new OplWriteItem {
+			Tick = tick,
+			Register = register,
+			Value = value,
 		});
 	}
 
 	/// <summary>
 	/// Called from the engine tick thread when a channel event (NoteOn/NoteOff/etc.) fires.
-	/// Posts to the UI thread and keeps the ring buffer at 500 entries.
+	/// Enqueues to a concurrent buffer drained on the UI status timer.
 	/// </summary>
 	private void OnChannelEvent(int channel, string eventName, string detail, long tick) {
-		Dispatcher.UIThread.Post(() => {
-			ChannelEvents.Add(new ChannelEventItem {
-				Tick = tick,
-				Channel = channel,
-				EventType = eventName,
-				Detail = detail,
-			});
-			while (ChannelEvents.Count > 500) {
-				ChannelEvents.RemoveAt(0);
-			}
+		_pendingChannelEvents.Enqueue(new ChannelEventItem {
+			Tick = tick,
+			Channel = channel,
+			EventType = eventName,
+			Detail = detail,
 		});
 	}
 
 	/// <summary>
+	/// Drains the high-frequency event queues on the UI thread. Called from the status timer.
+	/// Bounds work per tick so the dispatcher stays responsive even with thousands of
+	/// queued events. Excess entries are dropped from the head once the ring buffer
+	/// reaches its cap; remaining entries stay in the queue and are drained on the next tick.
+	/// </summary>
+	private void DrainPendingEventQueues() {
+		int drained = 0;
+		while (drained < MaxDrainPerTick && _pendingOplWrites.TryDequeue(out OplWriteItem? item) && item is not null) {
+			OplWrites.Add(item);
+			drained++;
+		}
+		TrimHead(OplWrites, MaxRowsPerCollection);
+
+		drained = 0;
+		while (drained < MaxDrainPerTick && _pendingChannelEvents.TryDequeue(out ChannelEventItem? item) && item is not null) {
+			ChannelEvents.Add(item);
+			drained++;
+		}
+		TrimHead(ChannelEvents, MaxRowsPerCollection);
+
+		drained = 0;
+		while (drained < MaxLogDrainPerTick && _pendingLogMessages.TryDequeue(out string? message) && message is not null) {
+			AddLog(message);
+			drained++;
+		}
+
+		// Cap unbounded backlog if the producer is far faster than the drainer.
+		while (_pendingOplWrites.Count > MaxRowsPerCollection * 4) {
+			_pendingOplWrites.TryDequeue(out _);
+		}
+		while (_pendingChannelEvents.Count > MaxRowsPerCollection * 4) {
+			_pendingChannelEvents.TryDequeue(out _);
+		}
+		while (_pendingLogMessages.Count > MaxLogRows * 4) {
+			_pendingLogMessages.TryDequeue(out _);
+		}
+	}
+
+	private static void TrimHead<T>(ObservableCollection<T> collection, int maxCount) {
+		int overflow = collection.Count - maxCount;
+		if (overflow <= 0) {
+			return;
+		}
+		for (int i = 0; i < overflow; i++) {
+			collection.RemoveAt(0);
+		}
+	}
+
+	/// <summary>
 	/// Called from the OPL render thread with normalized float samples.
-	/// Pushes to the VU meter and requests a visual refresh.
+	/// Pushes to the VU meter and coalesces invalidation requests so the
+	/// UI thread sees at most one InvalidateVisual call in flight at a time.
 	/// </summary>
 	private void OnAudioSamples(float[] samples, int sampleCount) {
 		_volumeFeedbackControl.PushSamples(samples, sampleCount);
 		_waveformControl.PushSamples(samples, sampleCount);
+		if (Interlocked.Exchange(ref _audioRefreshScheduled, 1) != 0) {
+			return;
+		}
 		Dispatcher.UIThread.Post(() => {
+			Interlocked.Exchange(ref _audioRefreshScheduled, 0);
 			_volumeFeedbackControl.InvalidateVisual();
 			_waveformControl.InvalidateVisual();
-		});
+		}, DispatcherPriority.Background);
 	}
 
 	private void AddLog(string message) {
@@ -566,9 +626,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 			Message = message,
 		};
 		Logs.Add(item);
-		while (Logs.Count > 600) {
-			Logs.RemoveAt(0);
-		}
+		TrimHead(Logs, MaxLogRows);
 	}
 
 	private bool TryLoadSelectedFile() {
@@ -691,11 +749,12 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 		}
 
 		StringBuilder sb = new StringBuilder();
+		int totalChannelSlots = header.ChannelActive.Length;
 		sb.AppendLine($"File: {SelectedFileName}  ({header.RawFileSize} bytes{(header.WasHsqCompressed ? ", HSQ compressed" : ", raw")})");
 		sb.AppendLine($"Data @{header.DataBase}  Events @0x{header.EventBase:X4}  Tempo=0x{header.Tempo:X4}  Instruments={header.InstrumentCount}");
-		sb.AppendLine($"Channels: {header.ActiveChannelCount}/9 active  Loop: measure {header.LoopStartMeasure}→{header.LoopEndMeasure} x{header.LoopCount}");
+		sb.AppendLine($"Channels: {header.ActiveChannelCount}/{totalChannelSlots} active  Loop: measure {header.LoopStartMeasure}→{header.LoopEndMeasure} x{header.LoopCount}");
 		sb.Append("Offsets: ");
-		for (int i = 0; i < 9; i++) {
+		for (int i = 0; i < totalChannelSlots; i++) {
 			if (header.ChannelActive[i]) {
 				sb.Append($"Ch{i}=0x{header.ChannelOffsets[i]:X4} ");
 			} else {
@@ -724,13 +783,17 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 		TickInfo = $"{transportState}  |  {_engine.TickRateHz:F1} Hz  |  {_engine.SampleRate} Hz";
 
 		UpdateVolumeInfo();
-		UpdateChannelState();
-		UpdateLiveProofText();
+
+		bool shouldRunHeavyUiUpdates = !IsPlaying || (_transportUiTickCounter++ % 4) == 0;
+		if (shouldRunHeavyUiUpdates) {
+			UpdateChannelState();
+			UpdateLiveProofText();
+		}
 	}
 
 	private void UpdateLiveProofText() {
 		string transportState = IsPlaying ? "playing" : IsPaused ? "paused" : "idle";
-		LiveProofText = $"Live proof: state={transportState} | track={SelectedFileName} | channelEvents={ChannelEvents.Count} | oplWrites={OplWrites.Count} | DNADG / AdLib Gold: OPL3 dual-bank (chip0+chip1) live, Ym7128B surround pipeline armed.";
+		LiveProofText = $"Live proof: state={transportState} | track={SelectedFileName} | channelEvents={ChannelEvents.Count} | oplWrites={OplWrites.Count} | DNADG path running with 18 logical channels; Gold secondary-chip routes currently collapsed to primary chip.";
 	}
 
 	private void UpdateChannelState() {
@@ -784,7 +847,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 				tooltip.AppendLine($"Size: {headerInfo.RawFileSize} bytes ({(headerInfo.WasHsqCompressed ? "HSQ compressed" : "raw")})");
 				tooltip.AppendLine($"Data @0x{headerInfo.DataBase:X4}  Events @0x{headerInfo.EventBase:X4}");
 				tooltip.AppendLine($"Tempo: 0x{headerInfo.Tempo:X4}  Instruments: {headerInfo.InstrumentCount}");
-				tooltip.AppendLine($"Channels: {headerInfo.ActiveChannelCount}/9 active");
+				tooltip.AppendLine($"Channels: {headerInfo.ActiveChannelCount}/{headerInfo.ChannelActive.Length} active");
 				tooltip.Append($"Loop: Measure {headerInfo.LoopStartMeasure}→{headerInfo.LoopEndMeasure} (×{headerInfo.LoopCount})");
 				item.Tooltip = tooltip.ToString();
 			}

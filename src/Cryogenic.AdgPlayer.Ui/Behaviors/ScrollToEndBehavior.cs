@@ -2,9 +2,11 @@
 
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Threading;
 using Avalonia.Xaml.Interactivity;
 
 using System.Collections.Specialized;
+using System.Threading;
 
 /// <summary>
 /// XAML behavior that auto-scrolls a ListBox to the last item when new items are added.
@@ -12,6 +14,7 @@ using System.Collections.Specialized;
 /// </summary>
 public sealed class ScrollToEndBehavior : Behavior<ListBox> {
 	private INotifyCollectionChanged? _trackedCollection;
+	private int _scrollScheduled;
 
 	/// <inheritdoc />
 	protected override void OnAttached() {
@@ -53,11 +56,24 @@ public sealed class ScrollToEndBehavior : Behavior<ListBox> {
 	}
 
 	private void OnCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e) {
-		if (e.Action == NotifyCollectionChangedAction.Add && AssociatedObject is not null) {
+		if (e.Action != NotifyCollectionChangedAction.Add || AssociatedObject is null) {
+			return;
+		}
+
+		if (Interlocked.Exchange(ref _scrollScheduled, 1) != 0) {
+			return;
+		}
+
+		Dispatcher.UIThread.Post(() => {
+			Interlocked.Exchange(ref _scrollScheduled, 0);
+			if (AssociatedObject is null) {
+				return;
+			}
+
 			int count = AssociatedObject.ItemCount;
 			if (count > 0) {
 				AssociatedObject.ScrollIntoView(count - 1);
 			}
-		}
+		}, DispatcherPriority.Background);
 	}
 }
