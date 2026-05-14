@@ -1,4 +1,4 @@
-namespace Cryogenic.AdgPlayer.Ui.Services;
+﻿namespace Cryogenic.AdgPlayer.Ui.Services;
 
 using Serilog;
 
