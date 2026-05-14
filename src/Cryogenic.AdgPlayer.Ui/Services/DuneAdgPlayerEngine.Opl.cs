@@ -1,10 +1,8 @@
-namespace Cryogenic.AdgPlayer.Ui.Services;
-
-using System;
+﻿namespace Cryogenic.AdgPlayer.Ui.Services;
 
 /// <summary>
 /// OPL register write operations: NoteOn/Off, frequency writes, instrument loading.
-/// Faithfully ported from AdpDriverCode.cs OPL-related functions.
+/// Lineage: ported from the AdpDriverCode.cs OPL routines in the parent Cryogenic project.
 /// </summary>
 public sealed partial class DuneAdgPlayerEngine {
 

@@ -3,7 +3,7 @@ namespace Cryogenic.AdgPlayer.Ui.Services;
 using Serilog;
 
 /// <summary>
-/// HSQ decompression for ADG/ADP music files from DUNE.DAT.
+/// HSQ decompression for ADG music files from DUNE.DAT.
 /// Many files are HSQ-compressed (LZ77 variant with a 6-byte header).
 /// Ported from OpenRakis/tools/dune-ds/source/unhsq.c via the MT32 player.
 /// Checksum: (byte0 + byte1 + byte2 + byte3 + byte4 + byte5) &amp; 0xFF == 0xAB

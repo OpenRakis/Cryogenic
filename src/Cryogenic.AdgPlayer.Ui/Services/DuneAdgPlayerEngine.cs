@@ -5,9 +5,9 @@ using Serilog;
 using System;
 
 /// <summary>
-/// Standalone DNADP (AdLib Pro / OPL) music player engine.
-/// Faithfully ports the original driver logic from AdpDriverCode.cs
-/// to run outside the Spice86 emulator using NukedOPL3Sharp for synthesis
+/// Standalone ADG / AdLib Gold music player engine.
+/// Lineage: ported from the AdpDriverCode.cs driver in the parent Cryogenic project;
+/// runs outside the Spice86 emulator using NukedOPL3Sharp for synthesis
 /// and Spice86.Audio for playback.
 /// </summary>
 public sealed partial class DuneAdgPlayerEngine : IDisposable {
@@ -258,7 +258,7 @@ public sealed partial class DuneAdgPlayerEngine : IDisposable {
 		_opl = opl;
 		_samplesPerTickThreshold = (long)OplSynthesizer.NativeOplSampleRate * _pitReloadValue;
 		_opl.OnBeforeRender = AdvanceSamples;
-		Logger.Information("ADP engine created: {SampleRate} Hz native OPL, PIT reload 0x{PitReload:X4}",
+		Logger.Information("ADG engine created: {SampleRate} Hz native OPL, PIT reload 0x{PitReload:X4}",
 			OplSynthesizer.NativeOplSampleRate, _pitReloadValue);
 	}
 
@@ -270,7 +270,7 @@ public sealed partial class DuneAdgPlayerEngine : IDisposable {
 		_samplesPerTickThreshold = (long)OplSynthesizer.NativeOplSampleRate * _pitReloadValue;
 		_opl.OnBeforeRender = AdvanceSamples;
 		_opl.AudioSamplesRendered += (samples, count) => AudioSamplesRendered?.Invoke(samples, count);
-		Logger.Information("ADP engine created (default): {SampleRate} Hz native OPL via SoftwareMixer", OplSynthesizer.NativeOplSampleRate);
+		Logger.Information("ADG engine created (default): {SampleRate} Hz native OPL via SoftwareMixer", OplSynthesizer.NativeOplSampleRate);
 	}
 
 	// --- Helpers ---
@@ -580,7 +580,7 @@ public sealed partial class DuneAdgPlayerEngine : IDisposable {
 		_playing = false;
 		_paused = false;
 		_opl.Dispose();
-		Logger.Information("ADP engine disposed");
+		Logger.Information("ADG engine disposed");
 	}
 
 	/// <summary>
@@ -624,7 +624,7 @@ public sealed partial class DuneAdgPlayerEngine : IDisposable {
 
 	/// <summary>
 	/// Extracts song header info from raw file data without loading the full song.
-	/// Handles both HSQ-compressed and raw ADP data.
+	/// Handles both HSQ-compressed and raw ADG data.
 	/// </summary>
 	public static bool TryExtractHeaderInfo(byte[] fileData, out SongHeaderInfo? headerInfo) {
 		headerInfo = null;

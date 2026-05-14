@@ -135,7 +135,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 
 		Logger.Information("ADG UI ready. Branding=ADG/AdLibGold/OPL3Gold proof mode, OPL gain={OplGain:F1}x, tick rate={TickRate:F1} Hz",
 			_engine.OplVolumeGain, _engine.TickRateHz);
-		Logger.Information("ADG core proof markers: DuneAdgPlayerEngine(ChannelCountConst=18, PIT=0x1745), AdgOplSynthesizer dual-bank writes (chip0/chip1), SoftwareMixer pipeline.");
+		Logger.Information("ADG core proof markers: DuneAdgPlayerEngine(ChannelCount=9, PIT=0x1745) via OplSynthesizer (NukedOPL3 + Spice86 SoftwareMixer pipeline).");
 		UpdateLiveProofText();
 	}
 

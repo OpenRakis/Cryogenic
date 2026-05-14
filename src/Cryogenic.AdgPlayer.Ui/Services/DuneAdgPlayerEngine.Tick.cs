@@ -5,8 +5,8 @@ using Serilog;
 using System;
 
 /// <summary>
-/// Tick processing, event dispatch, and all DNADP event handlers.
-/// Faithfully ported from AdpDriverCode.cs (AdpProcessTick_04D3 and related).
+/// Tick processing, event dispatch, and all music event handlers driving the ADG player engine.
+/// Lineage: ported from AdpDriverCode.cs (AdpProcessTick_04D3 and related) in the parent Cryogenic project.
 /// </summary>
 public sealed partial class DuneAdgPlayerEngine {
 

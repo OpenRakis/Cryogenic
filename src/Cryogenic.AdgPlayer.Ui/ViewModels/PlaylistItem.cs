@@ -1,7 +1,5 @@
 ﻿namespace Cryogenic.AdgPlayer.Ui.ViewModels;
 
-using System.IO;
-
 /// <summary>
 /// Represents one playlist entry in the ADG / AdLib Gold player.
 /// </summary>
