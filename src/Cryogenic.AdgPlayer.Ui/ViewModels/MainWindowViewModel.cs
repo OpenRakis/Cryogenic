@@ -14,11 +14,9 @@ using Cryogenic.AdgPlayer.Ui.Views;
 using Serilog;
 
 using System;
-using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Text;
-using System.Threading;
 
 /// <summary>
 /// Main window view model: manages file loading, playback, volume, waveform,
@@ -41,18 +39,6 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 	private int _playlistIndex = -1;
 	private PlaylistItem? _currentlyPlayingTrack = null;
 	private string _defaultDuneDatPath = "";
-	private DuneDatReader? _duneDatReader;
-
-	// Thread-safe queues used to throttle render-thread → UI thread bridging.
-	private readonly ConcurrentQueue<OplWriteItem> _oplWritesQueue = new();
-	private readonly ConcurrentQueue<ChannelEventItem> _channelEventsQueue = new();
-	private long _totalOplWritesCount;
-	private long _totalChannelEventsCount;
-	private const int MaxUiOplWritesPerTick = 40;
-	private const int MaxUiChannelEventsPerTick = 40;
-	private const int MaxOplWritesPanelRows = 500;
-	private const int MaxChannelEventsPanelRows = 500;
-	private const int MaxBackpressureQueueDepth = 4000;
 
 	[ObservableProperty]
 	private string _adgPath = "";
@@ -387,7 +373,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 				}
 			}
 
-			ClearUiEventQueuesAndCollections();
+			ChannelEvents.Clear();
+			OplWrites.Clear();
 			_engine.Play();
 			RefreshTransportState();
 			Status = "Playing.";
@@ -447,31 +434,25 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 		_defaultDuneDatPath = ResolveDefaultDuneDatPath();
 		if (!File.Exists(_defaultDuneDatPath)) {
 			Status = "DUNE.DAT not found. Browse files to build playlist.";
-			Logger.Warning("DUNE.DAT not found at any default candidate path.");
 			return;
 		}
 
-		try {
-			byte[] datBytes = File.ReadAllBytes(_defaultDuneDatPath);
-			Logger.Information("DUNE.DAT loaded in memory: {Path} ({Bytes:N0} bytes)", _defaultDuneDatPath, datBytes.Length);
-			_duneDatReader = new DuneDatReader(datBytes);
-			Logger.Information("DUNE.DAT in-memory reader parsed {Count} archive entries (no disk extraction).", _duneDatReader.Entries.Count);
-		} catch (Exception ex) {
-			Status = $"DUNE.DAT parse failed: {ex.Message}";
-			Logger.Error(ex, "Failed to parse DUNE.DAT in memory.");
+		string extractedFolder = ResolveExtractedDuneDatFolder(_defaultDuneDatPath);
+		if (!Directory.Exists(extractedFolder)) {
+			Status = "DUNE.DAT found but extracted folder DUNE.DAT_ is missing.";
+			Logger.Warning("DUNE.DAT found at {DatPath}, but extracted folder not found. Expected {ExtractedFolder}.",
+				_defaultDuneDatPath, extractedFolder);
 			return;
 		}
 
-		System.Collections.Generic.IReadOnlyList<DuneDatReader.DatEntry> musicEntries = DiscoverMusicEntries(_duneDatReader);
-		for (int i = 0; i < musicEntries.Count; i++) {
-			DuneDatReader.DatEntry entry = musicEntries[i];
-			byte[] payload = _duneDatReader.ReadEntryBytes(entry);
-			AddPlaylistFromDatEntry(entry.Name, payload);
+		System.Collections.Generic.IReadOnlyList<string> musicFiles = DiscoverMusicFilesFromExtractedDat(extractedFolder);
+		for (int i = 0; i < musicFiles.Count; i++) {
+			AddPlaylistPath(musicFiles[i]);
 		}
 
 		if (Playlist.Count == 0) {
-			Status = "No music files discovered inside DUNE.DAT.";
-			Logger.Warning("No music entries with HSQ+M32 pair discovered inside DUNE.DAT.");
+			Status = "No music files discovered in DUNE.DAT_.";
+			Logger.Warning("No music files discovered in extracted DUNE.DAT folder {ExtractedFolder}.", extractedFolder);
 			return;
 		}
 
@@ -480,8 +461,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 		AdgPath = Playlist[0].Path;
 		SelectedFileName = Playlist[0].FileName;
 		UpdateAllPlaylistDisplays();
-		Status = $"Loaded {Playlist.Count} songs in-memory from DUNE.DAT.";
-		Logger.Information("Auto playlist from DUNE.DAT (in-memory): {Count} tracks.", Playlist.Count);
+		Status = $"Loaded {Playlist.Count} music files from DUNE.DAT.";
+		Logger.Information("Auto playlist from DUNE.DAT loaded: {Count} tracks from {ExtractedFolder}.", Playlist.Count, extractedFolder);
 	}
 
 	private static string ResolveDefaultDuneDatPath() {
@@ -494,112 +475,72 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 		return DefaultDuneDatCandidates[0];
 	}
 
-	private static System.Collections.Generic.IReadOnlyList<DuneDatReader.DatEntry> DiscoverMusicEntries(DuneDatReader reader) {
-		// Music payloads in DUNE.DAT are HSQ files that have a sibling M32 entry
-		// (the General-MIDI version of the same song); use that as the strong rule
-		// for music identification, archive-wide, without filesystem extraction.
+	private static string ResolveExtractedDuneDatFolder(string duneDatPath) {
+		string extractedNearDat = duneDatPath + "_";
+		if (Directory.Exists(extractedNearDat)) {
+			return extractedNearDat;
+		}
+
+		string workspaceExtracted = Path.Combine(Directory.GetCurrentDirectory(), "DUNE.DAT_");
+		if (Directory.Exists(workspaceExtracted)) {
+			return workspaceExtracted;
+		}
+
+		return extractedNearDat;
+	}
+
+	private static System.Collections.Generic.IReadOnlyList<string> DiscoverMusicFilesFromExtractedDat(string extractedFolder) {
+		System.Collections.Generic.HashSet<string> hsqBaseNames = new(StringComparer.OrdinalIgnoreCase);
 		System.Collections.Generic.HashSet<string> m32BaseNames = new(StringComparer.OrdinalIgnoreCase);
-		for (int i = 0; i < reader.Entries.Count; i++) {
-			string name = reader.Entries[i].Name;
-			if (name.EndsWith(".M32", StringComparison.OrdinalIgnoreCase)) {
-				m32BaseNames.Add(name.Substring(0, name.Length - 4));
-			}
+
+		string[] hsqFiles = Directory.GetFiles(extractedFolder, "*.HSQ", SearchOption.TopDirectoryOnly);
+		for (int i = 0; i < hsqFiles.Length; i++) {
+			hsqBaseNames.Add(Path.GetFileNameWithoutExtension(hsqFiles[i]));
 		}
 
-		System.Collections.Generic.List<DuneDatReader.DatEntry> result = new();
-		for (int i = 0; i < reader.Entries.Count; i++) {
-			DuneDatReader.DatEntry entry = reader.Entries[i];
-			if (!entry.Name.EndsWith(".HSQ", StringComparison.OrdinalIgnoreCase)) {
-				continue;
-			}
-			string baseName = entry.Name.Substring(0, entry.Name.Length - 4);
+		string[] m32Files = Directory.GetFiles(extractedFolder, "*.M32", SearchOption.TopDirectoryOnly);
+		for (int i = 0; i < m32Files.Length; i++) {
+			m32BaseNames.Add(Path.GetFileNameWithoutExtension(m32Files[i]));
+		}
+
+		System.Collections.Generic.List<string> result = new();
+		foreach (string baseName in hsqBaseNames) {
 			if (m32BaseNames.Contains(baseName)) {
-				result.Add(entry);
+				result.Add(Path.Combine(extractedFolder, baseName + ".HSQ"));
 			}
 		}
 
-		result.Sort((a, b) => StringComparer.OrdinalIgnoreCase.Compare(a.Name, b.Name));
+		result.Sort(StringComparer.OrdinalIgnoreCase);
 		return result;
 	}
 
-	private void AddPlaylistFromDatEntry(string name, byte[] bytes) {
-		string syntheticPath = "dat://DUNE.DAT/" + name;
-		for (int i = 0; i < Playlist.Count; i++) {
-			if (string.Equals(Playlist[i].Path, syntheticPath, StringComparison.OrdinalIgnoreCase)) {
-				return;
-			}
-		}
-		PlaylistItem item = new PlaylistItem {
-			Path = syntheticPath,
-			Bytes = bytes,
-			SourceName = name,
-		};
-		Playlist.Add(item);
-		UpdatePlaylistItemDisplay(item, Playlist.Count);
-		ExtractHeaderInfoForPlaylistItem(item);
-	}
-
-	// IMPORTANT: these handlers are called on the SoftwareMixer render thread
-	// at OPL-render cadence (many thousands per second). We must never call
-	// Dispatcher.UIThread.Post for each one — that floods the dispatcher and
-	// freezes the UI. Instead we enqueue lock-free and let RefreshTransportState
-	// (running on the UI thread at 100 ms) flush a bounded batch each tick.
 	private void OnChannelEvent(int channel, string eventType, string detail, long tick) {
-		ChannelEventItem item = new ChannelEventItem {
-			Channel = channel,
-			EventType = eventType,
-			Detail = detail,
-			Tick = tick,
-		};
-		_channelEventsQueue.Enqueue(item);
-		Interlocked.Increment(ref _totalChannelEventsCount);
-		DrainBackpressure(_channelEventsQueue);
+		Dispatcher.UIThread.Post(() => {
+			ChannelEventItem item = new ChannelEventItem {
+				Channel = channel,
+				EventType = eventType,
+				Detail = detail,
+				Tick = tick
+			};
+			ChannelEvents.Add(item);
+			while (ChannelEvents.Count > 500) {
+				ChannelEvents.RemoveAt(0);
+			}
+		});
 	}
 
 	private void OnOplWrite(ushort register, byte value, long tick) {
-		OplWriteItem item = new OplWriteItem {
-			Register = register,
-			Value = value,
-			Tick = tick,
-		};
-		_oplWritesQueue.Enqueue(item);
-		Interlocked.Increment(ref _totalOplWritesCount);
-		DrainBackpressure(_oplWritesQueue);
-	}
-
-	private static void DrainBackpressure<T>(ConcurrentQueue<T> queue) {
-		while (queue.Count > MaxBackpressureQueueDepth) {
-			queue.TryDequeue(out _);
-		}
-	}
-
-	private void FlushUiEventQueues() {
-		int addedOpl = 0;
-		while (addedOpl < MaxUiOplWritesPerTick && _oplWritesQueue.TryDequeue(out OplWriteItem? oplItem)) {
-			OplWrites.Add(oplItem);
-			addedOpl++;
-		}
-		while (OplWrites.Count > MaxOplWritesPanelRows) {
-			OplWrites.RemoveAt(0);
-		}
-
-		int addedCh = 0;
-		while (addedCh < MaxUiChannelEventsPerTick && _channelEventsQueue.TryDequeue(out ChannelEventItem? chItem)) {
-			ChannelEvents.Add(chItem);
-			addedCh++;
-		}
-		while (ChannelEvents.Count > MaxChannelEventsPanelRows) {
-			ChannelEvents.RemoveAt(0);
-		}
-	}
-
-	private void ClearUiEventQueuesAndCollections() {
-		while (_oplWritesQueue.TryDequeue(out _)) { }
-		while (_channelEventsQueue.TryDequeue(out _)) { }
-		Interlocked.Exchange(ref _totalOplWritesCount, 0);
-		Interlocked.Exchange(ref _totalChannelEventsCount, 0);
-		ChannelEvents.Clear();
-		OplWrites.Clear();
+		Dispatcher.UIThread.Post(() => {
+			OplWriteItem item = new OplWriteItem {
+				Register = register,
+				Value = value,
+				Tick = tick
+			};
+			OplWrites.Add(item);
+			while (OplWrites.Count > 500) {
+				OplWrites.RemoveAt(0);
+			}
+		});
 	}
 
 	private void WireSerilogSink() {
@@ -630,25 +571,6 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 		if (string.IsNullOrWhiteSpace(AdgPath)) {
 			Status = "Select a file first.";
 			return false;
-		}
-
-		// If the active playlist item carries in-memory bytes (e.g. lifted from DUNE.DAT),
-		// feed them directly to the engine — no disk I/O, no extraction folder, no HSQ decompression here.
-		if (SelectedPlaylistItem is not null
-			&& SelectedPlaylistItem.Bytes is not null
-			&& string.Equals(SelectedPlaylistItem.Path, AdgPath, StringComparison.OrdinalIgnoreCase)) {
-			try {
-				_engine.LoadSong(SelectedPlaylistItem.Bytes);
-				_loadedPath = SelectedPlaylistItem.Path;
-				SelectedFileName = SelectedPlaylistItem.FileName;
-				UpdateHeaderInfo();
-				Logger.Information("Loaded in-memory {File} ({Bytes} bytes) from DUNE.DAT", SelectedFileName, SelectedPlaylistItem.Bytes.Length);
-				return true;
-			} catch (Exception ex) {
-				Status = $"Load failed: {ex.Message}";
-				Logger.Error(ex, "In-memory load failed for {File}", SelectedPlaylistItem.FileName);
-				return false;
-			}
 		}
 
 		string resolvedPath = ResolveAdpCompatiblePath(AdgPath);
@@ -807,8 +729,6 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 	}
 
 	private void RefreshTransportState() {
-		FlushUiEventQueues();
-
 		IsPlaying = _engine.IsPlaying;
 		IsPaused = _engine.IsPaused;
 
@@ -826,10 +746,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 
 	private void UpdateLiveProofText() {
 		string transportState = IsPlaying ? "playing" : IsPaused ? "paused" : "idle";
-		long totalOpl = Interlocked.Read(ref _totalOplWritesCount);
-		long totalCh = Interlocked.Read(ref _totalChannelEventsCount);
-		string source = _duneDatReader is null ? "file" : "DUNE.DAT in-memory";
-		LiveProofText = $"Live proof: state={transportState} | track={SelectedFileName} | source={source} | channelEvents={totalCh} | oplWrites={totalOpl} | UI engine channels=9 (DNADP lineage) | ADG core channels=18 (DNADG/AdLib Gold).";
+		LiveProofText = $"Live proof: state={transportState} | track={SelectedFileName} | channelEvents={ChannelEvents.Count} | oplWrites={OplWrites.Count} | UI engine channels=9 (DNADP lineage) | ADG core channels=18 (DNADG/AdLib Gold).";
 	}
 
 	private void UpdateChannelState() {
@@ -876,7 +793,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 
 	private void ExtractHeaderInfoForPlaylistItem(PlaylistItem item) {
 		try {
-			byte[] raw = item.Bytes ?? File.ReadAllBytes(item.Path);
+			byte[] raw = File.ReadAllBytes(item.Path);
 			if (DuneAdgPlayerEngine.TryExtractHeaderInfo(raw, out SongHeaderInfo? headerInfo) && headerInfo is not null) {
 				StringBuilder tooltip = new StringBuilder();
 				tooltip.AppendLine($"File: {item.FileName}");
