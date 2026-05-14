@@ -117,7 +117,6 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 		_engine = new DuneAdgPlayerEngine();
 
 		WireSerilogSink();
-		WireEngineEvents();
 
 		_statusTimer = new DispatcherTimer {
 			Interval = TimeSpan.FromMilliseconds(100)
@@ -126,6 +125,10 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 		_statusTimer.Start();
 
 		InitializePlaylistFromDefaultDuneDat();
+
+		_engine.OplRegisterWritten += OnOplWrite;
+		_engine.ChannelEventDispatched += OnChannelEvent;
+		_engine.AudioSamplesRendered += OnAudioSamples;
 
 		// Set default file name
 		if (File.Exists(AdgPath)) {
@@ -155,10 +158,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 
 	/// <inheritdoc />
 	public void Dispose() {
+		_engine.OplRegisterWritten -= OnOplWrite;
+		_engine.ChannelEventDispatched -= OnChannelEvent;
+		_engine.AudioSamplesRendered -= OnAudioSamples;
 		ObservableSerilogSink.Instance.LogReceived -= OnSerilogMessage;
 		_statusTimer.Stop();
-		_engine.ChannelEventDispatched -= OnChannelEvent;
-		_engine.OplRegisterWritten -= OnOplWrite;
 		_engine.Dispose();
 	}
 
@@ -411,25 +415,6 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 		Status = "Stopped.";
 	}
 
-	private void WireEngineEvents() {
-		_engine.SongFinished += () => {
-			Dispatcher.UIThread.Post(() => {
-				RefreshTransportState();
-				Status = "Finished.";
-				TryAutoAdvancePlaylist();
-			});
-		};
-
-		_engine.AudioSamplesRendered += OnAudioSamplesRendered;
-		_engine.ChannelEventDispatched += OnChannelEvent;
-		_engine.OplRegisterWritten += OnOplWrite;
-	}
-
-	private void OnAudioSamplesRendered(float[] samples, int count) {
-		_waveformControl.PushSamples(samples, count);
-		_volumeFeedbackControl.PushSamples(samples, count);
-	}
-
 	private void InitializePlaylistFromDefaultDuneDat() {
 		_defaultDuneDatPath = ResolveDefaultDuneDatPath();
 		if (!File.Exists(_defaultDuneDatPath)) {
@@ -490,12 +475,12 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 	}
 
 	private static System.Collections.Generic.IReadOnlyList<string> DiscoverMusicFilesFromExtractedDat(string extractedFolder) {
-		System.Collections.Generic.HashSet<string> hsqBaseNames = new(StringComparer.OrdinalIgnoreCase);
+		System.Collections.Generic.HashSet<string> agdBaseNames = new(StringComparer.OrdinalIgnoreCase);
 		System.Collections.Generic.HashSet<string> m32BaseNames = new(StringComparer.OrdinalIgnoreCase);
 
-		string[] hsqFiles = Directory.GetFiles(extractedFolder, "*.HSQ", SearchOption.TopDirectoryOnly);
-		for (int i = 0; i < hsqFiles.Length; i++) {
-			hsqBaseNames.Add(Path.GetFileNameWithoutExtension(hsqFiles[i]));
+		string[] agdFiles = Directory.GetFiles(extractedFolder, "*.AGD", SearchOption.TopDirectoryOnly);
+		for (int i = 0; i < agdFiles.Length; i++) {
+			agdBaseNames.Add(Path.GetFileNameWithoutExtension(agdFiles[i]));
 		}
 
 		string[] m32Files = Directory.GetFiles(extractedFolder, "*.M32", SearchOption.TopDirectoryOnly);
@@ -504,43 +489,14 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 		}
 
 		System.Collections.Generic.List<string> result = new();
-		foreach (string baseName in hsqBaseNames) {
+		foreach (string baseName in agdBaseNames) {
 			if (m32BaseNames.Contains(baseName)) {
-				result.Add(Path.Combine(extractedFolder, baseName + ".HSQ"));
+				result.Add(Path.Combine(extractedFolder, baseName + ".AGD"));
 			}
 		}
 
 		result.Sort(StringComparer.OrdinalIgnoreCase);
 		return result;
-	}
-
-	private void OnChannelEvent(int channel, string eventType, string detail, long tick) {
-		Dispatcher.UIThread.Post(() => {
-			ChannelEventItem item = new ChannelEventItem {
-				Channel = channel,
-				EventType = eventType,
-				Detail = detail,
-				Tick = tick
-			};
-			ChannelEvents.Add(item);
-			while (ChannelEvents.Count > 500) {
-				ChannelEvents.RemoveAt(0);
-			}
-		});
-	}
-
-	private void OnOplWrite(ushort register, byte value, long tick) {
-		Dispatcher.UIThread.Post(() => {
-			OplWriteItem item = new OplWriteItem {
-				Register = register,
-				Value = value,
-				Tick = tick
-			};
-			OplWrites.Add(item);
-			while (OplWrites.Count > 500) {
-				OplWrites.RemoveAt(0);
-			}
-		});
 	}
 
 	private void WireSerilogSink() {
@@ -553,6 +509,50 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 
 	private void OnSerilogMessage(string message) {
 		Dispatcher.UIThread.Post(() => AddLog(message));
+	}
+
+	/// <summary>
+	/// Called from the engine tick thread when an OPL register is written.
+	/// Posts to the UI thread and keeps the ring buffer at 500 entries.
+	/// </summary>
+	private void OnOplWrite(ushort register, byte value, long tick) {
+		Dispatcher.UIThread.Post(() => {
+			OplWrites.Add(new OplWriteItem {
+				Tick = tick,
+				Register = register,
+				Value = value,
+			});
+			while (OplWrites.Count > 500) {
+				OplWrites.RemoveAt(0);
+			}
+		});
+	}
+
+	/// <summary>
+	/// Called from the engine tick thread when a channel event (NoteOn/NoteOff/etc.) fires.
+	/// Posts to the UI thread and keeps the ring buffer at 500 entries.
+	/// </summary>
+	private void OnChannelEvent(int channel, string eventName, string detail, long tick) {
+		Dispatcher.UIThread.Post(() => {
+			ChannelEvents.Add(new ChannelEventItem {
+				Tick = tick,
+				Channel = channel,
+				EventType = eventName,
+				Detail = detail,
+			});
+			while (ChannelEvents.Count > 500) {
+				ChannelEvents.RemoveAt(0);
+			}
+		});
+	}
+
+	/// <summary>
+	/// Called from the OPL render thread with normalized float samples.
+	/// Pushes to the VU meter and requests a visual refresh.
+	/// </summary>
+	private void OnAudioSamples(float[] samples, int sampleCount) {
+		_volumeFeedbackControl.PushSamples(samples, sampleCount);
+		Dispatcher.UIThread.Post(() => _volumeFeedbackControl.InvalidateVisual());
 	}
 
 	private void AddLog(string message) {
@@ -639,27 +639,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 	}
 
 	private static string ResolveHsqPreferredPath(string requestedPath) {
-		if (string.IsNullOrWhiteSpace(requestedPath)) {
-			return requestedPath;
-		}
-
-		string extension = Path.GetExtension(requestedPath);
-		if (!string.Equals(extension, ".AGD", StringComparison.OrdinalIgnoreCase)
-			&& !string.Equals(extension, ".ADG", StringComparison.OrdinalIgnoreCase)) {
-			return requestedPath;
-		}
-
-		string? directory = Path.GetDirectoryName(requestedPath);
-		if (string.IsNullOrWhiteSpace(directory)) {
-			return requestedPath;
-		}
-
-		string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(requestedPath);
-		string hsqCandidate = Path.Combine(directory, fileNameWithoutExtension + ".HSQ");
-		if (File.Exists(hsqCandidate)) {
-			return hsqCandidate;
-		}
-
+		// ADG player always loads the file as-is. No format substitution.
 		return requestedPath;
 	}
 

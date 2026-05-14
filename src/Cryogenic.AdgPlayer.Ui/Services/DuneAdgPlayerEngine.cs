@@ -65,8 +65,6 @@ public sealed partial class DuneAdgPlayerEngine : IDisposable {
 	private readonly ushort[] _channelConnShaping = new ushort[ChannelCount];
 	private readonly ushort[] _channelVolModShaping = new ushort[ChannelCount];
 	private readonly ushort[] _channelConnMod = new ushort[ChannelCount];
-	private readonly ushort[] _channelFreq = new ushort[ChannelCount];
-
 	// --- Loop snapshot ---
 	private readonly ushort[] _snapshotWait = new ushort[ChannelCount];
 	private readonly ushort[] _snapshotPointer = new ushort[ChannelCount];
@@ -111,25 +109,7 @@ public sealed partial class DuneAdgPlayerEngine : IDisposable {
 		0x00, 0x06, 0x0C, 0x12, 0x18
 	};
 
-	/// <summary>
-	/// Fired when the song has finished playing (all channels ended and tickFlag reached 0).
-	/// </summary>
-	public event Action? SongFinished;
 
-	/// <summary>
-	/// Fired when audio samples have been rendered, for waveform display.
-	/// </summary>
-	public event Action<float[], int>? AudioSamplesRendered;
-
-	/// <summary>
-	/// Fired when an OPL register write occurs. Args: (register, value, tickCount).
-	/// </summary>
-	public event Action<ushort, byte, long>? OplRegisterWritten;
-
-	/// <summary>
-	/// Fired when a channel event is dispatched. Args: (channel, eventName, detail, tickCount).
-	/// </summary>
-	public event Action<int, string, string, long>? ChannelEventDispatched;
 
 	/// <summary>
 	/// Current playback measure (1-based). Updated each tick.
@@ -214,7 +194,7 @@ public sealed partial class DuneAdgPlayerEngine : IDisposable {
 					Instrument = _channelInstrument[i],
 					Note = _channelNote[i],
 					Transpose = Hi8(_channelPitchBendFlag[i]),
-					Frequency = _channelFreq[i],
+					Frequency = _adgFrequencyWordTable[i],
 					PitchBendFlag = _channelPitchBendFlag[i],
 					IsActive = _channelEventPointer[i] != 0 && _channelWait[i] != 0xFFFF
 				};
@@ -252,12 +232,33 @@ public sealed partial class DuneAdgPlayerEngine : IDisposable {
 	public bool IsPaused => _playing && _paused;
 
 	/// <summary>
+	/// Fired on every OPL register write: (register, value, totalTickCount).
+	/// Safe to subscribe from any thread; handler must marshal to UI thread as needed.
+	/// </summary>
+	public event Action<ushort, byte, long>? OplRegisterWritten;
+
+	/// <summary>
+	/// Fired on NoteOn, NoteOff, ProgramChange, EndOfTrack events:
+	/// (channel, eventName, detail, totalTickCount).
+	/// Safe to subscribe from any thread; handler must marshal to UI thread as needed.
+	/// </summary>
+	public event Action<int, string, string, long>? ChannelEventDispatched;
+
+	/// <summary>
+	/// Fired after each audio render batch with normalized float samples and frame count.
+	/// Forwarded from OplSynthesizer.AudioSamplesRendered.
+	/// Safe to subscribe from any thread; handler must marshal to UI thread as needed.
+	/// </summary>
+	public event Action<float[], int>? AudioSamplesRendered;
+
+	/// <summary>
 	/// Creates the engine with a custom OPL synthesizer (for testing).
 	/// </summary>
 	public DuneAdgPlayerEngine(OplSynthesizer opl) {
 		_opl = opl;
 		_samplesPerTickThreshold = (long)OplSynthesizer.NativeOplSampleRate * _pitReloadValue;
 		_opl.OnBeforeRender = AdvanceSamples;
+		_opl.AudioSamplesRendered += (buf, count) => AudioSamplesRendered?.Invoke(buf, count);
 		Logger.Information("ADG engine created: {SampleRate} Hz native OPL, PIT reload 0x{PitReload:X4}",
 			OplSynthesizer.NativeOplSampleRate, _pitReloadValue);
 	}
@@ -268,8 +269,8 @@ public sealed partial class DuneAdgPlayerEngine : IDisposable {
 	public DuneAdgPlayerEngine() {
 		_opl = new OplSynthesizer();
 		_samplesPerTickThreshold = (long)OplSynthesizer.NativeOplSampleRate * _pitReloadValue;
+		_opl.AudioSamplesRendered += (buf, count) => AudioSamplesRendered?.Invoke(buf, count);
 		_opl.OnBeforeRender = AdvanceSamples;
-		_opl.AudioSamplesRendered += (samples, count) => AudioSamplesRendered?.Invoke(samples, count);
 		Logger.Information("ADG engine created (default): {SampleRate} Hz native OPL via SoftwareMixer", OplSynthesizer.NativeOplSampleRate);
 	}
 
@@ -324,12 +325,17 @@ public sealed partial class DuneAdgPlayerEngine : IDisposable {
 			return;
 		}
 		lock (_lock) {
-			_totalSamplesRendered += frameCount;
-			_sampleAccumulator += (long)frameCount * PitInputClock;
-			while (_sampleAccumulator >= _samplesPerTickThreshold) {
-				_sampleAccumulator -= _samplesPerTickThreshold;
-				_totalTickCount++;
-				TickInternal();
+			try {
+				_totalSamplesRendered += frameCount;
+				_sampleAccumulator += (long)frameCount * PitInputClock;
+				while (_sampleAccumulator >= _samplesPerTickThreshold) {
+					_sampleAccumulator -= _samplesPerTickThreshold;
+					_totalTickCount++;
+					TickInternal();
+				}
+			} catch (Exception ex) {
+				Logger.Error(ex, "Exception in ADG tick; stopping playback");
+				_playing = false;
 			}
 		}
 	}

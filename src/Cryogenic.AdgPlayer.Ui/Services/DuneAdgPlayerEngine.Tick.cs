@@ -142,54 +142,28 @@ public sealed partial class DuneAdgPlayerEngine {
 	}
 
 	/// <summary>
-	/// Reads a variable-length wait value from the song data stream.
-	/// Updates channel wait and event pointer.
-	/// Mirrors AdpReadWaitValue_08E1.
+	/// Reads a variable-length wait value from the ADG song data stream.
+	/// Each byte contributes 7 bits; the high bit signals continuation.
+	/// Mirrors AdgReadWaitValue_0E7E: value = (value &lt;&lt; 7) | (byte &amp; 0x7F) until MSB clears.
 	/// </summary>
 	private void ReadWaitValue(int ch) {
 		ushort si = _channelEventPointer[ch];
-		byte al = SongByte16(si);
-		si = (ushort)(si + 1);
-		ushort ax = al;
+		uint accumulator = 0;
+		bool overflow = false;
 
-		if ((al & 0x80) != 0) {
-			ushort cx = 0;
-			byte ah = 0;
-			do {
-				byte previousCl = Lo8(cx);
-				byte previousAh = ah;
-				cx = Make16(previousAh, previousCl);
-				ah = al;
-				al = SongByte16(si);
-				si = (ushort)(si + 1);
-			} while ((al & 0x80) != 0);
-
-			ax = (ushort)((al & 0x7F) | ((ah & 0x7F) << 8));
-			cx = (ushort)(cx & 0x7F7F);
-
-			byte cl = (byte)(Lo8(cx) << 1);
-			cx = Make16(cl, Hi8(cx));
-			cx = (ushort)(cx >> 1);
-
-			byte lowAl = Lo8(ax);
-			lowAl = (byte)(lowAl << 1);
-			ax = Make16(lowAl, Hi8(ax));
-			ax = (ushort)(ax << 1);
-
-			bool carry = (cx & 0x0001) != 0;
-			cx = (ushort)(cx >> 1);
-			ax = (ushort)((ax >> 1) | (carry ? 0x8000 : 0));
-
-			carry = (cx & 0x0001) != 0;
-			cx = (ushort)(cx >> 1);
-			ax = (ushort)((ax >> 1) | (carry ? 0x8000 : 0));
-
-			if (cx != 0) {
-				ax = 0xFFFF;
+		while (true) {
+			byte current = SongByte16(si);
+			si = (ushort)(si + 1);
+			accumulator = (accumulator << 7) | (uint)(current & 0x7F);
+			if (accumulator > ushort.MaxValue) {
+				overflow = true;
+			}
+			if ((current & 0x80) == 0) {
+				break;
 			}
 		}
 
-		_channelWait[ch] = ax;
+		_channelWait[ch] = overflow ? ushort.MaxValue : (ushort)accumulator;
 		_channelEventPointer[ch] = si;
 	}
 
@@ -209,7 +183,7 @@ public sealed partial class DuneAdgPlayerEngine {
 		EnvelopeSetup(ch, velocity);
 
 		if (_channelNote[ch] != 0) {
-			OplFrequencyWrite(ch, 0);
+			AdgNoteOff((ushort)ch);
 		}
 
 		byte noteFromEvent = Hi8(eventWord);
@@ -221,8 +195,8 @@ public sealed partial class DuneAdgPlayerEngine {
 		_channelVibratoCount[ch] = _channelVibratoInit[ch];
 		_channelVibratoPhase[ch] = 0x40;
 
-		OplNoteOn(ch, rawPitch);
-		ChannelEventDispatched?.Invoke(ch, "NoteOn", $"note={note:X2} vel={velocity:X2} inst={_channelInstrument[ch]:X2} tr={noteTranspose:X2} pb={Lo8(_channelPitchBendFlag[ch]):X2} rp={rawPitch:X4}", _totalTickCount);
+		AdgNoteOn((ushort)ch, rawPitch);
+		ChannelEventDispatched?.Invoke(ch, "NoteOn", $"note={note:X2} vel={velocity:X2} raw={rawPitch:X4}", _totalTickCount);
 	}
 
 	/// <summary>
@@ -236,9 +210,9 @@ public sealed partial class DuneAdgPlayerEngine {
 		byte noteFromEvent = (byte)(Hi8(eventWord) + Hi8(_channelPitchBendFlag[ch]));
 		if (_channelNote[ch] == noteFromEvent) {
 			_channelNote[ch] = 0;
-			OplNoteOff(ch);
+			AdgNoteOff((ushort)ch);
+			ChannelEventDispatched?.Invoke(ch, "NoteOff", $"note={noteFromEvent:X2}", _totalTickCount);
 		}
-		ChannelEventDispatched?.Invoke(ch, "NoteOff", $"note={noteFromEvent:X2} inst={_channelInstrument[ch]:X2} tr={Hi8(_channelPitchBendFlag[ch]):X2}", _totalTickCount);
 	}
 
 	/// <summary>
@@ -286,8 +260,8 @@ public sealed partial class DuneAdgPlayerEngine {
 		_channelVibratoCount[ch] = 0;
 		_channelVibratoInit[ch] = Lo8(ax);
 
-		InstrumentWrite(ch, (ushort)(instOff + 2));
-		ChannelEventDispatched?.Invoke(ch, "PgmChg", $"inst={instrument:X2}", _totalTickCount);
+		InstrumentWrite(ch, instOff);
+		ChannelEventDispatched?.Invoke(ch, "ProgramChange", $"inst={instrument:X2} off=0x{instOff:X4}", _totalTickCount);
 	}
 
 	/// <summary>
@@ -312,6 +286,10 @@ public sealed partial class DuneAdgPlayerEngine {
 		ushort operatorLevel = _channelOperatorLevel[ch];
 		ushort volModShape = _channelVolModShaping[ch];
 
+		sbyte modRoute = unchecked((sbyte)ModulatorOffsets[ch]);
+		sbyte carRoute = unchecked((sbyte)CarrierOffsets[ch]);
+		sbyte chanRoute = (sbyte)ch;
+
 		// Modulator TL (low byte of volModShape)
 		if (Lo8(volModShape) != 0) {
 			byte cl = Lo8(volModShape);
@@ -325,7 +303,7 @@ public sealed partial class DuneAdgPlayerEngine {
 			byte reg = (byte)(Lo8(operatorLevel) & 0x3F);
 			reg = reg >= scaleAl ? (byte)(reg - scaleAl) : (byte)0;
 			byte flags = (byte)(Lo8(operatorLevel) & 0xC0);
-			OplRegisterWrite((ushort)(0x40 + ModulatorOffsets[ch]), (byte)(reg | flags));
+			AdgWriteRelativeGoldRegister(0x40, (byte)(reg | flags), modRoute);
 		}
 
 		// Carrier TL (high byte of volModShape)
@@ -341,7 +319,7 @@ public sealed partial class DuneAdgPlayerEngine {
 			byte reg = (byte)(Hi8(operatorLevel) & 0x3F);
 			reg = reg >= scaleAl ? (byte)(reg - scaleAl) : (byte)0;
 			byte flags = (byte)(Hi8(operatorLevel) & 0xC0);
-			OplRegisterWrite((ushort)(0x40 + CarrierOffsets[ch]), (byte)(reg | flags));
+			AdgWriteRelativeGoldRegister(0x40, (byte)(reg | flags), carRoute);
 		}
 
 		// Connection modulation
@@ -360,7 +338,7 @@ public sealed partial class DuneAdgPlayerEngine {
 			if (scaleAl > 0x0F) {
 				scaleAl = (byte)((scaleAl & 0x0F) | 0x0E);
 			}
-			OplRegisterWrite((ushort)(0xC0 + ch), scaleAl);
+			AdgWriteRelativeGoldRegister(0xC0, scaleAl, chanRoute);
 		}
 	}
 
@@ -374,6 +352,9 @@ public sealed partial class DuneAdgPlayerEngine {
 
 		ushort bx = _channelEnvShaping[ch];
 		ushort cx = _channelTlShaping[ch];
+		sbyte modRoute = unchecked((sbyte)ModulatorOffsets[ch]);
+		sbyte carRoute = unchecked((sbyte)CarrierOffsets[ch]);
+		sbyte chanRoute = (sbyte)ch;
 
 		// Modulator TL
 		if (Lo8(cx) != 0) {
@@ -391,7 +372,7 @@ public sealed partial class DuneAdgPlayerEngine {
 				reg = 0x3F;
 			}
 			bx = (ushort)((bx & 0xFF00) | ((Lo8(bx) & 0xC0) | reg));
-			OplRegisterWrite((ushort)(0x40 + ModulatorOffsets[ch]), Lo8(bx));
+			AdgWriteRelativeGoldRegister(0x40, Lo8(bx), modRoute);
 		}
 
 		// Carrier TL
@@ -410,7 +391,7 @@ public sealed partial class DuneAdgPlayerEngine {
 				reg = 0x3F;
 			}
 			bx = (ushort)((bx & 0x00FF) | (((Hi8(bx) & 0xC0) | reg) << 8));
-			OplRegisterWrite((ushort)(0x40 + CarrierOffsets[ch]), Hi8(bx));
+			AdgWriteRelativeGoldRegister(0x40, Hi8(bx), carRoute);
 		}
 
 		_channelOperatorLevel[ch] = bx;
@@ -436,7 +417,7 @@ public sealed partial class DuneAdgPlayerEngine {
 			scale = (byte)((scale & 0x0F) | 0x0E);
 		}
 		_channelConnMod[ch] = (ushort)((_channelConnMod[ch] & 0x00FF) | (scale << 8));
-		OplRegisterWrite((ushort)(0xC0 + ch), scale);
+		AdgWriteRelativeGoldRegister(0xC0, scale, chanRoute);
 	}
 
 	/// <summary>
@@ -450,7 +431,6 @@ public sealed partial class DuneAdgPlayerEngine {
 		// The bend body consumes full AX, so preserving this contract is critical.
 		ReadWaitValue(ch);
 		PitchBendBody(ch, Make16(bendValue, bendValue));
-		ChannelEventDispatched?.Invoke(ch, "PBend", $"val={bendValue:X2}", _totalTickCount);
 	}
 
 	/// <summary>
@@ -608,8 +588,8 @@ public sealed partial class DuneAdgPlayerEngine {
 		ah = (byte)(Hi8(ax) | cl);
 		ax = Make16(Lo8(ax), ah);
 
-		_channelFreq[ch] = ax;
-		OplFrequencyWrite(ch, (ushort)(ax | 0x2000));
+		_adgFrequencyWordTable[ch] = ax;
+		AdgWriteFrequencyWord((ushort)ch, (ushort)(ax | 0x2000));
 	}
 
 	/// <summary>
@@ -618,6 +598,7 @@ public sealed partial class DuneAdgPlayerEngine {
 	/// </summary>
 	private void EndOfTrack(int ch) {
 		_channelWait[ch] = 0xFFFF;
+		ChannelEventDispatched?.Invoke(ch, "EndOfTrack", "", _totalTickCount);
 		byte pointerLow = Lo8(_channelEventPointer[ch]);
 		pointerLow = (byte)(pointerLow - 2);
 		_channelEventPointer[ch] = Make16(pointerLow, Hi8(_channelEventPointer[ch]));
@@ -634,7 +615,6 @@ public sealed partial class DuneAdgPlayerEngine {
 			AllNotesOff();
 			_statusFlags = 0;
 			Logger.Information("Song finished (tickFlag reached 0)");
-			SongFinished?.Invoke();
 			return;
 		}
 		if ((_tickFlag & 0x80) != 0) {
@@ -706,7 +686,7 @@ public sealed partial class DuneAdgPlayerEngine {
 	/// </summary>
 	private void AllNotesOff() {
 		for (int ch = 0; ch < ChannelCount; ch++) {
-			OplNoteOff(ch);
+			AdgNoteOff((ushort)ch);
 		}
 	}
 }

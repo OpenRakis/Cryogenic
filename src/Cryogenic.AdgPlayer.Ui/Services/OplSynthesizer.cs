@@ -1,4 +1,4 @@
-namespace Cryogenic.AdgPlayer.Ui.Services;
+﻿namespace Cryogenic.AdgPlayer.Ui.Services;
 
 using NukedOPL3Sharp;
 
@@ -30,9 +30,7 @@ public sealed class OplSynthesizer : IDisposable {
 	private readonly SoftwareMixer _mixer;
 	private readonly SoundChannel _channel;
 	private readonly NullPauseHandler _pauseHandler;
-	private short[] _tempBuffer = new short[4096];
 	private float[] _floatBuffer = new float[4096];
-	private float[] _normalizedBuffer = new float[4096];
 	private bool _disposed;
 
 	/// <summary>
@@ -42,10 +40,13 @@ public sealed class OplSynthesizer : IDisposable {
 	public Action<int>? OnBeforeRender;
 
 	/// <summary>
-	/// Called after each render batch with the interleaved stereo float buffer
-	/// and the total sample count (frames × 2). Samples are at int16 amplitude.
+	/// Fired after each render batch with the normalized float sample buffer and sample count.
+	/// Consumers use this to drive VU meters or waveform displays.
+	/// Buffer is reused on the next render; copy if needed beyond the handler scope.
 	/// </summary>
 	public event Action<float[], int>? AudioSamplesRendered;
+
+
 
 	/// <summary>
 	/// Creates the OPL synthesizer backed by Spice86's SoftwareMixer pipeline.
@@ -126,21 +127,23 @@ public sealed class OplSynthesizer : IDisposable {
 		OnBeforeRender?.Invoke(framesNeeded);
 
 		int sampleCount = framesNeeded * 2;
-		if (_tempBuffer.Length < sampleCount) {
-			_tempBuffer = new short[sampleCount];
+		if (_floatBuffer.Length < sampleCount) {
 			_floatBuffer = new float[sampleCount];
-			_normalizedBuffer = new float[sampleCount];
 		}
 
-		_chip.GenerateStream(_tempBuffer.AsSpan(0, sampleCount));
+		short[] tempBuffer = System.Buffers.ArrayPool<short>.Shared.Rent(sampleCount);
+		try {
+			_chip.GenerateStream(tempBuffer.AsSpan(0, sampleCount));
 
-		for (int i = 0; i < sampleCount; i++) {
-			_floatBuffer[i] = _tempBuffer[i];
-			_normalizedBuffer[i] = _tempBuffer[i] / 32768f;
+			for (int i = 0; i < sampleCount; i++) {
+				_floatBuffer[i] = tempBuffer[i] / 32768f;
+			}
+
+			_channel.AddSamplesFloat(framesNeeded, _floatBuffer.AsSpan(0, sampleCount));
+			AudioSamplesRendered?.Invoke(_floatBuffer, sampleCount);
+		} finally {
+			System.Buffers.ArrayPool<short>.Shared.Return(tempBuffer);
 		}
-
-		_channel.AddSamplesFloat(framesNeeded, _floatBuffer.AsSpan(0, sampleCount));
-		AudioSamplesRendered?.Invoke(_normalizedBuffer, sampleCount);
 	}
 
 	public void Dispose() {
