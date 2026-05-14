@@ -8,6 +8,7 @@ using Serilog;
 
 using Spice86.Audio.Filters;
 using Spice86.Core.Emulator.Devices.Sound;
+using Spice86.Core.Emulator.Devices.Sound.AdlibGoldOpl;
 using Spice86.Core.Emulator.VM;
 
 using System;
@@ -29,6 +30,7 @@ public sealed class AdgOplSynthesizer : IOplBus, IDisposable {
 	public const int NativeOplSampleRateConst = 49716;
 
 	private readonly Opl3Chip _chip;
+	private readonly AdlibGold _adlibGold;
 	private readonly SoftwareMixer _mixer;
 	private readonly SoundChannel _channel;
 	private readonly NullPauseHandler _pauseHandler;
@@ -55,10 +57,12 @@ public sealed class AdgOplSynthesizer : IOplBus, IDisposable {
 	/// </summary>
 	public Action<int>? OnBeforeRender { get; set; }
 
-	/// <summary>Builds the synthesizer and wires it to a fresh mixer.</summary>
+	/// <summary>Builds the synthesizer wired through Spice86's <see cref="AdlibGold"/>
+	/// post-processor (Opl3Gold pipeline, identical to <c>Opl3Fm.RenderFrame</c>).</summary>
 	public AdgOplSynthesizer() {
 		_chip = new Opl3Chip();
 		_chip.Reset((uint)NativeOplSampleRateConst);
+		_adlibGold = new AdlibGold(NativeOplSampleRateConst);
 		_pauseHandler = new NullPauseHandler();
 		_mixer = new SoftwareMixer(AudioEngine.CrossPlatform, _pauseHandler);
 		HashSet<ChannelFeature> features = new() {
@@ -69,7 +73,8 @@ public sealed class AdgOplSynthesizer : IOplBus, IDisposable {
 		_channel.Enable(false);
 		_channel.UserVolume = new Spice86.Audio.Common.AudioFrame(1.5f, 1.5f);
 		_channel.AppVolume = new Spice86.Audio.Common.AudioFrame(1.0f, 1.0f);
-		Logger.Information("ADG OPL3 synthesizer initialized: {Rate} Hz via SoftwareMixer", NativeOplSampleRateConst);
+		Logger.Information("ADG OPL3 synthesizer initialized: mode=Opl3Gold (required), rate={Rate} Hz, AdLibGold filter=ENABLED",
+			NativeOplSampleRateConst);
 	}
 
 	/// <summary>Starts mixer output (channel enabled).</summary>
@@ -109,6 +114,7 @@ public sealed class AdgOplSynthesizer : IOplBus, IDisposable {
 		}
 		_disposed = true;
 		_channel.Enable(false);
+		_adlibGold.Dispose();
 		_mixer.Dispose();
 		_pauseHandler.Dispose();
 	}
@@ -121,13 +127,14 @@ public sealed class AdgOplSynthesizer : IOplBus, IDisposable {
 			_floatBuffer = new float[sampleCount];
 			_normalizedBuffer = new float[sampleCount];
 		}
-		_chip.GenerateStream(_tempBuffer.AsSpan(0, sampleCount));
+		Span<short> shortSpan = _tempBuffer.AsSpan(0, sampleCount);
+		Span<float> floatSpan = _floatBuffer.AsSpan(0, sampleCount);
+		_chip.GenerateStream(shortSpan);
+		_adlibGold.Process(shortSpan, framesNeeded, floatSpan);
 		for (int i = 0; i < sampleCount; i++) {
-			short sample = _tempBuffer[i];
-			_floatBuffer[i] = sample;
-			_normalizedBuffer[i] = sample / 32768f;
+			_normalizedBuffer[i] = _floatBuffer[i] / 32768f;
 		}
-		_channel.AddSamplesFloat(framesNeeded, _floatBuffer.AsSpan(0, sampleCount));
+		_channel.AddSamplesFloat(framesNeeded, floatSpan);
 		AudioSamplesRendered?.Invoke(_normalizedBuffer, sampleCount);
 	}
 

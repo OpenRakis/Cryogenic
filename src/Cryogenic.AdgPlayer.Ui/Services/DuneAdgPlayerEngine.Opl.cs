@@ -1,4 +1,4 @@
-namespace Cryogenic.AdgPlayer.Ui.Services;
+﻿namespace Cryogenic.AdgPlayer.Ui.Services;
 
 using System;
 
@@ -58,17 +58,39 @@ public sealed partial class DuneAdgPlayerEngine {
 	}
 
 	/// <summary>
-	/// Initializes OPL chip registers (waveform enable, rhythm off, OPL3 mode).
-	/// Mirrors the init sequence from AdpInit_02D8.
+	/// Initializes OPL chip registers and explicitly enables OPL3 (AdLib Gold)
+	/// mode so that bank 1 / dual-OPL3 features are active. Every step is
+	/// logged at Information level so the audio path is auditable from the UI
+	/// log panel and the Serilog file sink.
 	/// </summary>
 	private void InitOplChip() {
+		Logger.Information("OPL3 init BEGIN: synth=Opl3Chip (NukedOPL3) + Spice86.AdlibGold post-processor, native rate={Rate} Hz, mode=Opl3Gold (Opl3Fm.RenderFrame parity)", OplSynthesizer.NativeOplSampleRate);
 		_opl.Reset();
-		// Enable waveform select (register 0x01, bit 5)
+		Logger.Information("OPL3 chip reset complete (rate={Rate} Hz, both banks cleared)", OplSynthesizer.NativeOplSampleRate);
+
+		// AdLib Gold / OPL3 enable: bank 1 register 0x05 bit 0 = 1 -> OPL3 mode ON
+		// (without this write the chip behaves as OPL2-compatible only).
+		OplRegisterWrite(0x105, 0x01);
+		Logger.Information("OPL3 mode ENABLE: reg 0x105 <- 0x01 (NEW=1, OPL3 features active, banks 0+1 addressable)");
+
+		// 4-op connection mask: 0 -> all 9 bank-0 channels are 2-op, matching the
+		// AdgPlayer core (no 4-op linking used by this driver).
+		OplRegisterWrite(0x104, 0x00);
+		Logger.Information("OPL3 4-op mask: reg 0x104 <- 0x00 (no 4-op linking, AdLib Gold/Opl3Gold default for DNADG)");
+
+		// Waveform select enable (OPL2 register 0x01 bit 5).
 		OplRegisterWrite(0x01, 0x20);
-		// Rhythm mode off
+		Logger.Information("OPL waveform select: reg 0x001 <- 0x20 (WSE=1)");
+
+		// Rhythm mode OFF and tremolo/vibrato depth both zeroed.
 		OplRegisterWrite(0xBD, 0x00);
-		// CSM/keyboard split (register 0x08, bit 6)
+		Logger.Information("OPL rhythm: reg 0x0BD <- 0x00 (rhythm OFF, AM/VIB depth=0)");
+
+		// CSM=0, NTS=1 (note-select keyboard split).
 		OplRegisterWrite(0x08, 0x40);
+		Logger.Information("OPL CSM/NTS: reg 0x008 <- 0x40 (CSM=0, NTS=1)");
+
+		Logger.Information("OPL3 init COMPLETE. Identity=AdLib Gold / OPL3 Gold | banks=2 | channels=18 (9 per bank) | mixer=SoftwareMixer | resample=49716->48000 Hz");
 	}
 
 	/// <summary>

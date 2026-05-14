@@ -1,4 +1,4 @@
-namespace Cryogenic.AdgPlayer.Ui.Views;
+﻿namespace Cryogenic.AdgPlayer.Ui.Views;
 
 using Avalonia;
 using Avalonia.Controls;
@@ -26,6 +26,8 @@ public sealed class WaveformControl : Control {
 	private readonly float[] _leftPeak = new float[DisplaySamples];
 	private readonly float[] _rightPeak = new float[DisplaySamples];
 	private int _writeIndex;
+	private long _lastInvalidateTicks;
+	private static readonly long MinInvalidateIntervalTicks = TimeSpan.FromMilliseconds(33).Ticks;
 
 	private static readonly IBrush BgBrush = new SolidColorBrush(Color.FromRgb(0x08, 0x0C, 0x10));
 	private static readonly Pen GridPen = new(new SolidColorBrush(Color.FromArgb(18, 0x40, 0x60, 0x80)), 0.5);
@@ -106,6 +108,14 @@ public sealed class WaveformControl : Control {
 			_writeIndex++;
 		}
 
+		// Throttle UI invalidation to ~30 fps. The render thread can call us
+		// hundreds of times per second; without this guard the dispatcher
+		// queue floods and the UI becomes unresponsive during playback.
+		long nowTicks = DateTime.UtcNow.Ticks;
+		if (nowTicks - _lastInvalidateTicks < MinInvalidateIntervalTicks) {
+			return;
+		}
+		_lastInvalidateTicks = nowTicks;
 		Dispatcher.UIThread.Post(InvalidateVisual, DispatcherPriority.Render);
 	}
 

@@ -1,4 +1,4 @@
-namespace Cryogenic.AdgPlayer.Ui.Views;
+﻿namespace Cryogenic.AdgPlayer.Ui.Views;
 
 using Avalonia;
 using Avalonia.Controls;
@@ -21,6 +21,8 @@ public sealed class VolumeFeedbackControl : Control {
 	private readonly float[] _leftHistory = new float[HistorySamples];
 	private readonly float[] _rightHistory = new float[HistorySamples];
 	private int _historyWriteIndex;
+	private long _lastInvalidateTicks;
+	private static readonly long MinInvalidateIntervalTicks = TimeSpan.FromMilliseconds(33).Ticks;
 
 	private float _leftLevel;
 	private float _rightLevel;
@@ -95,6 +97,12 @@ public sealed class VolumeFeedbackControl : Control {
 		_rightHistory[_historyWriteIndex] = _rightLevel;
 		_historyWriteIndex = (_historyWriteIndex + 1) % HistorySamples;
 
+		// Throttle UI invalidation to ~30 fps to keep the dispatcher responsive.
+		long nowTicks = DateTime.UtcNow.Ticks;
+		if (nowTicks - _lastInvalidateTicks < MinInvalidateIntervalTicks) {
+			return;
+		}
+		_lastInvalidateTicks = nowTicks;
 		Dispatcher.UIThread.Post(InvalidateVisual, DispatcherPriority.Render);
 	}
 

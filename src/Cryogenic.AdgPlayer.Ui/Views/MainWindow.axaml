@@ -69,7 +69,7 @@
         </Style>
     </Window.Styles>
 
-    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,120,*" Margin="14,10,14,8">
+    <Grid RowDefinitions="Auto,Auto,Auto,Auto,160,Auto,Auto,Auto,*" Margin="14,10,14,8">
 
         <!-- Row 0: Title bar -->
         <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="10" Margin="0,0,0,8">
@@ -81,7 +81,7 @@
         <!-- Row 1: File selector -->
         <Grid Grid.Row="1" ColumnDefinitions="Auto,*,Auto,Auto" Margin="0,0,0,6">
             <Button Grid.Column="0" Content="Browse" Command="{Binding BrowseFileCommand}" Margin="0,0,6,0" />
-            <TextBox Grid.Column="1" Text="{Binding AdgPath}" Watermark="ADG/HSQ file path..." FontSize="11" />
+            <TextBox Grid.Column="1" Text="{Binding AdgPath}" Watermark="ADG/HSQ file path or dat://DUNE.DAT/NAME.HSQ" FontSize="11" />
             <Button Grid.Column="2" Content="Add Files" Command="{Binding BrowsePlaylistFilesCommand}" Margin="8,0,0,0" />
             <Button Grid.Column="3" Content="Load" Command="{Binding LoadCommand}" Margin="8,0,0,0" />
         </Grid>
@@ -114,34 +114,14 @@
             </StackPanel>
         </Grid>
 
-        <!-- Row 3: Volume info + status bar -->
+        <!-- Row 3: Status + Volume info one-liner -->
         <Grid Grid.Row="3" ColumnDefinitions="*,Auto" Margin="0,0,0,4">
-            <TextBlock Grid.Column="0" Classes="mono" Foreground="#484F58" Text="{Binding VolumeInfo}" />
+            <TextBlock Grid.Column="0" Classes="mono" Foreground="#484F58" Text="{Binding VolumeInfo}" TextTrimming="CharacterEllipsis" />
             <TextBlock Grid.Column="1" Classes="mono" Foreground="#58A6FF" Text="{Binding Status}" HorizontalAlignment="Right" />
         </Grid>
 
-        <!-- Row 4: Identity proof -->
-        <Border Grid.Row="4" CornerRadius="4" Background="#161B22" Padding="6,3" Margin="0,0,0,4">
-            <TextBlock Classes="mono" Foreground="#58A6FF" Text="{Binding DriverIdentityText}" TextWrapping="Wrap" FontSize="10" />
-        </Border>
-
-        <!-- Row 5: Live proof -->
-        <Border Grid.Row="5" CornerRadius="4" Background="#161B22" Padding="6,3" Margin="0,0,0,4">
-            <TextBlock Classes="mono" Foreground="#7EE787" Text="{Binding LiveProofText}" TextWrapping="Wrap" FontSize="10" />
-        </Border>
-
-        <!-- Row 6: Header info -->
-        <Border Grid.Row="6" CornerRadius="4" Background="#161B22" Padding="6,4" Margin="0,0,0,4">
-            <TextBlock Classes="mono" Foreground="#C9D1D9" Text="{Binding HeaderInfo}" TextWrapping="Wrap" />
-        </Border>
-
-        <!-- Row 7: Channel state bar -->
-        <Border Grid.Row="7" CornerRadius="4" Background="#161B22" Padding="6,3" Margin="0,0,0,4">
-            <TextBlock Classes="mono" Foreground="#7EE787" Text="{Binding ChannelStateText}" TextWrapping="Wrap" FontSize="10" />
-        </Border>
-
-        <!-- Row 8: Waveform + Volume feedback (50/50 split) -->
-        <Grid Grid.Row="8" ColumnDefinitions="*,6,*" Margin="0,0,0,0">
+        <!-- Row 4: Waveform + Volume feedback (fixed 160 px, ALWAYS visible) -->
+        <Grid Grid.Row="4" ColumnDefinitions="*,6,*" Margin="0,0,0,6">
             <Border Grid.Column="0" CornerRadius="6" ClipToBounds="True" Background="#080C10" Margin="0,0,3,0">
                 <v:WaveformControl x:Name="Waveform" />
             </Border>
@@ -160,8 +140,26 @@
             </Border>
         </Grid>
 
-        <!-- Row 9: Bottom panels (Playlist | Channel Events | OPL Writes | Logs) -->
-        <Grid Grid.Row="9" ColumnDefinitions="0.8*,*,*,*" Margin="0,6,0,0">
+        <!-- Row 5: Identity (compact one-liner, ellipsised) -->
+        <Border Grid.Row="5" CornerRadius="4" Background="#161B22" Padding="6,3" Margin="0,0,0,3">
+            <TextBlock Classes="mono" Foreground="#58A6FF" Text="{Binding DriverIdentityText}" TextTrimming="CharacterEllipsis" FontSize="10" />
+        </Border>
+
+        <!-- Row 6: Live proof (compact one-liner, ellipsised) -->
+        <Border Grid.Row="6" CornerRadius="4" Background="#161B22" Padding="6,3" Margin="0,0,0,3">
+            <TextBlock Classes="mono" Foreground="#7EE787" Text="{Binding LiveProofText}" TextTrimming="CharacterEllipsis" FontSize="10" />
+        </Border>
+
+        <!-- Row 7: Header info + channel state (compact, two short lines) -->
+        <Border Grid.Row="7" CornerRadius="4" Background="#161B22" Padding="6,3" Margin="0,0,0,4">
+            <StackPanel Orientation="Vertical">
+                <TextBlock Classes="mono" Foreground="#C9D1D9" Text="{Binding HeaderInfo}" TextTrimming="CharacterEllipsis" FontSize="10" />
+                <TextBlock Classes="mono" Foreground="#7EE787" Text="{Binding ChannelStateText}" TextTrimming="CharacterEllipsis" FontSize="10" />
+            </StackPanel>
+        </Border>
+
+        <!-- Row 8: Bottom panels (Playlist | Channel Events | OPL Writes | Logs) -->
+        <Grid Grid.Row="8" ColumnDefinitions="0.8*,*,*,*" Margin="0,2,0,0">
 
             <!-- Playlist -->
             <Border Grid.Column="0" CornerRadius="4" Background="#161B22" Padding="4" Margin="0,0,3,0">
