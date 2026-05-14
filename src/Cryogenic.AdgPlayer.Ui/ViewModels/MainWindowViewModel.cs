@@ -25,8 +25,9 @@ using System.Text;
 public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 	private static readonly ILogger Logger = Log.ForContext<MainWindowViewModel>();
 
-	private static readonly string[] DefaultSongCandidates = [
-		@"C:\Users\noalm\source\repos\Cryogenic\doc\DUNECDVF\C\DUNECD\DUNE.DAT_\ARRAKIS.ADG",
+	private static readonly string[] DefaultDuneDatCandidates = [
+		@"C:\Users\noalm\source\repos\Cryogenic\doc\DUNECDVF\C\DUNE.DAT",
+		@"C:\Users\noalm\source\repos\Cryogenic\doc\DUNECDVF\C\DUNECD\DUNE.DAT",
 	];
 
 	private readonly Window _window;
@@ -37,9 +38,10 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 	private string _loadedPath = "";
 	private int _playlistIndex = -1;
 	private PlaylistItem? _currentlyPlayingTrack = null;
+	private string _defaultDuneDatPath = "";
 
 	[ObservableProperty]
-	private string _adgPath = ResolveDefaultSongPath();
+	private string _adgPath = "";
 
 	[ObservableProperty]
 	private string _status = "Select an ADG/HSQ file to play.";
@@ -122,6 +124,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 		};
 		_statusTimer.Tick += (_, _) => RefreshTransportState();
 		_statusTimer.Start();
+
+		InitializePlaylistFromDefaultDuneDat();
 
 		// Set default file name
 		if (File.Exists(AdgPath)) {
@@ -426,14 +430,88 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 		_volumeFeedbackControl.PushSamples(samples, count);
 	}
 
-	private static string ResolveDefaultSongPath() {
-		for (int i = 0; i < DefaultSongCandidates.Length; i++) {
-			string candidate = DefaultSongCandidates[i];
+	private void InitializePlaylistFromDefaultDuneDat() {
+		_defaultDuneDatPath = ResolveDefaultDuneDatPath();
+		if (!File.Exists(_defaultDuneDatPath)) {
+			Status = "DUNE.DAT not found. Browse files to build playlist.";
+			return;
+		}
+
+		string extractedFolder = ResolveExtractedDuneDatFolder(_defaultDuneDatPath);
+		if (!Directory.Exists(extractedFolder)) {
+			Status = "DUNE.DAT found but extracted folder DUNE.DAT_ is missing.";
+			Logger.Warning("DUNE.DAT found at {DatPath}, but extracted folder not found. Expected {ExtractedFolder}.",
+				_defaultDuneDatPath, extractedFolder);
+			return;
+		}
+
+		System.Collections.Generic.IReadOnlyList<string> musicFiles = DiscoverMusicFilesFromExtractedDat(extractedFolder);
+		for (int i = 0; i < musicFiles.Count; i++) {
+			AddPlaylistPath(musicFiles[i]);
+		}
+
+		if (Playlist.Count == 0) {
+			Status = "No music files discovered in DUNE.DAT_.";
+			Logger.Warning("No music files discovered in extracted DUNE.DAT folder {ExtractedFolder}.", extractedFolder);
+			return;
+		}
+
+		SelectedPlaylistItem = Playlist[0];
+		_playlistIndex = 0;
+		AdgPath = Playlist[0].Path;
+		SelectedFileName = Playlist[0].FileName;
+		UpdateAllPlaylistDisplays();
+		Status = $"Loaded {Playlist.Count} music files from DUNE.DAT.";
+		Logger.Information("Auto playlist from DUNE.DAT loaded: {Count} tracks from {ExtractedFolder}.", Playlist.Count, extractedFolder);
+	}
+
+	private static string ResolveDefaultDuneDatPath() {
+		for (int i = 0; i < DefaultDuneDatCandidates.Length; i++) {
+			string candidate = DefaultDuneDatCandidates[i];
 			if (File.Exists(candidate)) {
 				return candidate;
 			}
 		}
-		return DefaultSongCandidates[0];
+		return DefaultDuneDatCandidates[0];
+	}
+
+	private static string ResolveExtractedDuneDatFolder(string duneDatPath) {
+		string extractedNearDat = duneDatPath + "_";
+		if (Directory.Exists(extractedNearDat)) {
+			return extractedNearDat;
+		}
+
+		string workspaceExtracted = Path.Combine(Directory.GetCurrentDirectory(), "DUNE.DAT_");
+		if (Directory.Exists(workspaceExtracted)) {
+			return workspaceExtracted;
+		}
+
+		return extractedNearDat;
+	}
+
+	private static System.Collections.Generic.IReadOnlyList<string> DiscoverMusicFilesFromExtractedDat(string extractedFolder) {
+		System.Collections.Generic.HashSet<string> hsqBaseNames = new(StringComparer.OrdinalIgnoreCase);
+		System.Collections.Generic.HashSet<string> m32BaseNames = new(StringComparer.OrdinalIgnoreCase);
+
+		string[] hsqFiles = Directory.GetFiles(extractedFolder, "*.HSQ", SearchOption.TopDirectoryOnly);
+		for (int i = 0; i < hsqFiles.Length; i++) {
+			hsqBaseNames.Add(Path.GetFileNameWithoutExtension(hsqFiles[i]));
+		}
+
+		string[] m32Files = Directory.GetFiles(extractedFolder, "*.M32", SearchOption.TopDirectoryOnly);
+		for (int i = 0; i < m32Files.Length; i++) {
+			m32BaseNames.Add(Path.GetFileNameWithoutExtension(m32Files[i]));
+		}
+
+		System.Collections.Generic.List<string> result = new();
+		foreach (string baseName in hsqBaseNames) {
+			if (m32BaseNames.Contains(baseName)) {
+				result.Add(Path.Combine(extractedFolder, baseName + ".HSQ"));
+			}
+		}
+
+		result.Sort(StringComparer.OrdinalIgnoreCase);
+		return result;
 	}
 
 	private void OnChannelEvent(int channel, string eventType, string detail, long tick) {
