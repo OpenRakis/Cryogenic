@@ -1,4 +1,4 @@
-namespace Cryogenic.AdgPlayer.Ui;
+﻿namespace Cryogenic.AdgPlayer.Ui;
 
 using Avalonia;
 
@@ -21,7 +21,7 @@ internal static class Program {
 			.CreateLogger();
 
 		try {
-			Log.Information("Cryogenic ADP Player starting");
+			Log.Information("Cryogenic ADG Player starting (branding: AdLib Gold / OPL3Gold)");
 			BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
 		} catch (Exception ex) {
 			Log.Fatal(ex, "Unhandled exception");

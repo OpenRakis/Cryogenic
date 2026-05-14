@@ -319,22 +319,22 @@ public sealed class AdgMcpTools {
     }
 
     private static string? TryFindWorkspaceRoot() {
-    DirectoryInfo? dir = new(AppContext.BaseDirectory);
-    while (dir is not null) {
-        if (File.Exists(Path.Combine(dir.FullName, "src", "Cryogenic.sln"))) {
-            return dir.FullName;
+        DirectoryInfo? dir = new(AppContext.BaseDirectory);
+        while (dir is not null) {
+            if (File.Exists(Path.Combine(dir.FullName, "src", "Cryogenic.sln"))) {
+                return dir.FullName;
+            }
+            dir = dir.Parent;
         }
-        dir = dir.Parent;
-    }
-    return null;
-}
-
-private static string? TryFindDatFolder() {
-    string? root = TryFindWorkspaceRoot();
-    if (root is null) {
         return null;
     }
-    string candidate = Path.Combine(root, "doc", "DUNECDVF", "C", "DUNECD", "DUNE.DAT_");
-    return Directory.Exists(candidate) ? candidate : null;
-}
+
+    private static string? TryFindDatFolder() {
+        string? root = TryFindWorkspaceRoot();
+        if (root is null) {
+            return null;
+        }
+        string candidate = Path.Combine(root, "doc", "DUNECDVF", "C", "DUNECD", "DUNE.DAT_");
+        return Directory.Exists(candidate) ? candidate : null;
+    }
 }

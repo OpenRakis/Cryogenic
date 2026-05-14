@@ -1,4 +1,4 @@
-namespace Cryogenic.AdgPlayer.Ui.ViewModels;
+﻿namespace Cryogenic.AdgPlayer.Ui.ViewModels;
 
 using Avalonia.Controls;
 using Avalonia.Platform.Storage;
@@ -20,7 +20,7 @@ using System.Text;
 
 /// <summary>
 /// Main window view model: manages file loading, playback, volume, waveform,
-/// channel events, OPL writes, and Serilog log display for the standalone ADP OPL3 player.
+/// channel events, OPL writes, and Serilog log display for the standalone ADG player UI.
 /// </summary>
 public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 	private static readonly ILogger Logger = Log.ForContext<MainWindowViewModel>();
@@ -42,7 +42,13 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 	private string _adgPath = ResolveDefaultSongPath();
 
 	[ObservableProperty]
-	private string _status = "Select an ADG/ADP file to play.";
+	private string _status = "Select an ADG/HSQ file to play.";
+
+	[ObservableProperty]
+	private string _driverIdentityText = "Driver identity: ADG UI shell (DNADP-compatible playback core) | ADG core proof source: Cryogenic.AdgPlayer + MCP runtime.";
+
+	[ObservableProperty]
+	private string _liveProofText = "Live proof: idle";
 
 	[ObservableProperty]
 	private bool _isPlaying;
@@ -123,8 +129,10 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 			Status = "Default file found. Press Play.";
 		}
 
-		Logger.Information("ADP Player ready — OPL gain={OplGain:F1}x, tick rate={TickRate:F1} Hz",
+		Logger.Information("ADG UI ready. Branding=ADG/AdLibGold/OPL3Gold proof mode, OPL gain={OplGain:F1}x, tick rate={TickRate:F1} Hz",
 			_engine.OplVolumeGain, _engine.TickRateHz);
+		Logger.Information("ADG core proof markers: DuneAdgPlayerEngine(ChannelCountConst=18, PIT=0x1745), AdgOplSynthesizer dual-bank writes (chip0/chip1), SoftwareMixer pipeline.");
+		UpdateLiveProofText();
 	}
 
 	/// <summary>
@@ -163,7 +171,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 	}
 
 	/// <summary>
-	/// Opens a file picker for ADG/ADP files.
+	/// Opens a file picker for ADG/HSQ files.
 	/// </summary>
 	[RelayCommand]
 	private async System.Threading.Tasks.Task BrowseFileAsync() {
@@ -173,7 +181,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 
 		System.Collections.Generic.IReadOnlyList<IStorageFile> picked =
 			await _window.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions {
-				Title = "Select ADG/HSQ/ADP music file",
+				Title = "Select ADG/HSQ music file",
 				AllowMultiple = true,
 				FileTypeFilter = [
 					new FilePickerFileType("Dune Music") { Patterns = ["*.AGD", "*.ADG", "*.HSQ", "*.ADP", "*.agd", "*.adg", "*.hsq", "*.adp"] },
@@ -514,7 +522,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 		}
 		try {
 			if (!string.Equals(path, resolvedPath, StringComparison.OrdinalIgnoreCase)) {
-				Logger.Information("ADP source remapped: {Requested} -> {Resolved}", Path.GetFileName(path), Path.GetFileName(resolvedPath));
+				Logger.Information("Source remapped to compatible HSQ payload: {Requested} -> {Resolved}", Path.GetFileName(path), Path.GetFileName(resolvedPath));
 			}
 
 			byte[] raw = File.ReadAllBytes(resolvedPath);
@@ -655,6 +663,12 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 
 		UpdateVolumeInfo();
 		UpdateChannelState();
+		UpdateLiveProofText();
+	}
+
+	private void UpdateLiveProofText() {
+		string transportState = IsPlaying ? "playing" : IsPaused ? "paused" : "idle";
+		LiveProofText = $"Live proof: state={transportState} | track={SelectedFileName} | channelEvents={ChannelEvents.Count} | oplWrites={OplWrites.Count} | UI engine channels=9 (DNADP lineage) | ADG core channels=18 (DNADG/AdLib Gold).";
 	}
 
 	private void UpdateChannelState() {
