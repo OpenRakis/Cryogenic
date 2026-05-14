@@ -29,7 +29,11 @@ public sealed class VolumeFeedbackControl : Control {
 	private float _leftPeak;
 	private float _rightPeak;
 
-	private static readonly IBrush Bg = new LinearGradientBrush {
+	// Instance fields (not static): the LinearGradientBrush initializer
+	// touches Avalonia's dispatcher and throws if first accessed from a
+	// non-UI thread. PushSamples runs on the audio mixer thread, which
+	// would otherwise trigger off-thread type initialization.
+	private readonly IBrush Bg = new LinearGradientBrush {
 		StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative),
 		EndPoint = new RelativePoint(0, 1, RelativeUnit.Relative),
 		GradientStops = {
@@ -38,13 +42,13 @@ public sealed class VolumeFeedbackControl : Control {
 		}
 	};
 
-	private static readonly IBrush MeterBg = new SolidColorBrush(Color.FromArgb(120, 0x0E, 0x15, 0x1D));
-	private static readonly IBrush LabelBrush = new SolidColorBrush(Color.FromRgb(0xC9, 0xD1, 0xD9));
-	private static readonly IBrush SecondaryBrush = new SolidColorBrush(Color.FromRgb(0x8B, 0x94, 0x9E));
-	private static readonly Pen GuidePen = new(new SolidColorBrush(Color.FromArgb(40, 0x8B, 0x94, 0x9E)), 1);
-	private static readonly Pen PeakPen = new(new SolidColorBrush(Color.FromRgb(0xFF, 0xF2, 0x8A)), 1.2);
-	private static readonly Pen LeftHistoryPen = new(new SolidColorBrush(Color.FromArgb(180, 0x35, 0xBE, 0xFF)), 1.2);
-	private static readonly Pen RightHistoryPen = new(new SolidColorBrush(Color.FromArgb(180, 0xFF, 0xA0, 0x55)), 1.2);
+	private readonly IBrush MeterBg = new SolidColorBrush(Color.FromArgb(120, 0x0E, 0x15, 0x1D));
+	private readonly IBrush LabelBrush = new SolidColorBrush(Color.FromRgb(0xC9, 0xD1, 0xD9));
+	private readonly IBrush SecondaryBrush = new SolidColorBrush(Color.FromRgb(0x8B, 0x94, 0x9E));
+	private readonly Pen GuidePen = new(new SolidColorBrush(Color.FromArgb(40, 0x8B, 0x94, 0x9E)), 1);
+	private readonly Pen PeakPen = new(new SolidColorBrush(Color.FromRgb(0xFF, 0xF2, 0x8A)), 1.2);
+	private readonly Pen LeftHistoryPen = new(new SolidColorBrush(Color.FromArgb(180, 0x35, 0xBE, 0xFF)), 1.2);
+	private readonly Pen RightHistoryPen = new(new SolidColorBrush(Color.FromArgb(180, 0xFF, 0xA0, 0x55)), 1.2);
 
 	/// <summary>
 	/// Pushes interleaved stereo samples and updates meter state.
@@ -187,7 +191,7 @@ public sealed class VolumeFeedbackControl : Control {
 		context.DrawLine(PeakPen, new Point(px, y - 1), new Point(px, y + height + 1));
 	}
 
-	private static void DrawDbScale(DrawingContext context, double x, double y, double width) {
+	private void DrawDbScale(DrawingContext context, double x, double y, double width) {
 		double[] ticks = [-60, -48, -36, -24, -12, -6, -3, 0, 3];
 		for (int i = 0; i < ticks.Length; i++) {
 			double db = ticks[i];

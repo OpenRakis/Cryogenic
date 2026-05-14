@@ -29,14 +29,20 @@ public sealed class WaveformControl : Control {
 	private long _lastInvalidateTicks;
 	private static readonly long MinInvalidateIntervalTicks = TimeSpan.FromMilliseconds(33).Ticks;
 
-	private static readonly IBrush BgBrush = new SolidColorBrush(Color.FromRgb(0x08, 0x0C, 0x10));
-	private static readonly Pen GridPen = new(new SolidColorBrush(Color.FromArgb(18, 0x40, 0x60, 0x80)), 0.5);
-	private static readonly Pen CenterPen = new(new SolidColorBrush(Color.FromArgb(30, 0xFF, 0xFF, 0xFF)), 0.5);
+	// NOTE: these visual resources MUST be instance fields, not static. The
+	// LinearGradientBrush type initializer touches Avalonia's dispatcher; if
+	// the WaveformControl type is first referenced from the audio mixer
+	// thread (via PushSamples) the static init runs off-thread and throws
+	// InvalidOperationException ("Call from invalid thread"). Per-instance
+	// initializers run from the ctor, which XAML drives on the UI thread.
+	private readonly IBrush BgBrush = new SolidColorBrush(Color.FromRgb(0x08, 0x0C, 0x10));
+	private readonly Pen GridPen = new(new SolidColorBrush(Color.FromArgb(18, 0x40, 0x60, 0x80)), 0.5);
+	private readonly Pen CenterPen = new(new SolidColorBrush(Color.FromArgb(30, 0xFF, 0xFF, 0xFF)), 0.5);
 
-	private static readonly Pen LGlow = new(new SolidColorBrush(Color.FromArgb(40, 0x40, 0xC8, 0xFF)), 4.0);
-	private static readonly Pen LLine = new(new SolidColorBrush(Color.FromRgb(0x40, 0xC8, 0xFF)), 1.2);
-	private static readonly Pen LPeak = new(new SolidColorBrush(Color.FromArgb(90, 0x20, 0xA0, 0xE0)), 0.6);
-	private static readonly IBrush LFill = new LinearGradientBrush {
+	private readonly Pen LGlow = new(new SolidColorBrush(Color.FromArgb(40, 0x40, 0xC8, 0xFF)), 4.0);
+	private readonly Pen LLine = new(new SolidColorBrush(Color.FromRgb(0x40, 0xC8, 0xFF)), 1.2);
+	private readonly Pen LPeak = new(new SolidColorBrush(Color.FromArgb(90, 0x20, 0xA0, 0xE0)), 0.6);
+	private readonly IBrush LFill = new LinearGradientBrush {
 		StartPoint = new RelativePoint(0, 1, RelativeUnit.Relative),
 		EndPoint = new RelativePoint(0, 0, RelativeUnit.Relative),
 		GradientStops = {
@@ -45,12 +51,12 @@ public sealed class WaveformControl : Control {
 			new GradientStop(Color.FromArgb(90, 0x60, 0xE0, 0xFF), 1.0)
 		}
 	};
-	private static readonly IBrush LLabel = new SolidColorBrush(Color.FromArgb(70, 0x40, 0xC8, 0xFF));
+	private readonly IBrush LLabel = new SolidColorBrush(Color.FromArgb(70, 0x40, 0xC8, 0xFF));
 
-	private static readonly Pen RGlow = new(new SolidColorBrush(Color.FromArgb(40, 0xFF, 0x80, 0x40)), 4.0);
-	private static readonly Pen RLine = new(new SolidColorBrush(Color.FromRgb(0xFF, 0x80, 0x40)), 1.2);
-	private static readonly Pen RPeak = new(new SolidColorBrush(Color.FromArgb(90, 0xE0, 0x60, 0x20)), 0.6);
-	private static readonly IBrush RFill = new LinearGradientBrush {
+	private readonly Pen RGlow = new(new SolidColorBrush(Color.FromArgb(40, 0xFF, 0x80, 0x40)), 4.0);
+	private readonly Pen RLine = new(new SolidColorBrush(Color.FromRgb(0xFF, 0x80, 0x40)), 1.2);
+	private readonly Pen RPeak = new(new SolidColorBrush(Color.FromArgb(90, 0xE0, 0x60, 0x20)), 0.6);
+	private readonly IBrush RFill = new LinearGradientBrush {
 		StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative),
 		EndPoint = new RelativePoint(0, 1, RelativeUnit.Relative),
 		GradientStops = {
@@ -59,7 +65,7 @@ public sealed class WaveformControl : Control {
 			new GradientStop(Color.FromArgb(90, 0xFF, 0xA0, 0x60), 1.0)
 		}
 	};
-	private static readonly IBrush RLabel = new SolidColorBrush(Color.FromArgb(70, 0xFF, 0x80, 0x40));
+	private readonly IBrush RLabel = new SolidColorBrush(Color.FromArgb(70, 0xFF, 0x80, 0x40));
 
 	/// <summary>
 	/// Accepts interleaved stereo float samples (L, R, L, R, ...) and downsamples
