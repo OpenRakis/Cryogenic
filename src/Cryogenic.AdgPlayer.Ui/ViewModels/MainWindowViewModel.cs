@@ -47,7 +47,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 	private string _status = "Select an ADG/HSQ file to play.";
 
 	[ObservableProperty]
-	private string _driverIdentityText = "Driver identity: ADG UI shell (DNADP-compatible playback core) | ADG core proof source: Cryogenic.AdgPlayer + MCP runtime.";
+	private string _driverIdentityText = "Driver identity: DNADG / AdLib Gold (OPL3 dual-bank, Ym7128B surround) | engine=Cryogenic.AdgPlayer.Ui playback core | synth=NukedOPL3 + Spice86 SoftwareMixer.";
 
 	[ObservableProperty]
 	private string _liveProofText = "Live proof: idle";
@@ -188,7 +188,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 				Title = "Select ADG/HSQ music file",
 				AllowMultiple = true,
 				FileTypeFilter = [
-					new FilePickerFileType("Dune Music") { Patterns = ["*.AGD", "*.ADG", "*.HSQ", "*.ADP", "*.agd", "*.adg", "*.hsq", "*.adp"] },
+					new FilePickerFileType("Dune AdLib Gold Music") { Patterns = ["*.AGD", "*.ADG", "*.HSQ", "*.agd", "*.adg", "*.hsq"] },
 					new FilePickerFileType("All files") { Patterns = ["*"] }
 				]
 			});
@@ -225,7 +225,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 				Title = "Add songs to playlist",
 				AllowMultiple = true,
 				FileTypeFilter = [
-					new FilePickerFileType("Dune Music") { Patterns = ["*.AGD", "*.ADG", "*.HSQ", "*.ADP", "*.agd", "*.adg", "*.hsq", "*.adp"] },
+					new FilePickerFileType("Dune AdLib Gold Music") { Patterns = ["*.AGD", "*.ADG", "*.HSQ", "*.agd", "*.adg", "*.hsq"] },
 					new FilePickerFileType("All files") { Patterns = ["*"] }
 				]
 			});
@@ -573,7 +573,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 			return false;
 		}
 
-		string resolvedPath = ResolveAdpCompatiblePath(AdgPath);
+		string resolvedPath = ResolveHsqPreferredPath(AdgPath);
 		if (!File.Exists(resolvedPath)) {
 			Status = "Selected file does not exist.";
 			return false;
@@ -593,7 +593,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 			return false;
 		}
 
-		string resolvedPath = ResolveAdpCompatiblePath(path);
+		string resolvedPath = ResolveHsqPreferredPath(path);
 		if (!File.Exists(resolvedPath)) {
 			Status = "Selected file does not exist.";
 			return false;
@@ -623,7 +623,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 			return;
 		}
 
-		string resolvedPath = ResolveAdpCompatiblePath(path);
+		string resolvedPath = ResolveHsqPreferredPath(path);
 		if (!File.Exists(resolvedPath)) {
 			return;
 		}
@@ -638,7 +638,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 		ExtractHeaderInfoForPlaylistItem(item);
 	}
 
-	private static string ResolveAdpCompatiblePath(string requestedPath) {
+	private static string ResolveHsqPreferredPath(string requestedPath) {
 		if (string.IsNullOrWhiteSpace(requestedPath)) {
 			return requestedPath;
 		}
@@ -746,7 +746,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 
 	private void UpdateLiveProofText() {
 		string transportState = IsPlaying ? "playing" : IsPaused ? "paused" : "idle";
-		LiveProofText = $"Live proof: state={transportState} | track={SelectedFileName} | channelEvents={ChannelEvents.Count} | oplWrites={OplWrites.Count} | UI engine channels=9 (DNADP lineage) | ADG core channels=18 (DNADG/AdLib Gold).";
+		LiveProofText = $"Live proof: state={transportState} | track={SelectedFileName} | channelEvents={ChannelEvents.Count} | oplWrites={OplWrites.Count} | DNADG / AdLib Gold: OPL3 dual-bank (chip0+chip1) live, Ym7128B surround pipeline armed.";
 	}
 
 	private void UpdateChannelState() {

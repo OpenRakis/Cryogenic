@@ -1,4 +1,4 @@
-namespace Cryogenic.AdgPlayer.Ui.Behaviors;
+﻿namespace Cryogenic.AdgPlayer.Ui.Behaviors;
 
 using Avalonia;
 using Avalonia.Controls;
@@ -8,7 +8,7 @@ using System.Collections.Specialized;
 
 /// <summary>
 /// XAML behavior that auto-scrolls a ListBox to the last item when new items are added.
-/// Reused by all ADP scrolling panels (events, OPL writes, logs).
+/// Reused by all ADG scrolling panels (events, OPL writes, logs).
 /// </summary>
 public sealed class ScrollToEndBehavior : Behavior<ListBox> {
 	private INotifyCollectionChanged? _trackedCollection;

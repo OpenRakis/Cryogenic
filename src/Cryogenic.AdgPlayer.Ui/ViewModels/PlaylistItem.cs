@@ -1,9 +1,9 @@
-namespace Cryogenic.AdgPlayer.Ui.ViewModels;
+﻿namespace Cryogenic.AdgPlayer.Ui.ViewModels;
 
 using System.IO;
 
 /// <summary>
-/// Represents one playlist entry in the ADP player.
+/// Represents one playlist entry in the ADG / AdLib Gold player.
 /// </summary>
 public sealed class PlaylistItem {
 	public required string Path { get; init; }
