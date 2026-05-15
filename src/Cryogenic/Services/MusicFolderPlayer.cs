@@ -367,7 +367,7 @@ public sealed class MusicFolderPlayer : IDisposable {
 			if (_mediaPlayer.IsSeekable && _mediaPlayer.Length > 0) {
 				break;
 			}
-			Thread.Sleep(10);
+			Thread.Yield();
 		}
 
 		if (!_mediaPlayer.IsSeekable || _mediaPlayer.Length <= 0) {
