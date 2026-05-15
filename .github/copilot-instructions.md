@@ -185,6 +185,39 @@ Call `Define{SubsystemName}CodeOverrides()` from `DefineOverrides()` in Override
 - The expected `DNCDPRG.EXE` SHA256 is `5F30AEB84D67CF2E053A83C09C2890F010F2E25EE877EBEC58EA15C5B30CFFF9`. Verify the checksum before debugging version-specific behavior.
 - There are no automated tests. Validate by launching the game and exercising the exact scenario you changed, comparing against observed original behavior when possible.
 
+## Cross-Platform Requirements
+
+All code in this repository must compile and run correctly on **Windows, Linux, and macOS**. These rules apply to every project including the player tools (`Cryogenic.Mt32Player`, `Cryogenic.AdpPlayer`) and any future tooling.
+
+### Project files
+- `<OutputType>` must be `Exe`, never `WinExe`. `WinExe` suppresses the console on Windows but the project will not build on Linux or macOS.
+- Do not add `<RuntimeIdentifier>` or `<PlatformTarget>` values that restrict to a single OS.
+
+### Audio
+- **Use `Spice86.Audio` (NuGet: `Spice86.Audio`)** for all audio output. It is a 100% managed C# library that selects WASAPI (Windows), ALSA (Linux), or CoreAudio (macOS) at runtime — no bundled native binaries required.
+- **Never use `NAudio`**. NAudio's `WaveOutEvent`, `WasapiOut`, `DirectSoundOut`, and related types are Windows-only and will fail to build or run on Linux/macOS.
+- The canonical pattern for pushing PCM output is:
+  ```csharp
+  AudioPlayerFactory factory = new(AudioEngine.CrossPlatform);
+  AudioPlayer player = factory.CreatePlayer(sampleRate: 48000, framesPerBuffer: 1024, prebufferMs: 25, allowNegotiate: false);
+  player.Start();
+  // dedicated render thread calls player.WriteData(Span<float>) — blocks on backpressure
+  ```
+- `AudioEngine.Dummy` is the correct choice for unit tests and CI environments without audio hardware.
+
+### File system and paths
+- Use `Path.Combine` / `Path.DirectorySeparatorChar` for all path construction — never hardcode `\` separators.
+- When searching for files by extension on case-sensitive file systems (Linux), always perform both upper- and lower-case extension searches (e.g. `*.ROM` and `*.rom`).
+- Never rely on Windows drive letters (`C:\`, `D:\`) in code or default configuration values.
+
+### P/Invoke and native interop
+- Do not call Windows-only Win32 APIs (`kernel32`, `user32`, `gdi32`, etc.) directly. Route all platform-specific behavior through the Spice86 / Avalonia abstraction layers.
+- If a native call is unavoidable, guard it with `RuntimeInformation.IsOSPlatform(OSPlatform.Windows)` and provide a functional fallback for Linux/macOS.
+
+### UI
+- All UI is Avalonia-based. Do not use `System.Windows.*`, WPF, WinForms, or any Windows-specific UI API.
+
+
 ## Audio Driver Launch Configurations
 
 Game data is stored entirely in `DUNE.DAT`, a custom archive format. Each audio configuration triggers different driver loading via `DriverLoadToolbox`.
