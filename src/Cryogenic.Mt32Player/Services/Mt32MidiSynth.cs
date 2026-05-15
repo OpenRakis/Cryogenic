@@ -2,15 +2,20 @@
 
 using Mt32emu;
 
-using NAudio.Wave;
+using Spice86.Audio.Backend.Audio;
+using Spice86.Audio.Filters;
 
 using System.IO.Compression;
 using System.Linq;
 
 public sealed class Mt32MidiSynth : MidiDeviceBase {
+	private const int SampleRate = 48000;
+	private const int FramesPerBuffer = 1024;
+	private const int PrebufferMs = 25;
+
 	private readonly Mt32Context _context;
-	private readonly WaveOutEvent _waveOut;
-	private readonly Mt32WaveProvider _waveProvider;
+	private readonly AudioPlayer _audioPlayer;
+	private readonly Thread _renderThread;
 	private readonly object _lock = new();
 	private bool _disposed;
 	private float _outputGain = 1.0f;
@@ -36,18 +41,20 @@ public sealed class Mt32MidiSynth : MidiDeviceBase {
 			throw new InvalidOperationException($"No MT-32 ROM found at '{romsPath}'. Details: {details}");
 		}
 
-		_context.AnalogOutputMode = Mt32GlobalState.GetBestAnalogOutputMode(48000);
-		_context.SetSampleRate(48000);
+		_context.AnalogOutputMode = Mt32GlobalState.GetBestAnalogOutputMode(SampleRate);
+		_context.SetSampleRate(SampleRate);
 		_context.OpenSynth();
 
-		_waveProvider = new Mt32WaveProvider(this, 48000);
-		_waveOut = new WaveOutEvent {
-			DesiredLatency = 80,
-			NumberOfBuffers = 3,
-			Volume = 1.0f
+		AudioPlayerFactory factory = new(AudioEngine.CrossPlatform);
+		_audioPlayer = factory.CreatePlayer(SampleRate, FramesPerBuffer, PrebufferMs, allowNegotiate: false);
+		_audioPlayer.Start();
+
+		_renderThread = new Thread(RenderLoop) {
+			IsBackground = true,
+			Name = "Mt32RenderThread",
+			Priority = ThreadPriority.AboveNormal
 		};
-		_waveOut.Init(_waveProvider);
-		_waveOut.Play();
+		_renderThread.Start();
 	}
 
 	/// <summary>
@@ -216,16 +223,15 @@ public sealed class Mt32MidiSynth : MidiDeviceBase {
 			return;
 		}
 
+		_disposed = true;
+
 		if (disposing) {
-			_waveOut.Stop();
-			_waveOut.Dispose();
-			_waveProvider.Dispose();
+			_renderThread.Join(millisecondsTimeout: 2000);
+			_audioPlayer.Dispose();
 			lock (_lock) {
 				_context.Dispose();
 			}
 		}
-
-		_disposed = true;
 	}
 
 	private bool LoadRoms(string path) {
@@ -266,41 +272,18 @@ public sealed class Mt32MidiSynth : MidiDeviceBase {
 		return found;
 	}
 
-	private sealed class Mt32WaveProvider : IWaveProvider, IDisposable {
-		private readonly Mt32MidiSynth _owner;
-		private readonly WaveFormat _format;
-		private float[] _floatBuffer;
-		private bool _disposed;
-
-		public Mt32WaveProvider(Mt32MidiSynth owner, int sampleRate) {
-			_owner = owner;
-			_format = WaveFormat.CreateIeeeFloatWaveFormat(sampleRate, 2);
-			_floatBuffer = new float[2048 * 2];
-		}
-
-		public WaveFormat WaveFormat => _format;
-
-		public int Read(byte[] buffer, int offset, int count) {
-			if (_disposed) {
-				Array.Clear(buffer, offset, count);
-				return count;
-			}
-
-			int frameCount = count / sizeof(float) / 2;
-			int neededSamples = frameCount * 2;
-			if (_floatBuffer.Length < neededSamples) {
-				_floatBuffer = new float[neededSamples];
-			}
-
-			Span<float> span = _floatBuffer.AsSpan(0, neededSamples);
-			_owner.RenderFloatInterleaved(span, frameCount);
-
-			Buffer.BlockCopy(_floatBuffer, 0, buffer, offset, count);
-			return count;
-		}
-
-		public void Dispose() {
-			_disposed = true;
+	/// <summary>
+	/// Dedicated render thread: renders MT-32 audio in <see cref="FramesPerBuffer"/>-frame
+	/// chunks and pushes them to the Spice86.Audio player queue.
+	/// <see cref="AudioPlayer.WriteData"/> blocks when the queue is full, providing
+	/// natural backpressure without busy-waiting.
+	/// </summary>
+	private void RenderLoop() {
+		float[] buffer = new float[FramesPerBuffer * 2];
+		while (!_disposed) {
+			Span<float> span = buffer.AsSpan();
+			RenderFloatInterleaved(span, FramesPerBuffer);
+			_audioPlayer.WriteData(span);
 		}
 	}
 }
