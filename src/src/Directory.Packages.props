@@ -1,0 +1,55 @@
+﻿<Project>
+  <PropertyGroup>
+	<ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+
+  <!-- Avalonia UI -->
+  <ItemGroup>
+	<PackageVersion Include="Avalonia" Version="12.0.3" />
+	<PackageVersion Include="Avalonia.Desktop" Version="12.0.3" />
+	<PackageVersion Include="Avalonia.Fonts.Inter" Version="12.0.3" />
+	<PackageVersion Include="Avalonia.Themes.Fluent" Version="12.0.3" />
+	<PackageVersion Include="Xaml.Behaviors.Avalonia" Version="12.0.0" />
+  </ItemGroup>
+
+  <!-- Spice86 ecosystem -->
+  <ItemGroup>
+	<PackageVersion Include="Spice86" Version="13.1.2" />
+	<PackageVersion Include="Spice86.Audio" Version="11.4.0" />
+	<PackageVersion Include="Spice86.Core" Version="13.1.2" />
+	<PackageVersion Include="Spice86.DataGrid" Version="0.1.1" />
+  </ItemGroup>
+
+  <!-- MT-32 synthesis -->
+  <ItemGroup>
+	<PackageVersion Include="Mt32emu.net" Version="1.0.0" />
+  </ItemGroup>
+
+  <!-- MVVM & UI utilities -->
+  <ItemGroup>
+	<PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+  </ItemGroup>
+
+  <!-- Logging -->
+  <ItemGroup>
+	<PackageVersion Include="Serilog" Version="4.3.1" />
+	<PackageVersion Include="Serilog.Sinks.Console" Version="6.1.1" />
+	<PackageVersion Include="Serilog.Sinks.File" Version="7.0.0" />
+  </ItemGroup>
+
+  <!-- Video (Cryogenic main project only) -->
+  <ItemGroup>
+	<PackageVersion Include="LibVLCSharp" Version="3.9.7.1" />
+	<PackageVersion Include="VideoLAN.LibVLC.Windows" Version="3.0.23.1" />
+  </ItemGroup>
+
+  <!-- Roslyn analyzers -->
+  <ItemGroup>
+	<PackageVersion Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="10.0.300" />
+	<PackageVersion Include="Roslynator.Analyzers" Version="4.15.0" />
+	<PackageVersion Include="Meziantou.Analyzer" Version="3.0.85" />
+	<PackageVersion Include="ErrorProne.NET.CoreAnalyzers" Version="0.1.2" />
+	<PackageVersion Include="ErrorProne.NET.Structs" Version="0.1.2" />
+	<PackageVersion Include="SonarAnalyzer.CSharp" Version="10.25.0.139117" />
+  </ItemGroup>
+</Project>

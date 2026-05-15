@@ -1,7 +1,6 @@
 ﻿namespace Cryogenic.Mt32Player;
 
 using Avalonia;
-using Avalonia.ReactiveUI;
 
 using System;
 
@@ -10,8 +9,7 @@ internal static class Program {
 		return AppBuilder.Configure<App>()
 			.UsePlatformDetect()
 			.LogToTrace()
-			.WithInterFont()
-			.UseReactiveUI();
+			.WithInterFont();
 	}
 
 	[STAThread]

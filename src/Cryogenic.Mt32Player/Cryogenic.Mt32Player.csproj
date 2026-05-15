@@ -1,29 +1,23 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-    <PropertyGroup>
-        <OutputType>Exe</OutputType>
-        <TargetFramework>net10.0</TargetFramework>
-        <Nullable>enable</Nullable>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-        <AvaloniaUseCompiledBindingsByDefault>True</AvaloniaUseCompiledBindingsByDefault>
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
 		<NoWarn>NU1903</NoWarn>
-    </PropertyGroup>
+	</PropertyGroup>
 
-    <ItemGroup>
-        <PackageReference Include="Avalonia" Version="11.3.12" />
-        <PackageReference Include="Avalonia.Desktop" Version="11.3.12" />
-        <PackageReference Include="Avalonia.Controls.DataGrid" Version="11.3.8" />
-        <PackageReference Include="Avalonia.ReactiveUI" Version="11.3.9" />
-        <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.12" />
-        <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.12" />
-        <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
-        <PackageReference Include="Mt32emu.net" Version="1.0.0" />
-        <PackageReference Include="Spice86.Audio" Version="11.4.0" />
-        <PackageReference Include="Xaml.Behaviors.Avalonia" Version="11.3.0.7" />
-    </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Avalonia" />
+		<PackageReference Include="Avalonia.Desktop" />
+		<PackageReference Include="Avalonia.Fonts.Inter" />
+		<PackageReference Include="Avalonia.Themes.Fluent" />
+		<PackageReference Include="CommunityToolkit.Mvvm" />
+		<PackageReference Include="Mt32emu.net" />
+		<PackageReference Include="Spice86.Audio" />
+		<PackageReference Include="Spice86.DataGrid" />
+		<PackageReference Include="Xaml.Behaviors.Avalonia" />
+	</ItemGroup>
 
-    <ItemGroup>
-        <AvaloniaResource Include="Assets\**" />
-        <Watch Include="**\*.axaml" />
-    </ItemGroup>
+	<ItemGroup>
+		<AvaloniaResource Include="Assets\**" />
+		<Watch Include="**\*.axaml" />
+	</ItemGroup>
 </Project>
