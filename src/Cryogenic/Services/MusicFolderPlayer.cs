@@ -5,6 +5,7 @@ using LibVLCSharp.Shared;
 using Serilog;
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -46,7 +47,7 @@ public sealed class MusicFolderPlayer : IDisposable {
 	private readonly StartupTrackSilenceAnalyzer _silenceAnalyzer;
 	private readonly Dictionary<string, FingerprintEntry> _registry;
 	private readonly Dictionary<string, ResolvedTrack> _resolvedTracks;
-	private readonly Dictionary<string, TrackAnalysisCacheEntry> _analysisByFingerprint;
+	private readonly ConcurrentDictionary<string, TrackAnalysisCacheEntry> _analysisByFingerprint;
 	private float _volume = 1.0f;
 	private long _currentTrackSkipMs;
 	/// <summary>
@@ -89,10 +90,10 @@ public sealed class MusicFolderPlayer : IDisposable {
 	/// </param>
 	public MusicFolderPlayer(string folderPath) {
 		_folderPath = folderPath;
-		_analysisCachePath = Path.Combine(_folderPath, AnalysisCacheFileName);
+		_analysisCachePath = Path.Join(_folderPath, AnalysisCacheFileName);
 		_registry = new Dictionary<string, FingerprintEntry>(StringComparer.Ordinal);
 		_resolvedTracks = new Dictionary<string, ResolvedTrack>(StringComparer.Ordinal);
-		_analysisByFingerprint = new Dictionary<string, TrackAnalysisCacheEntry>(StringComparer.Ordinal);
+		_analysisByFingerprint = new ConcurrentDictionary<string, TrackAnalysisCacheEntry>(StringComparer.Ordinal);
 		Core.Initialize();
 		_libVlc = new LibVLC();
 		_mediaPlayer = new MediaPlayer(_libVlc);
@@ -145,7 +146,8 @@ public sealed class MusicFolderPlayer : IDisposable {
 		_mediaPlayer.Media = media;
 		bool started = _mediaPlayer.Play();
 		if (!started) {
-			throw new InvalidOperationException($"LibVLC could not open '{resolvedTrack.FilePath}'.");
+			PlayerLogger.Warning("LibVLC could not open replacement track '{FilePath}' for fingerprint {Fingerprint}. Falling through to MT-32.", resolvedTrack.FilePath, fingerprint);
+			return;
 		}
 
 		ApplyTrackSkip(analysisEntry.SkipMs, resolvedTrack.FilePath, fingerprint);
@@ -185,12 +187,15 @@ public sealed class MusicFolderPlayer : IDisposable {
 			_mediaPlayer.Stop();
 			bool restarted = _mediaPlayer.Play();
 			if (!restarted) {
-				throw new InvalidOperationException("Loop restart failed in MediaPlayer.");
+				PlayerLogger.Warning("Loop restart failed in MediaPlayer for fingerprint {Fingerprint}.", _currentFingerprint);
+				Stop();
+				return;
 			}
 			if (_currentTrackSkipMs > 0) {
 				Media? media = _mediaPlayer.Media;
 				if (media is null) {
-					throw new InvalidOperationException("Loop restart media context is missing.");
+					PlayerLogger.Warning("Loop restart media context is missing for fingerprint {Fingerprint}.", _currentFingerprint);
+					return;
 				}
 				ApplyTrackSkip(_currentTrackSkipMs, media.Mrl, _currentFingerprint);
 			}
@@ -246,7 +251,6 @@ public sealed class MusicFolderPlayer : IDisposable {
 		Stopwatch stopwatch = Stopwatch.StartNew();
 		int cacheHits = 0;
 		int analyzedCount = 0;
-		Lock sync = new Lock();
 		ParallelOptions options = new ParallelOptions { MaxDegreeOfParallelism = Math.Min(Environment.ProcessorCount, 4) };
 
 		Parallel.ForEach(_resolvedTracks, options, pair => {
@@ -254,9 +258,7 @@ public sealed class MusicFolderPlayer : IDisposable {
 			ResolvedTrack resolvedTrack = pair.Value;
 
 			if (TryGetFreshCachedEntry(fingerprint, resolvedTrack, out TrackAnalysisCacheEntry cachedEntry)) {
-				lock (sync) {
-					_analysisByFingerprint[fingerprint] = cachedEntry;
-				}
+				_analysisByFingerprint[fingerprint] = cachedEntry;
 				Interlocked.Increment(ref cacheHits);
 				return;
 			}
@@ -272,21 +274,18 @@ public sealed class MusicFolderPlayer : IDisposable {
 					resolvedTrack.FilePath,
 					resolvedTrack.FileSize,
 					resolvedTrack.LastWriteUtcTicks);
-			} catch (Exception ex) {
+			} catch (InvalidOperationException ex) {
 				PlayerLogger.Warning(ex, "Track analysis failed for fingerprint {Fingerprint}. Using zero skip.", fingerprint);
-				newEntry = TrackAnalysisCacheEntry.Create(
-					fingerprint,
-					0,
-					0.0,
-					CurrentAnalysisVersion,
-					resolvedTrack.FilePath,
-					resolvedTrack.FileSize,
-					resolvedTrack.LastWriteUtcTicks);
+				newEntry = CreateZeroSkipEntry(fingerprint, resolvedTrack);
+			} catch (IOException ex) {
+				PlayerLogger.Warning(ex, "Track analysis failed for fingerprint {Fingerprint}. Using zero skip.", fingerprint);
+				newEntry = CreateZeroSkipEntry(fingerprint, resolvedTrack);
+			} catch (UnauthorizedAccessException ex) {
+				PlayerLogger.Warning(ex, "Track analysis failed for fingerprint {Fingerprint}. Using zero skip.", fingerprint);
+				newEntry = CreateZeroSkipEntry(fingerprint, resolvedTrack);
 			}
 
-			lock (sync) {
-				_analysisByFingerprint[fingerprint] = newEntry;
-			}
+			_analysisByFingerprint[fingerprint] = newEntry;
 			Interlocked.Increment(ref analyzedCount);
 		});
 
@@ -297,6 +296,17 @@ public sealed class MusicFolderPlayer : IDisposable {
 			cacheHits,
 			analyzedCount,
 			stopwatch.ElapsedMilliseconds);
+	}
+
+	private static TrackAnalysisCacheEntry CreateZeroSkipEntry(string fingerprint, in ResolvedTrack resolvedTrack) {
+		return TrackAnalysisCacheEntry.Create(
+			fingerprint,
+			0,
+			0.0,
+			CurrentAnalysisVersion,
+			resolvedTrack.FilePath,
+			resolvedTrack.FileSize,
+			resolvedTrack.LastWriteUtcTicks);
 	}
 
 	private bool TryGetFreshCachedEntry(string fingerprint, in ResolvedTrack resolvedTrack, out TrackAnalysisCacheEntry entry) {
@@ -324,7 +334,19 @@ public sealed class MusicFolderPlayer : IDisposable {
 		try {
 			string json = File.ReadAllText(_analysisCachePath);
 			container = JsonSerializer.Deserialize<TrackAnalysisCacheContainer>(json);
-		} catch (Exception ex) {
+		} catch (IOException ex) {
+			PlayerLogger.Warning(ex, "Could not read analysis cache '{Path}'. Rebuilding cache.", _analysisCachePath);
+			_analysisByFingerprint.Clear();
+			return;
+		} catch (UnauthorizedAccessException ex) {
+			PlayerLogger.Warning(ex, "Could not read analysis cache '{Path}'. Rebuilding cache.", _analysisCachePath);
+			_analysisByFingerprint.Clear();
+			return;
+		} catch (JsonException ex) {
+			PlayerLogger.Warning(ex, "Could not read analysis cache '{Path}'. Rebuilding cache.", _analysisCachePath);
+			_analysisByFingerprint.Clear();
+			return;
+		} catch (NotSupportedException ex) {
 			PlayerLogger.Warning(ex, "Could not read analysis cache '{Path}'. Rebuilding cache.", _analysisCachePath);
 			_analysisByFingerprint.Clear();
 			return;
@@ -351,10 +373,17 @@ public sealed class MusicFolderPlayer : IDisposable {
 	}
 
 	private static Dictionary<string, string> BuildFileNameLookup(string folderPath) {
-		return Directory
-			.GetFiles(folderPath)
-			.Where(path => !string.IsNullOrEmpty(Path.GetFileName(path)))
-			.ToDictionary(path => Path.GetFileName(path).ToLowerInvariant(), path => path, StringComparer.OrdinalIgnoreCase);
+		Dictionary<string, string> filesByName = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+		foreach (string path in Directory.GetFiles(folderPath).OrderBy(path => path, StringComparer.Ordinal)) {
+			string fileName = Path.GetFileName(path);
+			if (string.IsNullOrEmpty(fileName)) {
+				continue;
+			}
+			if (!filesByName.TryAdd(fileName, path)) {
+				PlayerLogger.Warning("Duplicate replacement filename ignored. FileName='{FileName}' Kept='{Kept}' Ignored='{Ignored}'", fileName, filesByName[fileName], path);
+			}
+		}
+		return filesByName;
 	}
 
 	private void ApplyTrackSkip(long skipMs, string filePath, string fingerprint) {
@@ -371,7 +400,8 @@ public sealed class MusicFolderPlayer : IDisposable {
 		}
 
 		if (!_mediaPlayer.IsSeekable || _mediaPlayer.Length <= 0) {
-			throw new InvalidOperationException($"Track '{filePath}' is not seekable for fingerprint '{fingerprint}'.");
+			PlayerLogger.Warning("Track '{FilePath}' is not seekable for fingerprint {Fingerprint}. Keeping position at track start.", filePath, fingerprint);
+			return;
 		}
 
 		long clampedSkipMs = Math.Min(skipMs, Math.Max(0, _mediaPlayer.Length - 1));
@@ -380,7 +410,7 @@ public sealed class MusicFolderPlayer : IDisposable {
 	}
 
 	private void LoadRegistry() {
-		string registryPath = Path.Combine(_folderPath, "fingerprints.json");
+		string registryPath = Path.Join(_folderPath, "fingerprints.json");
 		if (!File.Exists(registryPath)) {
 			throw new FileNotFoundException($"fingerprints.json not found at '{registryPath}'.", registryPath);
 		}
