@@ -56,10 +56,7 @@ internal sealed class StartupTrackSilenceAnalyzer {
 
 		Stopwatch stopwatch = Stopwatch.StartNew();
 		while (stopwatch.ElapsedMilliseconds < AnalysisTimeoutMs) {
-			if (accumulator.ShouldStop) {
-				break;
-			}
-			Thread.Sleep(10);
+			SpinWait.SpinUntil(() => accumulator.ShouldStop);
 		}
 		analysisPlayer.Stop();
 
