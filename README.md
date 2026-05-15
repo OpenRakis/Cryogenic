@@ -212,6 +212,8 @@ bin/Release/net10.0/publish/Cryogenic --Exe /path/to/DNCDPRG.EXE --Cycles 8000 -
 
 ## MT-32 Music Folder Replacement
 
+https://github.com/user-attachments/assets/4c24620a-54df-4f38-86e0-dc62f8a23f4f
+
 When running with the MT-32 driver (`-a "MID330 SBP2227"`), you can supply a folder of audio files that replace the game's native MIDI music. Pass the folder path via `--MusicFolder`:
 
 If you use the provided `run_cryogenic.sh` helper script (or `run_cryogenic.bat` on Windows), pass `--OverrideMusic` and it will automatically use `assets_override/music` as the music folder.
