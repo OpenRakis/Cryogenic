@@ -24,6 +24,6 @@
     <PackageVersion Include="Meziantou.Analyzer" Version="3.0.85" />
     <PackageVersion Include="ErrorProne.NET.CoreAnalyzers" Version="0.1.2" />
     <PackageVersion Include="ErrorProne.NET.Structs" Version="0.1.2" />
-    <PackageVersion Include="SonarAnalyzer.CSharp" Version="10.25.0.139117" />
+    <PackageVersion Include="SonarAnalyzer.CSharp" Version="10.26.0.140279" />
   </ItemGroup>
 </Project>
