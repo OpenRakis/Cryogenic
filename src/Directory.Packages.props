@@ -21,7 +21,7 @@
     <PackageVersion Include="VideoLAN.LibVLC.Windows" Version="3.0.23.1" />
     <PackageVersion Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="10.0.300" />
     <PackageVersion Include="Roslynator.Analyzers" Version="4.15.0" />
-    <PackageVersion Include="Meziantou.Analyzer" Version="3.0.85" />
+    <PackageVersion Include="Meziantou.Analyzer" Version="3.0.89" />
     <PackageVersion Include="ErrorProne.NET.CoreAnalyzers" Version="0.1.2" />
     <PackageVersion Include="ErrorProne.NET.Structs" Version="0.1.2" />
     <PackageVersion Include="SonarAnalyzer.CSharp" Version="10.25.0.139117" />
