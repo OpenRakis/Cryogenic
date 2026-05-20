@@ -8,7 +8,7 @@
     <PackageVersion Include="Avalonia.Fonts.Inter" Version="12.0.3" />
     <PackageVersion Include="Avalonia.Themes.Fluent" Version="12.0.3" />
     <PackageVersion Include="Xaml.Behaviors.Avalonia" Version="12.0.0" />
-    <PackageVersion Include="Spice86" Version="13.1.2" />
+    <PackageVersion Include="Spice86" Version="14.0.0" />
     <PackageVersion Include="Spice86.Audio" Version="11.4.0" />
     <PackageVersion Include="Spice86.Core" Version="13.1.2" />
     <PackageVersion Include="Spice86.DataGrid" Version="0.1.1" />
