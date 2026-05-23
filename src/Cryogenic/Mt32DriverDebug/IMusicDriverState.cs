@@ -211,6 +211,19 @@ public static class MusicDriverDetection {
 	}
 
 	/// <summary>
+	/// Returns a concise operator-facing label for the detected music driver type.
+	/// </summary>
+	public static string DescribeDriverType(MusicDriverType driverType) {
+		return driverType switch {
+			MusicDriverType.Dnmid => "DNMID (MT-32)",
+			MusicDriverType.Dnadp => "DNADP (AdLib Pro)",
+			MusicDriverType.Dnadg => "DNADG (AdLib Gold)",
+			MusicDriverType.Dnadl => "DNADL (AdLib)",
+			_ => "no recognized music driver"
+		};
+	}
+
+	/// <summary>
 	/// Returns <see langword="true"/> if the driver type uses OPL/FM synthesis (AdLib family).
 	/// </summary>
 	public static bool IsOplDriver(MusicDriverType driverType) {

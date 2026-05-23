@@ -1,11 +1,10 @@
-namespace Cryogenic.AdgPlayer.Ui.ViewModels;
+﻿namespace Cryogenic.AdgPlayer.Ui.ViewModels;
 
 /// <summary>
 /// Display item for OPL register writes in the UI.
 /// Decodes the AdLib Gold dual-bank OPL3 address space: high byte of <see cref="Register"/>
-/// selects the chip (0 = primary FM, 1 = OPL3 extension bank used for 4-op masks, OPL3 enable,
-/// extended channels 9-17, and the Ym7128B surround/stereo gateway), and the low byte
-/// selects the per-bank register.
+/// selects the logical register bank:
+/// 0 = primary FM, 1 = secondary FM / OPL3 extension bank, 2 = AdLib Gold control path.
 /// </summary>
 public sealed class OplWriteItem {
 	/// <summary>16-bit OPL address: (chip &lt;&lt; 8) | reg.</summary>
@@ -17,8 +16,8 @@ public sealed class OplWriteItem {
 	/// <summary>Tick count when write occurred.</summary>
 	public long Tick { get; set; }
 
-	/// <summary>Chip bank selector decoded from the high byte of <see cref="Register"/> (0 or 1).</summary>
-	public int Chip => (Register >> 8) & 1;
+	/// <summary>Chip bank selector decoded from the high byte of <see cref="Register"/>.</summary>
+	public int Chip => Register >> 8;
 
 	/// <summary>Per-bank register index decoded from the low byte of <see cref="Register"/>.</summary>
 	public byte Reg => (byte)(Register & 0xFF);
@@ -27,7 +26,20 @@ public sealed class OplWriteItem {
 	public string RegisterName {
 		get {
 			byte r = Reg;
-			// AdLib Gold / OPL3 special registers live on chip 1.
+			if (Chip == 2) {
+				return r switch {
+					0x04 => "GoldStereoLeft",
+					0x05 => "GoldStereoRight",
+					0x06 => "GoldBass",
+					0x07 => "GoldTreble",
+					0x08 => "GoldSwitchFn",
+					0x09 => "GoldFmVolL",
+					0x0A => "GoldFmVolR",
+					0x18 => "GoldSurround",
+					_ => $"GoldReg 0x{r:X2}"
+				};
+			}
+
 			if (Chip == 1) {
 				switch (r) {
 					case 0x04: return "4OpMask";        // OPL3 4-operator enable bitmap

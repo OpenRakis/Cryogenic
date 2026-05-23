@@ -49,7 +49,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable {
 	private string _status = "Select an ADG/HSQ file to play.";
 
 	[ObservableProperty]
-	private string _driverIdentityText = "Driver identity: DNADG / AdLib Gold (scheduler+event path ported; secondary-chip routes currently collapsed to primary) | engine=Cryogenic.AdgPlayer.Ui playback core | synth=NukedOPL3 + Spice86 SoftwareMixer.";
+	private string _driverIdentityText = "Driver identity: DNADG / AdLib Gold (scheduler+event path ported; secondary FM banked; Gold control path via Spice86 AdLib Gold stack) | engine=Cryogenic.AdgPlayer.Ui playback core | synth=NukedOPL3 + Spice86 SoftwareMixer.";
 
 	[ObservableProperty]
 	private string _liveProofText = "Live proof: idle";

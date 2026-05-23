@@ -6,6 +6,7 @@ using Serilog;
 
 using Spice86.Audio.Filters;
 using Spice86.Core.Emulator.Devices.Sound;
+using Spice86.Core.Emulator.Devices.Sound.AdlibGoldOpl;
 using Spice86.Core.Emulator.VM;
 
 using System;
@@ -27,11 +28,15 @@ public sealed class OplSynthesizer : IDisposable {
 	public const int NativeOplSampleRate = 49716;
 
 	private readonly Opl3Chip _chip;
+	private readonly AdlibGold _adlibGold;
 	private readonly SoftwareMixer _mixer;
 	private readonly SoundChannel _channel;
 	private readonly NullPauseHandler _pauseHandler;
 	private float[] _floatBuffer = new float[4096];
 	private float[] _normalizedBuffer = new float[4096];
+	private float _userMasterVolume = 1.0f;
+	private byte _goldLeftVolume = 0xFF;
+	private byte _goldRightVolume = 0xFF;
 	private bool _disposed;
 
 	/// <summary>
@@ -53,12 +58,20 @@ public sealed class OplSynthesizer : IDisposable {
 	/// Creates the OPL synthesizer backed by Spice86's SoftwareMixer pipeline.
 	/// Audio output starts immediately via the mixer's own thread.
 	/// </summary>
-	public OplSynthesizer() {
+	public OplSynthesizer() : this(AudioEngine.CrossPlatform) {
+	}
+
+	/// <summary>
+	/// Creates the OPL synthesizer with the requested audio backend.
+	/// Use <see cref="AudioEngine.Dummy"/> for headless validation and CI-safe tracing.
+	/// </summary>
+	public OplSynthesizer(AudioEngine audioEngine) {
 		_chip = new Opl3Chip();
 		_chip.Reset((uint)NativeOplSampleRate);
+		_adlibGold = new AdlibGold(NativeOplSampleRate);
 
 		_pauseHandler = new NullPauseHandler();
-		_mixer = new SoftwareMixer(AudioEngine.CrossPlatform, _pauseHandler);
+		_mixer = new SoftwareMixer(audioEngine, _pauseHandler);
 
 		HashSet<ChannelFeature> features = new HashSet<ChannelFeature> {
 			ChannelFeature.Stereo,
@@ -67,14 +80,15 @@ public sealed class OplSynthesizer : IDisposable {
 		_channel = _mixer.AddChannel(MixerCallback, NativeOplSampleRate, "OPL", features);
 		_channel.Enable(true);
 		_channel.UserVolume = new Spice86.Audio.Common.AudioFrame(1.5f, 1.5f);
-		_channel.AppVolume = new Spice86.Audio.Common.AudioFrame(1.0f, 1.0f);
+		ApplyEffectiveMasterVolume();
 
-		Logger.Information("OPL synthesizer initialized: {NativeRate} Hz via SoftwareMixer pipeline", NativeOplSampleRate);
+		Logger.Information("OPL synthesizer initialized: {NativeRate} Hz via SoftwareMixer pipeline ({AudioEngine}, AdLib Gold stack enabled)",
+			NativeOplSampleRate, audioEngine);
 	}
 
 	/// <summary>
-	/// Writes a value to an OPL register (port 0x388/0x389 equivalent).
-	/// Register address is 0x000–0x0FF for OPL2 bank 0.
+	/// Writes a value to an OPL register.
+	/// Register address is 0x000-0x0FF for bank 0 and 0x100-0x1FF for bank 1.
 	/// </summary>
 	public void WriteRegister(ushort register, byte value) {
 		// Match Spice86 Opl3Fm timing path: buffered register writes.
@@ -101,8 +115,42 @@ public sealed class OplSynthesizer : IDisposable {
 	/// Range 0.0 (silence) to 1.0 (full).
 	/// </summary>
 	public void SetMasterVolume(float volume) {
-		float clamped = Math.Clamp(volume, 0.0f, 1.0f);
-		_channel.AppVolume = new Spice86.Audio.Common.AudioFrame(clamped, clamped);
+		_userMasterVolume = Math.Clamp(volume, 0.0f, 1.0f);
+		ApplyEffectiveMasterVolume();
+	}
+
+	/// <summary>
+	/// Applies one AdLib Gold control-register write using the same register semantics as Spice86 Opl3Fm.
+	/// </summary>
+	public void WriteGoldControlRegister(byte register, byte value) {
+		switch (register) {
+			case 0x04:
+				_adlibGold.StereoControlWrite(StereoProcessorControlReg.VolumeLeft, value);
+				break;
+			case 0x05:
+				_adlibGold.StereoControlWrite(StereoProcessorControlReg.VolumeRight, value);
+				break;
+			case 0x06:
+				_adlibGold.StereoControlWrite(StereoProcessorControlReg.Bass, value);
+				break;
+			case 0x07:
+				_adlibGold.StereoControlWrite(StereoProcessorControlReg.Treble, value);
+				break;
+			case 0x08:
+				_adlibGold.StereoControlWrite(StereoProcessorControlReg.SwitchFunctions, value);
+				break;
+			case 0x09:
+				_goldLeftVolume = value;
+				ApplyEffectiveMasterVolume();
+				break;
+			case 0x0A:
+				_goldRightVolume = value;
+				ApplyEffectiveMasterVolume();
+				break;
+			case 0x18:
+				_adlibGold.SurroundControlWrite(value);
+				break;
+		}
 	}
 
 	/// <summary>
@@ -136,10 +184,11 @@ public sealed class OplSynthesizer : IDisposable {
 		short[] tempBuffer = System.Buffers.ArrayPool<short>.Shared.Rent(sampleCount);
 		try {
 			_chip.GenerateStream(tempBuffer.AsSpan(0, sampleCount));
+			_adlibGold.Process(tempBuffer.AsSpan(0, sampleCount), framesNeeded, _floatBuffer.AsSpan(0, sampleCount));
 
 			for (int i = 0; i < sampleCount; i++) {
-				_floatBuffer[i] = tempBuffer[i];
 				_normalizedBuffer[i] = tempBuffer[i] / 32768f;
+				_normalizedBuffer[i] = _floatBuffer[i] / 32768f;
 			}
 
 			_channel.AddSamplesFloat(framesNeeded, _floatBuffer.AsSpan(0, sampleCount));
@@ -154,8 +203,15 @@ public sealed class OplSynthesizer : IDisposable {
 			return;
 		}
 		_disposed = true;
+		_adlibGold.Dispose();
 		_mixer.Dispose();
 		_pauseHandler.Dispose();
+	}
+
+	private void ApplyEffectiveMasterVolume() {
+		float leftVolume = _userMasterVolume * ((_goldLeftVolume & 0x1F) / 31.0f);
+		float rightVolume = _userMasterVolume * ((_goldRightVolume & 0x1F) / 31.0f);
+		_channel.AppVolume = new Spice86.Audio.Common.AudioFrame(leftVolume, rightVolume);
 	}
 
 	/// <summary>

@@ -13,138 +13,6 @@ using System;
 public sealed partial class DuneAdgPlayerEngine : IDisposable {
 	private static readonly ILogger Logger = Log.ForContext<DuneAdgPlayerEngine>();
 
-	// --- Audio pipeline ---
-	private readonly OplSynthesizer _opl;
-	private volatile bool _disposed;
-	private volatile bool _playing;
-	private volatile bool _paused;
-	private volatile float _outputGain = 1.0f;
-	private volatile float _oplVolumeGain = 1.5f;
-	private readonly object _lock = new();
-	private long _totalTickCount;
-	private long _totalSamplesRendered;
-
-	// --- PIT timing ---
-	private const int PitInputClock = 1193182;
-	private int _pitReloadValue = 0x1745;
-	private long _samplesPerTickThreshold;
-	private long _sampleAccumulator;
-
-	// --- Song data ---
-	private byte[] _songData = Array.Empty<byte>();
-	private int _dataBase;
-	private ushort _eventBase;
-
-	// --- Global driver state ---
-	private ushort _accumulator;
-	private byte _statusFlags;
-	private byte _tickFlag;
-	private ushort _measure;
-	private byte _subdivision;
-	private ushort _repeatCounter;
-	private byte _currentVolume;
-	private byte _targetVolume;
-	private byte _masterVolume;
-	private ushort _fadeBitPattern;
-
-	// --- Per-channel state (18 logical channels, dynamically routed to 9 OPL2 voices) ---
-	// Mirrors DNADG driver scheduler tick which iterates CX = 0x12 (18) channels.
-	// Routes are computed per ProgramChange via ConfigureInstrumentRouting (ports AdgConfigureInstrumentRouting_090D).
-	// Routes with bit 7 set originally targeted the secondary OPL chip on AdLib Gold; in the
-	// standalone single-chip engine those writes collapse onto the primary chip (bit 7 masked).
-	private const int ChannelCount = 18;
-
-	/// <summary>
-	/// Number of runtime channel source offsets read from the ADG song header.
-	/// Canonical DNADG build/reset scheduler paths consume 18 entries (CX=0x12).
-	/// </summary>
-	private const int SongHeaderChannelCount = 18;
-
-	private readonly ushort[] _channelWait = new ushort[ChannelCount];
-	private readonly ushort[] _channelEventPointer = new ushort[ChannelCount];
-	private readonly ushort[] _channelStartOffset = new ushort[ChannelCount];
-	private readonly byte[] _channelInstrument = new byte[ChannelCount];
-	private readonly byte[] _channelCurrentNote = new byte[ChannelCount];
-	private readonly byte[] _channelPitchBendCounter = new byte[ChannelCount];
-	private readonly byte[] _channelPitchAccumulatorHi = new byte[ChannelCount];
-	private readonly byte[] _channelPitchTranspose = new byte[ChannelCount];
-	private readonly byte[] _channelPitchMode = new byte[ChannelCount];
-	private readonly ushort[] _channelPitchBendFlag = new ushort[ChannelCount];
-	private readonly byte[] _channelPatchType = new byte[ChannelCount];
-	private readonly byte[] _channelVibratoCount = new byte[ChannelCount];
-	private readonly byte[] _channelVibratoInit = new byte[ChannelCount];
-	private readonly byte[] _channelVibratoPhase = new byte[ChannelCount];
-	private readonly byte[] _channelVibratoSpeed = new byte[ChannelCount];
-	private readonly ushort[] _channelTlShaping = new ushort[ChannelCount];
-	private readonly ushort[] _channelEnvShaping = new ushort[ChannelCount];
-	private readonly ushort[] _channelOperatorLevel = new ushort[ChannelCount];
-	private readonly ushort[] _channelConnShaping = new ushort[ChannelCount];
-	private readonly ushort[] _channelVolModShaping = new ushort[ChannelCount];
-	private readonly ushort[] _channelConnMod = new ushort[ChannelCount];
-	private readonly ushort[] _channelPatch4TlShaping = new ushort[ChannelCount];
-	private readonly ushort[] _channelPatch4EnvShaping = new ushort[ChannelCount];
-	private readonly ushort[] _channelPatch4CurrentOperatorLevel = new ushort[ChannelCount];
-	private readonly ushort[] _channelPatch4VolumeModulation = new ushort[ChannelCount];
-
-	// --- Dynamic OPL routing (per logical channel) ---
-	// Computed by ConfigureInstrumentRouting on every ProgramChange.
-	// Mirrors driver tables AdgChannelRoutingTableOffset(0x017F), AdgChannelPrimaryOperatorRouteOffset(0x01A3),
-	// AdgChannelSecondaryOperatorRouteOffset(0x01B5), AdgChannelRouteShadowOffset(0x0191),
-	// AdgChannelStateScratchOffset(0x021C). High bit on a route byte = secondary OPL3 chip in the
-	// original driver; collapsed onto the primary chip in this single-chip standalone player.
-	private readonly byte[] _channelRoute = new byte[ChannelCount];
-	private readonly byte[] _channelPrimaryOpRoute = new byte[ChannelCount];
-	private readonly byte[] _channelSecondaryOpRoute = new byte[ChannelCount];
-	private readonly byte[] _channelRouteShadow = new byte[ChannelCount];
-	private readonly ushort[] _channelRouteScratch = new ushort[ChannelCount];
-	// Mirrors AdgFadeScratchOffset(0x013E) / AdgFadeScratch2Offset(0x0140): global BP/CX
-	// allocation bitmasks for primary/secondary OPL2 voice groups.
-	private ushort _fadeScratch;
-	private ushort _fadeScratch2;
-	// --- Loop snapshot ---
-	private readonly ushort[] _snapshotWait = new ushort[ChannelCount];
-	private readonly ushort[] _snapshotPointer = new ushort[ChannelCount];
-
-	// --- Static lookup tables (from driver binary, verified against runtime dump) ---
-
-	/// <summary>OPL2 F-number table for one octave (C through B), 12 entries.</summary>
-	private static readonly ushort[] FrequencyTable = {
-		0x0157, 0x016C, 0x0181, 0x0198, 0x01B1, 0x01CB,
-		0x01E6, 0x0203, 0x0222, 0x0243, 0x0266, 0x028A
-	};
-
-	/// <summary>Maps channel (0-8) to OPL register offset for modulator operator.</summary>
-	private static readonly byte[] ModulatorOffsets = {
-		0x00, 0x01, 0x02, 0x08, 0x09, 0x0A, 0x10, 0x11, 0x12
-	};
-
-	/// <summary>Maps channel (0-8) to OPL register offset for carrier operator.</summary>
-	private static readonly byte[] CarrierOffsets = {
-		0x03, 0x04, 0x05, 0x0B, 0x0C, 0x0D, 0x13, 0x14, 0x15
-	};
-
-	/// <summary>
-	/// Operator pair table: interleaved (modulator, carrier) per channel.
-	/// Channel N modulator = OperatorPairTable[N*2], carrier = OperatorPairTable[N*2+1].
-	/// </summary>
-	private static readonly byte[] OperatorPairTable = {
-		0x00, 0x03, 0x01, 0x04, 0x02, 0x05,
-		0x08, 0x0B, 0x09, 0x0C, 0x0A, 0x0D,
-		0x10, 0x13, 0x11, 0x14, 0x12, 0x15
-	};
-
-	/// <summary>Non-portamento pitch bend fractions (13 entries, indexed 0-12).</summary>
-	private static readonly byte[] PitchBendFractions = {
-		0x13, 0x15, 0x15, 0x17, 0x19, 0x1A,
-		0x1B, 0x1D, 0x1F, 0x21, 0x23, 0x24, 0x25
-	};
-
-	/// <summary>Portamento pitch bend fractions (two groups of 5).</summary>
-	private static readonly byte[] PortamentoFractions = {
-		0x00, 0x05, 0x0A, 0x0F, 0x14,
-		0x00, 0x06, 0x0C, 0x12, 0x18
-	};
-
 
 
 	/// <summary>
@@ -218,28 +86,6 @@ public sealed partial class DuneAdgPlayerEngine : IDisposable {
 	public SongHeaderInfo? HeaderInfo { get; private set; }
 
 	/// <summary>
-	/// Gets a snapshot of per-channel state for UI display.
-	/// </summary>
-	public ChannelSnapshot[] GetChannelSnapshots() {
-		ChannelSnapshot[] snapshots = new ChannelSnapshot[ChannelCount];
-		lock (_lock) {
-			for (int i = 0; i < ChannelCount; i++) {
-				snapshots[i] = new ChannelSnapshot {
-					Channel = i,
-					Wait = _channelWait[i],
-					Instrument = _channelInstrument[i],
-					Note = _channelCurrentNote[i],
-					Transpose = _channelPitchTranspose[i],
-					Frequency = _adgFrequencyWordTable[i],
-					PitchBendFlag = _channelPitchBendFlag[i],
-					IsActive = _channelEventPointer[i] != 0 && _channelWait[i] != 0xFFFF
-				};
-			}
-		}
-		return snapshots;
-	}
-
-	/// <summary>
 	/// True when the engine is actively generating audio.
 	/// </summary>
 	public bool IsPlaying => _playing && !_paused;
@@ -268,26 +114,6 @@ public sealed partial class DuneAdgPlayerEngine : IDisposable {
 	public bool IsPaused => _playing && _paused;
 
 	/// <summary>
-	/// Fired on every OPL register write: (register, value, totalTickCount).
-	/// Safe to subscribe from any thread; handler must marshal to UI thread as needed.
-	/// </summary>
-	public event Action<ushort, byte, long>? OplRegisterWritten;
-
-	/// <summary>
-	/// Fired on NoteOn, NoteOff, ProgramChange, EndOfTrack events:
-	/// (channel, eventName, detail, totalTickCount).
-	/// Safe to subscribe from any thread; handler must marshal to UI thread as needed.
-	/// </summary>
-	public event Action<int, string, string, long>? ChannelEventDispatched;
-
-	/// <summary>
-	/// Fired after each audio render batch with normalized float samples and frame count.
-	/// Forwarded from OplSynthesizer.AudioSamplesRendered.
-	/// Safe to subscribe from any thread; handler must marshal to UI thread as needed.
-	/// </summary>
-	public event Action<float[], int>? AudioSamplesRendered;
-
-	/// <summary>
 	/// Creates the engine with a custom OPL synthesizer (for testing).
 	/// </summary>
 	public DuneAdgPlayerEngine(OplSynthesizer opl) {
@@ -308,46 +134,6 @@ public sealed partial class DuneAdgPlayerEngine : IDisposable {
 		_opl.AudioSamplesRendered += (buf, count) => AudioSamplesRendered?.Invoke(buf, count);
 		_opl.OnBeforeRender = AdvanceSamples;
 		Logger.Information("ADG engine created (default): {SampleRate} Hz native OPL via SoftwareMixer", OplSynthesizer.NativeOplSampleRate);
-	}
-
-	// --- Helpers ---
-
-	private static byte Lo8(ushort value) {
-		return (byte)(value & 0xFF);
-	}
-
-	private static byte Hi8(ushort value) {
-		return (byte)(value >> 8);
-	}
-
-	private static ushort Make16(byte lo, byte hi) {
-		return (ushort)(lo | (hi << 8));
-	}
-
-	private static ushort RotateRight16(ushort value, int count) {
-		int n = count & 0x0F;
-		if (n == 0) {
-			return value;
-		}
-		return (ushort)((value >> n) | (value << (16 - n)));
-	}
-
-	private byte SongByte(int offset) {
-		return _songData[offset];
-	}
-
-	private byte SongByte16(ushort offset) {
-		return _songData[offset];
-	}
-
-	private ushort SongWord(int offset) {
-		return (ushort)(_songData[offset] | (_songData[offset + 1] << 8));
-	}
-
-	private ushort SongWord16(ushort offset) {
-		byte lo = SongByte16(offset);
-		byte hi = SongByte16((ushort)(offset + 1));
-		return Make16(lo, hi);
 	}
 
 	// --- PIT Timing ---
@@ -453,36 +239,6 @@ public sealed partial class DuneAdgPlayerEngine : IDisposable {
 	// --- Public API ---
 
 	/// <summary>
-	/// Loads a song from file, applying HSQ decompression if detected.
-	/// </summary>
-	public void LoadSong(byte[] fileData) {
-		bool wasCompressed = false;
-		byte[]? decompressed = TryDecompressHsq(fileData);
-		byte[] data;
-		if (decompressed != null) {
-			data = decompressed;
-			wasCompressed = true;
-		} else {
-			data = fileData;
-		}
-		lock (_lock) {
-			bool wasPlaying = _playing;
-			if (wasPlaying) {
-				StopInternal();
-			}
-
-			_songData = data;
-			_dataBase = 2;
-			_eventBase = SongWord(0);
-
-			HeaderInfo = ParseSongHeader(data, _dataBase, _eventBase, wasCompressed);
-
-			Logger.Information("Song loaded: {Length} bytes, dataBase={DataBase}, eventBase=0x{EventBase:X4}",
-				_songData.Length, _dataBase, _eventBase);
-		}
-	}
-
-	/// <summary>
 	/// Sets the master volume. Input is the raw AX value (AH=high, AL=low).
 	/// Mirrors AdpSetVolume_0348.
 	/// </summary>
@@ -544,24 +300,7 @@ public sealed partial class DuneAdgPlayerEngine : IDisposable {
 				StopInternal();
 			}
 
-			InitOplChip();
-			InitTotalLevels();
-			BuildChannelTable();
-
-			_currentVolume = _masterVolume;
-			_targetVolume = _masterVolume;
-			_accumulator = 0;
-			_repeatCounter = 0;
-			// Mirrors driver AdgOpenSong_0626 which writes AL (caller-supplied) into TickEnabled.
-			// Game music starts songs with AL=0 (loop forever); the driver's EndOfTrack underflow
-			// handler `if ((tickFlag & 0x80) != 0) tickFlag++` re-rounds 0xFF back to 0 so playback
-			// loops indefinitely. Starting at 1 would stop after the first end-of-track on channel 0.
-			_tickFlag = 0;
-			_totalTickCount = 0;
-			_totalSamplesRendered = 0;
-
-			ProcessTick();
-			_statusFlags = 0x80;
+			PreparePlaybackState();
 
 			_playing = true;
 			_paused = false;
@@ -618,6 +357,31 @@ public sealed partial class DuneAdgPlayerEngine : IDisposable {
 		Logger.Information("Playback stopped");
 	}
 
+	/// <summary>
+	/// Prepares the DNADG runtime state for a fresh playback or headless trace run.
+	/// Mirrors the observed open-song path in AdgOpenSong_564B_0626_056AD6.
+	/// </summary>
+	private void PreparePlaybackState() {
+		InitOplChip();
+		InitializeGoldHardware();
+		SilenceGoldChannels();
+		InitializeGoldSongControls();
+		BuildChannelTable();
+
+		_currentVolume = _masterVolume;
+		ApplyMasterVolumeToGold();
+		_targetVolume = _masterVolume;
+		_accumulator = 0;
+		_repeatCounter = 0;
+		_sampleAccumulator = 0;
+		_tickFlag = 0;
+		_totalTickCount = 0;
+		_totalSamplesRendered = 0;
+
+		ProcessTick();
+		_statusFlags = 0x80;
+	}
+
 	public void Dispose() {
 		if (_disposed) {
 			return;
@@ -627,151 +391,5 @@ public sealed partial class DuneAdgPlayerEngine : IDisposable {
 		_paused = false;
 		_opl.Dispose();
 		Logger.Information("ADG engine disposed");
-	}
-
-	/// <summary>
-	/// Parses song header metadata for UI display.
-	/// </summary>
-	private SongHeaderInfo ParseSongHeader(byte[] data, int dataBase, int eventBase, bool wasCompressed) {
-		SongHeaderInfo info = new SongHeaderInfo {
-			RawFileSize = data.Length,
-			WasHsqCompressed = wasCompressed,
-			DataBase = dataBase,
-			EventBase = eventBase,
-			InstrumentCount = eventBase > dataBase + 0x32 ? (data.Length - eventBase) / 0x28 : 0
-		};
-
-		if (data.Length >= dataBase + 0x32) {
-			info.Tempo = SongWord(dataBase + 0x30);
-			info.LoopStartMeasure = SongWord(dataBase + 0x2A);
-			info.LoopEndMeasure = SongWord(dataBase + 0x2C);
-			info.LoopCount = SongWord(dataBase + 0x2E);
-
-			int channelSlotsToParse = Math.Min(SongHeaderChannelCount, info.ChannelOffsets.Length);
-			for (int i = 0; i < channelSlotsToParse; i++) {
-				ushort relative = SongWord(dataBase + i * 2);
-				info.ChannelOffsets[i] = relative;
-				info.ChannelActive[i] = relative != 0;
-			}
-		}
-
-		int activeChannels = 0;
-		for (int i = 0; i < info.ChannelActive.Length; i++) {
-			if (info.ChannelActive[i]) {
-				activeChannels++;
-			}
-		}
-		info.ActiveChannelCount = activeChannels;
-
-		Logger.Information("Header: tempo=0x{Tempo:X4}, {ActiveCh} active channels, {InstCount} instruments, loop={LoopStart}-{LoopEnd}x{LoopCount}",
-			info.Tempo, activeChannels, info.InstrumentCount, info.LoopStartMeasure, info.LoopEndMeasure, info.LoopCount);
-
-		return info;
-	}
-
-	/// <summary>
-	/// Extracts song header info from raw file data without loading the full song.
-	/// Handles both HSQ-compressed and raw ADG data.
-	/// </summary>
-	public static bool TryExtractHeaderInfo(byte[] fileData, out SongHeaderInfo? headerInfo) {
-		headerInfo = null;
-		bool wasCompressed = false;
-		byte[]? decompressed = null;
-		byte[] data = fileData;
-
-		// Try HSQ decompression using a temporary instance
-		DuneAdgPlayerEngine tempEngine = new DuneAdgPlayerEngine();
-		decompressed = tempEngine.TryDecompressHsqInternal(fileData);
-		if (decompressed != null) {
-			data = decompressed;
-			wasCompressed = true;
-		}
-
-		int dataBase = 2;
-		int eventBase = (ushort)(data[0] | (data[1] << 8));
-
-		SongHeaderInfo info = new SongHeaderInfo {
-			RawFileSize = data.Length,
-			WasHsqCompressed = wasCompressed,
-			DataBase = dataBase,
-			EventBase = eventBase,
-			InstrumentCount = eventBase > dataBase + 0x32 ? (data.Length - eventBase) / 0x28 : 0
-		};
-
-		if (data.Length >= dataBase + 0x32) {
-			info.Tempo = (ushort)(data[dataBase + 0x30] | (data[dataBase + 0x31] << 8));
-			info.LoopStartMeasure = (ushort)(data[dataBase + 0x2A] | (data[dataBase + 0x2B] << 8));
-			info.LoopEndMeasure = (ushort)(data[dataBase + 0x2C] | (data[dataBase + 0x2D] << 8));
-			info.LoopCount = (ushort)(data[dataBase + 0x2E] | (data[dataBase + 0x2F] << 8));
-
-			int channelSlotsToParse = Math.Min(SongHeaderChannelCount, info.ChannelOffsets.Length);
-			for (int i = 0; i < channelSlotsToParse; i++) {
-				ushort relative = (ushort)(data[dataBase + i * 2] | (data[dataBase + i * 2 + 1] << 8));
-				info.ChannelOffsets[i] = relative;
-				info.ChannelActive[i] = relative != 0;
-			}
-		}
-
-		int activeChannels = 0;
-		for (int i = 0; i < info.ChannelActive.Length; i++) {
-			if (info.ChannelActive[i]) {
-				activeChannels++;
-			}
-		}
-		info.ActiveChannelCount = activeChannels;
-
-		headerInfo = info;
-		return true;
-	}
-
-	private byte[]? TryDecompressHsqInternal(byte[] fileData) {
-		return TryDecompressHsq(fileData);
-	}
-}
-
-/// <summary>
-/// Parsed song header metadata for display.
-/// </summary>
-public sealed class SongHeaderInfo {
-	public int RawFileSize { get; set; }
-	public bool WasHsqCompressed { get; set; }
-	public int DataBase { get; set; }
-	public int EventBase { get; set; }
-	public ushort Tempo { get; set; }
-	public ushort LoopStartMeasure { get; set; }
-	public ushort LoopEndMeasure { get; set; }
-	public ushort LoopCount { get; set; }
-	public int InstrumentCount { get; set; }
-	public int ActiveChannelCount { get; set; }
-	public ushort[] ChannelOffsets { get; set; } = new ushort[18];
-	public bool[] ChannelActive { get; set; } = new bool[18];
-}
-
-/// <summary>
-/// Snapshot of a single OPL channel's state for UI display.
-/// </summary>
-public sealed class ChannelSnapshot {
-	public int Channel { get; set; }
-	public ushort Wait { get; set; }
-	public byte Instrument { get; set; }
-	public byte Note { get; set; }
-	public byte Transpose { get; set; }
-	public ushort Frequency { get; set; }
-	public ushort PitchBendFlag { get; set; }
-	public bool IsActive { get; set; }
-
-	/// <summary>
-	/// Human-readable note name from MIDI-style note number.
-	/// </summary>
-	public string NoteName {
-		get {
-			if (Note == 0) {
-				return "---";
-			}
-			string[] names = { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
-			int octave = (Note / 12) - 1;
-			int semitone = Note % 12;
-			return $"{names[semitone]}{octave}";
-		}
 	}
 }

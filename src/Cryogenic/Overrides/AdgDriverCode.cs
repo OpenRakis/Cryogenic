@@ -9,8 +9,9 @@ using Serilog;
 using System;
 
 /// <summary>
-/// DNADG (AdLib Gold / OPL3) C# override scaffold.
-/// This class is intentionally registration-only until runtime evidence is collected.
+/// DNADG (AdLib Gold / OPL3) C# override surface.
+/// Implements the currently observed callable DNADG entrypoints and their body targets,
+/// with registration gated by live wrapper-signature checks on the remapped driver segment.
 /// </summary>
 public partial class Overrides {
 	/// <summary>
@@ -175,7 +176,7 @@ public partial class Overrides {
 	}
 
 	/// <summary>
-	/// Fixed Gold initialization command words observed at 564B:1185.
+	/// Fixed Gold initialization command words with address provenance from the legacy DNADG map at 564B:1185.
 	/// </summary>
 	/// <remarks>
 	/// Each word encodes <c>AL=register</c> and <c>AH=value</c> for helper 1158.
@@ -216,8 +217,31 @@ public partial class Overrides {
 	private static readonly ILogger AdgLogger = Log.ForContext("Subsystem", "ADGDriver");
 	private static bool EnableAdgCSharpFunctionReplacement = true;
 	private ushort _adgSegment = 0x564B;
+	private bool _adgFunctionReplacementsRegistered;
+	private bool _adgDeferredRegistrationLogged;
+	private bool _adgLiveMapMismatchLogged;
+	private bool _adgUnknownMapLogged;
 
 	private const ushort AdgDefaultSegment = 0x564B;
+	private static readonly byte[] LegacyAdgExportWrapperSignature = [
+		0xE9, 0xFC, 0x03,
+		0xE9, 0x20, 0x05,
+		0xE9, 0x58, 0x04,
+		0xE9, 0x04, 0x05,
+		0xE9, 0xAF, 0x04,
+		0xE9, 0xE4, 0x05,
+		0xE9, 0x96, 0x04
+	];
+	private static readonly byte[] LiveAdgExportWrapperSignature5642 = [
+		0xEB, 0x1E, 0x90,
+		0xE9, 0xBC, 0x00,
+		0xE9, 0xD5, 0x00,
+		0xE9, 0xB6, 0x00,
+		0xE9, 0xBC, 0x00,
+		0xE9, 0xC6, 0x00,
+		0xE9, 0x02, 0x01,
+		0xE9, 0x8F, 0x00
+	];
 	private const ushort AdgStatusOffset = 0x01DE;
 	private const ushort AdgTickEnabledOffset = 0x01DF;
 	private const ushort AdgFadePatternOffset = 0x01E0;
@@ -304,7 +328,7 @@ public partial class Overrides {
 	/// Registers ADG function overrides for the active remapped ADG segment.
 	/// </summary>
 	/// <remarks>
-	/// Registration is intentionally disabled by default until runtime ABI parity is validated.
+	/// Registration is gated by the live DNADG wrapper signature.
 	/// This method is the single activation switch for all ADG replacement wiring.
 	/// <code>
 	/// call far ADG:0100
@@ -318,24 +342,78 @@ public partial class Overrides {
 			return;
 		}
 
+		TryRegisterAdgObservedFunctionReplacements();
+	}
+
+	/// <summary>
+	/// Registers DNADG overrides only after the loader has resolved the live driver segment.
+	/// </summary>
+	/// <remarks>
+	/// The current C# surface covers the seven exported DNADG entrypoints and the seven body targets
+	/// behind those wrappers. Registration waits for the loader to resolve the live segment, then
+	/// binds the overrides only when the observed wrapper signature matches the supported callable map.
+	/// If a different wrapper signature is observed, registration is skipped instead of guessing.
+	/// </remarks>
+	private void TryRegisterAdgObservedFunctionReplacements() {
+		if (_adgFunctionReplacementsRegistered) {
+			return;
+		}
+
 		ResolveAdgSegment();
-		RegisterAdgObservedFunctionReplacements();
-		AdgLogger.Information("DNADG replacement registrations enabled. Segment={AdgSegmentHex}",
-			$"0x{_adgSegment:X4}");
+		if (DriverLoadToolbox.ActualAdgSegment == 0) {
+			if (!_adgDeferredRegistrationLogged) {
+				AdgLogger.Information("DNADG replacement registration deferred until the live driver segment is known.");
+				_adgDeferredRegistrationLogged = true;
+			}
+			return;
+		}
+
+		if (AdgExportWrapperSignatureMatches(_adgSegment, LegacyAdgExportWrapperSignature)) {
+			RegisterAdgObservedFunctionReplacements();
+			_adgFunctionReplacementsRegistered = true;
+			AdgLogger.Information("DNADG replacement registrations enabled. Segment={AdgSegmentHex}",
+				$"0x{_adgSegment:X4}");
+			return;
+		}
+
+		if (AdgExportWrapperSignatureMatches(_adgSegment, LiveAdgExportWrapperSignature5642)) {
+			if (!_adgLiveMapMismatchLogged) {
+				AdgLogger.Warning(
+					"DNADG live segment {AdgSegmentHex} matches the alternate 5642 wrapper signature (0100->0120, 0103->01C2, 0106->01DE, 0109->01C2, 010C->01CB, 010F->01D8, 0112->0217, 0115->01A7). Current C# registrations cover the legacy callable surface, so registration is skipped pending evidence-backed mapping for this alternate signature.",
+					$"0x{_adgSegment:X4}");
+				_adgLiveMapMismatchLogged = true;
+			}
+			return;
+		}
+
+		if (!_adgUnknownMapLogged) {
+			AdgLogger.Warning("DNADG live segment {AdgSegmentHex} has an unrecognized export wrapper signature. Registration skipped.",
+				$"0x{_adgSegment:X4}");
+			_adgUnknownMapLogged = true;
+		}
 	}
 
 	/// <summary>
 	/// Resolves the live ADG segment from the loader remap table.
 	/// </summary>
 	/// <remarks>
-	/// <code>if ActualAdpSegment != 0 then use remapped segment else default 0x564B</code>
+	/// <code>if ActualAdgSegment != 0 then use remapped segment else default 0x564B</code>
 	/// </remarks>
 	private void ResolveAdgSegment() {
-		if (DriverLoadToolbox.ActualAdpSegment != 0) {
-			_adgSegment = DriverLoadToolbox.ActualAdpSegment;
+		if (DriverLoadToolbox.ActualAdgSegment != 0) {
+			_adgSegment = DriverLoadToolbox.ActualAdgSegment;
 		} else {
 			_adgSegment = AdgDefaultSegment;
 		}
+	}
+
+	private bool AdgExportWrapperSignatureMatches(ushort segment, byte[] expectedBytes) {
+		for (int i = 0; i < expectedBytes.Length; i++) {
+			if (SegByte(segment, (ushort)(0x0100 + i)) != expectedBytes[i]) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	/// <summary>
@@ -459,7 +537,7 @@ public partial class Overrides {
 
 	/// <summary>
 	/// Converts AX input volume to ADG internal packed attenuation format.
-	/// Observed from live execution at 564B:056E.
+	/// Address provenance: legacy DNADG map 564B:056E.
 	/// </summary>
 	/// <remarks>
 	/// <code>
@@ -520,7 +598,7 @@ public partial class Overrides {
 
 	/// <summary>
 	/// Patches driver file-extension strings in caller-provided filename table.
-	/// Observed from live execution at 564B:04DC.
+	/// Address provenance: legacy DNADG map 564B:04DC.
 	/// </summary>
 	/// <remarks><code>scan '.' then copy extension bytes from CS:04D9/04DB</code></remarks>
 	private void AdgPatchDriverFileExtensions_04DC() {
@@ -581,7 +659,7 @@ public partial class Overrides {
 
 	/// <summary>
 	/// Waits until the Gold secondary status port reports ready (bits 6/7 clear).
-	/// Observed from live execution at 564B:1149.
+	/// Address provenance: legacy DNADG map 564B:1149.
 	/// </summary>
 	/// <remarks><code>in AL,DX ; and AL,0xC0 ; jne loop</code></remarks>
 	private void AdgWaitSecondaryOplReady_1149() {
@@ -598,7 +676,7 @@ public partial class Overrides {
 
 	/// <summary>
 	/// Writes AX as secondary Gold register/value after ready-wait.
-	/// Observed from live execution at 564B:1158.
+	/// Address provenance: legacy DNADG map 564B:1158.
 	/// </summary>
 	/// <remarks><code>wait-ready ; out DX,AL ; out DX+1,AH</code></remarks>
 	private void AdgWriteSecondaryOplRegisterWithReady_1158() {
@@ -635,7 +713,7 @@ public partial class Overrides {
 	/// Issues the Gold latch/reset command sequence start byte.
 	/// </summary>
 	/// <remarks>
-	/// Address provenance: 564B:1176.
+	/// Address provenance: legacy DNADG map 564B:1176.
 	/// <code>
 	/// mov AL,0xFF
 	/// out DX,AL
@@ -650,7 +728,7 @@ public partial class Overrides {
 	/// Issues the Gold release command after waiting for ready state.
 	/// </summary>
 	/// <remarks>
-	/// Address provenance: 564B:116E.
+	/// Address provenance: legacy DNADG map 564B:116E.
 	/// <code>
 	/// call 1149
 	/// mov AL,0xFE
@@ -665,7 +743,7 @@ public partial class Overrides {
 
 	/// <summary>
 	/// Performs AdLib Gold startup initialization sequence.
-	/// Observed from live execution at 564B:1185.
+	/// Address provenance: legacy DNADG map 564B:1185.
 	/// </summary>
 	private void AdgInitializeGoldHardware_1185() {
 		AdgPushFlagsToStack();
@@ -753,7 +831,7 @@ public partial class Overrides {
 
 	/// <summary>
 	/// Applies current ADG master volume to Gold global volume registers.
-	/// Observed from live execution at 564B:0F21.
+	/// Address provenance: legacy DNADG map 564B:0F21.
 	/// </summary>
 	/// <remarks><code>write register 0x09 and 0x0A with packed high/low nibble attenuation</code></remarks>
 	private void AdgApplyMasterVolumeToGold_0F21() {
@@ -780,7 +858,7 @@ public partial class Overrides {
 
 	/// <summary>
 	/// Clears operator state across playable channels on both OPL chips.
-	/// Observed from live execution at 564B:0F53.
+	/// Address provenance: legacy DNADG map 564B:0F53.
 	/// </summary>
 	/// <remarks><code>for channel in 0x15..0 : write 0xFF to both chips, skip percussion slots</code></remarks>
 	private void AdgSilenceGoldChannels_0F53() {
@@ -811,7 +889,7 @@ public partial class Overrides {
 
 	/// <summary>
 	/// Programs the Gold surround mask shift-register sequence.
-	/// Observed from live execution at 564B:11F4.
+	/// Address provenance: legacy DNADG map 564B:11F4.
 	/// </summary>
 	/// <remarks><code>loop 8: write register 0x18 with clock/data transitions</code></remarks>
 	private void AdgWriteGoldSurroundMask_11F4() {
@@ -833,7 +911,7 @@ public partial class Overrides {
 
 	/// <summary>
 	/// Refreshes Gold surround state from the current song surround table.
-	/// Observed from live execution at 564B:11C4.
+	/// Address provenance: legacy DNADG map 564B:11C4.
 	/// </summary>
 	/// <remarks><code>for 0..0x1E: write mask-on, load table byte, write mask-off</code></remarks>
 	private void AdgUpdateGoldSurround_11C4() {
@@ -861,7 +939,7 @@ public partial class Overrides {
 
 	/// <summary>
 	/// Decodes one ADG variable-length wait value from ES:SI into channel state.
-	/// Observed from live execution at 564B:0E7E.
+	/// Address provenance: legacy DNADG map 564B:0E7E.
 	/// </summary>
 	/// <remarks><code>value = (value&lt;&lt;7) | (byte&amp;0x7F) until sign bit clears</code></remarks>
 	private void AdgReadWaitValue_0E7E() {
@@ -888,7 +966,7 @@ public partial class Overrides {
 
 	/// <summary>
 	/// Builds the 18-channel runtime state table from current song pointers.
-	/// Observed from live execution at 564B:068A.
+	/// Address provenance: legacy DNADG map 564B:068A.
 	/// </summary>
 	/// <remarks><code>initialize [022A..] pointers, [024E..]/[0296..] defaults, and first wait values</code></remarks>
 	private void AdgBuildChannelTable_068A() {
@@ -959,7 +1037,7 @@ public partial class Overrides {
 
 	/// <summary>
 	/// Resets only the runtime scheduler state while reusing the current channel source table.
-	/// Observed from live execution at 564B:06B9.
+	/// Address provenance: legacy DNADG map 564B:06B9.
 	/// </summary>
 	/// <remarks>
 	/// <code>
@@ -1006,7 +1084,7 @@ public partial class Overrides {
 
 	/// <summary>
 	/// Executes one fade-step iteration for dynamics transitions.
-	/// Observed from live execution at 564B:0ECC.
+	/// Address provenance: legacy DNADG map 564B:0ECC.
 	/// </summary>
 	/// <remarks><code>nibble-wise step toward target volume; stop/reset when reaching zero</code></remarks>
 	private void AdgFadeStep_0ECC() {
@@ -1096,7 +1174,7 @@ public partial class Overrides {
 
 	/// <summary>
 	/// Verifies that current song identity still matches the cached open-song snapshot.
-	/// Observed from live execution at 564B:0730.
+	/// Address provenance: legacy DNADG map 564B:0730.
 	/// </summary>
 	/// <remarks><code>compare 3 identity words at +0,+0x4000,+0x8000 against 061C cache</code></remarks>
 	private bool AdgIsSongIdentityStillValid_0730() {
@@ -1118,7 +1196,7 @@ public partial class Overrides {
 
 	/// <summary>
 	/// Checks and applies ADG loop snapshot save/restore transitions.
-	/// Observed from live execution at 564B:07DA.
+	/// Address provenance: legacy DNADG map 564B:07DA.
 	/// </summary>
 	/// <remarks>
 	/// <code>
@@ -1211,7 +1289,8 @@ public partial class Overrides {
 	}
 
 	/// <summary>
-	/// Observed scheduler-side vibrato path from 564B:07AD.
+	/// Scheduler-side vibrato path.
+	/// Address provenance: legacy DNADG map 564B:07AD.
 	/// </summary>
 	/// <remarks>
 	/// <code>
@@ -2036,7 +2115,8 @@ public partial class Overrides {
 	}
 
 	/// <summary>
-	/// Main ADG scheduler body observed at 564B:0756.
+	/// Main ADG scheduler body.
+	/// Address provenance: legacy DNADG map 564B:0756.
 	/// </summary>
 	/// <remarks>
 	/// <code>
@@ -2122,7 +2202,7 @@ public partial class Overrides {
 
 	/// <summary>
 	/// Performs global note-off reset across all ADG channels.
-	/// Observed from live execution at 564B:0EBA.
+	/// Address provenance: legacy DNADG map 564B:0EBA.
 	/// </summary>
 	/// <remarks><code>for CX=0x12..1: call note-off helper</code></remarks>
 	private void AdgResetInternal_0EBA() {
@@ -2141,12 +2221,17 @@ public partial class Overrides {
 	}
 
 	/// <summary>
-	/// Registers all currently observed ADG export and internal function entrypoints.
+	/// Registers the DNADG callable surface currently implemented in C#.
 	/// </summary>
-	/// <remarks><code>DefineFunction(segment, offset, override)</code></remarks>
+	/// <remarks>
+	/// <code>DefineFunction(segment, offset, override)</code>
+	/// This map covers the seven exported entrypoints at 0100..0112 and the seven body
+	/// targets those wrappers tail-jump into. The method names keep 564B provenance for
+	/// traceability, while registration is applied to the live remapped DNADG segment.
+	/// </remarks>
 	private void RegisterAdgObservedFunctionReplacements() {
 		// <code>mov si,0100h ; export table start</code>
-		// Export table validated live via MCP at 564B:0100 (ADG388).
+		// Export table validated live at offset 0x0100 of the remapped DNADG segment.
 		DefineFunction(_adgSegment, 0x0100, AdgInit_564B_0100_0565B0, false, nameof(AdgInit_564B_0100_0565B0));
 		DefineFunction(_adgSegment, 0x0103, AdgOpenSong_564B_0103_0565B3, false, nameof(AdgOpenSong_564B_0103_0565B3));
 		DefineFunction(_adgSegment, 0x0106, AdgReset_564B_0106_0565B6, false, nameof(AdgReset_564B_0106_0565B6));

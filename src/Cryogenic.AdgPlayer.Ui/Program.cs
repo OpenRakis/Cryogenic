@@ -22,6 +22,10 @@ internal static class Program {
 
 		try {
 			Log.Information("Cryogenic ADG Player starting (branding: AdLib Gold / OPL3Gold)");
+			if (HeadlessRegisterTraceCommand.TryRun(args, out int exitCode)) {
+				Environment.ExitCode = exitCode;
+				return;
+			}
 			BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
 		} catch (Exception ex) {
 			Log.Fatal(ex, "Unhandled exception");
