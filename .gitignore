@@ -382,3 +382,9 @@ assets_override/**
 !assets_override/music/.gitkeep
 !assets_override/music/fingerprints.json
 /Spice86.Audio
+src/Cryogenic.AdpPlayer/Cryogenic.AdpPlayer.csproj.lscache
+src/Cryogenic.Mt32Player/Cryogenic.Mt32Player.csproj.lscache
+src/Cryogenic.Tools.DuneExtractor/DuneExtractor.csproj.lscache
+src/Cryogenic.Tools.UnHsq/UnHsq.csproj.lscache
+src/Cryogenic.AdgPlayer.Ui/Cryogenic.AdgPlayer.Ui.csproj.lscache
+src/Cryogenic/Cryogenic.csproj.lscache
