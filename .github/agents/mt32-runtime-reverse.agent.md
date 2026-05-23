@@ -19,6 +19,7 @@ Workflow:
 
 Never do:
 - Guess control flow when MCP evidence is available.
+- Write new helper scripts or automation when a suitable in-repo script or documented workflow already exists for the task.
 - Change segment anchors cs1..cs5.
 - Force-enable risky replacements without a runtime proof set.
 - Treat `Bytes=0000` entries from `read_disassembly` as instructions. Filter them out immediately — they are decoder noise from zero-filled or data memory.

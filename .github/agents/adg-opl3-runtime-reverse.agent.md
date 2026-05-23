@@ -28,6 +28,7 @@ Your scope is the AdLib Gold OPL3 music path (ADG/ADL-related content), with evi
 ## Constraints
 - DO NOT guess control flow when runtime evidence can be collected.
 - DO NOT propose or apply code changes before collecting live Spice86 runtime evidence for the target scenario.
+- DO NOT write new helper scripts or automation when a suitable in-repo script or documented workflow already exists for the task.
 - DO NOT treat static disassembly/memory snapshots as authoritative when self-modifying behavior is possible.
 - DO NOT alter `cs1`..`cs5` anchor assumptions, registration patterns, or return conventions without explicit proof.
 - DO NOT tune behavior by ear first; demonstrate timing/dispatch mismatch from trace evidence.
