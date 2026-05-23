@@ -47,7 +47,7 @@ function Start-CryogenicInstance {
         "--UseCodeOverride", $overrideValue,
         "--HeadlessMode", $HeadlessMode,
         "--Cycles", "$Cycles",
-        "-a", $AudioArgument,
+        "-a", ('"' + $AudioArgument + '"'),
         "--OplMode", $OplMode,
         "-e", $exeFullPath,
         "-p", "$PitPeriod",
