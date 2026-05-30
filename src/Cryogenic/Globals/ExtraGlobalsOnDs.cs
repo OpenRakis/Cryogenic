@@ -85,4 +85,53 @@ public class ExtraGlobalsOnDs : GlobalsOnDs {
 	public void Set1138_DC08_DWord32_hnmFileRemain(uint value) {
 		UInt32[0xDC08] = value;
 	}
+
+	/// <summary>
+	/// Sets the character draw X coordinate (full 16-bit) at DS:D82C.
+	/// </summary>
+	/// <param name="value">The new 16-bit X coordinate.</param>
+	/// <remarks>
+	/// The auto-generated <see cref="Cryogenic.Generated.GlobalsOnDs.Set1138_D82C_Word16_CharacterXCoord(byte)"/>
+	/// has a byte-typed parameter that truncates writes to the low byte. This helper writes the full 16-bit
+	/// value as the disassembly does (<c>MOV [D82C], DX</c>).
+	/// </remarks>
+	public void Set1138_D82C_Word16_CharacterXCoord_Full(ushort value) {
+		UInt16[0xD82C] = value;
+	}
+
+	/// <summary>
+	/// Sets the character draw Y coordinate (full 16-bit) at DS:D82E.
+	/// </summary>
+	/// <param name="value">The new 16-bit Y coordinate.</param>
+	/// <remarks>
+	/// The auto-generated setter accepts only a byte. This helper writes the full 16-bit value to mirror
+	/// <c>MOV [D82E], BX</c> from the disassembly at <c>seg000:D052</c>.
+	/// </remarks>
+	public void Set1138_D82E_Word16_CharacterYCoord_Full(ushort value) {
+		UInt16[0xD82E] = value;
+	}
+
+	/// <summary>
+	/// Sets the secondary draw X coordinate (full 16-bit) at DS:D830.
+	/// </summary>
+	/// <param name="value">The new 16-bit X coordinate.</param>
+	/// <remarks>
+	/// Mirrors the disassembly write <c>MOV [D830], DX</c> at <c>seg000:D056</c>. The auto-generated
+	/// setter narrows to a byte and is therefore unsuitable for full-word writes.
+	/// </remarks>
+	public void Set1138_D830_Word16_Full(ushort value) {
+		UInt16[0xD830] = value;
+	}
+
+	/// <summary>
+	/// Sets the secondary draw Y coordinate (full 16-bit) at DS:D832.
+	/// </summary>
+	/// <param name="value">The new 16-bit Y coordinate.</param>
+	/// <remarks>
+	/// Mirrors the disassembly write <c>MOV [D832], BX</c> at <c>seg000:D05A</c>. The auto-generated
+	/// setter narrows to a byte and is therefore unsuitable for full-word writes.
+	/// </remarks>
+	public void Set1138_D832_Word16_Full(ushort value) {
+		UInt16[0xD832] = value;
+	}
 }

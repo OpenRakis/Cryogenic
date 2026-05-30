@@ -17,8 +17,27 @@ public partial class Overrides {
 	/// Registers time and day/night cycle function overrides with Spice86.
 	/// </summary>
 	public void DefineTimeCodeOverrides() {
+		DefineFunction(cs1, 0x1AC5, GetCurrentDay_1000_1AC5_011AC5);
 		DefineFunction(cs1, 0x1AD1, GetSunlightDay_1000_1AD1_011AD1);
 		DefineFunction(cs1, 0x1AE0, SetHourOfTheDayToAX_1000_1AE0_011AE0);
+	}
+
+	/// <summary>
+	/// Override for CS1:1AC5 - Returns the current in-game day in AX (lower 12 bits of game elapsed time).
+	/// </summary>
+	/// <param name="gotoAddress">Target address for potential jumps (unused in this override).</param>
+	/// <returns>A near return action to exit the function.</returns>
+	/// <remarks>
+	/// The original code loads <c>DS:[0002]</c> (GameElapsedTime) into AX and applies four
+	/// <c>SHR AX, 1</c> instructions, which is equivalent to dividing by 16 (the 4-bit
+	/// hour-of-day component lives in the low nibble). This is the unshifted companion to
+	/// <see cref="GetSunlightDay_1000_1AD1_011AD1"/> which adds 3 hours before the same shift.
+	/// </remarks>
+	public Action GetCurrentDay_1000_1AC5_011AC5(int gotoAddress) {
+		ushort elapsed = globalsOnDs.Get1138_0002_Word16_GameElapsedTime();
+		ushort day = (ushort)(elapsed >> 4);
+		AX = day;
+		return NearRet();
 	}
 
 	/// <summary>

@@ -23,6 +23,7 @@ public partial class Overrides {
 		DefineFunction(cs1, 0xC085, SetBackBufferAsActiveFrameBuffer_1000_C085_01C085);
 		DefineFunction(cs1, 0xC08E, SetTextBufferAsActiveFrameBuffer_1000_C08E_01C08E);
 		DefineFunction(cs1, 0xC0AD, ClearCurrentVideoBuffer_1000_C0AD_01C0AD);
+		DefineFunction(cs1, 0xD04E, FontSetDrawPosition_1000_D04E_01D04E);
 		DefineFunction(cs1, 0xD05F, GetCharacterCoordsXY_1000_D05F_01D05F);
 		DefineFunction(cs1, 0xD068, SetFontToIntro_1000_D068_01D068);
 		DefineFunction(cs1, 0xD075, SetFontToMenu_1000_D075_01D075);
@@ -34,6 +35,34 @@ public partial class Overrides {
 	public Action ClearCurrentVideoBuffer_1000_C0AD_01C0AD(int gotoAddress) {
 		State.ES = globalsOnDs.Get1138_DBDA_Word16_framebufferActive();
 		VgaFunc08FillWithZeroFor64000AtES_334B_0118_0335C8(0);
+		return NearRet();
+	}
+
+	/// <summary>
+	/// Override for CS1:D04E - Stores the current font draw position (DX,BX) into both the
+	/// primary character coordinate slot (DS:D82C/D82E) and the secondary slot (DS:D830/D832).
+	/// </summary>
+	/// <param name="gotoAddress">Target address for potential jumps (unused in this override).</param>
+	/// <returns>A near return action to exit the function.</returns>
+	/// <remarks>
+	/// The original disassembly is a fixed sequence of four word-sized stores followed by
+	/// <c>RET</c>:
+	/// <code>
+	/// seg000:D04E  MOV [D82C], DX
+	/// seg000:D052  MOV [D82E], BX
+	/// seg000:D056  MOV [D830], DX
+	/// seg000:D05A  MOV [D832], BX
+	/// </code>
+	/// The companion getter at CS1:D05F (<see cref="GetCharacterCoordsXY_1000_D05F_01D05F"/>)
+	/// reads the primary pair back into DX/BX, so the secondary pair is the saved/origin
+	/// position used by font draw routines to restore the cursor after a line wrap.
+	/// MOV does not modify FLAGS, so no <c>Alu16</c> helper is required.
+	/// </remarks>
+	public Action FontSetDrawPosition_1000_D04E_01D04E(int gotoAddress) {
+		globalsOnDs.Set1138_D82C_Word16_CharacterXCoord_Full(DX);
+		globalsOnDs.Set1138_D82E_Word16_CharacterYCoord_Full(BX);
+		globalsOnDs.Set1138_D830_Word16_Full(DX);
+		globalsOnDs.Set1138_D832_Word16_Full(BX);
 		return NearRet();
 	}
 

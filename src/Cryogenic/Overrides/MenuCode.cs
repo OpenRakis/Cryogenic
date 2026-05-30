@@ -66,8 +66,35 @@ public partial class Overrides {
 	/// Registers menu-related function overrides with Spice86.
 	/// </summary>
 	public void DefineMenuCodeOverrides() {
+		DefineFunction(cs1, 0xA45C, SettingsUiAddGlobalOffset_1000_A45C_01A45C);
 		DefineFunction(cs1, 0xD316, MenuAnimationRelated_1000_D316_01D316);
 		DefineFunction(cs1, 0xD41B, SetBpToCurrentMenuTypeForScreenAction_1000_D41B_01D41B);
+	}
+
+	/// <summary>
+	/// Override for CS1:A45C - <c>settings_ui_add_global_offset</c>.
+	/// Adds the settings-UI global X/Y offsets (DS:2886 / DS:2888) onto the DX/BX draw position.
+	/// </summary>
+	/// <param name="gotoAddress">Target address for potential jumps (unused in this override).</param>
+	/// <returns>A near return action to exit the function.</returns>
+	/// <remarks>
+	/// Faithful translation of the three-instruction leaf at <c>seg000:A45C</c> (cross-referenced
+	/// from <c>A478</c>, <c>A4BB</c> and <c>A516</c> in the settings-UI draw routines):
+	/// <code>
+	/// seg000:A45C  ADD DX, [2886]
+	/// seg000:A460  ADD BX, [2888]
+	/// seg000:A464  RET
+	/// </code>
+	/// Both ADDs must be performed through <see cref="Spice86.Core.Emulator.CPU.Alu16"/> so that
+	/// the CPU flags (CF/OF/SF/ZF/AF/PF) seen by callers after the second ADD are identical to
+	/// the original.
+	/// </remarks>
+	public Action SettingsUiAddGlobalOffset_1000_A45C_01A45C(int gotoAddress) {
+		ushort offsetX = globalsOnDs.Get1138_2886_Word16();
+		ushort offsetY = (ushort)globalsOnDs.Get1138_2888_Word16();
+		DX = Alu16.Add(DX, offsetX);
+		BX = Alu16.Add(BX, offsetY);
+		return NearRet();
 	}
 
 	/// <summary>
