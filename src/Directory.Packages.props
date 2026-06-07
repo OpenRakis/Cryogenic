@@ -8,9 +8,9 @@
     <PackageVersion Include="Avalonia.Fonts.Inter" Version="12.0.4" />
     <PackageVersion Include="Avalonia.Themes.Fluent" Version="12.0.4" />
     <PackageVersion Include="Xaml.Behaviors.Avalonia" Version="12.0.0.1" />
-    <PackageVersion Include="Spice86" Version="14.3.0" />
+    <PackageVersion Include="Spice86" Version="15.0.0" />
     <PackageVersion Include="Spice86.Audio" Version="11.4.0" />
-    <PackageVersion Include="Spice86.Core" Version="14.3.0" />
+    <PackageVersion Include="Spice86.Core" Version="15.0.0" />
     <PackageVersion Include="Spice86.DataGrid" Version="0.1.2" />
     <PackageVersion Include="Mt32emu.net" Version="1.0.0" />
     <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.2" />
@@ -21,7 +21,7 @@
     <PackageVersion Include="VideoLAN.LibVLC.Windows" Version="3.0.23.1" />
     <PackageVersion Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="10.0.300" />
     <PackageVersion Include="Roslynator.Analyzers" Version="4.15.0" />
-    <PackageVersion Include="Meziantou.Analyzer" Version="3.0.98" />
+    <PackageVersion Include="Meziantou.Analyzer" Version="3.0.101" />
     <PackageVersion Include="ErrorProne.NET.CoreAnalyzers" Version="0.1.2" />
     <PackageVersion Include="ErrorProne.NET.Structs" Version="0.1.2" />
     <PackageVersion Include="SonarAnalyzer.CSharp" Version="10.27.0.140913" />
