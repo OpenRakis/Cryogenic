@@ -91,7 +91,7 @@ The `Overrides` class declares five segment fields used when registering overrid
 | DNSBP | Sound Blaster Pro | `0xE000` | PCM sound effects |
 | DNMID | MIDI | `0xF000` | Music playback (MT-32, AdLib) |
 
-Drivers DN386, DNADL, DNADP, DNADG, DNSDB are not remapped. After each driver loads, `ResetAllocator` restores the original allocator state. The remapping hooks are injected at CS1:E57B (`RemapDrivers`) and CS1:E593 (`ResetAllocator`). Driver function tables are auto-detected at CS1:E589 (`ReadDriverFunctionTable`).
+Drivers DN386, DNADL, DNADP, DNADG, DNSDB are not remapped. After each driver loads, `ResetAllocator` restores the original allocator state. The remapping hooks are injected at the live-verified linear offsets CS1:E64B (`RemapDrivers`) and CS1:E663 (`ResetAllocator`), which correspond to runtime trace addresses `100D:E57B` and `100D:E593`. Driver function tables are auto-detected at CS1:E659 (`ReadDriverFunctionTable`), corresponding to runtime trace address `100D:E589`.
 
 ---
 
@@ -212,7 +212,7 @@ bin/Release/net10.0/publish/Cryogenic --Exe /path/to/DNCDPRG.EXE --Cycles 8000 -
 
 ## MT-32 Music Folder Replacement
 
-https://github.com/user-attachments/assets/4c24620a-54df-4f38-86e0-dc62f8a23f4f
+<https://github.com/user-attachments/assets/4c24620a-54df-4f38-86e0-dc62f8a23f4f>
 
 When running with the MT-32 driver (`-a "MID330 SBP2227"`), you can supply a folder of audio files that replace the game's native MIDI music. Pass the folder path via `--MusicFolder`:
 

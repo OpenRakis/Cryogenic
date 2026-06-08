@@ -70,6 +70,7 @@ For MCP access: add `--mcp` to the graphify skill invocation to expose `query_gr
 
 ## Constraints
 - DO NOT guess code paths when Spice86 runtime evidence or dump artifacts can answer the question.
+- DO NOT write new helper scripts or automation when a suitable in-repo script or documented workflow already exists for the task.
 - DO NOT treat static bytes or offline disassembly as authoritative when self-modifying behavior is possible.
 - DO NOT change segment anchors, override registration patterns, or return conventions without explicit proof.
 - DO NOT tune note lengths, tempo, or FM behavior by ear first; prove timing mismatches from traces.

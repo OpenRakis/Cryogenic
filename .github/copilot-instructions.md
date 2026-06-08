@@ -3,6 +3,7 @@
 ## Workflow
 - Treat reverse engineering as evidence-driven work. Prefer proven behavior from runtime traces, dumps, debugger state, existing overrides, and documented observations over speculation.
 - When behavior is unclear, check live Spice86 state first if available. Spice86 now exposes MCP tooling and runtime inspection surfaces; use that, the debugger/GDB flow, or dump artifacts before inventing logic. Reference: https://github.com/OpenRakis/Spice86/blob/master/doc/mcp.md
+- Reuse suitable in-repo scripts, prompts, skills, and documented workflows before writing new automation. Do not create ad-hoc scripts when an existing repository workflow already covers the task; only add new automation when the current repo surface is demonstrably insufficient.
 - Use current repository evidence as the source of truth: `dump/spice86dumpExecutionFlow.json`, `dump/spice86dumpGhidraSymbols.txt`, `dump/CodeGeneratorConfig.json`, generated globals, and any targeted memory dumps captured by the project.
 - Preserve observed game behavior, including quirks, unless you have strong runtime evidence that the current behavior is wrong.
 - No new fallback behavior from Copilot: do not invent or add new silent fallback paths or degraded alternate implementations. Existing fallback behavior already present in the repository is allowed and should be preserved unless explicitly requested to change. If required evidence or functionality is missing, fail fast with explicit logging instead of masking the issue.
@@ -173,6 +174,13 @@ Call `Define{SubsystemName}CodeOverrides()` from `DefineOverrides()` in Override
 - Use dump artifacts to validate reverse-engineering decisions when live inspection is unavailable or insufficient. In particular, rely on `dump/spice86dumpExecutionFlow.json` for executed paths, `dump/spice86dumpGhidraSymbols.txt` for address naming, and `dump/CodeGeneratorConfig.json` for generated hook and patch assumptions.
 - `DefineMemoryDumpsMapping()` and `MemoryDataExporter` are the project pattern for targeted snapshots. Follow that pattern when you need fresh evidence from a difficult code path.
 - Coordinate any change to dump-generation assumptions with the relevant files under `dump/`, especially `CodeGeneratorConfig.json`, so generated data and manual overrides do not drift apart.
+
+## Game Asset Tools (in-solution)
+- **Never re-implement HSQ decompression or DUNE.DAT extraction in C#.** Two CLI tools live in the solution and are the source of truth:
+  - `src/Cryogenic.Tools.UnHsq/` — decompresses `.HSQ` files to `.UNHSQ`. Source ported from `OpenRakis/tools/cd/UnHsq/`.
+  - `src/Cryogenic.Tools.DuneExtractor/` — extracts every entry of a Cryo `.DAT` archive into a `<NAME>.DAT_/` folder. Source ported from `OpenRakis/tools/cd/DuneExtractor/`.
+- Bundled decompressed artifacts live under `doc/DUNECDVF/C/DUNECD/DUNE.DAT_/` (e.g. `DNADG.UNHSQ`, `ARRAKIS_AGD.HSQ`, `MORNING.HSQ`). Reuse these instead of decompressing at runtime.
+- If new assets are needed, run the tools manually and commit the `.UNHSQ` / extracted folder; do not embed decompressors into player engines.
 
 ## Driver And Override Pitfalls
 - `DriverLoadToolbox` remaps VGA, PCM, and MIDI drivers to stable segments. Keep `RemapDrivers` and `ResetAllocator` paired at `CS1:E57B` and `CS1:E593` whenever you touch driver loading.

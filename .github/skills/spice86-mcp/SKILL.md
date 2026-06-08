@@ -16,6 +16,10 @@ description: "Use when connecting to the Spice86 MCP server for live emulator in
 
 **Note:** `/mcp` only accepts POST (GET returns 405). There is no `/sse` endpoint. This is Streamable HTTP transport, not classic SSE.
 
+**CRITICAL — Accept header:** The `/mcp` endpoint requires **both** `application/json` and `text/event-stream` in the Accept header. Sending only one returns `406 Not Acceptable`.
+
+Correct header: `Accept: application/json, text/event-stream`
+
 ### Handshake Sequence
 
 ```
@@ -50,6 +54,29 @@ Responses arrive as SSE `data:` lines. Parse the last `data:` line as JSON and e
 
 - **Success:** `result.structuredContent` — a JSON object with named fields
 - **Error:** `result.isError == true`, check `result.content[0].text` for the error message
+
+### PowerShell Invocation (Verified Pattern)
+
+The only working pattern in PowerShell is `Invoke-WebRequest` with explicit Accept header. `curl.exe` and `Invoke-RestMethod` without SSE streaming **do not work** correctly:
+
+```powershell
+function Invoke-Mcp {
+    param([string]$Port, [string]$Body)
+    $headers = @{ Accept = "application/json, text/event-stream" }
+    $wr = Invoke-WebRequest -Uri "http://127.0.0.1:$Port/mcp" -Method Post `
+        -ContentType "application/json" -Headers $headers -Body $Body -TimeoutSec 30
+    $lines = $wr.Content -split "`r?`n"
+    ($lines | Where-Object { $_ -like "data: *" } | Select-Object -Last 1) -replace '^data: ',''
+}
+
+# Initialize session
+Invoke-Mcp -Port 8081 -Body '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"agent","version":"1.0"}}}' | Out-Null
+Invoke-Mcp -Port 8081 -Body '{"jsonrpc":"2.0","method":"notifications/initialized","params":{}}' | Out-Null
+
+# Call a tool
+$result = Invoke-Mcp -Port 8081 -Body '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"cryogenic_status","arguments":{}}}'
+$result | ConvertFrom-Json | Select-Object -ExpandProperty result | Select-Object -ExpandProperty content | ForEach-Object { $_.text }
+```
 
 ```python
 import json, urllib.request
@@ -244,6 +271,22 @@ Breakpoint types: `CPU_EXECUTION_ADDRESS`, `MEMORY_ACCESS`, `MEMORY_WRITE`, `MEM
 
 ## Cryogenic Custom Tools
 
+### Cryogenic Driver Segment Constants (Never Second-Guess These)
+
+| Constant | Value | Driver |
+|---|---|---|
+| `DRIVER1_SEGMENT` | `0xD000` | DNVGA (VGA driver) |
+| `DRIVER2_SEGMENT` | `0xE000` | PCM sound driver (DNPCS/DNSBP) |
+| `DRIVER3_SEGMENT` | `0xF000` | **DNMID (MT-32) or DNPCS only** — not ADP/ADG |
+| `INTERRUPT_HANDLER_SEGMENT` | `0x0800` | Cryogenic ASM interrupt hooks |
+| `AdpDefaultSegment` | `0x5BAE` | **DNADP / DNADG / DNADL** — AdLib Pro, AdLib Gold, AdLib |
+
+**DNADG (AdLib Gold) loads at `0x5BAE`.** This is the canonical, documented segment from `AdpDriverCode.cs` (`AdpDefaultSegment = 0x5BAE`). `DriverLoadToolbox.ActualAdpSegment` tracks it at runtime; fall back to `0x5BAE` when unset.
+
+`DRIVER3_SEGMENT = 0xF000` is exclusively for the MT-32/MIDI driver (DNMID). Do not use it for ADG/ADP reverse engineering.
+
+For ADG reverse engineering, all MCP `read_memory` and `read_disassembly` calls use `segment: 0x5BAE` (23470 decimal).
+
 ### Status
 
 | Tool | Parameters | Returns |
@@ -374,3 +417,5 @@ data, err = call_mcp(url, "cryogenic_adp_opl_capture_dump", {"take": 5000})
 8. **SSE response parsing:** Read all `data:` lines, use the **last** one. Earlier lines may be partial.
 9. **Session URL:** After `initialize`, the SSE response may return a session-scoped URL. Use it for subsequent requests.
 10. **Hex outputs are uppercase with no 0x prefix.** Inputs accept any case and optional 0x prefix.
+11. **`read_memory` requires segment+offset as separate ushorts** (not a combined linear address). `segment: 61440` = `0xF000`, `offset: 256` = `0x0100`.
+12. **`cryogenic_status.driver3Segment` (`0xF000`) is for DNMID only.** DNADG/DNADP use `0x5BAE` (`AdpDefaultSegment`). Never read DNADG from `0xF000`.

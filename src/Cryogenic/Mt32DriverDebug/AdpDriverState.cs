@@ -40,23 +40,28 @@ public sealed class AdpDriverState : MemoryBasedDataStructure, IMusicDriverState
 	private const int ExportStride = 3;
 	private const ushort ChannelTableBase = 0x01A2;
 	private const ushort ChannelPointerOffset = 0x12;
+	private readonly MusicDriverType _driverType;
+	private readonly string _driverName;
 
 	/// <summary>
 	/// Initializes a new instance backed by emulator memory at the given physical base address.
 	/// </summary>
 	/// <param name="memory">Emulated memory reader/writer.</param>
-	/// <param name="driverSegment">The segment where the DNADP driver is loaded.</param>
-	public AdpDriverState(IByteReaderWriter memory, ushort driverSegment)
+	/// <param name="driverSegment">The segment where the OPL-family driver is loaded.</param>
+	/// <param name="driverType">The detected OPL-family music driver type for operator-facing labels.</param>
+	public AdpDriverState(IByteReaderWriter memory, ushort driverSegment, MusicDriverType driverType)
 		: base(memory, (uint)driverSegment << 4) {
+		_driverType = driverType;
+		_driverName = MusicDriverDetection.DescribeDriverType(driverType);
 	}
 
 	// ── Identity ──
 
 	/// <inheritdoc />
-	public MusicDriverType DriverType => MusicDriverType.Dnadp;
+	public MusicDriverType DriverType => _driverType;
 
 	/// <inheritdoc />
-	public string DriverName => "DNADP (AdLib)";
+	public string DriverName => _driverName;
 
 	// ── Song/Stream Pointers (shared layout with DNMID) ──
 
