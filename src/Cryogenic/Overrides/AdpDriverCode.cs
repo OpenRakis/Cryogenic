@@ -15,7 +15,7 @@ using System;
 /// </summary>
 public partial class Overrides {
 	private static readonly ILogger AdpLogger = Log.ForContext("Subsystem", "ADPDriver");
-	private static bool EnableAdpCSharpFunctionReplacement = true;
+	private static bool EnableAdpCSharpFunctionReplacement = false;
 	private ushort _adpSegment = 0x5BAE;
 	private int _adpTickIndex;
 

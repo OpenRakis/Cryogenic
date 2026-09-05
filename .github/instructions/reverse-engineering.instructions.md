@@ -19,7 +19,12 @@ applyTo: "src/Cryogenic/Overrides/**"
    - [dump/CodeGeneratorConfig.json](../../../dump/CodeGeneratorConfig.json) — manual instruction replacements and hook injection points
    - Any targeted `MemoryDataExporter` snapshots under `dump/` for the specific code path
 
-3. **Examine existing overrides** in the same file or related domain files for patterns:
+3. **Reuse existing in-repo workflows before adding automation**:
+   - Check `scripts/`, `.github/prompts/`, `.github/skills/`, and nearby docs for an existing workflow first
+   - If a suitable repo script already covers the task, run it with the right arguments instead of writing a new helper script
+   - Only add new automation when the repository does not already provide a suitable path, and state that gap explicitly
+
+4. **Examine existing overrides** in the same file or related domain files for patterns:
    - How do they access game state via `globalsOnDs`?
    - What `NearRet()` or `FarRet()` pattern matches your scenario?
    - Are there helper methods you should reuse?

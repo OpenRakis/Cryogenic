@@ -1,0 +1,10 @@
+{
+  "OutputDir": "dump\\live\\adg388-handoff\\20260510-115035-baseline",
+  "UseCodeOverride": false,
+  "HttpApiPort": 20003,
+  "Stamp": "20260510-115035",
+  "Pid": 14512,
+  "McpPort": 8083,
+  "Audio": "ADG388 SBP2227",
+  "Cycles": 100000
+}

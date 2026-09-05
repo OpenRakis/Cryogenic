@@ -1,0 +1,18 @@
+Utilisation des paramètres de lancement à partir de src\Cryogenic\Properties\launchSettings.json...
+[11:49:49 INF] Starting Cryogenic node with 22 arguments. ProvidedAsmHandlersSegment=0x0800
+[11:49:49 DBG] Effective arguments: --UseCodeOverride false --HeadlessMode Minimal --Cycles 100000 -a ADG388 SBP2227 --OplMode Opl3Gold -e C:\Jeux\ABWFR\DuneCDVF\C\DUNECD\DNCDPRG.EXE -p 4096 --HttpApiPort 20003 --McpHttpPort 8083 --GdbPort 10003 --ProvidedAsmHandlersSegment=2048
+
+Error: Unknown command 'SBP2227'.
+
+       --UseCodeOverride false --HeadlessMode Minimal --Cycles 100000 SBP2227 
+--OplMode Opl3Gold -e C:\Jeux\ABWFR\DuneCDVF\C\DUNECD\DNCDPRG.EXE -p 4096 
+--HttpApiPort 20003 --McpHttpPort 8083 --GdbPort 10003 
+--ProvidedAsmHandlersSegment=2048 
+--OverrideSupplierClassName=Cryogenic.DuneCdOverrideSupplier, Cryogenic, 
+Version=0.1.0.0, Culture=neutral, PublicKeyToken=null 
+--ExpectedChecksum=5F30AEB84D67CF2E053A83C09C2890F010F2E25EE877EBEC58EA15C5B30CF
+FF9
+                                                                      ^^^^^^^ No
+such command
+
+[11:49:49 INF] Cryogenic node exited normally.

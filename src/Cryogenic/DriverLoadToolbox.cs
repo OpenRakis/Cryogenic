@@ -18,12 +18,12 @@ using Spice86.Shared.Emulator.Memory;
 /// </para>
 /// <list type="number">
 /// <item><description>
-/// <see cref="RemapDrivers"/> is called at the beginning of CS1:E57B to:
+/// <see cref="RemapDrivers"/> is called at the beginning of the live-verified loader routine to:
 /// - Remove the allocator max segment limit
 /// - Set next free pointer to D000, E000, or F000 depending on the driver being loaded
 /// </description></item>
 /// <item><description>
-/// <see cref="ResetAllocator"/> is called at the end of CS1:E57B (address CS1:E593) to:
+/// <see cref="ResetAllocator"/> is called at the end of that routine to:
 /// - Reset the allocator max segment limit to its original value
 /// - Reset the next free pointer to its original value
 /// </description></item>
@@ -55,6 +55,27 @@ public static class DriverLoadToolbox {
 	/// Target segment address for MIDI music driver (DNPCS, DNMID) remapping.
 	/// </summary>
 	public const ushort DRIVER3_SEGMENT = 0xF000;
+
+	/// <summary>
+	/// Entry point of the driver loader routine in the override coordinate system.
+	/// Live traces show the same routine at 100D:E57B; with cs1 fixed at 0x1000 the
+	/// equivalent linear address is expressed as 1000:E64B.
+	/// </summary>
+	public const ushort DRIVER_LOAD_ENTRYPOINT_OFFSET = 0xE64B;
+
+	/// <summary>
+	/// Offset inside the loader routine where the resolved driver segment is written into the export table.
+	/// Live traces show the same instruction at 100D:E589; with cs1 fixed at 0x1000 the
+	/// equivalent linear address is expressed as 1000:E659.
+	/// </summary>
+	public const ushort DRIVER_FUNCTION_TABLE_HOOK_OFFSET = 0xE659;
+
+	/// <summary>
+	/// Return instruction at the end of the driver loader routine in the override coordinate system.
+	/// Live traces show the same instruction at 100D:E593; with cs1 fixed at 0x1000 the
+	/// equivalent linear address is expressed as 1000:E663.
+	/// </summary>
+	public const ushort DRIVER_LOAD_RETURN_OFFSET = 0xE663;
 
 	/// <summary>
 	/// Stores the original allocator limit before modification.
@@ -95,6 +116,12 @@ public static class DriverLoadToolbox {
 	public static ushort ActualAdpSegment { get; private set; } = 0;
 
 	/// <summary>
+	/// The actual segment where the DNADG (AdLib Gold) driver was loaded at runtime.
+	/// Set by <see cref="ReadDriverFunctionTable"/> when the ADG driver is detected.
+	/// </summary>
+	public static ushort ActualAdgSegment { get; private set; } = 0;
+
+	/// <summary>
 	/// Expected exported function offsets for the DNMID MT-32 driver.
 	/// </summary>
 	private static readonly ushort[] Mt32ExportedFunctionOffsets = [0x0100, 0x0103, 0x0106, 0x0109, 0x010C, 0x010F, 0x0112];
@@ -122,7 +149,7 @@ public static class DriverLoadToolbox {
 
 	/// <summary>
 	/// Remaps specific game drivers to predetermined segment addresses for easier analysis.
-	/// Should be called at the beginning of CS1:E57B during driver loading.
+	/// Should be called at <see cref="DRIVER_LOAD_ENTRYPOINT_OFFSET"/> during driver loading.
 	/// </summary>
 	/// <param name="state">CPU state containing the AX register with the driver index.</param>
 	/// <param name="memory">Memory interface for reading and writing game memory.</param>
@@ -222,7 +249,7 @@ public static class DriverLoadToolbox {
 
 	/// <summary>
 	/// Restores the memory allocator to its original state after driver remapping is complete.
-	/// Should be called at the end of CS1:E57B (address CS1:E593).
+	/// Should be called at <see cref="DRIVER_LOAD_RETURN_OFFSET"/>.
 	/// </summary>
 	/// <param name="state">CPU state providing the DS register value.</param>
 	/// <param name="memory">Memory interface for writing allocator state.</param>
@@ -250,8 +277,35 @@ public static class DriverLoadToolbox {
 	}
 
 	/// <summary>
+	/// Records the segment of the driver currently being loaded before trace-only placeholder registration runs.
+	/// </summary>
+	/// <param name="state">CPU state containing AX with the loaded segment plus 0x10.</param>
+	/// <remarks>
+	/// This lets runtime overrides bind to the live driver segment before <see cref="ReadDriverFunctionTable"/>
+	/// inserts non-override function information for the same addresses.
+	/// </remarks>
+	public static void RecordCurrentDriverLoadedSegment(State state) {
+		ushort segment = (ushort)(state.AX - 0x10);
+
+		if (CurrentDriver == (int)DriverIndex.DNMID) {
+			ActualMidiSegment = segment;
+			Logger.Debug("Recorded current MIDI driver segment early. ActualMidiSegment={ActualMidiSegmentHex}", $"0x{ActualMidiSegment:X4}");
+		}
+
+		if (CurrentDriver == (int)DriverIndex.DNADP) {
+			ActualAdpSegment = segment;
+			Logger.Debug("Recorded current ADP driver segment early. ActualAdpSegment={ActualAdpSegmentHex}", $"0x{ActualAdpSegment:X4}");
+		}
+
+		if (CurrentDriver == (int)DriverIndex.DNADG) {
+			ActualAdgSegment = segment;
+			Logger.Debug("Recorded current ADG driver segment early. ActualAdgSegment={ActualAdgSegmentHex}", $"0x{ActualAdgSegment:X4}");
+		}
+	}
+
+	/// <summary>
 	/// Reads and auto-registers driver function table entries for Spice86 function tracing.
-	/// Should be injected at address CS1:E589.
+	/// Should be injected at <see cref="DRIVER_FUNCTION_TABLE_HOOK_OFFSET"/>.
 	/// </summary>
 	/// <param name="state">CPU state containing AX (segment), SI (table offset), and CX (function count) registers.</param>
 	/// <param name="memory">Memory interface for reading the driver's function table.</param>
@@ -288,14 +342,19 @@ public static class DriverLoadToolbox {
 			$"0x{segment:X4}",
 			$"0x{functionTableEntryOffset:X4}",
 			numberOfFunctions);
-		if (IsMt32DriverFunctionTable(memory, state.DS, functionTableEntryOffset, numberOfFunctions)) {
+		if (CurrentDriver == (int)DriverIndex.DNMID && IsMt32DriverFunctionTable(memory, state.DS, functionTableEntryOffset, numberOfFunctions)) {
 			ActualMidiSegment = segment;
 			Logger.Information("Detected MT-32 driver function table. ActualMidiSegment set to {ActualMidiSegmentHex}", $"0x{ActualMidiSegment:X4}");
 		}
-		if (CurrentDriver == (int)DriverIndex.DNADP || CurrentDriver == (int)DriverIndex.DNADL || CurrentDriver == (int)DriverIndex.DNADG) {
+		if (CurrentDriver == (int)DriverIndex.DNADP) {
 			ActualAdpSegment = segment;
-			Logger.Information("Detected ADP/ADL/ADG driver. ActualAdpSegment set to {ActualAdpSegmentHex}, DriverName={DriverName}",
+			Logger.Information("Detected ADP driver. ActualAdpSegment set to {ActualAdpSegmentHex}, DriverName={DriverName}",
 				$"0x{ActualAdpSegment:X4}", driverName);
+		}
+		if (CurrentDriver == (int)DriverIndex.DNADG) {
+			ActualAdgSegment = segment;
+			Logger.Information("Detected ADG driver. ActualAdgSegment set to {ActualAdgSegmentHex}, DriverName={DriverName}",
+				$"0x{ActualAdgSegment:X4}", driverName);
 		}
 		for (int i = 0; i < numberOfFunctions; i++) {
 			ushort pointerTableOffset = memory.UInt16[state.DS, (ushort)(functionTableEntryOffset + i * 4)];

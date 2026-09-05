@@ -1,0 +1,274 @@
+Utilisation des paramètres de lancement à partir de src\Cryogenic\Properties\launchSettings.json...
+[11:42:28 INF] Starting Cryogenic node with 21 arguments. ProvidedAsmHandlersSegment=0x0800
+[11:42:28 DBG] Effective arguments: --UseCodeOverride true --HeadlessMode Minimal --Cycles 8000 -a ADG388 --OplMode Opl3Gold -e C:\Jeux\ABWFR\DuneCDVF\C\DUNECD\DNCDPRG.EXE -p 4096 --HttpApiPort 20001 --McpHttpPort 8082 --GdbPort 10002 --ProvidedAsmHandlersSegment=2048
+[2026-05-10 11:42:29.344 +02:00] [INFO] [0/0000:0000] Spice86 starting...
+[2026-05-10 11:42:29.345 +02:00] [INFO] [0/0000:0000] Set logging level...
+[2026-05-10 11:42:29.352 +02:00] [INFO] [0/0000:0000] Data folder for program hash 5F30AEB84D67CF2E053A83C09C2890F010F2E25EE877EBEC58EA15C5B30CFFF9 is here C:\Users\noalm\source\repos\Cryogenic\5F30AEB84D67CF2E053A83C09C2890F010F2E25EE877EBEC58EA15C5B30CFFF9
+[2026-05-10 11:42:29.353 +02:00] [INFO] [0/0000:0000] Pause handler created...
+[2026-05-10 11:42:29.353 +02:00] [INFO] [0/0000:0000] Wall clock created...
+[2026-05-10 11:42:29.353 +02:00] [INFO] [0/0000:0000] Recorded data reader created...
+[2026-05-10 11:42:29.416 +02:00] [INFO] [0/0000:0000] Execution data read...
+[2026-05-10 11:42:29.422 +02:00] [INFO] [0/0000:0000] State created...
+[2026-05-10 11:42:29.423 +02:00] [INFO] [0/0000:0000] Cycles limiter created...
+[2026-05-10 11:42:29.423 +02:00] [INFO] [0/0000:0000] IO port dispatcher created...
+[2026-05-10 11:42:29.423 +02:00] [INFO] [0/0000:0000] RAM created...
+[2026-05-10 11:42:29.423 +02:00] [INFO] [0/0000:0000] A20 gate created...
+[2026-05-10 11:42:29.433 +02:00] [INFO] [0/0000:0000] Memory bus created...
+[2026-05-10 11:42:29.434 +02:00] [INFO] [0/0000:0000] Emulator breakpoints manager created...
+[2026-05-10 11:42:29.434 +02:00] [INFO] [0/0000:0000] BIOS data area created...
+[2026-05-10 11:42:29.435 +02:00] [INFO] [0/0000:0000] Dual PIC created...
+[2026-05-10 11:42:29.436 +02:00] [INFO] [0/0000:0000] CMOS/RTC initialized
+[2026-05-10 11:42:29.436 +02:00] [INFO] [0/0000:0000] RTC/CMOS created...
+[2026-05-10 11:42:29.436 +02:00] [INFO] [0/0000:0000] Callback handler created...
+[2026-05-10 11:42:29.436 +02:00] [INFO] [0/0000:0000] Interrupt vector table created...
+[2026-05-10 11:42:29.436 +02:00] [INFO] [0/0000:0000] Stack created...
+[2026-05-10 11:42:29.441 +02:00] [INFO] [0/0000:0000] Function information data read...
+[2026-05-10 11:42:29.446 +02:00] [INFO] [0/0000:0000] Function catalogue created...
+[2026-05-10 11:42:29.446 +02:00] [INFO] [0/0000:0000] Function handler created...
+[2026-05-10 11:42:29.451 +02:00] [INFO] [0/0000:0000] CfgCpu created...
+[2026-05-10 11:42:29.451 +02:00] [INFO] [0/0000:0000] Timer int8 handler created...
+[2026-05-10 11:42:29.452 +02:00] [INFO] [0/0000:0000] DMA controller created...
+[2026-05-10 11:42:29.473 +02:00] [INFO] [0/0000:0000] Video card support classes created...
+[2026-05-10 11:42:29.475 +02:00] [INFO] [0/0000:0000] DOS XMS driver created...
+[2026-05-10 11:42:29.475 +02:00] [INFO] [0/0000:0000] BIOS interrupt handlers created...
+[2026-05-10 11:42:29.695 +02:00] [INFO] [0/0000:0000] PIT created...
+[2026-05-10 11:42:29.696 +02:00] [INFO] [0/0000:0000] SoundBlaster configured with SoundBlasterHardwareConfig { OplConfig = OplConfig { Mode = Opl3Gold, SbBase = 544, SbMixer = True }, Irq = 7, LowDma = 1, HighDma = 5, SbType = SBPro2, BaseAddress = 544 }
+[2026-05-10 11:42:29.730 +02:00] [INFO] [0/0000:0000] OPL: Running Opl3Gold on ports 220h and 388h at 49716 Hz
+[2026-05-10 11:42:29.734 +02:00] [INFO] [0/0000:0000] SoundBlaster: Running on port 220h, IRQ 7, and DMA 1
+[2026-05-10 11:42:29.735 +02:00] [INFO] [0/0000:0000] Sound devices created...
+[2026-05-10 11:42:29.735 +02:00] [INFO] [0/0000:0000] Memory data exporter created...
+[2026-05-10 11:42:29.743 +02:00] [INFO] [0/0000:0000] Loaded 0 breakpoints
+[2026-05-10 11:42:29.743 +02:00] [INFO] [0/0000:0000] Emulator state serializer created...
+[2026-05-10 11:42:29.869 +02:00] [INFO] [0/0000:0000] VGA card created...
+[2026-05-10 11:42:29.872 +02:00] [INFO] [0/0000:0000] Mouse initialized: Ps2
+[2026-05-10 11:42:29.873 +02:00] [INFO] [0/0000:0000] Input devices created...
+[2026-05-10 11:42:29.874 +02:00] [INFO] [0/0000:0000] Emulation loop created...
+[2026-05-10 11:42:29.876 +02:00] [INFO] [0/0000:0000] Installing default interrupt handlers for IRQs 3, 4, 5, 7, 10, 11...
+[2026-05-10 11:42:29.882 +02:00] [INFO] [0/0000:0000] DOS available memory: 590080 - in paragraphs: 36880
+[2026-05-10 11:42:29.885 +02:00] [INFO] [0/0000:0000] Disk operating system created...
+[2026-05-10 11:42:29.885 +02:00] [INFO] [0/0000:0000] Machine created...
+[2026-05-10 11:42:30.246 +02:00] [INFO] [0/0000:0000] Now listening on: http://127.0.0.1:20001
+[2026-05-10 11:42:30.248 +02:00] [INFO] [0/0000:0000] HTTP API listening on http://127.0.0.1:20001
+[11:42:30 INF] Generating override function information. ProgramStartAddress=0x1000, UseCodeOverride=True
+[11:42:30 DBG] Creating Overrides instance. ProgramStartSegment=0x1000, ExistingFunctionCount=0
+[11:42:30 INF] MT-32 C# replacement disabled. Using instruction hooks only.
+[11:42:30 INF] DNADP full replacement disabled.
+[11:42:30 INF] DNADG replacement registrations enabled. Segment=0x564B
+[11:42:30 INF] Requesting DNADP (AdLib) driver debug window.
+[11:42:30 DBG] Overrides instance created. RegisteredFunctionCount=235
+[11:42:30 INF] Generated 235 override function entries.
+[2026-05-10 11:42:30.259 +02:00] [INFO] [0/0000:0000] Function overrides added...
+[2026-05-10 11:42:30.261 +02:00] [INFO] [0/0000:0000] EXEC: Current PSP=0060, will become parent
+[2026-05-10 11:42:30.280 +02:00] [INFO] [0/0000:0000] Program executor created...
+[11:42:30 INF] Supplying MCP tool assembly Cryogenic
+[11:42:30 DBG] Supplying MCP services collection (empty).
+[2026-05-10 11:42:30.463 +02:00] [INFO] [0/0000:0000] MCP HTTP server started on http://localhost:8082/mcp
+[2026-05-10 11:42:30.463 +02:00] [INFO] [0/0000:0000] MCP HTTP transport started on port 8082
+[2026-05-10 11:42:30.463 +02:00] [INFO] [0/0000:0000] BIOS and DOS interrupt handlers created...
+[2026-05-10 11:42:30.463 +02:00] [INFO] [0/0000:0000] Finally starting headless mode...
+[2026-05-10 11:42:30.463 +02:00] [INFO] [0/0000:0000] Starting the emulation loop
+[2026-05-10 11:42:30.464 +02:00] [INFO] [0/0000:0000] Starting GDB server on port 10002 ...
+[2026-05-10 11:42:30.466 +02:00] [INFO] [0/0000:0000] GDB Server listening on port 10002
+[11:42:30 WRN] ReadDriverFunctionTable called with unknown CurrentDriver=-1
+[11:42:30 WRN] ReadDriverFunctionTable called with unknown CurrentDriver=-1
+[2026-05-10 11:42:30.499 +02:00] [EROR] [1/100D:F20D] DOS: File not found! dnmaj1 ReadOnly
+[2026-05-10 11:42:30.499 +02:00] [WARN] [1/100D:F20D] FileOperationErrorWithLog: File 'dnmaj1' not found!
+[2026-05-10 11:42:30.500 +02:00] [EROR] [1/100D:F20D] DOS operation from OpenFileOrDevice failed with an error. Int will return to 100D:F20D. . State is Cycles=390 CS:IP=0x800:0x80/0x8080 EAX=0x3D00 EBX=0x39B5 ECX=0x1F58 EDX=0x3826 ESI=0x37F2 EDI=0xDD1D EBP=0x88 ESP=0x3CAE SS=0x1F58 DS=0x1F58 ES=0x1F58 FS=0x0 GS=0x0 flags=0x46 (     Z P ) InterruptShadowing=False
+[2026-05-10 11:42:30.501 +02:00] [EROR] [1/100D:F20D] DOS: File not found! dnmaj2 ReadOnly
+[2026-05-10 11:42:30.501 +02:00] [WARN] [1/100D:F20D] FileOperationErrorWithLog: File 'dnmaj2' not found!
+[2026-05-10 11:42:30.501 +02:00] [EROR] [1/100D:F20D] DOS operation from OpenFileOrDevice failed with an error. Int will return to 100D:F20D. . State is Cycles=468 CS:IP=0x800:0x80/0x8080 EAX=0x3D00 EBX=0x39B5 ECX=0x1F58 EDX=0x3826 ESI=0x37F2 EDI=0xDD1D EBP=0x88 ESP=0x3CAE SS=0x1F58 DS=0x1F58 ES=0x1F58 FS=0x0 GS=0x0 flags=0x46 (     Z P ) InterruptShadowing=False
+[2026-05-10 11:42:30.501 +02:00] [EROR] [1/100D:F20D] DOS: File not found! dnmaj3 ReadOnly
+[2026-05-10 11:42:30.501 +02:00] [WARN] [1/100D:F20D] FileOperationErrorWithLog: File 'dnmaj3' not found!
+[2026-05-10 11:42:30.501 +02:00] [EROR] [1/100D:F20D] DOS operation from OpenFileOrDevice failed with an error. Int will return to 100D:F20D. . State is Cycles=546 CS:IP=0x800:0x80/0x8080 EAX=0x3D00 EBX=0x39B5 ECX=0x1F58 EDX=0x3826 ESI=0x37F2 EDI=0xDD1D EBP=0x88 ESP=0x3CAE SS=0x1F58 DS=0x1F58 ES=0x1F58 FS=0x0 GS=0x0 flags=0x46 (     Z P ) InterruptShadowing=False
+[2026-05-10 11:42:30.501 +02:00] [EROR] [1/100D:F20D] DOS: File not found! dnmaj4 ReadOnly
+[2026-05-10 11:42:30.501 +02:00] [WARN] [1/100D:F20D] FileOperationErrorWithLog: File 'dnmaj4' not found!
+[2026-05-10 11:42:30.501 +02:00] [EROR] [1/100D:F20D] DOS operation from OpenFileOrDevice failed with an error. Int will return to 100D:F20D. . State is Cycles=624 CS:IP=0x800:0x80/0x8080 EAX=0x3D00 EBX=0x39B5 ECX=0x1F58 EDX=0x3826 ESI=0x37F2 EDI=0xDD1D EBP=0x88 ESP=0x3CAE SS=0x1F58 DS=0x1F58 ES=0x1F58 FS=0x0 GS=0x0 flags=0x46 (     Z P ) InterruptShadowing=False
+[2026-05-10 11:42:30.501 +02:00] [EROR] [1/100D:F20D] DOS: File not found! dnmaj5 ReadOnly
+[2026-05-10 11:42:30.501 +02:00] [WARN] [1/100D:F20D] FileOperationErrorWithLog: File 'dnmaj5' not found!
+[2026-05-10 11:42:30.501 +02:00] [EROR] [1/100D:F20D] DOS operation from OpenFileOrDevice failed with an error. Int will return to 100D:F20D. . State is Cycles=702 CS:IP=0x800:0x80/0x8080 EAX=0x3D00 EBX=0x39B5 ECX=0x1F58 EDX=0x3826 ESI=0x37F2 EDI=0xDD1D EBP=0x88 ESP=0x3CAE SS=0x1F58 DS=0x1F58 ES=0x1F58 FS=0x0 GS=0x0 flags=0x46 (     Z P ) InterruptShadowing=False
+[2026-05-10 11:42:30.501 +02:00] [EROR] [1/100D:F20D] DOS: File not found! dnmaj6 ReadOnly
+[2026-05-10 11:42:30.501 +02:00] [WARN] [1/100D:F20D] FileOperationErrorWithLog: File 'dnmaj6' not found!
+[2026-05-10 11:42:30.501 +02:00] [EROR] [1/100D:F20D] DOS operation from OpenFileOrDevice failed with an error. Int will return to 100D:F20D. . State is Cycles=780 CS:IP=0x800:0x80/0x8080 EAX=0x3D00 EBX=0x39B5 ECX=0x1F58 EDX=0x3826 ESI=0x37F2 EDI=0xDD1D EBP=0x88 ESP=0x3CAE SS=0x1F58 DS=0x1F58 ES=0x1F58 FS=0x0 GS=0x0 flags=0x46 (     Z P ) InterruptShadowing=False
+[2026-05-10 11:42:30.501 +02:00] [EROR] [1/100D:F20D] DOS: File not found! dnmaj7 ReadOnly
+[2026-05-10 11:42:30.501 +02:00] [WARN] [1/100D:F20D] FileOperationErrorWithLog: File 'dnmaj7' not found!
+[2026-05-10 11:42:30.501 +02:00] [EROR] [1/100D:F20D] DOS operation from OpenFileOrDevice failed with an error. Int will return to 100D:F20D. . State is Cycles=858 CS:IP=0x800:0x80/0x8080 EAX=0x3D00 EBX=0x39B5 ECX=0x1F58 EDX=0x3826 ESI=0x37F2 EDI=0xDD1D EBP=0x88 ESP=0x3CAE SS=0x1F58 DS=0x1F58 ES=0x1F58 FS=0x0 GS=0x0 flags=0x46 (     Z P ) InterruptShadowing=False
+[2026-05-10 11:42:30.501 +02:00] [EROR] [1/100D:F20D] DOS: File not found! dnmaj8 ReadOnly
+[2026-05-10 11:42:30.501 +02:00] [WARN] [1/100D:F20D] FileOperationErrorWithLog: File 'dnmaj8' not found!
+[2026-05-10 11:42:30.501 +02:00] [EROR] [1/100D:F20D] DOS operation from OpenFileOrDevice failed with an error. Int will return to 100D:F20D. . State is Cycles=936 CS:IP=0x800:0x80/0x8080 EAX=0x3D00 EBX=0x39B5 ECX=0x1F58 EDX=0x3826 ESI=0x37F2 EDI=0xDD1D EBP=0x88 ESP=0x3CAE SS=0x1F58 DS=0x1F58 ES=0x1F58 FS=0x0 GS=0x0 flags=0x46 (     Z P ) InterruptShadowing=False
+[2026-05-10 11:42:30.501 +02:00] [EROR] [1/100D:F20D] DOS: File not found! dnmaj9 ReadOnly
+[2026-05-10 11:42:30.501 +02:00] [WARN] [1/100D:F20D] FileOperationErrorWithLog: File 'dnmaj9' not found!
+[2026-05-10 11:42:30.501 +02:00] [EROR] [1/100D:F20D] DOS operation from OpenFileOrDevice failed with an error. Int will return to 100D:F20D. . State is Cycles=1014 CS:IP=0x800:0x80/0x8080 EAX=0x3D00 EBX=0x39B5 ECX=0x1F58 EDX=0x3826 ESI=0x37F2 EDI=0xDD1D EBP=0x88 ESP=0x3CAE SS=0x1F58 DS=0x1F58 ES=0x1F58 FS=0x0 GS=0x0 flags=0x46 (     Z P ) InterruptShadowing=False
+[2026-05-10 11:42:32.453 +02:00] [WARN] [1/100D:A671] PROGRAM IS NOT WELL BEHAVED SO CALL STACK COULD NOT BE TRACEABLE ANYMORE!
+Current function AdgSetVolume_564B_0112_0565C2_564B_0112_565C2 return instruction NEAR16 at 100D:A671 will not go to the expected place:
+- Expected return at FAR16 call time was 100D:A671 but return will go to 100D:E7EB
+- Return was stored on stack at address 1F58:3CB2 which contains 100D:A671
+- Stack is now at address 1F58:3CB6
+
+Stack is not pointing at the same address as it was at call time. Delta is 4 bytes
+          
+[2026-05-10 11:42:32.514 +02:00] [WARN] [1/100D:E825] PROGRAM IS NOT WELL BEHAVED SO CALL STACK COULD NOT BE TRACEABLE ANYMORE!
+Current function AdgSetVolume_564B_0112_0565C2_564B_0112_565C2 return instruction NEAR16 at 100D:E825 will not go to the expected place:
+- Expected return at FAR16 call time was 100D:A671 but return will go to 100D:E668
+- Return was stored on stack at address 1F58:3CB2 which contains 1F58:0001
+- Stack is now at address 1F58:3CB8
+
+Stack is not pointing at the same address as it was at call time. Delta is 6 bytes
+Return address on stack was modified          
+[2026-05-10 11:42:32.520 +02:00] [WARN] [1/100D:C421] PROGRAM IS NOT WELL BEHAVED SO CALL STACK COULD NOT BE TRACEABLE ANYMORE!
+Current function AdgSetVolume_564B_0112_0565C2_564B_0112_565C2 return instruction NEAR16 at 100D:C421 will not go to the expected place:
+- Expected return at FAR16 call time was 100D:A671 but return will go to 100D:0009
+- Return was stored on stack at address 1F58:3CB2 which contains C420:0000
+- Stack is now at address 1F58:3CBA
+
+Stack is not pointing at the same address as it was at call time. Delta is 8 bytes
+Return address on stack was modified          
+[2026-05-10 11:42:32.646 +02:00] [WARN] [2/100D:EFD4] PROGRAM IS NOT WELL BEHAVED SO CALL STACK COULD NOT BE TRACEABLE ANYMORE!
+Current function AdgTick_564B_010F_0565BF_564B_010F_565BF return instruction NEAR16 at 100D:EFD4 will not go to the expected place:
+- Expected return at FAR16 call time was 100D:EFC7 but return will go to 100D:EFA2
+- Return was stored on stack at address 1F58:3CA4 which contains 100D:EFC7
+- Stack is now at address 1F58:3CAC
+
+Stack is not pointing at the same address as it was at call time. Delta is 8 bytes
+          
+[2026-05-10 11:42:32.647 +02:00] [WARN] [2/100D:EFB9] PROGRAM IS NOT WELL BEHAVED SO CALL STACK COULD NOT BE TRACEABLE ANYMORE!
+Current function AdgTick_564B_010F_0565BF_564B_010F_565BF return instruction INTERRUPT at 100D:EFB9 will not go to the expected place:
+- Expected return at FAR16 call time was 100D:EFC7 but return will go to 100D:0580
+- Return was stored on stack at address 1F58:3CA4 which contains 0001:BBD8
+- Stack is now at address 1F58:3CB4
+
+Stack is not pointing at the same address as it was at call time. Delta is 16 bytes
+Return address on stack was modified          
+[2026-05-10 11:42:32.650 +02:00] [WARN] [2/100D:EFD4] PROGRAM IS NOT WELL BEHAVED SO CALL STACK COULD NOT BE TRACEABLE ANYMORE!
+Current function AdgTick_564B_010F_0565BF_564B_010F_565BF return instruction NEAR16 at 100D:EFD4 will not go to the expected place:
+- Expected return at FAR16 call time was 100D:EFC7 but return will go to 100D:EFA2
+- Return was stored on stack at address 1F58:3CA0 which contains 100D:EFC7
+- Stack is now at address 1F58:3CA8
+
+Stack is not pointing at the same address as it was at call time. Delta is 8 bytes
+          
+[2026-05-10 11:42:32.650 +02:00] [WARN] [2/100D:EFB9] PROGRAM IS NOT WELL BEHAVED SO CALL STACK COULD NOT BE TRACEABLE ANYMORE!
+Current function AdgTick_564B_010F_0565BF_564B_010F_565BF return instruction INTERRUPT at 100D:EFB9 will not go to the expected place:
+- Expected return at FAR16 call time was 100D:EFC7 but return will go to 100D:AEC4
+- Return was stored on stack at address 1F58:3CA0 which contains 0000:0000
+- Stack is now at address 1F58:3CB0
+
+Stack is not pointing at the same address as it was at call time. Delta is 16 bytes
+Return address on stack was modified          
+[2026-05-10 11:42:32.650 +02:00] [WARN] [1/100D:AEC5] PROGRAM IS NOT WELL BEHAVED SO CALL STACK COULD NOT BE TRACEABLE ANYMORE!
+Current function AdgReset_564B_0106_0565B6_564B_0106_565B6 return instruction NEAR16 at 100D:AEC5 will not go to the expected place:
+- Expected return at FAR16 call time was 100D:AEC1 but return will go to 100D:058C
+- Return was stored on stack at address 1F58:3CB2 which contains 0297:100D
+- Stack is now at address 1F58:3CB8
+
+Stack is not pointing at the same address as it was at call time. Delta is 6 bytes
+Return address on stack was modified          
+[2026-05-10 11:42:32.651 +02:00] [WARN] [1/100D:AEC5] PROGRAM IS NOT WELL BEHAVED SO CALL STACK COULD NOT BE TRACEABLE ANYMORE!
+Current function AdgReset_564B_0106_0565B6_564B_0106_565B6 return instruction NEAR16 at 100D:AEC5 will not go to the expected place:
+- Expected return at FAR16 call time was 100D:AEC1 but return will go to 100D:AD5A
+- Return was stored on stack at address 1F58:3CAA which contains 100D:AEC1
+- Stack is now at address 1F58:3CB0
+
+Stack is not pointing at the same address as it was at call time. Delta is 6 bytes
+          
+[2026-05-10 11:42:32.651 +02:00] [WARN] [1/100D:AEC5] PROGRAM IS NOT WELL BEHAVED SO CALL STACK COULD NOT BE TRACEABLE ANYMORE!
+Current function AdgReset_564B_0106_0565B6_564B_0106_565B6 return instruction NEAR16 at 100D:AEC5 will not go to the expected place:
+- Expected return at FAR16 call time was 100D:AEC1 but return will go to 100D:AE6B
+- Return was stored on stack at address 1F58:3CA8 which contains 100D:AEC1
+- Stack is now at address 1F58:3CAE
+
+Stack is not pointing at the same address as it was at call time. Delta is 6 bytes
+          
+[2026-05-10 11:42:32.654 +02:00] [WARN] [2/100D:EFD4] PROGRAM IS NOT WELL BEHAVED SO CALL STACK COULD NOT BE TRACEABLE ANYMORE!
+Current function AdgTick_564B_010F_0565BF_564B_010F_565BF return instruction NEAR16 at 100D:EFD4 will not go to the expected place:
+- Expected return at FAR16 call time was 100D:EFC7 but return will go to 100D:EFA2
+- Return was stored on stack at address 1F58:3C90 which contains 100D:EFC7
+- Stack is now at address 1F58:3C98
+
+Stack is not pointing at the same address as it was at call time. Delta is 8 bytes
+          
+[2026-05-10 11:42:32.654 +02:00] [WARN] [2/100D:EFB9] PROGRAM IS NOT WELL BEHAVED SO CALL STACK COULD NOT BE TRACEABLE ANYMORE!
+Current function AdgTick_564B_010F_0565BF_564B_010F_565BF return instruction INTERRUPT at 100D:EFB9 will not go to the expected place:
+- Expected return at FAR16 call time was 100D:EFC7 but return will go to 100D:F47E
+- Return was stored on stack at address 1F58:3C90 which contains 576D:0A23
+- Stack is now at address 1F58:3CA0
+
+Stack is not pointing at the same address as it was at call time. Delta is 16 bytes
+Return address on stack was modified          
+[2026-05-10 11:42:32.659 +02:00] [WARN] [2/100D:EFD4] PROGRAM IS NOT WELL BEHAVED SO CALL STACK COULD NOT BE TRACEABLE ANYMORE!
+Current function AdgTick_564B_010F_0565BF_564B_010F_565BF return instruction NEAR16 at 100D:EFD4 will not go to the expected place:
+- Expected return at FAR16 call time was 100D:EFC7 but return will go to 100D:EFA2
+- Return was stored on stack at address 1F58:3C90 which contains 100D:EFC7
+- Stack is now at address 1F58:3C98
+
+Stack is not pointing at the same address as it was at call time. Delta is 8 bytes
+          
+[2026-05-10 11:42:32.659 +02:00] [WARN] [2/100D:EFB9] PROGRAM IS NOT WELL BEHAVED SO CALL STACK COULD NOT BE TRACEABLE ANYMORE!
+Current function AdgTick_564B_010F_0565BF_564B_010F_565BF return instruction INTERRUPT at 100D:EFB9 will not go to the expected place:
+- Expected return at FAR16 call time was 100D:EFC7 but return will go to 100D:F43C
+- Return was stored on stack at address 1F58:3C90 which contains 576D:8321
+- Stack is now at address 1F58:3CA0
+
+Stack is not pointing at the same address as it was at call time. Delta is 16 bytes
+Return address on stack was modified          
+[2026-05-10 11:42:32.659 +02:00] [WARN] [1/100D:AE84] PROGRAM IS NOT WELL BEHAVED SO CALL STACK COULD NOT BE TRACEABLE ANYMORE!
+Current function AdgReset_564B_0106_0565B6_564B_0106_565B6 return instruction NEAR16 at 100D:AE84 will not go to the expected place:
+- Expected return at FAR16 call time was 100D:AEC1 but return will go to 100D:ADA5
+- Return was stored on stack at address 1F58:3CA8 which contains 16B4:0000
+- Stack is now at address 1F58:3CB0
+
+Stack is not pointing at the same address as it was at call time. Delta is 8 bytes
+Return address on stack was modified          
+[2026-05-10 11:42:32.667 +02:00] [WARN] [2/100D:EFD4] PROGRAM IS NOT WELL BEHAVED SO CALL STACK COULD NOT BE TRACEABLE ANYMORE!
+Current function AdgTick_564B_010F_0565BF_564B_010F_565BF return instruction NEAR16 at 100D:EFD4 will not go to the expected place:
+- Expected return at FAR16 call time was 100D:EFC7 but return will go to 100D:EFA2
+- Return was stored on stack at address 1F58:3C9C which contains 100D:EFC7
+- Stack is now at address 1F58:3CA4
+
+Stack is not pointing at the same address as it was at call time. Delta is 8 bytes
+          
+[2026-05-10 11:42:32.667 +02:00] [WARN] [2/100D:EFB9] PROGRAM IS NOT WELL BEHAVED SO CALL STACK COULD NOT BE TRACEABLE ANYMORE!
+Current function AdgTick_564B_010F_0565BF_564B_010F_565BF return instruction INTERRUPT at 100D:EFB9 will not go to the expected place:
+- Expected return at FAR16 call time was 100D:EFC7 but return will go to 100D:ADB8
+- Return was stored on stack at address 1F58:3C9C which contains 576D:6D61
+- Stack is now at address 1F58:3CAC
+
+Stack is not pointing at the same address as it was at call time. Delta is 16 bytes
+Return address on stack was modified          
+[2026-05-10 11:42:32.667 +02:00] [WARN] [1/100D:ADBD] PROGRAM IS NOT WELL BEHAVED SO CALL STACK COULD NOT BE TRACEABLE ANYMORE!
+Current function AdgOpenSong_564B_0103_0565B3_564B_0103_565B3 return instruction NEAR16 at 100D:ADBD will not go to the expected place:
+- Expected return at FAR16 call time was 100D:ADB5 but return will go to 100D:061F
+- Return was stored on stack at address 1F58:3CAE which contains 0202:100D
+- Stack is now at address 1F58:3CB2
+
+Stack is not pointing at the same address as it was at call time. Delta is 4 bytes
+Return address on stack was modified          
+[2026-05-10 11:42:32.668 +02:00] [WARN] [1/100D:CA18] File not opened: 19328
+[2026-05-10 11:42:32.668 +02:00] [EROR] [1/100D:CA18] DOS operation from CloseFileOrDevice failed with an error. Int will return to 100D:CA18. . State is Cycles=11028259 CS:IP=0x800:0x80/0x8080 EAX=0x3E15 EBX=0x4B80 ECX=0x0 EDX=0x576D ESI=0x6D61 EDI=0x206 EBP=0x1C0 ESP=0x3CAA SS=0x1F58 DS=0x564B ES=0x576D FS=0x0 GS=0x0 flags=0x12 (      A  ) InterruptShadowing=False
+[2026-05-10 11:42:32.669 +02:00] [WARN] [1/100D:F20D] FileOperationErrorWithLog: File ÇCEÉEHÇEHÉG<ÇG<ÉICÇICÉK:ÇK:ÉMHÇMHÉO>ÇO>ÉQAÇQAÉS5ÇS5ÉU:ÇU:ÉWEÇWEÉU<ÇU<ÉS:ÇS:ÉQ<ÇQ<ÉOHÇOHÉMAÇMAÉK:ÇK:ÉIAÇIAÉG8ÇG8ÉEFÇEFÉCCÇCCÉA:ÇA:É?<Ç?<É=<Ç=<É;<Ç;<É9HÇ9HÉ7TÇ7TÉ9FÇ9FÉ;?Ç;?É=FÇ=FÉ?<Ç?<ÉA?ÇA?ÉC? not found!
+[2026-05-10 11:42:32.669 +02:00] [EROR] [1/100D:F20D] DOS operation from OpenFileOrDevice failed with an error. Int will return to 100D:F20D. . State is Cycles=11032408 CS:IP=0x800:0x80/0x8080 EAX=0x3D00 EBX=0x33ED ECX=0x10 EDX=0x3826 ESI=0x337 EDI=0x206 EBP=0x0 ESP=0x3CA6 SS=0x1F58 DS=0x564B ES=0x576D FS=0x0 GS=0x0 flags=0x46 (     Z P ) InterruptShadowing=False
+[2026-05-10 11:42:32.669 +02:00] [WARN] [2/100D:EFD4] PROGRAM IS NOT WELL BEHAVED SO CALL STACK COULD NOT BE TRACEABLE ANYMORE!
+Current function AdgTick_564B_010F_0565BF_564B_010F_565BF return instruction NEAR16 at 100D:EFD4 will not go to the expected place:
+- Expected return at FAR16 call time was 100D:EFC7 but return will go to 100D:EFA2
+- Return was stored on stack at address 1F58:3C98 which contains 100D:EFC7
+- Stack is now at address 1F58:3CA0
+
+Stack is not pointing at the same address as it was at call time. Delta is 8 bytes
+          
+[2026-05-10 11:42:32.669 +02:00] [WARN] [2/100D:EFB9] PROGRAM IS NOT WELL BEHAVED SO CALL STACK COULD NOT BE TRACEABLE ANYMORE!
+Current function AdgTick_564B_010F_0565BF_564B_010F_565BF return instruction INTERRUPT at 100D:EFB9 will not go to the expected place:
+- Expected return at FAR16 call time was 100D:EFC7 but return will go to 100D:E8EF
+- Return was stored on stack at address 1F58:3C98 which contains 0337:0343
+- Stack is now at address 1F58:3CA8
+
+Stack is not pointing at the same address as it was at call time. Delta is 16 bytes
+Return address on stack was modified          
+[2026-05-10 11:42:32.727 +02:00] [INFO] [1/100D:0083] INT21H AH=4Ch: TERMINATE with exit code 00
+[2026-05-10 11:42:32.728 +02:00] [INFO] [1/100D:0083] TERMINATE: restored parent context SS:SP=0060:FFFE, return CS:IP=0000:0000
+[2026-05-10 11:42:32.728 +02:00] [WARN] [1/100D:0083] Executed 11032769 instructions in 2263ms. 4875284 Instructions per seconds on average over run.
+[2026-05-10 11:42:32.728 +02:00] [WARN] [1/100D:0083] Exiting machine entry point but current function does not seem to be entry point.
+[2026-05-10 11:42:32.729 +02:00] [INFO] [1/100D:0083] Saving all data to C:\Users\noalm\source\repos\Cryogenic\5F30AEB84D67CF2E053A83C09C2890F010F2E25EE877EBEC58EA15C5B30CFFF9
+[2026-05-10 11:42:32.745 +02:00] [INFO] [1/100D:0083] Saving memory content in file C:\Users\noalm\source\repos\Cryogenic\5F30AEB84D67CF2E053A83C09C2890F010F2E25EE877EBEC58EA15C5B30CFFF9/spice86dumpMemoryDump.bin
+[2026-05-10 11:42:32.757 +02:00] [INFO] [1/100D:0083] Saving executed listing in file C:\Users\noalm\source\repos\Cryogenic\5F30AEB84D67CF2E053A83C09C2890F010F2E25EE877EBEC58EA15C5B30CFFF9/spice86dumpListing.asm
+[2026-05-10 11:42:32.815 +02:00] [INFO] [1/100D:0083] Saved 0 breakpoints to C:\Users\noalm\source\repos\Cryogenic\5F30AEB84D67CF2E053A83C09C2890F010F2E25EE877EBEC58EA15C5B30CFFF9/Breakpoints.json
+[2026-05-10 11:42:32.947 +02:00] [INFO] [1/100D:0083] OPL: Shutting down Opl3Gold
+[11:42:32 INF] Cryogenic node exited normally.

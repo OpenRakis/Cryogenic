@@ -109,7 +109,7 @@ public partial class Overrides : CSharpOverrideHelper {
 		MusicDriverType musicDriverType = MusicDriverDetection.DetectFromExeArgs(Configuration.ExeArgs ?? "");
 		GameAudioState gameAudio = new GameAudioState(machine.Memory);
 		IMusicDriverState driverState = MusicDriverDetection.IsOplDriver(musicDriverType)
-			? new AdpDriverState(machine.Memory, 0x5BAE)
+			? new AdpDriverState(machine.Memory, 0x5BAE, musicDriverType)
 			: new DnmidDriverState(machine.Memory, 0x5BAE);
 		mt32DriverWindowService = new Mt32DriverWindowService(driverState, gameAudio);
 		mt32DriverWindowService.ShowWindow();
@@ -160,6 +160,9 @@ public partial class Overrides : CSharpOverrideHelper {
 		// DNADP (AdLib Pro) driver observation hooks on the live segment (0x5BAE).
 		// Phase 1: observation-only (call counters, OPL traces, scheduler state).
 		DefineAdpDriverCodeOverrides();
+		// DNADG (AdLib Gold / OPL3) scaffold registration.
+		// Disabled by default until runtime ABI/side-effects are validated from live MCP evidence.
+		DefineAdgDriverCodeOverrides();
 		// Dump memory at the proper time. Too soon and drivers wont be loaded, too late and init code will be erased
 		DefineMemoryDumpsMapping();
 
@@ -218,15 +221,16 @@ public partial class Overrides : CSharpOverrideHelper {
 	/// Registers hooks for driver remapping at the beginning and end of the driver load routine.
 	/// </summary>
 	/// <remarks>
-	/// Injects calls to <see cref="DriverLoadToolbox.RemapDrivers"/> at CS1:E57B
-	/// and <see cref="DriverLoadToolbox.ResetAllocator"/> at CS1:E593 to control
+	/// Injects calls to <see cref="DriverLoadToolbox.RemapDrivers"/> at the live-verified
+	/// driver loader entry point and <see cref="DriverLoadToolbox.ResetAllocator"/> at the
+	/// corresponding return instruction to control
 	/// driver segment allocation.
 	/// </remarks>
 	private void DefineDriversRemapping() {
-		DoOnTopOfInstruction(cs1, 0xE57B, () => {
+		DoOnTopOfInstruction(cs1, DriverLoadToolbox.DRIVER_LOAD_ENTRYPOINT_OFFSET, () => {
 			DriverLoadToolbox.RemapDrivers(State, Memory);
 		});
-		DoOnTopOfInstruction(cs1, 0xE593, () => {
+		DoOnTopOfInstruction(cs1, DriverLoadToolbox.DRIVER_LOAD_RETURN_OFFSET, () => {
 			DriverLoadToolbox.ResetAllocator(State, Memory);
 		});
 	}
@@ -235,12 +239,16 @@ public partial class Overrides : CSharpOverrideHelper {
 	/// Registers a hook to parse driver entry tables for tracing only.
 	/// </summary>
 	/// <remarks>
-	/// Injects a call to <see cref="DriverLoadToolbox.ReadDriverFunctionTable"/> at CS1:E589
+	/// Injects a call to <see cref="DriverLoadToolbox.ReadDriverFunctionTable"/> at the
+	/// live-verified export-table write inside the loader routine
 	/// to register driver export names for tracing/debugging. MT-32 overrides are registered
-	/// eagerly at startup, not lazily.
+	/// eagerly at startup, not lazily. DNADG override registration is retried here after
+	/// the live ADG segment becomes known.
 	/// </remarks>
 	private void DetectDriversEntryPoints() {
-		DoOnTopOfInstruction(cs1, 0xE589, () => {
+		DoOnTopOfInstruction(cs1, DriverLoadToolbox.DRIVER_FUNCTION_TABLE_HOOK_OFFSET, () => {
+			DriverLoadToolbox.RecordCurrentDriverLoadedSegment(State);
+			TryRegisterAdgObservedFunctionReplacements();
 			DriverLoadToolbox.ReadDriverFunctionTable(State, Memory, this);
 		});
 	}

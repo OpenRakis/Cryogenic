@@ -89,7 +89,10 @@ public partial class Overrides {
 	/// </summary>
 	private void InitializeMusicFolderPlayer() {
 		if (!EnableMt32CSharpFunctionReplacement) {
-			Mt32Logger.Information("MT-32 driver not active (ExeArgs='{ExeArgs}'). MusicFolder replacement disabled.", Configuration.ExeArgs ?? string.Empty);
+			MusicDriverType driverType = MusicDriverDetection.DetectFromExeArgs(Configuration.ExeArgs ?? string.Empty);
+			Mt32Logger.Information("DNMID music-folder replacement inactive because current music driver is {DriverType}. ExeArgs='{ExeArgs}'.",
+				MusicDriverDetection.DescribeDriverType(driverType),
+				Configuration.ExeArgs ?? string.Empty);
 			return;
 		}
 		string musicFolderPath = Program.MusicFolderPath;
@@ -227,7 +230,9 @@ public partial class Overrides {
 		if (EnableMt32CSharpFunctionReplacement) {
 			RegisterMt32LiveFunctionReplacements();
 		} else {
-			Mt32Logger.Information("MT-32 C# replacement disabled. Using instruction hooks only.");
+			MusicDriverType driverType = MusicDriverDetection.DetectFromExeArgs(Configuration.ExeArgs ?? string.Empty);
+			Mt32Logger.Information("DNMID C# replacement inactive because current music driver is {DriverType}. Observation hooks remain registered.",
+				MusicDriverDetection.DescribeDriverType(driverType));
 		}
 
 		RegisterMt32EntryCounterHooks();
